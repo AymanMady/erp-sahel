@@ -73,3 +73,8 @@ export function fieldErrors(error: unknown): Record<string, string> {
   }
   return result;
 }
+
+/** Élément absent des données locales : erreur affichable, sans nouvel essai réseau. */
+export function offlineNotFound(message: string): ApiError {
+  return new ApiError({ status: 404, code: "OFFLINE_UNAVAILABLE", message });
+}

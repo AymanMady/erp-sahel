@@ -18,6 +18,7 @@ import { errorMessage } from "@/shared/api/api-error";
 import { bankingApi } from "@/entities/banking/api";
 import { invoicingApi } from "@/entities/invoicing/api";
 import { paymentApi } from "@/entities/payment/api";
+import { onlineOrQueued, queuePaymentCreate } from "@/shared/offline/offline-writes";
 import { queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
 import { DocumentView } from "@/features/documents/document-view";
@@ -234,9 +235,8 @@ function PaymentDialog({
   });
 
   const mutation = useMutation({
-    mutationFn: () =>
-      paymentApi.create({
-        direction: "IN",
+    mutationFn: () => {
+      const input = {
         partyId,
         invoiceId,
         amountCents,
@@ -244,9 +244,20 @@ function PaymentDialog({
         bankAccountId: bankAccountId === DEFAULT_ACCOUNT ? null : bankAccountId,
         reference,
         paymentDate,
-      }),
-    onSuccess: () => {
-      toast.success("Règlement enregistré : trésorerie et comptabilité mises à jour.");
+      };
+      return onlineOrQueued(
+        () => paymentApi.create({ direction: "IN", ...input }),
+        () => queuePaymentCreate(input)
+      );
+    },
+    onSuccess: (outcome) => {
+      if (outcome.mode === "offline") {
+        toast.success("Règlement enregistré hors ligne.", {
+          description: "Il sera imputé à la facture à la prochaine synchronisation.",
+        });
+      } else {
+        toast.success("Règlement enregistré : trésorerie et comptabilité mises à jour.");
+      }
       onDone();
       onOpenChange(false);
     },

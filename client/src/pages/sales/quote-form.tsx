@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { addDays, todayInput } from "@shared/format";
 import { errorMessage } from "@/shared/api/api-error";
 import { salesApi } from "@/entities/sales/api";
+import { onlineOrQueued, queueQuoteCreate } from "@/shared/offline/offline-writes";
 import type { Party } from "@/entities/types";
 import { useSession } from "@/shared/auth/session";
 import { Field, FieldGrid } from "@/shared/components/field";
@@ -38,19 +39,32 @@ export default function QuoteFormPage() {
   const [lines, setLines] = useState<DocumentLine[]>([emptyLine(company?.defaultVatRateBp ?? 0)]);
 
   const mutation = useMutation({
-    mutationFn: () =>
-      salesApi.createQuote({
-        partyId: party?.id,
+    mutationFn: () => {
+      const input = {
+        partyId: party?.id as string,
         date,
         expiryDate: expiryDate || null,
         notes,
         globalDiscountBp,
         lines: toApiLines(lines),
-      }),
-    onSuccess: (quote) => {
-      toast.success(`Devis ${quote.number} créé.`);
+      };
+      return onlineOrQueued(
+        () => salesApi.createQuote(input),
+        () => queueQuoteCreate(input)
+      );
+    },
+    onSuccess: (outcome) => {
       void queryClient.invalidateQueries({ queryKey: ["quotes"] });
-      navigate(`/quotes/${quote.id}`);
+      if (outcome.mode === "offline") {
+        // Pas encore d'identifiant serveur : la fiche n'existe qu'après synchronisation.
+        toast.success(`Devis ${outcome.result.provisionalNumber} enregistré hors ligne.`, {
+          description: "Il recevra son numéro définitif à la prochaine synchronisation.",
+        });
+        navigate("/sync");
+        return;
+      }
+      toast.success(`Devis ${outcome.result.number} créé.`);
+      navigate(`/quotes/${outcome.result.id}`);
     },
     onError: (error) => toast.error(errorMessage(error)),
   });

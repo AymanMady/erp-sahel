@@ -264,6 +264,7 @@ export function findByBarcodeOffline(snapshot: OfflineSnapshot, barcode: string)
 
 export interface OfflineProductFilters {
   search?: string;
+  profileType?: string | null;
   categoryId?: string | null;
   isService?: boolean | null;
   includeArchived?: boolean;
@@ -280,7 +281,9 @@ export interface OfflineProductFilters {
  */
 export function listProductsOffline(
   snapshot: OfflineSnapshot,
-  filters: OfflineProductFilters = {}
+  filters: OfflineProductFilters = {},
+  /** Produits créés hors ligne, affichés en tête de liste. */
+  pending: Product[] = []
 ): {
   items: (Product & { categoryName: string | null; stockQuantity: number })[];
   total: number;
@@ -297,8 +300,9 @@ export function listProductsOffline(
   const categoryById = new Map(snapshot.categories.map((row) => [row.id, row.name]));
   const oemNorm = filters.oem ? normalizeOem(filters.oem) : "";
 
-  const matches = snapshot.products.filter((product) => {
+  const matches = [...pending, ...snapshot.products].filter((product) => {
     if (!filters.includeArchived && !product.isActive) return false;
+    if (filters.profileType && product.profileType !== filters.profileType) return false;
     if (filters.categoryId && product.categoryId !== filters.categoryId) return false;
     if (typeof filters.isService === "boolean" && product.isService !== filters.isService) {
       return false;
@@ -317,6 +321,8 @@ export function listProductsOffline(
   });
 
   const sorted = [...matches].sort((a, b) => {
+    const pendingOrder = Number(pending.includes(b)) - Number(pending.includes(a));
+    if (pendingOrder !== 0) return pendingOrder;
     switch (filters.orderBy) {
       case "sku":
         return a.sku.localeCompare(b.sku);

@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { GENDERS, MEASURE_UNITS, SEASONS, type ProfileType } from "@shared/schema";
 import { errorMessage, fieldErrors } from "@/shared/api/api-error";
 import { catalogApi } from "@/entities/catalog/api";
+import { onlineOrQueued, queueProductCreate } from "@/shared/offline/offline-writes";
 import { inventoryApi } from "@/entities/inventory/api";
 import { autoPartsApi, clothingApi } from "@/entities/modules/api";
 import type { AutoPartProfileView, ClothingProfileView, MarketProfileView } from "@/entities/types";
@@ -231,12 +232,27 @@ export default function ProductFormPage() {
           unitCostCents: initialStock.unitCostCents,
         };
       }
-      return isEdit
-        ? catalogApi.updateProduct(productId as string, payload)
-        : catalogApi.createProduct(payload);
+      if (isEdit) {
+        return catalogApi
+          .updateProduct(productId as string, payload)
+          .then((result) => ({ mode: "online" as const, result }));
+      }
+      // Création hors ligne : mise en file, rejouée telle quelle à la synchronisation
+      // (profil métier et stock initial compris).
+      return onlineOrQueued(
+        () => catalogApi.createProduct(payload),
+        () => queueProductCreate(payload as unknown as Parameters<typeof queueProductCreate>[0])
+      );
     },
-    onSuccess: (product) => {
-      toast.success(isEdit ? "Produit mis à jour." : `Produit « ${product.name} » créé.`);
+    onSuccess: (outcome) => {
+      const product = outcome.result;
+      if (outcome.mode === "offline") {
+        toast.success(`Produit « ${product.name} » enregistré hors ligne.`, {
+          description: "Il sera créé sur le serveur à la prochaine synchronisation.",
+        });
+      } else {
+        toast.success(isEdit ? "Produit mis à jour." : `Produit « ${product.name} » créé.`);
+      }
       void queryClient.invalidateQueries({ queryKey: ["products"] });
       void queryClient.invalidateQueries({ queryKey: queryKeys.product(product.id) });
       navigate("/products");

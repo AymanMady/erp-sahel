@@ -1,7 +1,9 @@
 /** Accès API du catalogue (produits, catégories, fournisseurs référencés). */
 
 import { api } from "@/shared/api/http";
-import { withOfflineFallback } from "@/shared/offline/offline-reads";
+import { productDetailOffline, withOfflineFallback } from "@/shared/offline/offline-reads";
+import { offlineNotFound } from "@/shared/api/api-error";
+import { pendingProducts } from "@/shared/offline/offline-writes";
 import { listProductsOffline } from "@/shared/offline/snapshot";
 import type { Category, Paginated, ProductDetail, ProductListItem } from "@/entities/types";
 
@@ -23,21 +25,34 @@ export const catalogApi = {
   listProducts: (filters: ProductFilters = {}) =>
     withOfflineFallback(
       () => api.get<Paginated<ProductListItem>>("/api/catalog/products", filters),
-      (snapshot) =>
-        listProductsOffline(snapshot, {
-          search: filters.search,
-          categoryId: filters.categoryId,
-          isService: filters.isService,
-          includeArchived: filters.includeArchived,
-          orderBy: filters.orderBy,
-          limit: filters.limit,
-          offset: filters.offset,
-          oem: typeof filters.oem === "string" ? filters.oem : undefined,
-          manufacturerId:
-            typeof filters.manufacturerId === "string" ? filters.manufacturerId : null,
-        })
+      async (snapshot) =>
+        listProductsOffline(
+          snapshot,
+          {
+            search: filters.search,
+            profileType: filters.profileType,
+            categoryId: filters.categoryId,
+            isService: filters.isService,
+            includeArchived: filters.includeArchived,
+            orderBy: filters.orderBy,
+            limit: filters.limit,
+            offset: filters.offset,
+            oem: typeof filters.oem === "string" ? filters.oem : undefined,
+            manufacturerId:
+              typeof filters.manufacturerId === "string" ? filters.manufacturerId : null,
+          },
+          await pendingProducts()
+        )
     ),
-  getProduct: (id: string) => api.get<ProductDetail>(`/api/catalog/products/${id}`),
+  getProduct: (id: string) =>
+    withOfflineFallback(
+      () => api.get<ProductDetail>(`/api/catalog/products/${id}`),
+      async (snapshot) => {
+        const detail = productDetailOffline(snapshot, id, await pendingProducts());
+        if (!detail) throw offlineNotFound("Ce produit n'est pas disponible hors ligne.");
+        return detail as unknown as ProductDetail;
+      }
+    ),
   findByBarcode: (barcode: string) =>
     api.get<ProductListItem>(`/api/catalog/products/barcode/${encodeURIComponent(barcode)}`),
   createProduct: (body: unknown) => api.post<ProductListItem>("/api/catalog/products", body),

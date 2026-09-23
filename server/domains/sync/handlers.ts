@@ -78,7 +78,12 @@ syncDispatcher.register("catalog.product", async (context, payload) => {
   const data = parsePayload("catalog.product", payload);
   const product = await catalogApplication.create(
     context.company.id,
-    { ...data, profileType: "GENERIC", imageUrls: [], variants: [], minStock: "0" },
+    {
+      ...data,
+      imageUrls: [],
+      variants: [],
+      minStock: String(data.minStock),
+    },
     context.userId
   );
   return { serverId: product.id, assignedNumber: product.sku };
@@ -214,7 +219,9 @@ syncDispatcher.register("inventory.stock_movement", async (context, payload) => 
     productId: data.productId,
     warehouseId: data.warehouseId,
     movementType: data.movementType,
+    direction: data.direction ?? undefined,
     quantity: data.quantity,
+    unitCostCents: data.unitCostCents ?? undefined,
     lotNumber: data.lotNumber,
     reason: data.reason,
     originType: "manual",

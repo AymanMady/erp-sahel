@@ -58,6 +58,8 @@ export const syncPartyPayloadSchema = z.object({
   email: z.string().default(""),
   phone: z.string().default(""),
   vatNumber: z.string().default(""),
+  creditLimitCents: z.number().int().min(0).default(0),
+  paymentTermsDays: z.number().int().min(0).default(0),
   notes: z.string().default(""),
 });
 
@@ -72,6 +74,17 @@ export const syncProductPayloadSchema = z.object({
   vatRateBp: z.number().int().default(0),
   isService: z.boolean().default(false),
   categoryId: z.string().uuid().nullish(),
+  minStock: z.union([z.number(), z.string()]).default("0"),
+  /** Profil métier (Auto Parts, Vêtements, Marché), validé par le module à l'ingestion. */
+  profileType: z.enum(["GENERIC", "AUTO_PARTS", "CLOTHING", "MARKET"]).default("GENERIC"),
+  profile: z.record(z.unknown()).nullish(),
+  initialStock: z
+    .object({
+      warehouseId: z.string().uuid(),
+      quantity: z.union([z.number(), z.string()]),
+      unitCostCents: z.number().int().min(0).default(0),
+    })
+    .nullish(),
 });
 
 export const syncInvoicePayloadSchema = z.object({
@@ -136,7 +149,10 @@ export const syncStockMovementPayloadSchema = z.object({
   productId: z.string().uuid(),
   warehouseId: z.string().uuid(),
   movementType: z.enum(["IN", "OUT", "ADJUSTMENT", "RETURN"]),
+  /** Sens explicite d'un ajustement ; sinon déduit du type de mouvement. */
+  direction: z.enum(["IN", "OUT"]).nullish(),
   quantity: z.union([z.number(), z.string()]),
+  unitCostCents: z.number().int().min(0).nullish(),
   reason: z.string().default(""),
   lotNumber: z.string().default(""),
 });

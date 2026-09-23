@@ -16,6 +16,7 @@ import { addDays, todayInput } from "@shared/format";
 import { errorMessage } from "@/shared/api/api-error";
 import { inventoryApi } from "@/entities/inventory/api";
 import { invoicingApi } from "@/entities/invoicing/api";
+import { onlineOrQueued, queueInvoiceCreate } from "@/shared/offline/offline-writes";
 import type { Party } from "@/entities/types";
 import { queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
@@ -55,24 +56,45 @@ export default function InvoiceFormPage() {
   });
 
   const submit = useMutation({
-    mutationFn: (validate: boolean) =>
-      invoicingApi.create({
-        partyId: party?.id,
+    mutationFn: (validate: boolean) => {
+      const input = {
+        partyId: party?.id as string,
         date,
         dueDate: dueDate || null,
         warehouseId: warehouseId === DEFAULT_WAREHOUSE ? null : warehouseId,
         notes,
         globalDiscountBp,
         lines: toApiLines(lines),
-        validate,
-      }),
-    onSuccess: (invoice) => {
+      };
+      return onlineOrQueued(
+        () => invoicingApi.create({ ...input, validate }),
+        () => {
+          // Une facture hors ligne arrive **validée** au serveur ([FR-SYNC-4]) : un
+          // brouillon n'aurait aucun sens, il serait validé à l'insu de l'utilisateur.
+          if (!validate) {
+            throw new Error(
+              "Brouillon indisponible hors ligne : validez la facture ou attendez le retour du réseau."
+            );
+          }
+          return queueInvoiceCreate(input);
+        }
+      );
+    },
+    onSuccess: (outcome) => {
+      void queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      if (outcome.mode === "offline") {
+        toast.success(`Facture ${outcome.result.provisionalNumber} enregistrée hors ligne.`, {
+          description: "Elle sera validée (stock et comptabilité) à la prochaine synchronisation.",
+        });
+        navigate("/sync");
+        return;
+      }
+      const invoice = outcome.result;
       toast.success(
         invoice.status === "DRAFT"
           ? "Brouillon de facture enregistré."
           : `Facture ${invoice.number} validée : stock et comptabilité mis à jour.`
       );
-      void queryClient.invalidateQueries({ queryKey: ["invoices"] });
       navigate(`/invoices/${invoice.id}`);
     },
     onError: (error) => toast.error(errorMessage(error)),

@@ -9,6 +9,7 @@ import { MOVEMENT_DIRECTIONS } from "@shared/schema";
 import { errorMessage } from "@/shared/api/api-error";
 import { catalogApi } from "@/entities/catalog/api";
 import { inventoryApi, type StockFilters } from "@/entities/inventory/api";
+import { onlineOrQueued, queueStockMovement } from "@/shared/offline/offline-writes";
 import type { StockRow } from "@/entities/types";
 import { queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
@@ -235,17 +236,28 @@ function MovementDialog({
 
   const mutation = useMutation({
     mutationFn: () =>
-      inventoryApi.createMovement({
-        productId,
-        warehouseId,
-        movementType: "ADJUSTMENT",
-        direction,
-        quantity,
-        unitCostCents,
-        reason,
-      }),
-    onSuccess: () => {
-      toast.success("Mouvement enregistré.");
+      onlineOrQueued(
+        () =>
+          inventoryApi.createMovement({
+            productId,
+            warehouseId,
+            movementType: "ADJUSTMENT",
+            direction,
+            quantity,
+            unitCostCents,
+            reason,
+          }),
+        () =>
+          queueStockMovement({ productId, warehouseId, direction, quantity, unitCostCents, reason })
+      ),
+    onSuccess: (outcome) => {
+      if (outcome.mode === "offline") {
+        toast.success("Mouvement enregistré hors ligne.", {
+          description: "Le stock sera mis à jour à la prochaine synchronisation.",
+        });
+      } else {
+        toast.success("Mouvement enregistré.");
+      }
       void queryClient.invalidateQueries({ queryKey: ["stock"] });
       void queryClient.invalidateQueries({ queryKey: ["movements"] });
       onOpenChange(false);

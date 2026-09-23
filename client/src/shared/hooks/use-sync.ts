@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { prefetchForOffline } from "@/shared/offline/offline-prefetch";
 import {
   getSyncStatus,
   initialiseSyncStatus,
@@ -26,9 +27,15 @@ export function useSyncEngine(enabled: boolean): SyncStatus {
   useEffect(() => {
     if (!enabled) return;
     const unsubscribe = onSyncStatusChange(setStatus);
-    void initialiseSyncStatus().then(() => runSync());
+    // Après une synchronisation réussie, on précharge les pages pour le hors-ligne
+    // (limité à une passe par demi-heure par `prefetchForOffline`).
+    const syncThenPrefetch = async () => {
+      const result = await runSync();
+      if (result.state === "idle") void prefetchForOffline();
+    };
+    void initialiseSyncStatus().then(syncThenPrefetch);
 
-    const trigger = () => void runSync();
+    const trigger = () => void syncThenPrefetch();
     const onVisible = () => {
       if (document.visibilityState === "visible") trigger();
     };

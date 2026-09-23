@@ -14,6 +14,7 @@ import {
   setRefreshToken,
 } from "@/shared/auth/token-store";
 import { devicePlatform } from "@/shared/desktop/desktop";
+import { readCachedResponse, storeCachedResponse } from "@/shared/offline/http-cache";
 import { ApiError } from "./api-error";
 import { reportNetworkResult } from "./network";
 
@@ -81,6 +82,8 @@ async function parseError(response: Response): Promise<ApiError> {
   });
 }
 
+const GATEWAY_ERRORS = new Set([502, 503, 504]);
+
 /**
  * Rafraîchissement dédoublonné : si dix requêtes reçoivent 401 en même temps, une
  * seule demande un nouveau jeton et les neuf autres attendent le même résultat.
@@ -126,6 +129,10 @@ async function refreshSession(): Promise<boolean> {
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, query, signal, anonymous, skipRefresh } = options;
 
+  const url = buildUrl(path, query);
+  // Lectures authentifiées : conservées pour être réaffichées hors ligne.
+  const offlineReadable = method === "GET" && !anonymous;
+
   const send = async (): Promise<Response> => {
     const headers: Record<string, string> = {
       Accept: "application/json",
@@ -137,7 +144,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       const token = getAccessToken();
       if (token) headers.Authorization = `Bearer ${token}`;
     }
-    return fetch(buildUrl(path, query), {
+    return fetch(url, {
       method,
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
@@ -153,12 +160,22 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     // `AbortError` n'est pas une panne réseau : c'est une annulation volontaire.
     if (error instanceof DOMException && error.name === "AbortError") throw error;
     reportNetworkResult(false);
+    if (offlineReadable) {
+      const cached = await readCachedResponse(url);
+      if (cached !== undefined) return cached as T;
+    }
     throw new ApiError({
       status: 0,
       code: "NETWORK_ERROR",
       message: "Serveur injoignable.",
       isNetworkError: true,
     });
+  }
+
+  // Passerelle joignable mais serveur indisponible : même repli que sans réseau.
+  if (offlineReadable && GATEWAY_ERRORS.has(response.status)) {
+    const cached = await readCachedResponse(url);
+    if (cached !== undefined) return cached as T;
   }
 
   if (response.status === 401 && !anonymous && !skipRefresh) {
@@ -172,7 +189,9 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
   const contentType = response.headers.get("Content-Type") ?? "";
   if (!contentType.includes("application/json")) return (await response.text()) as T;
-  return (await response.json()) as T;
+  const data = (await response.json()) as T;
+  if (offlineReadable) void storeCachedResponse(url, data);
+  return data;
 }
 
 export const api = {

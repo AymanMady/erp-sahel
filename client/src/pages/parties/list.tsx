@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { PARTY_TYPES, type PartyType } from "@shared/schema";
 import { errorMessage } from "@/shared/api/api-error";
 import { partyApi, type PartyFilters } from "@/entities/party/api";
+import { onlineOrQueued, queuePartyCreate } from "@/shared/offline/offline-writes";
 import type { Party } from "@/entities/types";
 import { queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
@@ -208,9 +209,22 @@ export function PartyDialog({
   });
 
   const mutation = useMutation({
-    mutationFn: () => partyApi.create(form),
-    onSuccess: (party) => {
-      toast.success(`Tiers « ${party.name} » créé (${party.code}).`);
+    mutationFn: () =>
+      onlineOrQueued(
+        () => partyApi.create(form),
+        () => queuePartyCreate(form)
+      ),
+    onSuccess: (outcome) => {
+      // Hors ligne, le tiers est utilisable aussitôt (devis, facture) sous son
+      // identifiant local ; son code définitif sera attribué à la synchronisation.
+      const party = outcome.result as Party;
+      if (outcome.mode === "online") {
+        toast.success(`Tiers « ${party.name} » créé (${party.code}).`);
+      } else {
+        toast.success(`Tiers « ${party.name} » enregistré hors ligne.`, {
+          description: "Il sera créé sur le serveur à la prochaine synchronisation.",
+        });
+      }
       void queryClient.invalidateQueries({ queryKey: ["parties"] });
       onCreated?.(party);
       onOpenChange(false);

@@ -4,12 +4,12 @@
  * Chaque fonction reproduit la forme de réponse de l'endpoint serveur correspondant,
  * pour que les écrans de liste restent utilisables quand le serveur est injoignable
  * ([FR-SYNC-1]). Seules les données présentes dans l'instantané sont couvertes ; les
- * documents (factures, commandes…) relèvent du cache de requêtes persisté.
+ * documents (factures, commandes…) relèvent du cache HTTP (`http-cache.ts`).
  */
 
-import type { Party, Service } from "@shared/schema";
+import type { Party, Product, Service } from "@shared/schema";
 import { ApiError } from "@/shared/api/api-error";
-import { readSnapshot, type OfflineSnapshot } from "./snapshot";
+import { readSnapshot, stockQuantityOf, type OfflineSnapshot } from "./snapshot";
 
 /**
  * Exécute la requête serveur ; si le réseau est coupé, relit l'instantané local.
@@ -17,7 +17,7 @@ import { readSnapshot, type OfflineSnapshot } from "./snapshot";
  */
 export async function withOfflineFallback<T>(
   request: () => Promise<T>,
-  fallback: (snapshot: OfflineSnapshot) => T
+  fallback: (snapshot: OfflineSnapshot) => T | Promise<T>
 ): Promise<T> {
   try {
     return await request();
@@ -25,7 +25,7 @@ export async function withOfflineFallback<T>(
     if (!(error instanceof ApiError) || !error.isNetworkError) throw error;
     const snapshot = await readSnapshot();
     if (!snapshot) throw error;
-    return fallback(snapshot);
+    return await fallback(snapshot);
   }
 }
 
@@ -39,6 +39,7 @@ function paginate<T>(rows: T[], limit = 25, offset = 0) {
 
 export function listPartiesOffline(
   snapshot: OfflineSnapshot,
+  pending: Party[],
   filters: {
     search?: string;
     partyType?: string | null;
@@ -49,7 +50,8 @@ export function listPartiesOffline(
   } = {}
 ) {
   const term = filters.search?.trim().toLowerCase() ?? "";
-  const rows = snapshot.parties
+  // Les tiers créés hors ligne s'affichent en tête, pour être aussitôt utilisables.
+  const rows = [...pending, ...snapshot.parties]
     .filter((party: Party) => {
       if (!filters.includeArchived && !party.isActive) return false;
       if (filters.partyType && party.partyType !== filters.partyType) return false;
@@ -58,7 +60,10 @@ export function listPartiesOffline(
       }
       return !term || includesTerm(term, party.name, party.code, party.phone, party.email);
     })
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort(
+      (a, b) =>
+        Number(pending.includes(b)) - Number(pending.includes(a)) || a.name.localeCompare(b.name)
+    );
   return paginate(rows, filters.limit, filters.offset);
 }
 
@@ -157,4 +162,57 @@ export function lowStockOffline(snapshot: OfflineSnapshot) {
       quantity: String(totals.get(product.id) ?? 0),
     }))
     .filter((row) => Number.parseFloat(row.quantity) <= Number.parseFloat(row.minStock || "0"));
+}
+
+/**
+ * Fiche produit hors ligne : produit, variantes et stock de l'instantané. Les
+ * fournisseurs référencés n'y figurent pas ; le profil Auto Parts, si présent, oui.
+ */
+export function productDetailOffline(snapshot: OfflineSnapshot, id: string, pending: Product[]) {
+  const product =
+    pending.find((row) => row.id === id) ?? snapshot.products.find((row) => row.id === id);
+  if (!product) return null;
+  const autoParts = snapshot.moduleData?.auto_parts;
+  const profile = autoParts?.profiles.find((row) => row.productId === id);
+  return {
+    ...product,
+    variants: snapshot.variants
+      .filter((row) => row.productId === id)
+      .map((row) => ({
+        ...row,
+        companyId: product.companyId,
+        isDefault: false,
+        isActive: true,
+        createdAt: product.createdAt,
+        updatedAt: product.updatedAt,
+      })),
+    suppliers: [],
+    profile: profile
+      ? {
+          ...profile,
+          manufacturerName:
+            autoParts?.manufacturers.find((row) => row.id === profile.manufacturerId)?.name ?? null,
+          countryName:
+            autoParts?.countries.find((row) => row.id === profile.countryId)?.name ?? null,
+          qualityLabel:
+            autoParts?.qualityLevels.find((row) => row.id === profile.qualityLevelId)?.label ??
+            null,
+        }
+      : null,
+    stockQuantity: stockQuantityOf(snapshot, id),
+  };
+}
+
+/** Fiche tiers hors ligne : sans contacts ni historique (absents de l'instantané). */
+export function partyDetailOffline(snapshot: OfflineSnapshot, id: string, pending: Party[]) {
+  const party =
+    pending.find((row) => row.id === id) ?? snapshot.parties.find((row) => row.id === id);
+  if (!party) return null;
+  return {
+    ...party,
+    contacts: [],
+    addresses: [],
+    history: { invoices: [], payments: [] },
+    outstandingCents: 0,
+  };
 }
