@@ -1,0 +1,91 @@
+/**
+ * Couche ERP : jetons et utilitaires **propres au métier**, ajoutés par-dessus le
+ * design system.
+ *
+ * Rien ici ne redéfinit un jeton shadcn : on n'ajoute que ce que le design system ne
+ * peut pas connaître — les couleurs sémantiques des statuts de documents et les
+ * corrections d'impression. Le mode sombre est géré par les mêmes variables.
+ */
+
+:root {
+  /* Statuts de documents : brouillon, validé, partiel, payé, annulé. */
+  --status-draft: oklch(0.62 0.02 260);
+  --status-draft-bg: oklch(0.96 0.005 260);
+  --status-pending: oklch(0.62 0.15 70);
+  --status-pending-bg: oklch(0.96 0.04 85);
+  --status-success: oklch(0.58 0.15 152);
+  --status-success-bg: oklch(0.95 0.04 152);
+  --status-danger: oklch(0.58 0.2 25);
+  --status-danger-bg: oklch(0.96 0.03 25);
+  --status-info: oklch(0.58 0.17 255);
+  --status-info-bg: oklch(0.96 0.03 255);
+
+  /* Bandeau d'état de connexion (hors ligne / synchronisation en cours). */
+  --offline-bg: oklch(0.62 0.15 70);
+  --offline-fg: oklch(0.99 0 0);
+}
+
+:root.dark {
+  --status-draft: oklch(0.72 0.02 260);
+  --status-draft-bg: oklch(0.27 0.01 260);
+  --status-pending: oklch(0.78 0.15 80);
+  --status-pending-bg: oklch(0.3 0.05 80);
+  --status-success: oklch(0.74 0.15 152);
+  --status-success-bg: oklch(0.28 0.05 152);
+  --status-danger: oklch(0.72 0.19 25);
+  --status-danger-bg: oklch(0.29 0.06 25);
+  --status-info: oklch(0.72 0.16 255);
+  --status-info-bg: oklch(0.28 0.05 255);
+}
+
+@theme inline {
+  --color-status-draft: var(--status-draft);
+  --color-status-draft-bg: var(--status-draft-bg);
+  --color-status-pending: var(--status-pending);
+  --color-status-pending-bg: var(--status-pending-bg);
+  --color-status-success: var(--status-success);
+  --color-status-success-bg: var(--status-success-bg);
+  --color-status-danger: var(--status-danger);
+  --color-status-danger-bg: var(--status-danger-bg);
+  --color-status-info: var(--status-info);
+  --color-status-info-bg: var(--status-info-bg);
+  --color-offline: var(--offline-bg);
+  --color-offline-foreground: var(--offline-fg);
+}
+
+/**
+ * Chiffres tabulaires pour toutes les colonnes de montants : sans cela, les totaux
+ * d'une facture ne s'alignent pas verticalement et deviennent pénibles à contrôler.
+ */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/** Le POS occupe tout le viewport : pas de défilement de page, seules les colonnes défilent. */
+.pos-shell {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/** Impression des documents (facture, devis, ticket) : on masque toute la coquille. */
+@media print {
+  body {
+    background: #fff;
+  }
+  .print-hidden,
+  [data-slot="sidebar-wrapper"] > [data-slot="sidebar"],
+  header[data-app-header] {
+    display: none !important;
+  }
+  .print-sheet {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+  }
+  .app-main {
+    padding: 0 !important;
+  }
+}

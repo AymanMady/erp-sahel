@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: erp
+          POSTGRES_PASSWORD: erp
+          POSTGRES_DB: erp_sahel_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U erp"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://erp:erp@localhost:5432/erp_sahel_ci
+      JWT_SECRET: ci-secret-long-enough-for-production-validation-check
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Vérification TypeScript
+        run: npm run check
+
+      - name: Lint (règles d'architecture comprises)
+        run: npm run lint
+
+      - name: Format
+        run: npm run format:check
+
+      - name: Schéma de base
+        run: npx drizzle-kit push --force
+
+      - name: Tests unitaires et d'intégration
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Amorçage (noyau uniquement)
+        run: npm run db:seed -- --core-only
+
+      - name: Navigateur end-to-end
+        run: npx playwright install --with-deps chromium
+
+      - name: Tests end-to-end
+        run: npm run test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

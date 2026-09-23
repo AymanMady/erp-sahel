@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: erp-sahel-db
+    environment:
+      POSTGRES_USER: erp
+      POSTGRES_PASSWORD: erp
+      POSTGRES_DB: erp_sahel
+    ports:
+      - "5436:5432"
+    volumes:
+      - erp-sahel-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U erp -d erp_sahel"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    container_name: erp-sahel-app
+    profiles: ["full"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: postgresql://erp:erp@db:5432/erp_sahel
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET est obligatoire}
+    ports:
+      - "5000:5000"
+
+volumes:
+  erp-sahel-db:

@@ -1,0 +1,36 @@
+[package]
+name = "erp-sahel-desktop"
+version = "1.0.0"
+description = "ERP Sahel — coquille desktop avec cache hors-ligne local"
+authors = ["ERP Sahel"]
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+name = "erp_sahel_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-shell = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# SQLite embarqué : le cache hors-ligne du poste vit dans un fichier applicatif,
+# pas dans le stockage du navigateur (plus robuste, non évincé par le système).
+rusqlite = { version = "0.32", features = ["bundled"] }
+reqwest = { version = "0.12", features = ["json", "blocking", "rustls-tls"], default-features = false }
+bcrypt = "0.15"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true
