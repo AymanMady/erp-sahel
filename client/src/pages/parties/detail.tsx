@@ -51,7 +51,7 @@ export default function PartyDetailPage() {
     );
   }
 
-  if (error || !data) {
+  if (!data) {
     return (
       <Card>
         <CardContent className="py-10 text-center text-sm text-muted-foreground">

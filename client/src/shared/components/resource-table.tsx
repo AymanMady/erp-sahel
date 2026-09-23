@@ -115,7 +115,7 @@ export function ResourceTable<T>({
                   ))}
                 </TableRow>
               ))
-            ) : error ? (
+            ) : error && rows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-28 text-center">
                   <p className="text-sm font-medium text-status-danger">{error}</p>

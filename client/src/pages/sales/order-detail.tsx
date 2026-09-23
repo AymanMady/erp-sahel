@@ -51,7 +51,7 @@ export default function SalesOrderDetailPage() {
   });
 
   if (isLoading) return <Skeleton className="h-96 w-full" />;
-  if (error || !data) {
+  if (!data) {
     return (
       <Card>
         <CardContent className="py-10 text-center text-sm text-muted-foreground">

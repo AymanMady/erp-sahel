@@ -1,6 +1,11 @@
 /** Accès API du stock. */
 
 import { api } from "@/shared/api/http";
+import {
+  listStockOffline,
+  lowStockOffline,
+  withOfflineFallback,
+} from "@/shared/offline/offline-reads";
 import type { MovementRow, Paginated, StockRow, Warehouse } from "@/entities/types";
 
 export interface StockFilters {
@@ -22,7 +27,10 @@ export interface MovementFilters {
 
 export const inventoryApi = {
   listStock: (filters: StockFilters = {}) =>
-    api.get<{ items: StockRow[]; total: number }>("/api/inventory/stock", filters),
+    withOfflineFallback<{ items: StockRow[]; total: number }>(
+      () => api.get<{ items: StockRow[]; total: number }>("/api/inventory/stock", filters),
+      (snapshot) => listStockOffline(snapshot, filters)
+    ),
   listMovements: (filters: MovementFilters = {}) =>
     api.get<{ items: MovementRow[]; total: number }>("/api/inventory/movements", filters),
   createMovement: (body: unknown) => api.post("/api/inventory/movements", body),
@@ -33,11 +41,19 @@ export const inventoryApi = {
       { warehouseId }
     ),
   lowStock: () =>
-    api.get<{ productId: string; sku: string; name: string; minStock: string; quantity: string }[]>(
-      "/api/inventory/low-stock"
+    withOfflineFallback(
+      () =>
+        api.get<
+          { productId: string; sku: string; name: string; minStock: string; quantity: string }[]
+        >("/api/inventory/low-stock"),
+      lowStockOffline
     ),
 
-  listWarehouses: () => api.get<Warehouse[]>("/api/warehouses"),
+  listWarehouses: () =>
+    withOfflineFallback(
+      () => api.get<Warehouse[]>("/api/warehouses"),
+      (snapshot) => snapshot.warehouses
+    ),
   createWarehouse: (body: unknown) => api.post<Warehouse>("/api/warehouses", body),
   updateWarehouse: (id: string, body: unknown) =>
     api.patch<Warehouse>(`/api/warehouses/${id}`, body),

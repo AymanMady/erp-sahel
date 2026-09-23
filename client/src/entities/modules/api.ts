@@ -1,6 +1,7 @@
 /** Accès API des modules métier (Auto Parts, Vêtements, Marché). */
 
 import { api } from "@/shared/api/http";
+import { withOfflineFallback } from "@/shared/offline/offline-reads";
 import type { Paginated, Product } from "@/entities/types";
 
 export interface Manufacturer {
@@ -78,16 +79,45 @@ export interface CompatibilityRow {
 const AUTO_PARTS = "/api/modules/auto-parts";
 
 export const autoPartsApi = {
-  listCountries: () => api.get<CountryRef[]>(`${AUTO_PARTS}/countries`),
-  listQualityLevels: () => api.get<QualityLevelRef[]>(`${AUTO_PARTS}/quality-levels`),
-  listManufacturers: () => api.get<Manufacturer[]>(`${AUTO_PARTS}/manufacturers`),
+  listCountries: () =>
+    withOfflineFallback(
+      () => api.get<CountryRef[]>(`${AUTO_PARTS}/countries`),
+      (snapshot) => snapshot.moduleData.auto_parts?.countries ?? []
+    ),
+  listQualityLevels: () =>
+    withOfflineFallback(
+      () => api.get<QualityLevelRef[]>(`${AUTO_PARTS}/quality-levels`),
+      (snapshot) => snapshot.moduleData.auto_parts?.qualityLevels ?? []
+    ),
+  listManufacturers: () =>
+    withOfflineFallback(
+      () => api.get<Manufacturer[]>(`${AUTO_PARTS}/manufacturers`),
+      (snapshot) =>
+        (snapshot.moduleData.auto_parts?.manufacturers ?? []).map((row) => ({
+          ...row,
+          countryId: null,
+          website: "",
+        }))
+    ),
   createManufacturer: (body: unknown) =>
     api.post<Manufacturer>(`${AUTO_PARTS}/manufacturers`, body),
   updateManufacturer: (id: string, body: unknown) =>
     api.patch<Manufacturer>(`${AUTO_PARTS}/manufacturers/${id}`, body),
   archiveManufacturer: (id: string) => api.delete(`${AUTO_PARTS}/manufacturers/${id}`),
 
-  vehicleTree: () => api.get<VehicleTree>(`${AUTO_PARTS}/vehicles`),
+  vehicleTree: () =>
+    withOfflineFallback(
+      () => api.get<VehicleTree>(`${AUTO_PARTS}/vehicles`),
+      (snapshot) => {
+        const vehicles = snapshot.moduleData.auto_parts?.vehicles;
+        return {
+          brands: vehicles?.brands ?? [],
+          models: vehicles?.models ?? [],
+          generations: vehicles?.generations ?? [],
+          engines: (vehicles?.engines ?? []).map((row) => ({ ...row, fuel: "" })),
+        };
+      }
+    ),
   createBrand: (body: unknown) => api.post(`${AUTO_PARTS}/vehicle-brands`, body),
   createModel: (body: unknown) => api.post(`${AUTO_PARTS}/vehicle-models`, body),
   createGeneration: (body: unknown) => api.post(`${AUTO_PARTS}/vehicle-generations`, body),

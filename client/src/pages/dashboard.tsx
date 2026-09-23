@@ -100,7 +100,7 @@ export default function DashboardPage() {
         ) : null}
       </PageHeader>
 
-      {error ? (
+      {error && !data ? (
         <Card>
           <CardContent className="py-6 text-sm text-muted-foreground">
             Les indicateurs ne sont pas disponibles hors ligne. Ils réapparaîtront dès le retour du

@@ -1,6 +1,7 @@
 /** Accès API du paramétrage (société, utilisateurs, rôles, modules, prestations). */
 
 import { api } from "@/shared/api/http";
+import { listServicesOffline, withOfflineFallback } from "@/shared/offline/offline-reads";
 import type {
   Company,
   ModuleDescriptor,
@@ -44,7 +45,10 @@ export const settingsApi = {
     api.get<{ id: string; code: string; label: string; moduleCode: string }[]>("/api/permissions"),
 
   listServices: (filters: { search?: string; limit?: number; offset?: number } = {}) =>
-    api.get<Paginated<Service>>("/api/services", filters),
+    withOfflineFallback(
+      () => api.get<Paginated<Service>>("/api/services", filters),
+      (snapshot) => listServicesOffline(snapshot, filters)
+    ),
   createService: (body: unknown) => api.post<Service>("/api/services", body),
   updateService: (id: string, body: unknown) => api.patch<Service>(`/api/services/${id}`, body),
   archiveService: (id: string) => api.delete(`/api/services/${id}`),

@@ -261,3 +261,82 @@ export function findByBarcodeOffline(snapshot: OfflineSnapshot, barcode: string)
   if (!variant) return null;
   return snapshot.products.find((product) => product.id === variant.productId) ?? null;
 }
+
+export interface OfflineProductFilters {
+  search?: string;
+  categoryId?: string | null;
+  isService?: boolean | null;
+  includeArchived?: boolean;
+  oem?: string;
+  manufacturerId?: string | null;
+  orderBy?: "name" | "sku" | "price" | "recent";
+  limit?: number;
+  offset?: number;
+}
+
+/**
+ * Liste paginée du catalogue **hors ligne** : même forme que `GET /api/catalog/products`,
+ * pour que les écrans de liste restent utilisables quand le serveur est injoignable.
+ */
+export function listProductsOffline(
+  snapshot: OfflineSnapshot,
+  filters: OfflineProductFilters = {}
+): {
+  items: (Product & { categoryName: string | null; stockQuantity: number })[];
+  total: number;
+  limit: number;
+  offset: number;
+} {
+  const limit = filters.limit ?? 25;
+  const offset = filters.offset ?? 0;
+  const term = filters.search?.trim().toLowerCase() ?? "";
+  const autoParts = snapshot.moduleData?.auto_parts;
+  const profileByProduct = new Map(
+    (autoParts?.profiles ?? []).map((profile) => [profile.productId, profile])
+  );
+  const categoryById = new Map(snapshot.categories.map((row) => [row.id, row.name]));
+  const oemNorm = filters.oem ? normalizeOem(filters.oem) : "";
+
+  const matches = snapshot.products.filter((product) => {
+    if (!filters.includeArchived && !product.isActive) return false;
+    if (filters.categoryId && product.categoryId !== filters.categoryId) return false;
+    if (typeof filters.isService === "boolean" && product.isService !== filters.isService) {
+      return false;
+    }
+    const profile = profileByProduct.get(product.id);
+    if (oemNorm && profile?.oemNormalized !== oemNorm) return false;
+    if (filters.manufacturerId && profile?.manufacturerId !== filters.manufacturerId) {
+      return false;
+    }
+    if (!term) return true;
+    return (
+      product.name.toLowerCase().includes(term) ||
+      product.sku.toLowerCase().includes(term) ||
+      (product.barcode ?? "").toLowerCase().includes(term)
+    );
+  });
+
+  const sorted = [...matches].sort((a, b) => {
+    switch (filters.orderBy) {
+      case "sku":
+        return a.sku.localeCompare(b.sku);
+      case "price":
+        return a.salePriceCents - b.salePriceCents;
+      case "recent":
+        return String(b.createdAt).localeCompare(String(a.createdAt));
+      default:
+        return a.name.localeCompare(b.name);
+    }
+  });
+
+  return {
+    items: sorted.slice(offset, offset + limit).map((product) => ({
+      ...product,
+      categoryName: product.categoryId ? (categoryById.get(product.categoryId) ?? null) : null,
+      stockQuantity: stockQuantityOf(snapshot, product.id),
+    })),
+    total: sorted.length,
+    limit,
+    offset,
+  };
+}
