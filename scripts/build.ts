@@ -13,38 +13,12 @@ import { fileURLToPath } from "node:url";
 
 import { build } from "esbuild";
 
+import { writePrecacheManifest } from "./precache";
+
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 function run(command: string, args: string[]): void {
   execFileSync(command, args, { cwd: rootDir, stdio: "inherit" });
-}
-
-/**
- * Liste les ressources produites par Vite pour que le Service Worker les mette en cache
- * dès l'installation. Sans cela, seules les pages déjà visitées seraient disponibles
- * hors ligne — les routes étant chargées à la demande.
- */
-function writePrecacheManifest(): void {
-  const publicDir = path.join(rootDir, "dist", "public");
-  const assetsDir = path.join(publicDir, "assets");
-  if (!fs.existsSync(assetsDir)) return;
-
-  const assets = fs
-    .readdirSync(assetsDir)
-    .filter((name) => name.endsWith(".js") || name.endsWith(".css"))
-    .map((name) => `/assets/${name}`);
-
-  const extras = ["/icons/icon-192.png", "/icons/icon-512.png"].filter((entry) =>
-    fs.existsSync(path.join(publicDir, entry.replace(/^\//, "")))
-  );
-
-  const urls = [...assets, ...extras];
-  fs.writeFileSync(
-    path.join(publicDir, "precache-manifest.js"),
-    `// Généré par scripts/build.ts — ne pas modifier à la main.\nself.__ERP_PRECACHE = ${JSON.stringify(urls, null, 2)};\n`,
-    "utf-8"
-  );
-  console.log(`  ${urls.length} ressources ajoutées au pré-cache.`);
 }
 
 async function main(): Promise<void> {
@@ -54,7 +28,7 @@ async function main(): Promise<void> {
   run("npx", ["vite", "build"]);
 
   console.log("→ Génération du manifeste de pré-cache…");
-  writePrecacheManifest();
+  writePrecacheManifest(path.join(rootDir, "dist", "public"));
 
   console.log("→ Build du serveur (esbuild)…");
   await build({
