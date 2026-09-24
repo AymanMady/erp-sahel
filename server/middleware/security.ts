@@ -36,7 +36,7 @@ export function corsMiddleware(req: Request, res: Response, next: NextFunction):
     res.setHeader("Access-Control-Allow-Credentials", "true");
     res.setHeader(
       "Access-Control-Allow-Headers",
-      "Content-Type, Authorization, X-Company-Id, X-Device-Id, X-Request-Id"
+      "Content-Type, Authorization, X-Company-Id, X-Device-Id, X-Device-Platform, X-Request-Id, Idempotency-Key"
     );
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS");
     res.setHeader("Access-Control-Max-Age", "600");

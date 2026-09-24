@@ -138,7 +138,10 @@ export class SyncService {
   }
 
   async journal(companyId: string) {
-    return syncApplication.listRecent(companyId, 200);
+    const rows = await syncApplication.listRecent(companyId, 200);
+    // Le journal d'une écriture HTTP rejouée conserve la réponse servie aux rejeux :
+    // elle n'a rien à faire à l'écran de supervision.
+    return rows.map((row) => (row.entity === "http.request" ? { ...row, payload: null } : row));
   }
 }
 

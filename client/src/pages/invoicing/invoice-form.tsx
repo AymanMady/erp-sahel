@@ -16,7 +16,8 @@ import { addDays, todayInput } from "@shared/format";
 import { errorMessage } from "@/shared/api/api-error";
 import { inventoryApi } from "@/entities/inventory/api";
 import { invoicingApi } from "@/entities/invoicing/api";
-import { onlineOrQueued, queueInvoiceCreate } from "@/shared/offline/offline-writes";
+import { queueHttpWrite } from "@/shared/offline/offline-http";
+import { newUuid, onlineOrQueued, queueInvoiceCreate } from "@/shared/offline/offline-writes";
 import type { Party } from "@/entities/types";
 import { queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
@@ -68,13 +69,16 @@ export default function InvoiceFormPage() {
       };
       return onlineOrQueued(
         () => invoicingApi.create({ ...input, validate }),
-        () => {
-          // Une facture hors ligne arrive **validée** au serveur ([FR-SYNC-4]) : un
-          // brouillon n'aurait aucun sens, il serait validé à l'insu de l'utilisateur.
+        async (): Promise<{ provisionalNumber: string; draft?: boolean }> => {
+          // Une facture validée hors ligne passe par l'opération de synchronisation
+          // dédiée (numéro, stock, comptabilité) ; un brouillon, qui n'engage rien, est
+          // simplement rejoué tel quel au retour du réseau.
           if (!validate) {
-            throw new Error(
-              "Brouillon indisponible hors ligne : validez la facture ou attendez le retour du réseau."
+            await queueHttpWrite(
+              { method: "POST", url: "/api/invoices", body: { ...input, validate: false } },
+              newUuid()
             );
+            return { provisionalNumber: "", draft: true };
           }
           return queueInvoiceCreate(input);
         }
@@ -82,6 +86,13 @@ export default function InvoiceFormPage() {
     },
     onSuccess: (outcome) => {
       void queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      if (outcome.mode === "offline" && outcome.result.draft) {
+        toast.success("Brouillon de facture enregistré hors ligne.", {
+          description: "Il sera créé sur le serveur à la prochaine synchronisation.",
+        });
+        navigate("/sync");
+        return;
+      }
       if (outcome.mode === "offline") {
         toast.success(`Facture ${outcome.result.provisionalNumber} enregistrée hors ligne.`, {
           description: "Elle sera validée (stock et comptabilité) à la prochaine synchronisation.",

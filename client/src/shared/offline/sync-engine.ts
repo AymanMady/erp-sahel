@@ -3,7 +3,9 @@
  *
  * Cycle complet (`SYNC_STRATEGY.md` §3) :
  *   1. vérifier que le serveur est **réellement** joignable ;
- *   2. vider l'outbox par lots, dans l'ordre causal ;
+ *   2. vider l'outbox dans l'ordre causal : les opérations dédiées partent par lots vers
+ *      `/api/sync/push`, les écritures génériques (`offline-http.ts`) sont rejouées
+ *      une à une sur leur endpoint d'origine ;
  *   3. appliquer les acquittements (numéro définitif, doublon, erreur, report) ;
  *   4. récupérer le delta serveur et rafraîchir le cache de lecture.
  *
@@ -12,10 +14,14 @@
  */
 
 import type { SyncPushResponse } from "@shared/sync-protocol";
-import { api } from "@/shared/api/http";
+import { api, apiRequest } from "@/shared/api/http";
 import { probeServer } from "@/shared/api/network";
+import { queryClient } from "@/shared/api/query-client";
 import { getDeviceId } from "@/shared/auth/token-store";
 import { ApiError } from "@/shared/api/api-error";
+import { HTTP_REQUEST_ENTITY, offlineDb, type OutboxRecord } from "./db";
+import { forgetCachedResponsesMentioning } from "./http-cache";
+import { replayRequest, substituteIds } from "./offline-http";
 import { readMeta, writeMeta } from "./storage";
 import {
   acknowledge,
@@ -75,11 +81,36 @@ export async function refreshCounters(): Promise<void> {
   emit({ pending, failed });
 }
 
-/** Envoie un lot et applique les acquittements. Renvoie le nombre d'opérations traitées. */
-async function flushBatch(): Promise<{ processed: number; deferred: number }> {
-  const batch = (await listPending(BATCH_SIZE)).slice(0, BATCH_SIZE);
-  if (batch.length === 0) return { processed: 0, deferred: 0 };
+/**
+ * Identifiants serveur des créations hors ligne déjà acquittées, indexés par
+ * `clientUuid`. `all` sert à réécrire les écritures génériques ; `http` — les seules
+ * créations que le serveur ne sait pas résoudre lui-même — sert aussi aux opérations
+ * dédiées (une facture sur un magasin créé hors ligne).
+ */
+interface IdMaps {
+  all: Map<string, string>;
+  http: Map<string, string>;
+}
 
+async function knownServerIds(): Promise<IdMaps> {
+  const maps: IdMaps = { all: new Map(), http: new Map() };
+  const rows = await offlineDb.outbox.filter((record) => !!record.serverId).toArray();
+  for (const record of rows) remember(maps, record, record.serverId);
+  return maps;
+}
+
+function remember(maps: IdMaps, record: OutboxRecord, serverId: string | null | undefined) {
+  if (!serverId) return;
+  maps.all.set(record.clientUuid.toLowerCase(), serverId);
+  if (record.entity === HTTP_REQUEST_ENTITY)
+    maps.http.set(record.clientUuid.toLowerCase(), serverId);
+}
+
+/** Envoie un lot d'opérations dédiées et applique les acquittements. */
+async function pushBatch(
+  batch: OutboxRecord[],
+  maps: IdMaps
+): Promise<{ synced: number; deferred: number }> {
   await markSending(batch.map((record) => record.clientUuid));
 
   const response = await api.post<SyncPushResponse>("/api/sync/push", {
@@ -91,27 +122,27 @@ async function flushBatch(): Promise<{ processed: number; deferred: number }> {
       action: record.action,
       dependsOn: record.dependsOn,
       createdAt: record.createdAt,
-      payload: record.payload,
+      payload: substituteIds(record.payload, maps.http),
     })),
   });
 
   let deferred = 0;
+  let synced = 0;
   for (const result of response.results) {
     if (result.status === "deferred") deferred += 1;
+    // `created` et `duplicate` sont deux succès : dans les deux cas le serveur
+    // détient la donnée, c'est précisément la garantie d'idempotence ([BR-8]).
+    const ok = result.status === "created" || result.status === "duplicate";
+    if (ok) synced += 1;
     await acknowledge({
       clientUuid: result.clientUuid,
-      // `created` et `duplicate` sont deux succès : dans les deux cas le serveur
-      // détient la donnée, c'est précisément la garantie d'idempotence ([BR-8]).
-      status:
-        result.status === "created" || result.status === "duplicate"
-          ? "synced"
-          : result.status === "deferred"
-            ? "deferred"
-            : "error",
+      status: ok ? "synced" : result.status === "deferred" ? "deferred" : "error",
       serverId: result.serverId ?? null,
       assignedNumber: result.assignedNumber ?? null,
       error: result.detail ?? null,
     });
+    const record = batch.find((row) => row.clientUuid === result.clientUuid);
+    if (ok && record) remember(maps, record, result.serverId);
   }
 
   // Une opération sans acquittement (réponse tronquée) revient en file d'attente.
@@ -123,7 +154,105 @@ async function flushBatch(): Promise<{ processed: number; deferred: number }> {
   }
 
   await writeMeta(CURSOR_KEY, response.cursor);
-  return { processed: batch.length, deferred };
+  return { synced, deferred };
+}
+
+/**
+ * Rejoue une écriture générique. Une panne réseau interrompt le cycle (l'erreur
+ * remonte) ; un refus du serveur est consigné sur l'opération.
+ */
+async function replayHttp(record: OutboxRecord, maps: IdMaps): Promise<boolean> {
+  const request = replayRequest(record, maps.all);
+  await markSending([record.clientUuid]);
+  try {
+    const result = await apiRequest<unknown>(request.url, {
+      method: request.method,
+      body: request.body,
+      idempotencyKey: request.idempotencyKey,
+      queueOffline: false,
+    });
+    const id = (result as { id?: unknown } | null)?.id;
+    const serverId = typeof id === "string" ? id : null;
+    await acknowledge({ clientUuid: record.clientUuid, status: "synced", serverId });
+    remember(maps, record, serverId);
+    return true;
+  } catch (error) {
+    // Réseau, session expirée ou débit limité : rien n'est perdu, on réessaiera.
+    if (
+      !(error instanceof ApiError) ||
+      error.isNetworkError ||
+      error.status === 401 ||
+      error.status === 429
+    ) {
+      await acknowledge({ clientUuid: record.clientUuid, status: "pending" });
+      throw error;
+    }
+    // Suppression déjà faite (rejeu après une réponse perdue) : c'est un succès.
+    if (request.method === "DELETE" && error.status === 404) {
+      await acknowledge({ clientUuid: record.clientUuid, status: "synced" });
+      return true;
+    }
+    // 4xx : refus métier, définitif tant que l'utilisateur n'a pas choisi de
+    // réessayer. 5xx : incident serveur, retenté au cycle suivant.
+    await acknowledge({
+      clientUuid: record.clientUuid,
+      status: error.status >= 500 ? "pending" : "error",
+      error: error.message,
+    });
+    return false;
+  }
+}
+
+/**
+ * Vide l'outbox dans l'ordre causal. Renvoie les `clientUuid` des écritures
+ * génériques rejouées avec succès.
+ */
+async function flushOutbox(): Promise<{ synced: number; replayedHttp: string[] }> {
+  const maps = await knownServerIds();
+  const replayedHttp: string[] = [];
+  let synced = 0;
+
+  // Plusieurs passes seulement si des opérations ont été reportées alors que
+  // d'autres progressaient : leur dépendance a pu passer entre-temps.
+  for (let pass = 0; pass < 3; pass += 1) {
+    const pending = (await listPending(1000)).filter(
+      // Une écriture générique refusée ne repart que sur « Réessayer ».
+      (record) => !(record.entity === HTTP_REQUEST_ENTITY && record.status === "error")
+    );
+    if (pending.length === 0) break;
+
+    let progressed = 0;
+    let deferred = 0;
+    let index = 0;
+    while (index < pending.length) {
+      const record = pending[index];
+      if (record.entity === HTTP_REQUEST_ENTITY) {
+        index += 1;
+        if (await replayHttp(record, maps)) {
+          progressed += 1;
+          replayedHttp.push(record.clientUuid);
+        }
+        continue;
+      }
+      const batch: OutboxRecord[] = [];
+      while (
+        index < pending.length &&
+        pending[index].entity !== HTTP_REQUEST_ENTITY &&
+        batch.length < BATCH_SIZE
+      ) {
+        batch.push(pending[index]);
+        index += 1;
+      }
+      const result = await pushBatch(batch, maps);
+      progressed += result.synced;
+      deferred += result.deferred;
+    }
+
+    synced += progressed;
+    if (deferred === 0 || progressed === 0) break;
+  }
+
+  return { synced, replayedHttp };
 }
 
 /** Récupère le delta serveur depuis le dernier curseur connu. */
@@ -166,17 +295,23 @@ export async function runSync(options: { force?: boolean } = {}): Promise<SyncSt
 
     emit({ state: "syncing", lastError: null });
     try {
-      // Boucle de vidage : on répète tant qu'il reste des opérations envoyables.
-      // Les opérations « reportées » ne sont pas réessayées dans le même cycle —
-      // leur dépendance ne pourrait pas avoir été résolue entre-temps.
-      for (let round = 0; round < 20; round += 1) {
-        const { processed, deferred } = await flushBatch();
-        if (processed === 0 || deferred === processed) break;
-      }
+      const { synced, replayedHttp } = await flushOutbox();
 
-      await pullDelta();
+      if (replayedHttp.length > 0) {
+        // Les écritures génériques touchent aussi ce que le delta ne couvre pas
+        // (catégories, magasins, modules…) : on repart d'un instantané complet, on
+        // oublie les fiches provisoires, et on relance un préchargement complet.
+        const snapshot = await pullSnapshot();
+        await writeMeta(CURSOR_KEY, snapshot.cursor);
+        await forgetCachedResponsesMentioning(replayedHttp);
+        await writeMeta("prefetch.lastRunAt", "0");
+      } else {
+        await pullDelta();
+      }
       await purgeSynced();
       await refreshCounters();
+      // Les écrans affichent encore le reflet local des saisies : on les recharge.
+      if (synced > 0) void queryClient.invalidateQueries();
 
       backoffMs = 0;
       const now = new Date().toISOString();

@@ -121,6 +121,11 @@ export async function readSnapshot(): Promise<OfflineSnapshot | null> {
   return readSnapshotCache<OfflineSnapshot>(SNAPSHOT_KEY);
 }
 
+/** Réécrit l'instantané local — reflet des écritures faites hors ligne. */
+export async function writeSnapshot(snapshot: OfflineSnapshot): Promise<void> {
+  await writeSnapshotCache(SNAPSHOT_KEY, snapshot);
+}
+
 /** Applique un delta de `pull` sur l'instantané en cache, sans tout retélécharger. */
 export async function applyDelta(delta: {
   cursor: string;

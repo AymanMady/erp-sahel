@@ -58,11 +58,46 @@ describe("cache des lectures", () => {
     expect(await readCachedResponse("/api/invoices?limit=25&offset=0&status=PAID")).toBe(undefined);
   });
 
-  it("ne conserve jamais l'authentification ni l'administration des accès", async () => {
-    await storeCachedResponse("/api/users", [{ id: "u" }]);
+  it("ne conserve jamais l'authentification, mais garde l'administration consultable", async () => {
     await storeCachedResponse("/api/auth/me", { id: "u" });
-    expect(await readCachedResponse("/api/users")).toBe(undefined);
+    await storeCachedResponse("/api/users", [{ id: "u" }]);
+    await storeCachedResponse("/api/roles", [{ id: "r" }]);
+    await storeCachedResponse("/api/sync/status", { stats: {} });
     expect(await readCachedResponse("/api/auth/me")).toBe(undefined);
+    expect(await readCachedResponse("/api/users")).toEqual([{ id: "u" }]);
+    expect(await readCachedResponse("/api/roles")).toEqual([{ id: "r" }]);
+    expect(await readCachedResponse("/api/sync/status")).toEqual({ stats: {} });
+  });
+
+  it("applique localement recherche, statut et dates à une liste préchargée", async () => {
+    await storeCachedResponse("/api/invoices?limit=200&offset=0", {
+      items: [
+        { id: "1", number: "FAC-1", status: "PAID", partyName: "Garage Atlas", date: "2026-09-01" },
+        {
+          id: "2",
+          number: "FAC-2",
+          status: "DRAFT",
+          partyName: "Sahel Motors",
+          date: "2026-09-10",
+        },
+        { id: "3", number: "FAC-3", status: "PAID", partyName: "Sahel Pneus", date: "2026-09-20" },
+      ],
+      total: 3,
+      limit: 200,
+      offset: 0,
+    });
+
+    const paid = (await readCachedResponse("/api/invoices?limit=25&offset=0&status=PAID")) as {
+      items: { id: string }[];
+      total: number;
+    };
+    expect(paid.items.map((row) => row.id)).toEqual(["1", "3"]);
+    expect(paid.total).toBe(2);
+
+    const search = (await readCachedResponse(
+      "/api/invoices?limit=25&offset=0&search=sahel&fromDate=2026-09-15"
+    )) as { items: { id: string }[] };
+    expect(search.items.map((row) => row.id)).toEqual(["3"]);
   });
 });
 

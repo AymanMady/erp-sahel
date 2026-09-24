@@ -174,6 +174,32 @@ Chaque handler **rejoue le cas d'usage en ligne**, jamais un `INSERT` direct. C'
 garantit qu'une facture hors ligne produit exactement les mêmes effets qu'une facture
 saisie en ligne : il n'existe pas deux chemins métier à maintenir.
 
+### Toutes les autres écritures : file générique
+
+Aucune page n'est exclue du mode hors ligne. Les écritures sans entité dédiée
+(catégories, magasins, achats, trésorerie, comptabilité, paramètres, rôles,
+utilisateurs, modules métier…) passent par la file générique
+(`client/src/shared/offline/offline-http.ts`) :
+
+1. toute écriture authentifiée porte une clé `Idempotency-Key` dès le premier envoi ;
+2. sans réseau (ou passerelle 502/503/504, ou délai dépassé), `http.ts` la met en file
+   (entité locale `http.request`) et la reflète dans le cache de lecture : la liste et
+   la fiche montrent aussitôt la saisie, un document provisoire porte ses totaux et le
+   numéro « En attente » ;
+3. le moteur la rejoue dans l'ordre `localSeq`, mêlée aux opérations dédiées, en
+   remplaçant les identifiants provisoires par les identifiants serveur ;
+4. le serveur (`server/middleware/idempotency.ts`) journalise la première réponse
+   réussie dans `sync_operations` : un rejeu reçoit cette réponse sans réécrire.
+
+Un refus métier (4xx) est consigné sur l'opération et ne repart que sur « Réessayer » ;
+une session expirée, un 429 ou un 5xx sont retentés au cycle suivant. Les modifications
+concurrentes suivent la règle « dernière écriture gagnante ».
+
+Côté lecture, chaque réponse `GET` est conservée (`http-cache.ts`), administration
+comprise ; le préchargement (`offline-prefetch.ts`) couvre toutes les pages et, hors
+ligne, les filtres (recherche, statut, dates) sont appliqués localement aux listes
+préchargées.
+
 ---
 
 ## 10. Couverture de test

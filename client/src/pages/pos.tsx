@@ -109,8 +109,10 @@ export default function PosPage() {
   // --- Session de caisse ---------------------------------------------------
   const { data: serverSession, isLoading: sessionLoading } = useQuery({
     queryKey: queryKeys.posCurrentSession,
+    // Hors ligne, la session ouverte sur le serveur est relue dans l'instantané : sans
+    // elle, la caisse proposerait d'en ouvrir une seconde, refusée à la synchronisation.
     queryFn: () => posApi.currentSession(),
-    enabled: online,
+    refetchOnReconnect: true,
     retry: false,
   });
 

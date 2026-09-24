@@ -17,12 +17,21 @@ import type { SyncEntity } from "@shared/sync-protocol";
 
 export type OutboxStatus = "pending" | "sending" | "synced" | "error" | "deferred";
 
+/**
+ * Écriture HTTP quelconque mise en file hors ligne et rejouée telle quelle
+ * (`offline-http.ts`) — pour tous les formulaires sans opération de synchronisation
+ * dédiée. Entité locale au poste : elle ne transite jamais par `/api/sync/push`.
+ */
+export const HTTP_REQUEST_ENTITY = "http.request";
+
+export type OutboxEntity = SyncEntity | typeof HTTP_REQUEST_ENTITY;
+
 export interface OutboxRecord {
   /** Clé d'idempotence générée sur le poste ([BR-8]). */
   clientUuid: string;
   /** Compteur monotone local : garantit l'ordre causal du rejeu (`SYNC_STRATEGY.md` §4). */
   localSeq: number;
-  entity: SyncEntity;
+  entity: OutboxEntity;
   action: "create" | "update";
   payload: Record<string, unknown>;
   /** `clientUuid` des opérations dont celle-ci dépend. */

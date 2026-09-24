@@ -1,6 +1,6 @@
 /** Persistance du journal de synchronisation et du registre des postes. */
 
-import { and, desc, eq, gt, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, ne, sql } from "drizzle-orm";
 
 import { syncDevices, syncOperations, type SyncOperation } from "@shared/schema";
 import { db, type Database } from "../../db";
@@ -60,6 +60,8 @@ export class SyncRepository {
         and(
           eq(syncOperations.companyId, companyId),
           eq(syncOperations.status, "created"),
+          // Les écritures HTTP rejouées ne sont pas des entités synchronisables.
+          ne(syncOperations.entity, "http.request"),
           gt(syncOperations.createdAt, since)
         )
       )

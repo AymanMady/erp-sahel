@@ -13,7 +13,9 @@ import { formatProvisionalNumber } from "@shared/numbering-helpers";
 import { computeDocumentTotals } from "@shared/pricing";
 import { todayInput } from "@shared/format";
 import { posApi } from "@/entities/pos/api";
+import { isNetworkError } from "@/shared/offline/offline-writes";
 import { enqueue, newUuid } from "@/shared/offline/outbox";
+import { readSnapshot, writeSnapshot } from "@/shared/offline/snapshot";
 import { refreshCounters, runSync } from "@/shared/offline/sync-engine";
 
 export interface CartLine {
@@ -188,12 +190,7 @@ export async function checkout(
     void runSync();
     return result;
   } catch (error) {
-    const isNetworkError =
-      typeof error === "object" &&
-      error !== null &&
-      "isNetworkError" in error &&
-      (error as { isNetworkError?: boolean }).isNetworkError === true;
-    if (!isNetworkError) throw error;
+    if (!isNetworkError(error)) throw error;
     return checkoutOffline(input);
   }
 }
@@ -204,12 +201,17 @@ export async function openSession(
   options: { online: boolean }
 ): Promise<{ mode: "online" | "offline"; sessionId: string; clientUuid: string | null }> {
   if (options.online) {
-    const session = await posApi.openSession({
-      registerId: input.registerId,
-      openingBalanceCents: input.openingBalanceCents,
-      notes: input.notes ?? "",
-    });
-    return { mode: "online", sessionId: session.id, clientUuid: null };
+    try {
+      const session = await posApi.openSession({
+        registerId: input.registerId,
+        openingBalanceCents: input.openingBalanceCents,
+        notes: input.notes ?? "",
+      });
+      return { mode: "online", sessionId: session.id, clientUuid: null };
+    } catch (error) {
+      // Réseau perdu pendant l'envoi : l'ouverture part dans la file, comme hors ligne.
+      if (!isNetworkError(error)) throw error;
+    }
   }
 
   const clientUuid = newUuid();
@@ -242,11 +244,15 @@ export async function closeSession(
   options: { online: boolean }
 ): Promise<{ mode: "online" | "offline"; differenceCents: number | null }> {
   if (options.online && !input.sessionClientUuid) {
-    const session = await posApi.closeSession(input.sessionId, {
-      closingBalanceCents: input.closingBalanceCents,
-      notes: input.notes,
-    });
-    return { mode: "online", differenceCents: session.differenceCents };
+    try {
+      const session = await posApi.closeSession(input.sessionId, {
+        closingBalanceCents: input.closingBalanceCents,
+        notes: input.notes,
+      });
+      return { mode: "online", differenceCents: session.differenceCents };
+    } catch (error) {
+      if (!isNetworkError(error)) throw error;
+    }
   }
 
   await enqueue({
@@ -262,6 +268,12 @@ export async function closeSession(
     },
     dependsOn: input.sessionClientUuid ? [input.sessionClientUuid] : [],
   });
+  // Hors ligne, la session courante est lue dans l'instantané : elle doit y apparaître
+  // close, sinon la caisse la rouvrirait aussitôt.
+  const snapshot = await readSnapshot();
+  if (snapshot?.session && snapshot.session.id === input.sessionId) {
+    await writeSnapshot({ ...snapshot, session: null });
+  }
   await refreshCounters();
   // L'écart n'est connu qu'après recalcul serveur des encaissements de la session.
   return { mode: "offline", differenceCents: null };

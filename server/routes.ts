@@ -10,6 +10,7 @@
 import type { Express } from "express";
 
 import { apiRateLimit } from "./middleware/rate-limit";
+import { idempotency } from "./middleware/idempotency";
 import { apiNotFound, errorHandler } from "./middleware/error-handler";
 import { corsMiddleware, securityHeaders } from "./middleware/security";
 import { pool } from "./db";
@@ -36,6 +37,8 @@ export function registerRoutes(app: Express): void {
   app.use(corsMiddleware);
   app.use(securityHeaders);
   app.use("/api", apiRateLimit);
+  // Écritures rejouées par la file hors ligne : une même clé ne s'exécute qu'une fois.
+  app.use("/api", idempotency);
 
   /**
    * Sonde de disponibilité. Le client s'en sert aussi pour distinguer « le navigateur

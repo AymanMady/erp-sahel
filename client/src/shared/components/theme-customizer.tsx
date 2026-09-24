@@ -91,8 +91,8 @@ export function ThemeConfigProvider({ children }: { children: React.ReactNode })
     root.style.setProperty("--radius", `${config.radius}rem`);
 
     const font = fonts.find((f) => f.key === config.font);
-    if (font?.stack) root.style.setProperty("--font-sans", font.stack);
-    else root.style.removeProperty("--font-sans");
+    if (font?.stack) root.style.setProperty("--app-font-sans", font.stack);
+    else root.style.removeProperty("--app-font-sans");
 
     root.dataset.content = config.contentLayout;
 

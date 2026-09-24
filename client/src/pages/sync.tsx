@@ -47,6 +47,7 @@ const ENTITY_LABELS: Record<string, string> = {
   "pos.session_open": "Ouverture de caisse",
   "pos.session_close": "Clôture de caisse",
   "inventory.stock_movement": "Mouvement de stock",
+  "http.request": "Saisie hors ligne",
 };
 
 export default function SyncPage() {
@@ -69,15 +70,14 @@ export default function SyncPage() {
 
   const { data: serverStatus } = useQuery({
     queryKey: queryKeys.syncStatus,
+    // Hors ligne, le dernier état connu est relu depuis le cache local.
     queryFn: () => syncApi.status(),
-    enabled: online,
     retry: false,
   });
 
   const { data: journal, error: journalError } = useQuery({
     queryKey: ["sync-journal"],
     queryFn: () => syncApi.journal(),
-    enabled: online,
     retry: false,
   });
 

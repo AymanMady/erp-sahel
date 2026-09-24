@@ -9,8 +9,7 @@
  *  - rien n'est supprimé avant acquittement du serveur.
  */
 
-import type { SyncEntity } from "@shared/sync-protocol";
-import { offlineDb, type OutboxRecord, type OutboxStatus } from "./db";
+import { offlineDb, type OutboxEntity, type OutboxRecord, type OutboxStatus } from "./db";
 import { outboxStorage, readMeta, writeMeta } from "./storage";
 
 /** Statuts qui restent à traiter : « envoyé » et « synchronisé » en sont exclus. */
@@ -36,7 +35,7 @@ async function nextLocalSeq(): Promise<number> {
 }
 
 export interface EnqueueInput {
-  entity: SyncEntity;
+  entity: OutboxEntity;
   payload: Record<string, unknown>;
   dependsOn?: string[];
   /** Résumé affiché dans la file d'attente (« Ticket TKT-0003 — 4 500 MRU »). */
@@ -45,6 +44,7 @@ export interface EnqueueInput {
   provisionalNumber?: string | null;
   /** Permet au POS de pré-générer l'identifiant pour lier facture et règlement. */
   clientUuid?: string;
+  action?: OutboxRecord["action"];
 }
 
 /** Ajoute une opération à la file et renvoie son `clientUuid`. */
@@ -54,7 +54,7 @@ export async function enqueue(input: EnqueueInput): Promise<OutboxRecord> {
     clientUuid: input.clientUuid ?? newUuid(),
     localSeq: await nextLocalSeq(),
     entity: input.entity,
-    action: "create",
+    action: input.action ?? "create",
     payload: input.payload,
     dependsOn: input.dependsOn ?? [],
     status: "pending",

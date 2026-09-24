@@ -154,7 +154,7 @@ export function buildThemeCss(config: ThemeConfig): string {
     lines.push(`  --sidebar-ring: ${accent.primary};`);
   }
   if (font?.stack) {
-    lines.push(`  --font-sans: ${font.stack};`);
+    lines.push(`  --app-font-sans: ${font.stack};`);
   }
   lines.push("}");
   lines.push("");

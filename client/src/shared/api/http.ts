@@ -2,8 +2,11 @@
  * Client HTTP de l'application.
  *
  * Responsabilités : jeton d'accès, **rafraîchissement automatique** sur 401 (une seule
- * fois, avec dédoublonnage des appels concurrents), normalisation des erreurs, et
- * signalement de l'état réseau au détecteur de connectivité.
+ * fois, avec dédoublonnage des appels concurrents), normalisation des erreurs,
+ * signalement de l'état réseau au détecteur de connectivité, et **mode hors ligne** :
+ *  - une lecture sans réseau est servie par le cache local (`http-cache.ts`) ;
+ *  - une écriture sans réseau est mise en file et rejouée à la synchronisation
+ *    (`offline-http.ts`), avec une clé d'idempotence qui interdit tout doublon.
  */
 
 import {
@@ -15,6 +18,8 @@ import {
 } from "@/shared/auth/token-store";
 import { devicePlatform } from "@/shared/desktop/desktop";
 import { readCachedResponse, storeCachedResponse } from "@/shared/offline/http-cache";
+import { isQueueableWrite, queueHttpWrite } from "@/shared/offline/offline-http";
+import { newUuid } from "@/shared/offline/outbox";
 import { ApiError } from "./api-error";
 import { reportNetworkResult } from "./network";
 
@@ -34,7 +39,22 @@ export interface RequestOptions {
   anonymous?: boolean;
   /** Ne tente pas de rafraîchir la session sur 401 (évite les boucles). */
   skipRefresh?: boolean;
+  /** Clé d'idempotence d'une écriture ; générée automatiquement si absente. */
+  idempotencyKey?: string;
+  /**
+   * `false` : sans réseau, l'écriture échoue au lieu d'être mise en file. Utilisé par
+   * le rejeu lui-même, et par les écrans qui ont leur propre file (`onlineOrQueued`).
+   */
+  queueOffline?: boolean;
 }
+
+/**
+ * Délais au-delà desquels le serveur est tenu pour injoignable. Sans eux, un poste
+ * relié à un Wi-Fi dont la liaison Internet est coupée resterait bloqué de longues
+ * minutes sur chaque requête, au lieu de basculer sur le mode hors ligne.
+ */
+const READ_TIMEOUT_MS = 15_000;
+const WRITE_TIMEOUT_MS = 30_000;
 
 function buildUrl(path: string, query?: QueryParams): string {
   const url = path.startsWith("/") ? path : `/${path}`;
@@ -132,6 +152,12 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   const url = buildUrl(path, query);
   // Lectures authentifiées : conservées pour être réaffichées hors ligne.
   const offlineReadable = method === "GET" && !anonymous;
+  const isWrite = method !== "GET" && !anonymous;
+  // Même clé au premier envoi et au rejeu : si la réponse s'est perdue en route, le
+  // serveur reconnaît l'écriture au lieu de la refaire.
+  const idempotencyKey = isWrite ? (options.idempotencyKey ?? newUuid()) : undefined;
+  const offlineQueueable =
+    isWrite && options.queueOffline !== false && isQueueableWrite(method, url);
 
   const send = async (): Promise<Response> => {
     const headers: Record<string, string> = {
@@ -140,16 +166,42 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       "X-Device-Platform": devicePlatform(),
     };
     if (body !== undefined) headers["Content-Type"] = "application/json";
+    if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
     if (!anonymous) {
       const token = getAccessToken();
       if (token) headers.Authorization = `Bearer ${token}`;
     }
-    return fetch(url, {
-      method,
-      headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
-      signal,
-    });
+
+    const controller = new AbortController();
+    const abort = () => controller.abort();
+    signal?.addEventListener("abort", abort);
+    const timer = setTimeout(abort, method === "GET" ? READ_TIMEOUT_MS : WRITE_TIMEOUT_MS);
+    try {
+      return await fetch(url, {
+        method,
+        headers,
+        body: body === undefined ? undefined : JSON.stringify(body),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", abort);
+    }
+  };
+
+  const offlineFallback = async (): Promise<{ value: T } | null> => {
+    if (offlineReadable) {
+      const cached = await readCachedResponse(url);
+      if (cached !== undefined) return { value: cached as T };
+    }
+    if (offlineQueueable && idempotencyKey) {
+      const queued = await queueHttpWrite(
+        { method: method as "POST" | "PATCH" | "PUT" | "DELETE", url, body },
+        idempotencyKey
+      );
+      return { value: queued as T };
+    }
+    return null;
   };
 
   let response: Response;
@@ -157,13 +209,12 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     response = await send();
     reportNetworkResult(true);
   } catch (error) {
-    // `AbortError` n'est pas une panne réseau : c'est une annulation volontaire.
-    if (error instanceof DOMException && error.name === "AbortError") throw error;
+    // Annulation voulue par l'appelant : ce n'est pas une panne réseau. (Un
+    // dépassement de délai, lui, en est une.)
+    if (signal?.aborted) throw error;
     reportNetworkResult(false);
-    if (offlineReadable) {
-      const cached = await readCachedResponse(url);
-      if (cached !== undefined) return cached as T;
-    }
+    const fallback = await offlineFallback();
+    if (fallback) return fallback.value;
     throw new ApiError({
       status: 0,
       code: "NETWORK_ERROR",
@@ -173,9 +224,9 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   }
 
   // Passerelle joignable mais serveur indisponible : même repli que sans réseau.
-  if (offlineReadable && GATEWAY_ERRORS.has(response.status)) {
-    const cached = await readCachedResponse(url);
-    if (cached !== undefined) return cached as T;
+  if (GATEWAY_ERRORS.has(response.status)) {
+    const fallback = await offlineFallback();
+    if (fallback) return fallback.value;
   }
 
   if (response.status === 401 && !anonymous && !skipRefresh) {

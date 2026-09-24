@@ -231,7 +231,8 @@ function GenerateDialog({
         colors: colorList,
       }),
     onSuccess: (result) => {
-      toast.success(`${result.created} déclinaison(s) générée(s).`);
+      // Hors ligne, la génération est en file : le serveur donnera le nombre exact.
+      toast.success(`${result?.created ?? variantCount} déclinaison(s) générée(s).`);
       void queryClient.invalidateQueries({ queryKey: ["products"] });
       onOpenChange(false);
     },
