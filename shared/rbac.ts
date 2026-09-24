@@ -7,8 +7,6 @@
  * côté serveur, le client ne fait que de l'ergonomie.
  */
 
-import type { ModuleCode } from "./schema/plugins";
-
 /** Une permission = `<domaine>.<action>`. */
 export const PERMISSIONS = {
   // Référentiels
@@ -45,25 +43,11 @@ export const PERMISSIONS = {
   "users.write": "Gérer utilisateurs et rôles",
   "modules.manage": "Activer ou désactiver les modules",
   "audit.read": "Consulter le journal d'audit",
-  // Modules métier
-  "auto_parts.read": "Consulter les données pièces auto",
-  "auto_parts.write": "Gérer OEM, équivalences et compatibilités",
-  "clothing.read": "Consulter les données vêtements",
-  "clothing.write": "Gérer tailles, couleurs et collections",
-  "market.read": "Consulter les données marché",
-  "market.write": "Gérer lots, DLC et conditionnements",
 } as const;
 
 export type PermissionCode = keyof typeof PERMISSIONS;
 
 export const ALL_PERMISSION_CODES = Object.keys(PERMISSIONS) as PermissionCode[];
-
-/** Module propriétaire d'une permission — `core` pour le noyau. */
-export function permissionModule(code: PermissionCode): ModuleCode | "core" {
-  const prefix = code.split(".")[0];
-  if (prefix === "auto_parts" || prefix === "clothing" || prefix === "market") return prefix;
-  return "core";
-}
 
 const READ_ONLY: PermissionCode[] = ALL_PERMISSION_CODES.filter((code) => code.endsWith(".read"));
 
@@ -104,12 +88,6 @@ export const DEFAULT_ROLES: {
       "pos.use",
       "reports.read",
       "settings.read",
-      "auto_parts.read",
-      "auto_parts.write",
-      "clothing.read",
-      "clothing.write",
-      "market.read",
-      "market.write",
     ],
   },
   {
@@ -130,9 +108,6 @@ export const DEFAULT_ROLES: {
       "payments.write",
       "pos.use",
       "pos.session.close",
-      "auto_parts.read",
-      "clothing.read",
-      "market.read",
     ],
   },
   {

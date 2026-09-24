@@ -37,7 +37,6 @@ const PERMISSION_GROUPS: { label: string; prefixes: string[] }[] = [
   },
   { label: "Comptabilité & pilotage", prefixes: ["accounting", "reports"] },
   { label: "Administration", prefixes: ["settings", "users", "modules", "audit"] },
-  { label: "Modules métier", prefixes: ["auto_parts", "clothing", "market"] },
 ];
 
 export default function RolesSettingsPage() {

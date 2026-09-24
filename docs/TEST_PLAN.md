@@ -7,12 +7,12 @@
 
 ## 1. Niveaux
 
-| Niveau          | Portée                                                 | Emplacement                            |
-| --------------- | ------------------------------------------------------ | -------------------------------------- |
-| **Unitaire**    | Fonctions pures partagées : calculs, comptabilité, OEM | `shared/__tests__/`                    |
-| **Intégration** | Cas d'usage complets sur PostgreSQL réel               | `server/__tests__/`                    |
-| **Offline**     | File d'attente et instantané sur IndexedDB             | `client/src/shared/offline/__tests__/` |
-| **End-to-end**  | Parcours utilisateur, réseau coupé                     | `e2e/`                                 |
+| Niveau          | Portée                                            | Emplacement                            |
+| --------------- | ------------------------------------------------- | -------------------------------------- |
+| **Unitaire**    | Fonctions pures partagées : calculs, comptabilité | `shared/__tests__/`                    |
+| **Intégration** | Cas d'usage complets sur PostgreSQL réel          | `server/__tests__/`                    |
+| **Offline**     | File d'attente et instantané sur IndexedDB        | `client/src/shared/offline/__tests__/` |
+| **End-to-end**  | Parcours utilisateur, réseau coupé                | `e2e/`                                 |
 
 Les tests d'intégration créent **leur propre société** : l'isolation multi-société sert de
 mécanisme d'isolation des tests, ce qui vérifie l'invariant en même temps.
@@ -38,14 +38,6 @@ mécanisme d'isolation des tests, ce qui vérifie l'invariant en même temps.
 - Ligne de TVA omise quand la société n'est pas assujettie
 - Refus d'une écriture déséquilibrée
 - Sens naturel des comptes, plans OHADA et PCG
-
-### Références OEM (`oem.test.ts`, 7 tests)
-
-- Normalisation (casse, espaces, tirets, points, slashes)
-- **Transitivité quel que soit le point d'entrée** de la chaîne d'équivalences
-- Symétrie : l'ordre de déclaration n'a pas d'incidence
-- Détection des équivalences redondantes
-- Borne de taille contre un graphe pathologique
 
 ### Chaîne métier (`business-flow.test.ts`, 15 tests)
 
@@ -96,8 +88,7 @@ Le test central du produit.
 ### Instantané hors ligne (`snapshot.test.ts`, 8 tests)
 
 - Recherche par désignation et par référence interne
-- **Recherche OEM avec fermeture transitive, sans réseau**
-- Enrichissement fabricant / origine / qualité
+- Recherche par code-barres d'une variante, sans réseau
 - Agrégation du stock multi-magasins
 - Résolution d'un code-barres scanné
 - Recherche de tiers par nom, code ou téléphone

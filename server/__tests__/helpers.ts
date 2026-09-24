@@ -12,23 +12,13 @@ import { eq } from "drizzle-orm";
 
 import type { Company } from "@shared/schema";
 import { posRegisters, users, warehouses } from "@shared/schema";
+import { FEATURE_MODULES } from "@shared/modules-catalog";
 import { db } from "../db";
+import { moduleRegistry } from "../domains/plugins/registry";
 import { hashPassword } from "../domains/auth/application";
 import { catalogApplication } from "../domains/catalog/application";
-import { pluginRegistry } from "../domains/plugins/registry";
 import { tenancyApplication } from "../domains/tenancy/application";
-import { registerPlugins } from "../modules";
 import "../domains/sync/handlers";
-
-let pluginsReady = false;
-
-/** Enregistre et installe les modules une seule fois par processus de test. */
-export async function ensurePlugins(): Promise<void> {
-  if (pluginsReady) return;
-  registerPlugins();
-  await pluginRegistry.installAll();
-  pluginsReady = true;
-}
 
 export interface TestContext {
   company: Company;
@@ -39,8 +29,6 @@ export interface TestContext {
 
 /** Crée une société complète et jetable, prête à facturer. */
 export async function createTestCompany(label = "test"): Promise<TestContext> {
-  await ensurePlugins();
-
   const suffix = randomUUID().slice(0, 8);
   const company = await tenancyApplication.create({
     name: `Société ${label} ${suffix}`,
@@ -51,9 +39,11 @@ export async function createTestCompany(label = "test"): Promise<TestContext> {
     defaultVatRateBp: 1600,
   });
 
-  for (const plugin of pluginRegistry.list()) {
-    await pluginRegistry.enableForCompany(company.id, plugin.meta.code);
-  }
+  // Les tests couvrent tous les domaines : tous les modules sont activés.
+  await moduleRegistry.applySelection(
+    company.id,
+    FEATURE_MODULES.map((module) => module.code)
+  );
 
   const [user] = await db
     .insert(users)
@@ -94,7 +84,6 @@ export async function createStockedProduct(
       sku: options.sku ?? `ART-${randomUUID().slice(0, 6).toUpperCase()}`,
       name: "Article de test",
       description: "",
-      profileType: "GENERIC",
       categoryId: null,
       unit: "pièce",
       barcode: "",
@@ -105,7 +94,6 @@ export async function createStockedProduct(
       imageUrls: [],
       minStock: "0",
       variants: [],
-      profile: null,
       initialStock: {
         warehouseId: context.warehouseId,
         quantity: options.quantity ?? 100,

@@ -1,9 +1,9 @@
 /**
- * Catalogue **générique** du noyau — aucun attribut métier ici ([BR-11], [BR-14]).
+ * Catalogue **générique** : un même modèle de produit sert tout type de commerce.
  *
- * Les attributs OEM / taille-couleur / poids-péremption appartiennent aux profils
- * fournis par les modules (`shared/schema/modules/*`), attachés 1–1 au produit.
- * La référence métier (OEM, EAN) est un attribut **indexé, jamais la clé** ([BR-1]).
+ * Ce qui distingue les articles (taille, couleur, référence constructeur…) passe par
+ * les **variantes** et leurs attributs libres. Le code-barres est un attribut
+ * **indexé, jamais la clé** ([BR-1]).
  */
 
 import { boolean, index, jsonb, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
@@ -12,9 +12,6 @@ import { z } from "zod";
 
 import { baseColumns, clientUuid, moneyCents, quantity, rateBp } from "./_base";
 import { companies } from "./tenancy";
-
-export const PROFILE_TYPES = ["GENERIC", "AUTO_PARTS", "CLOTHING", "MARKET"] as const;
-export type ProfileType = (typeof PROFILE_TYPES)[number];
 
 export const categories = pgTable(
   "categories",
@@ -45,7 +42,8 @@ export const products = pgTable(
       .notNull()
       .references(() => companies.id, { onDelete: "cascade" }),
     /** Domaine du profil 1–1 attaché ; `GENERIC` = aucun module. */
-    profileType: text("profile_type").$type<ProfileType>().default("GENERIC").notNull(),
+    /** Colonne historique (anciens modules métier) : toujours « GENERIC », non lue. */
+    profileType: text("profile_type").default("GENERIC").notNull(),
     sku: text("sku").notNull(),
     name: text("name").notNull(),
     description: text("description").default("").notNull(),
@@ -85,7 +83,7 @@ export type Product = typeof products.$inferSelect;
 
 /**
  * Déclinaison vendable et stockable.
- * Auto Parts : une seule variante ; Clothing : taille × couleur ; Market : conditionnement.
+ * Ex. : taille × couleur pour un vêtement, conditionnement pour un produit alimentaire.
  */
 export const productVariants = pgTable(
   "product_variants",

@@ -78,20 +78,4 @@ export const queryKeys = {
   permissions: ["permissions"] as const,
   reports: (kind: string, filters?: unknown) => ["reports", kind, filters ?? null] as const,
   syncStatus: ["sync-status"] as const,
-  autoParts: {
-    countries: ["ap", "countries"] as const,
-    qualityLevels: ["ap", "quality-levels"] as const,
-    manufacturers: ["ap", "manufacturers"] as const,
-    vehicles: ["ap", "vehicles"] as const,
-    equivalences: (reference?: string) => ["ap", "equivalences", reference ?? null] as const,
-    search: (reference: string) => ["ap", "search", reference] as const,
-    compatibilities: (productId: string) => ["ap", "compat", productId] as const,
-  },
-  clothing: {
-    sizeGrids: ["cl", "size-grids"] as const,
-  },
-  market: {
-    lots: (filters?: unknown) => ["mk", "lots", filters ?? null] as const,
-    expiring: (days: number) => ["mk", "expiring", days] as const,
-  },
 } as const;

@@ -8,7 +8,7 @@ import bcrypt from "bcryptjs";
 import { ALL_PERMISSION_CODES, type PermissionCode } from "@shared/rbac";
 import type { Company, PublicUser } from "@shared/schema";
 import { NotFoundError, UnauthorizedError } from "../../shared/errors/app-error";
-import { pluginRegistry } from "../plugins/registry";
+import { moduleRegistry } from "../plugins/registry";
 import { companiesRepository } from "../tenancy/repository";
 import { authRepository } from "./repository";
 import {
@@ -87,7 +87,7 @@ class AuthApplication {
 
     const [permissions, modules] = await Promise.all([
       this.repository.listEffectivePermissions(user.id, companyId),
-      pluginRegistry.enabledCodes(companyId),
+      moduleRegistry.enabledCodes(companyId),
     ]);
 
     return {

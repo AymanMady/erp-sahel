@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "ERP Sahel — plateforme ERP modulaire multi-tenant, offline-first (noyau + modules Auto Parts / Clothing / Market).",
+  "description": "ERP Sahel — ERP générique, simple et hors ligne, pour tout type de commerce (modules activables : caisse, achats, stock…).",
   "engines": {
     "node": ">=20.11.0"
   },

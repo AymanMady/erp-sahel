@@ -54,13 +54,6 @@ const ChartOfAccountsPage = lazy(() => import("@/pages/accounting/accounts"));
 const SalesReportPage = lazy(() => import("@/pages/reports/sales"));
 const StockReportPage = lazy(() => import("@/pages/reports/stock"));
 const PurchasesReportPage = lazy(() => import("@/pages/reports/purchases"));
-const OemSearchPage = lazy(() => import("@/pages/modules/auto-parts/search"));
-const EquivalencesPage = lazy(() => import("@/pages/modules/auto-parts/equivalences"));
-const ManufacturersPage = lazy(() => import("@/pages/modules/auto-parts/manufacturers"));
-const VehiclesPage = lazy(() => import("@/pages/modules/auto-parts/vehicles"));
-const SizeGridsPage = lazy(() => import("@/pages/modules/clothing/size-grids"));
-const LotsPage = lazy(() => import("@/pages/modules/market/lots"));
-const ExpiringPage = lazy(() => import("@/pages/modules/market/expiring"));
 const CompanySettingsPage = lazy(() => import("@/pages/settings/company"));
 const ModulesSettingsPage = lazy(() => import("@/pages/settings/modules"));
 const NumberingSettingsPage = lazy(() => import("@/pages/settings/numbering"));
@@ -141,14 +134,6 @@ function AppRoutes() {
         <Route path="/reports/sales" component={SalesReportPage} />
         <Route path="/reports/stock" component={StockReportPage} />
         <Route path="/reports/purchases" component={PurchasesReportPage} />
-
-        <Route path="/modules/auto-parts/search" component={OemSearchPage} />
-        <Route path="/modules/auto-parts/equivalences" component={EquivalencesPage} />
-        <Route path="/modules/auto-parts/manufacturers" component={ManufacturersPage} />
-        <Route path="/modules/auto-parts/vehicles" component={VehiclesPage} />
-        <Route path="/modules/clothing/size-grids" component={SizeGridsPage} />
-        <Route path="/modules/market/lots" component={LotsPage} />
-        <Route path="/modules/market/expiring" component={ExpiringPage} />
 
         <Route path="/settings/company" component={CompanySettingsPage} />
         <Route path="/settings/modules" component={ModulesSettingsPage} />

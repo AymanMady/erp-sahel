@@ -1,5 +1,5 @@
 /**
- * Fonctionnalités activables (caisse, achats, stock…) et types d'activité.
+ * Modules activables (caisse, achats, stock…) et préréglages.
  *
  * Garanties vérifiées : une société existante garde tout son périmètre (actif par
  * défaut), un préréglage active exactement ses modules et leurs dépendances, et une
@@ -9,13 +9,13 @@
 import type { NextFunction, Request, Response } from "express";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { BUSINESS_PRESETS, FEATURE_MODULES } from "@shared/modules-catalog";
+import { FEATURE_MODULES, MODULE_PRESETS } from "@shared/modules-catalog";
 import { companyPlugins } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { closeDatabase, db } from "../db";
 import { signAccessToken } from "../domains/auth/tokens";
 import { featureGate } from "../domains/plugins/features";
-import { pluginRegistry } from "../domains/plugins/registry";
+import { moduleRegistry } from "../domains/plugins/registry";
 import { ModuleDisabledError } from "../shared/errors/app-error";
 import { createTestCompany, dropTestCompany, type TestContext } from "./helpers";
 
@@ -32,36 +32,36 @@ afterAll(async () => {
 });
 
 describe("état par défaut", () => {
-  it("active les fonctionnalités et laisse les métiers désactivés tant que rien n'est choisi", async () => {
+  it("active tous les modules tant que rien n'est choisi", async () => {
     await db.delete(companyPlugins).where(eq(companyPlugins.companyId, context.company.id));
-    const enabled = await pluginRegistry.enabledCodes(context.company.id);
+    const enabled = await moduleRegistry.enabledCodes(context.company.id);
     expect(enabled.sort()).toEqual(FEATURE_MODULES.map((feature) => feature.code).sort());
   });
 
-  it("permet de désactiver une fonctionnalité qui n'a encore aucune ligne en base", async () => {
+  it("permet de désactiver un module qui n'a encore aucune ligne en base", async () => {
     await db.delete(companyPlugins).where(eq(companyPlugins.companyId, context.company.id));
-    await pluginRegistry.disableForCompany(context.company.id, "accounting");
-    expect(await pluginRegistry.isEnabled(context.company.id, "accounting")).toBe(false);
+    await moduleRegistry.disableForCompany(context.company.id, "accounting");
+    expect(await moduleRegistry.isEnabled(context.company.id, "accounting")).toBe(false);
   });
 });
 
-describe("types d'activité", () => {
-  it("active exactement les modules du préréglage « Boutique »", async () => {
-    const shop = BUSINESS_PRESETS.find((preset) => preset.code === "shop")!;
-    await pluginRegistry.applySelection(context.company.id, shop.modules);
-    const enabled = await pluginRegistry.enabledCodes(context.company.id);
-    expect(enabled.sort()).toEqual([...shop.modules].sort());
+describe("préréglages", () => {
+  it("active exactement les modules du préréglage « Simple »", async () => {
+    const simple = MODULE_PRESETS.find((preset) => preset.code === "simple")!;
+    await moduleRegistry.applySelection(context.company.id, simple.modules);
+    const enabled = await moduleRegistry.enabledCodes(context.company.id);
+    expect(enabled.sort()).toEqual([...simple.modules].sort());
   });
 
   it("ajoute les dépendances d'un module choisi", async () => {
-    await pluginRegistry.applySelection(context.company.id, ["sales"]);
-    const enabled = await pluginRegistry.enabledCodes(context.company.id);
+    await moduleRegistry.applySelection(context.company.id, ["sales"]);
+    const enabled = await moduleRegistry.enabledCodes(context.company.id);
     expect(enabled.sort()).toEqual(["invoicing", "sales"]);
   });
 
   it("refuse de retirer un module dont un autre dépend", async () => {
-    await pluginRegistry.applySelection(context.company.id, ["purchasing"]);
-    await expect(pluginRegistry.disableForCompany(context.company.id, "inventory")).rejects.toThrow(
+    await moduleRegistry.applySelection(context.company.id, ["purchasing"]);
+    await expect(moduleRegistry.disableForCompany(context.company.id, "inventory")).rejects.toThrow(
       /Désactivez d'abord/
     );
   });
@@ -115,7 +115,7 @@ describe("garde des routes", () => {
     expect(run("/api/warehouses", token([]), "GET")).toBeUndefined();
   });
 
-  it("accepte les jetons émis avant l'arrivée des fonctionnalités activables", () => {
-    expect(run("/api/pos/tickets", token(["auto_parts"], false))).toBeUndefined();
+  it("accepte les jetons émis avant l'arrivée des modules activables", () => {
+    expect(run("/api/pos/tickets", token([], false))).toBeUndefined();
   });
 });

@@ -1,5 +1,5 @@
 /**
- * Isolation multi-société ([BR-13]) et autorisations ([FR-AUTH-2], [BR-12]).
+ * Isolation multi-société ([BR-13]) et autorisations ([FR-AUTH-2]).
  *
  * Ce sont les deux garanties que l'interface ne peut pas assurer : elles doivent tenir
  * même si l'appelant forge sa requête.
@@ -8,12 +8,10 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { hasAnyPermission, resolveRolePermissions, DEFAULT_ROLES } from "@shared/rbac";
-import { satisfiesRange } from "../domains/plugins/semver";
 import { closeDatabase, db as database } from "../db";
 import { catalogApplication } from "../domains/catalog/application";
 import { invoicingApplication } from "../domains/invoicing/application";
 import { partiesApplication } from "../domains/parties/application";
-import { pluginRegistry } from "../domains/plugins/registry";
 import {
   createStockedProduct,
   createTestCompany,
@@ -158,61 +156,5 @@ describe("modèle de permissions", () => {
     expect(hasAnyPermission(["invoicing.read"], ["accounting.write"])).toBe(false);
     // Une liste d'exigences vide n'est pas une restriction.
     expect(hasAnyPermission([], [])).toBe(true);
-  });
-});
-
-describe("registre de modules", () => {
-  it("expose les trois modules avec leur état d'activation", async () => {
-    const modules = await pluginRegistry.listForCompany(alpha.company.id);
-    expect(modules.map((module) => module.code).sort()).toEqual([
-      "auto_parts",
-      "clothing",
-      "market",
-    ]);
-    expect(modules.every((module) => module.isEnabled)).toBe(true);
-  });
-
-  it("rend le module inaccessible une fois désactivé", async () => {
-    await pluginRegistry.disableForCompany(alpha.company.id, "clothing");
-    expect(await pluginRegistry.isEnabled(alpha.company.id, "clothing")).toBe(false);
-
-    // Un profil de module désactivé est refusé à la création de produit ([BR-12]).
-    await expect(
-      catalogApplication.create(
-        alpha.company.id,
-        {
-          sku: "MOD-OFF",
-          name: "Vêtement",
-          description: "",
-          profileType: "CLOTHING",
-          categoryId: null,
-          unit: "pièce",
-          barcode: "",
-          purchasePriceCents: 0,
-          salePriceCents: 1_000,
-          vatRateBp: 0,
-          isService: false,
-          imageUrls: [],
-          minStock: "0",
-          variants: [],
-          profile: {},
-          initialStock: null,
-        },
-        alpha.userId
-      )
-    ).rejects.toThrow(/n'est pas activé/i);
-
-    await pluginRegistry.enableForCompany(alpha.company.id, "clothing");
-  });
-
-  it("vérifie la compatibilité SemVer entre noyau et module", () => {
-    expect(satisfiesRange("1.0.0", "^1.0.0")).toBe(true);
-    expect(satisfiesRange("1.4.2", "^1.0.0")).toBe(true);
-    expect(satisfiesRange("2.0.0", "^1.0.0")).toBe(false);
-    expect(satisfiesRange("1.0.0", "~1.0.0")).toBe(true);
-    expect(satisfiesRange("1.1.0", "~1.0.0")).toBe(false);
-    expect(satisfiesRange("1.0.0", ">=0.9.0")).toBe(true);
-    // Une plage non reconnue est refusée plutôt que tolérée.
-    expect(satisfiesRange("1.0.0", "wat")).toBe(false);
   });
 });

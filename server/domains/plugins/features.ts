@@ -1,10 +1,9 @@
 /**
- * Fonctionnalités du noyau exposées comme modules activables (caisse, achats, stock…).
+ * Garde API des modules (caisse, achats, stock…).
  *
- * Leur code reste dans `server/domains/**` : désactiver une fonctionnalité ne supprime
- * rien, elle ferme ses routes API (`featureGate`) et retire ses écrans du menu. Les
- * services internes continuent de s'appeler entre eux — une vente en caisse crée
- * toujours sa facture, même si l'écran « Factures » est masqué.
+ * Désactiver un module ne supprime rien : ses routes API répondent 403 et ses écrans
+ * sortent du menu. Les services internes continuent de s'appeler entre eux — une vente
+ * en caisse crée toujours sa facture, même si l'écran « Factures » est masqué.
  */
 
 import type { RequestHandler } from "express";
@@ -12,25 +11,6 @@ import type { RequestHandler } from "express";
 import { FEATURE_MODULES } from "@shared/modules-catalog";
 import { ModuleDisabledError } from "../../shared/errors/app-error";
 import { bearerToken, verifyAccessToken } from "../auth/tokens";
-import type { ErpPlugin } from "./contract";
-import { CORE_VERSION } from "./registry";
-
-export const featurePlugins: ErpPlugin[] = FEATURE_MODULES.map((feature) => ({
-  meta: {
-    code: feature.code,
-    kind: "feature",
-    defaultEnabled: true,
-    name: feature.name,
-    description: feature.description,
-    version: CORE_VERSION,
-    coreVersion: `^${CORE_VERSION}`,
-    dependencies: feature.dependencies,
-    icon: feature.icon,
-  },
-  permissions: [],
-  navigation: [],
-  searchCriteria: [],
-}));
 
 function matchesPrefix(path: string, prefix: string): boolean {
   return path === prefix || path.startsWith(`${prefix}/`);

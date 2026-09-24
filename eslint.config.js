@@ -5,11 +5,9 @@ import tseslint from "typescript-eslint";
 /**
  * Règles de style et de sûreté.
  *
- * Deux règles portent une intention d'architecture plutôt qu'un goût :
- *  - `no-restricted-imports` interdit au **noyau** d'importer un module métier, ce qui
- *    rend la dépendance unidirectionnelle vérifiable automatiquement ([BR-17]) ;
- *  - `no-floating-promises` évite les effets de bord silencieux, particulièrement
- *    dangereux dans le moteur de synchronisation.
+ * `no-floating-promises` porte une intention d'architecture plutôt qu'un goût : il évite
+ * les effets de bord silencieux, particulièrement dangereux dans le moteur de
+ * synchronisation.
  */
 export default tseslint.config(
   { ignores: ["dist/**", "node_modules/**", "src-tauri/**", "migrations/**", "client/public/**"] },
@@ -32,26 +30,6 @@ export default tseslint.config(
       "no-console": ["warn", { allow: ["warn", "error", "info"] }],
       eqeqeq: ["error", "smart"],
       "prefer-const": "error",
-    },
-  },
-
-  {
-    // Le noyau serveur ne doit jamais dépendre d'un module métier : seul le point de
-    // composition `server/modules/index.ts` les connaît.
-    files: ["server/domains/**/*.ts", "server/shared/**/*.ts", "server/middleware/**/*.ts"],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            {
-              group: ["**/modules/*", "../../modules/*", "../modules/*"],
-              message:
-                "Le noyau ne doit pas importer un module métier (BR-17). Passez par le contrat de plugin.",
-            },
-          ],
-        },
-      ],
     },
   },
 

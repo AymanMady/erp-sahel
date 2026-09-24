@@ -32,7 +32,6 @@ import { registerServicesRoutes } from "./domains/services/routes";
 import { registerSyncRoutes } from "./domains/sync/routes";
 import { registerTenancyRoutes } from "./domains/tenancy/routes";
 import { registerUsersRoutes } from "./domains/users/routes";
-import { registerModuleRoutes } from "./modules";
 
 export function registerRoutes(app: Express): void {
   app.use(corsMiddleware);
@@ -80,9 +79,6 @@ export function registerRoutes(app: Express): void {
   registerAccountingRoutes(app);
   registerReportsRoutes(app);
   registerSyncRoutes(app);
-
-  // --- Modules métier ------------------------------------------------------
-  registerModuleRoutes(app);
 
   app.use(apiNotFound);
   app.use(errorHandler);

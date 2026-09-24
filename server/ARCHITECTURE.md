@@ -10,7 +10,7 @@ documentées dans le fichier du domaine concerné.
 - **Point d'entrée** : `server/index.ts`
 - **Composition des routes** : `server/routes.ts`
 - **Domaines** : `server/domains/<nom>/`
-- **Modules métier** : `server/modules/<code>/` — branchés au seul point de composition
+- **Modules activables** : `server/domains/plugins/` — registre et garde `featureGate`
 - **Flux de requête** : `routes → controller → service → application → repository → base`
 
 ---
@@ -106,13 +106,9 @@ app.post(
   asyncHandler(controller.create)
 );
 
-app.get(
-  "/api/modules/auto-parts/search",
-  requireAuth,
-  requireModule("auto_parts"), // module activé pour la société
-  canRead,
-  asyncHandler(handler)
-);
+// Monté une fois devant toutes les routes : 403 si le module (caisse, achats…) est
+// désactivé pour la société.
+app.use("/api", featureGate);
 ```
 
 Le masquage côté client est ergonomique ; **ces gardes sont la seule barrière qui compte**.
@@ -121,9 +117,10 @@ Le masquage côté client est ergonomique ; **ces gardes sont la seule barrière
 
 ## 7. Modules
 
-Le noyau ne connaît qu'un contrat (`domains/plugins/contract.ts`). La dépendance est
-strictement `module → noyau`, vérifiée par ESLint. Le seul fichier qui connaît les deux
-mondes est `server/modules/index.ts`.
+Les fonctionnalités (caisse, achats, stock…) sont des modules activables par société,
+décrits dans `shared/modules-catalog.ts`. Le registre (`domains/plugins/registry.ts`)
+gère l'activation et les dépendances ; `featureGate` ferme les routes d'un module
+désactivé.
 
 Voir [`../docs/MODULES.md`](../docs/MODULES.md).
 

@@ -19,7 +19,6 @@ import { accountingApi } from "@/entities/accounting/api";
 import { bankingApi } from "@/entities/banking/api";
 import { inventoryApi } from "@/entities/inventory/api";
 import { invoicingApi } from "@/entities/invoicing/api";
-import { autoPartsApi, clothingApi, marketApi } from "@/entities/modules/api";
 import { partyApi } from "@/entities/party/api";
 import { paymentApi } from "@/entities/payment/api";
 import { posApi } from "@/entities/pos/api";
@@ -104,6 +103,10 @@ function listWithDetails(
 async function prefetch(): Promise<void> {
   const snapshot = await readSnapshot();
   const modules = new Set((snapshot?.modules ?? []).map((row) => row.code));
+  // Un module désactivé répond 403 : inutile de précharger ses écrans. Sans liste de
+  // modules (ancien instantané), on précharge tout, comme avant.
+  const when = (code: string, tasks: Task[]): Task[] =>
+    modules.size === 0 || modules.has(code) ? tasks : [];
   const page = { limit: LIST_SIZE, offset: 0 };
   const today = todayInput();
   const last30Days = { fromDate: addDays(today, -29), toDate: today };
@@ -113,14 +116,18 @@ async function prefetch(): Promise<void> {
     ...[7, 30, 90].map(
       (days) => () => reportsApi.dashboard({ fromDate: addDays(today, -(days - 1)), toDate: today })
     ),
-    () => reportsApi.sales(last30Days),
-    () => reportsApi.purchases(last30Days),
-    () => reportsApi.stock(null),
+    ...when("reports", [
+      () => reportsApi.sales(last30Days),
+      () => reportsApi.purchases(last30Days),
+      () => reportsApi.stock(null),
+    ]),
 
     // Le référentiel (produits, tiers, stock, magasins…) vient de l'instantané ; on ne
     // précharge ici que ce qu'il ne contient pas.
-    () => inventoryApi.listMovements(page),
-    () => inventoryApi.valuation(null),
+    ...when("inventory", [
+      () => inventoryApi.listMovements(page),
+      () => inventoryApi.valuation(null),
+    ]),
 
     // Fiches tiers (contacts, adresses, historique) : absentes de l'instantané.
     async () => {
@@ -136,48 +143,57 @@ async function prefetch(): Promise<void> {
     },
 
     // Ventes, facturation, règlements.
-    listWithDetails(
-      () => salesApi.listQuotes(page),
-      (id) => `/api/quotes/${id}`,
-      (id) => [() => salesApi.getQuote(id)]
-    ),
-    listWithDetails(
-      () => salesApi.listOrders(page),
-      (id) => `/api/sales-orders/${id}`,
-      (id) => [() => salesApi.getOrder(id)]
-    ),
-    listWithDetails(
-      () => invoicingApi.list(page),
-      (id) => `/api/invoices/${id}`,
-      (id) => [() => invoicingApi.get(id), () => paymentApi.list({ invoiceId: id })]
-    ),
-    () => invoicingApi.listCreditNotes(page),
+    ...when("sales", [
+      listWithDetails(
+        () => salesApi.listQuotes(page),
+        (id) => `/api/quotes/${id}`,
+        (id) => [() => salesApi.getQuote(id)]
+      ),
+      listWithDetails(
+        () => salesApi.listOrders(page),
+        (id) => `/api/sales-orders/${id}`,
+        (id) => [() => salesApi.getOrder(id)]
+      ),
+    ]),
+    ...when("invoicing", [
+      listWithDetails(
+        () => invoicingApi.list(page),
+        (id) => `/api/invoices/${id}`,
+        (id) => [() => invoicingApi.get(id), () => paymentApi.list({ invoiceId: id })]
+      ),
+      () => invoicingApi.listCreditNotes(page),
+    ]),
     () => paymentApi.list(page),
 
     // Achats.
-    listWithDetails(
-      () => purchasingApi.listOrders(page),
-      (id) => `/api/purchase-orders/${id}`,
-      (id) => [() => purchasingApi.getOrder(id), () => purchasingApi.listReceipts(id)]
-    ),
-    () => purchasingApi.listReceipts(),
-    () => purchasingApi.listSupplierInvoices(),
+    ...when("purchasing", [
+      listWithDetails(
+        () => purchasingApi.listOrders(page),
+        (id) => `/api/purchase-orders/${id}`,
+        (id) => [() => purchasingApi.getOrder(id), () => purchasingApi.listReceipts(id)]
+      ),
+      () => purchasingApi.listReceipts(),
+      () => purchasingApi.listSupplierInvoices(),
+    ]),
 
     // Trésorerie et comptabilité.
     () => bankingApi.listAccounts(),
-    () => bankingApi.totals(),
-    () => bankingApi.listTransactions(page),
-    () => accountingApi.listAccounts(),
-    () => accountingApi.listJournals(),
-    () => accountingApi.listMappings(),
-    () => accountingApi.listFiscalYears(),
-    () => accountingApi.listEntries({ limit: 50 }),
-    () => accountingApi.ledger({ limit: 50, offset: 0 }),
-    () => accountingApi.balance({}),
+    ...when("banking", [() => bankingApi.totals(), () => bankingApi.listTransactions(page)]),
+    ...when("accounting", [
+      () => accountingApi.listAccounts(),
+      () => accountingApi.listJournals(),
+      () => accountingApi.listMappings(),
+      () => accountingApi.listFiscalYears(),
+      () => accountingApi.listEntries({ limit: 50 }),
+      () => accountingApi.ledger({ limit: 50, offset: 0 }),
+      () => accountingApi.balance({}),
+    ]),
 
     // Caisse.
-    () => posApi.listSessions(),
-    ...(snapshot?.session ? [() => posApi.sessionSummary(snapshot.session!.id)] : []),
+    ...when("pos", [
+      () => posApi.listSessions(),
+      ...(snapshot?.session ? [() => posApi.sessionSummary(snapshot.session!.id)] : []),
+    ]),
 
     // Paramètres et administration (société, numérotation, modules, comptes, rôles).
     () => settingsApi.getCompany(),
@@ -192,15 +208,6 @@ async function prefetch(): Promise<void> {
     () => syncApi.status(),
     () => syncApi.journal(),
   ];
-
-  if (modules.has("auto_parts")) tasks.push(() => autoPartsApi.listEquivalences());
-  if (modules.has("clothing")) tasks.push(() => clothingApi.listSizeGrids());
-  if (modules.has("market")) {
-    tasks.push(
-      () => marketApi.listLots(page),
-      ...[7, 30, 90].map((days) => () => marketApi.listExpiring(days))
-    );
-  }
 
   await runAll(tasks);
 }

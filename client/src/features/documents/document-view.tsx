@@ -70,8 +70,8 @@ export function DocumentView({
     { vatEnabled: company?.vatEnabled ?? true }
   ).vatBreakdown;
 
-  // Le pays d'origine n'est affiché que s'il est renseigné — exigence du module
-  // Auto Parts, sans intérêt pour un vêtement ([FR-VNT-5]).
+  // Le pays d'origine n'est affiché que s'il est renseigné sur au moins une ligne :
+  // inutile d'encombrer le document sinon ([FR-VNT-5]).
   const showOrigin = lines.some((line) => line.originCountry);
 
   return (

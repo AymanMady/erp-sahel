@@ -4,7 +4,7 @@
  * Les ventes, factures, devis, tiers, produits, règlements et mouvements de stock ont
  * leur opération de synchronisation dédiée (`offline-writes.ts`). Toutes les autres
  * écritures — catégories, magasins, commandes d'achat, trésorerie, comptabilité,
- * paramètres, rôles, utilisateurs, modules métier… — passent par ici : si le serveur
+ * paramètres, rôles, utilisateurs, modules… — passent par ici : si le serveur
  * est injoignable, `http.ts` met la requête en file au lieu d'échouer, et le moteur de
  * synchronisation la rejoue telle quelle au retour du réseau.
  *
@@ -107,9 +107,6 @@ const RESOURCE_LABELS: [RegExp, string][] = [
   [/^\/api\/banking/, "Trésorerie"],
   [/^\/api\/pos/, "Caisse"],
   [/^\/api\/accounting/, "Comptabilité"],
-  [/^\/api\/modules\/auto-parts/, "Pièces auto"],
-  [/^\/api\/modules\/clothing/, "Vêtements"],
-  [/^\/api\/modules\/market/, "Marché"],
 ];
 
 const ACTION_LABELS: Record<HttpWriteMethod, string> = {
@@ -169,7 +166,6 @@ function snapshotRows(
   snapshot: OfflineSnapshot,
   collection: string
 ): { get(): Row[]; set(rows: Row[]): void } | null {
-  const autoParts = snapshot.moduleData?.auto_parts;
   const direct: Record<string, keyof OfflineSnapshot> = {
     "/api/catalog/categories": "categories",
     "/api/catalog/products": "products",
@@ -184,36 +180,6 @@ function snapshotRows(
       get: () => snapshot[key] as unknown as Row[],
       set: (rows) => {
         (snapshot as unknown as Record<string, unknown>)[key] = rows;
-      },
-    };
-  }
-  const moduleKeys: Record<string, "manufacturers" | "countries" | "qualityLevels"> = {
-    "/api/modules/auto-parts/manufacturers": "manufacturers",
-    "/api/modules/auto-parts/countries": "countries",
-    "/api/modules/auto-parts/quality-levels": "qualityLevels",
-  };
-  const moduleKey = moduleKeys[collection];
-  if (moduleKey && autoParts) {
-    return {
-      get: () => autoParts[moduleKey] as unknown as Row[],
-      set: (rows) => {
-        (autoParts as unknown as Record<string, unknown>)[moduleKey] = rows;
-      },
-    };
-  }
-  const vehicleKeys: Record<string, "brands" | "models" | "generations" | "engines"> = {
-    "/api/modules/auto-parts/vehicle-brands": "brands",
-    "/api/modules/auto-parts/vehicle-models": "models",
-    "/api/modules/auto-parts/vehicle-generations": "generations",
-    "/api/modules/auto-parts/vehicle-engines": "engines",
-  };
-  const vehicleKey = vehicleKeys[collection];
-  if (vehicleKey && autoParts?.vehicles) {
-    const vehicles = autoParts.vehicles;
-    return {
-      get: () => vehicles[vehicleKey] as unknown as Row[],
-      set: (rows) => {
-        (vehicles as unknown as Record<string, unknown>)[vehicleKey] = rows;
       },
     };
   }
@@ -332,7 +298,7 @@ async function reflectLocally(payload: HttpWritePayload, clientUuid: string): Pr
     }
   }
 
-  // Activation d'un module métier : la liste des modules reflète le nouvel état.
+  // Activation d'un module : la liste des modules reflète le nouvel état.
   const moduleToggle = /^\/api\/platform\/modules\/([^/]+)\/(enable|disable)$/.exec(path);
   if (moduleToggle) {
     const [, code, verb] = moduleToggle;

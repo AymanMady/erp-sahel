@@ -21,8 +21,7 @@ export const settingsApi = {
       "/api/company/sequences"
     ),
 
-  listModules: () =>
-    api.get<{ coreVersion: string; modules: ModuleDescriptor[] }>("/api/platform/modules"),
+  listModules: () => api.get<{ modules: ModuleDescriptor[] }>("/api/platform/modules"),
   enableModule: (code: string) =>
     api.post<{ success: true; modules: ModuleDescriptor[] }>(
       `/api/platform/modules/${code}/enable`
@@ -31,7 +30,7 @@ export const settingsApi = {
     api.post<{ success: true; modules: ModuleDescriptor[] }>(
       `/api/platform/modules/${code}/disable`
     ),
-  /** Type d'activité : exige le réseau, car il bascule plusieurs modules à la fois. */
+  /** Niveau (préréglage) : exige le réseau, car il bascule plusieurs modules à la fois. */
   applyModuleSelection: (body: { preset: string } | { modules: string[] }) =>
     apiRequest<{ success: true; modules: ModuleDescriptor[] }>("/api/platform/modules/selection", {
       method: "POST",

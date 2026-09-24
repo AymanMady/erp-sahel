@@ -1,16 +1,16 @@
 /**
- * Catalogue des modules et des types d'activité — source unique serveur + client.
+ * Catalogue des modules — source unique serveur + client.
  *
- * Chaque fonctionnalité (caisse, achats, stock…) est un **module** activable par
- * société, au même titre que les modules métier. Un commerçant choisit son type
- * d'activité : le préréglage active uniquement ce dont il a besoin, et le menu reste
- * court. Il peut ensuite affiner module par module.
+ * L'ERP est générique : il sert n'importe quel commerce (pièces auto, vêtements,
+ * alimentation, quincaillerie…). Chaque fonctionnalité (caisse, achats, stock…) est un
+ * **module** activable par société. Un commerçant choisit un niveau (simple, avec
+ * factures, complet) puis peut affiner module par module.
  */
 
-import type { BusinessModuleCode, FeatureModuleCode, ModuleCode } from "./schema/plugins";
+import type { ModuleCode } from "./schema/plugins";
 
 export interface FeatureModuleDefinition {
-  code: FeatureModuleCode;
+  code: ModuleCode;
   /** Libellé court, en mots simples. */
   name: string;
   /** Une phrase qui dit à quoi sert le module, sans jargon. */
@@ -105,8 +105,8 @@ export const FEATURE_MODULES: FeatureModuleDefinition[] = [
   },
 ];
 
-/** Type d'activité proposé au démarrage : un préréglage de modules. */
-export interface BusinessPreset {
+/** Niveau d'utilisation proposé : un préréglage de modules. */
+export interface ModulePreset {
   code: string;
   name: string;
   description: string;
@@ -114,63 +114,35 @@ export interface BusinessPreset {
   modules: ModuleCode[];
 }
 
-const SHOP_BASE: ModuleCode[] = ["pos", "inventory", "purchasing", "reports"];
+const SIMPLE: ModuleCode[] = ["pos", "inventory", "purchasing"];
+const WITH_INVOICES: ModuleCode[] = [...SIMPLE, "invoicing", "sales", "services", "reports"];
 
-export const BUSINESS_PRESETS: BusinessPreset[] = [
+export const MODULE_PRESETS: ModulePreset[] = [
   {
-    code: "shop",
-    name: "Boutique",
-    description: "Petit commerce : caisse, stock et achats. Le plus simple.",
+    code: "simple",
+    name: "Simple",
+    description: "Caisse, stock et achats. Idéal pour une boutique.",
     icon: "IconBuildingStore",
-    modules: [...SHOP_BASE, "market"],
+    modules: SIMPLE,
   },
   {
-    code: "auto_parts",
-    name: "Pièces auto",
-    description: "Recherche par référence OEM, équivalences, véhicules, devis et factures.",
-    icon: "IconCar",
-    modules: [...SHOP_BASE, "invoicing", "sales", "services", "auto_parts"],
-  },
-  {
-    code: "clothing",
-    name: "Vêtements",
-    description: "Tailles et couleurs, caisse et stock par article.",
-    icon: "IconShirt",
-    modules: [...SHOP_BASE, "clothing"],
-  },
-  {
-    code: "wholesale",
-    name: "Grossiste",
-    description: "Ventes aux professionnels : devis, commandes, factures et règlements.",
-    icon: "IconTruck",
-    modules: [...SHOP_BASE, "invoicing", "sales", "banking", "market"],
+    code: "invoices",
+    name: "Avec factures",
+    description: "En plus : devis, factures, prestations et rapports.",
+    icon: "IconFileInvoice",
+    modules: WITH_INVOICES,
   },
   {
     code: "full",
-    name: "Tout activer",
-    description: "Toutes les fonctionnalités, y compris la comptabilité.",
+    name: "Complet",
+    description: "Tout, y compris la banque et la comptabilité.",
     icon: "IconApps",
-    modules: [
-      "pos",
-      "sales",
-      "invoicing",
-      "purchasing",
-      "inventory",
-      "services",
-      "banking",
-      "accounting",
-      "reports",
-      "auto_parts",
-      "clothing",
-      "market",
-    ],
+    modules: [...WITH_INVOICES, "banking", "accounting"],
   },
 ];
 
-export const BUSINESS_PRESET_CODES = BUSINESS_PRESETS.map((preset) => preset.code);
+export const MODULE_PRESET_CODES = MODULE_PRESETS.map((preset) => preset.code);
 
-export function isFeatureModule(code: string): code is FeatureModuleCode {
-  return FEATURE_MODULES.some((feature) => feature.code === code);
+export function moduleName(code: string): string {
+  return FEATURE_MODULES.find((feature) => feature.code === code)?.name ?? code;
 }
-
-export type { BusinessModuleCode, FeatureModuleCode };

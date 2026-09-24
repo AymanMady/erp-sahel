@@ -1,10 +1,11 @@
 # ERP Sahel
 
-Plateforme ERP modulaire multi-société, **fonctionnelle hors ligne**, pour le négoce et la
-distribution : gestion commerciale, stock, caisse et comptabilité OHADA.
+ERP **générique et simple**, multi-société, **fonctionnel hors ligne** : caisse, stock,
+achats, ventes, factures et comptabilité OHADA, pour **tout type de commerce** (pièces
+auto, vêtements, alimentation, quincaillerie…).
 
-Un seul code source dessert trois domaines métier via des **modules activables par
-société** : pièces détachées automobiles, vêtements, commerce général.
+Chaque fonctionnalité est un **module activable** : une boutique qui n'utilise que la
+caisse et le stock n'a qu'un menu de quelques lignes.
 
 ---
 
@@ -24,15 +25,11 @@ société** : pièces détachées automobiles, vêtements, commerce général.
 | **Administration** | Multi-société, utilisateurs, rôles et permissions granulaires, audit, modules           |
 | **Hors ligne**     | PWA installable + coquille desktop, file d'attente, synchronisation idempotente         |
 
-### Modules métier
+### Modules activables
 
-- **Pièces auto** — référence OEM non unique, **équivalences symétriques et transitives**,
-  fabricants, pays d'origine, niveaux de qualité, compatibilité véhicule à 4 niveaux
-  (marque → modèle → génération → motorisation).
-- **Vêtements** — profil vêtement (marque, genre, saison, matière, collection), grilles de
-  tailles, génération des déclinaisons taille × couleur.
-- **Marché** — profil marchandise (poids, volume, unité, catégorie de taxe), lots datés et
-  alertes de péremption.
+Caisse, Factures, Devis et commandes, Achats, Stock, Prestations, Caisse et banque,
+Comptabilité, Rapports. Trois niveaux prêts à l'emploi : **Simple** (caisse, stock,
+achats), **Avec factures** et **Complet**. Voir [`docs/MODULES.md`](docs/MODULES.md).
 
 ---
 
@@ -53,7 +50,7 @@ Poste de vente                                    Serveur
 ```
 
 1. L'application démarre **sans réseau** : le Service Worker sert la coquille, l'instantané
-   local alimente la recherche produit et client — équivalences OEM comprises.
+   local alimente la recherche produit (nom, référence, code-barres) et client.
 2. Les ventes créées hors ligne reçoivent un **numéro provisoire** (`OFFLINE-TKT-0001`) et
    partent dans une file d'attente locale, qui **survit à la fermeture du navigateur**.
 3. Au retour du réseau, la file est rejouée dans l'**ordre causal**. Le serveur attribue le
@@ -125,14 +122,13 @@ erp-sahel/
 │       └── shared/       Design system, offline, auth, utilitaires
 ├── server/               API Express
 │   ├── domains/<nom>/    routes → controller → service → application → repository
-│   ├── modules/          Modules métier (plugins)
 │   ├── middleware/       Sécurité, limitation de débit, erreurs
 │   └── shared/           Erreurs, journalisation, primitives de persistance
 ├── shared/               Code partagé client ⇄ serveur
 │   ├── schema/           Schéma Drizzle (source de vérité du modèle)
 │   ├── pricing.ts        Calcul des totaux — la même fonction des deux côtés
 │   ├── accounting-rules.ts  Plans comptables et écritures automatiques
-│   ├── oem.ts            Normalisation et équivalences OEM
+│   ├── modules-catalog.ts  Modules activables et niveaux
 │   └── sync-protocol.ts  Contrat de synchronisation
 ├── src-tauri/            Coquille desktop (Rust) : SQLite local, connexion hors ligne
 └── docs/                 Documentation technique
@@ -145,7 +141,7 @@ Documents de référence :
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — règles de structure et invariants
 - [`docs/SYNC_STRATEGY.md`](docs/SYNC_STRATEGY.md) — protocole hors ligne
-- [`docs/MODULES.md`](docs/MODULES.md) — contrat de plugin et ajout d'un module
+- [`docs/MODULES.md`](docs/MODULES.md) — modules activables et niveaux
 - [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) — modèle de données
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — mise en production
 - [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md) — stratégie et couverture des tests

@@ -3,7 +3,7 @@
  *
  * C'est le **jeu de données minimal** qui permet à un poste de continuer à vendre sans
  * réseau : catalogue avec stock, tiers actifs, prestations, caisses, session en cours,
- * modes de règlement, et les référentiels des modules activés ([FR-SYNC-1], [FR-SYNC-2]).
+ * modes de règlement, et les modules activés ([FR-SYNC-1], [FR-SYNC-2]).
  *
  * Périmètre volontairement borné ([NFR-SEC-5]) : ni comptabilité, ni historique de
  * factures, ni données d'autres sociétés. Ce qui n'est pas nécessaire à la vente au
@@ -27,7 +27,7 @@ import {
   warehouses,
 } from "@shared/schema";
 import { db } from "../../db";
-import { pluginRegistry } from "../plugins/registry";
+import { moduleRegistry } from "../plugins/registry";
 import { posApplication } from "../pos/application";
 import { syncDispatcher } from "./dispatcher";
 
@@ -120,13 +120,7 @@ export async function buildSyncSnapshot(options: SnapshotOptions) {
     posApplication.currentSession(companyId, userId),
   ]);
 
-  const enabledModules = await pluginRegistry.listForCompany(companyId);
-  const moduleData: Record<string, unknown> = {};
-  for (const plugin of pluginRegistry.list()) {
-    const enabled = enabledModules.find((entry) => entry.code === plugin.meta.code)?.isEnabled;
-    if (!enabled || !plugin.buildSnapshot) continue;
-    moduleData[plugin.meta.code] = await plugin.buildSnapshot(db, companyId);
-  }
+  const enabledModules = await moduleRegistry.listForCompany(companyId);
 
   return {
     generatedAt: new Date().toISOString(),
@@ -160,8 +154,7 @@ export async function buildSyncSnapshot(options: SnapshotOptions) {
     session,
     modules: enabledModules
       .filter((entry) => entry.isEnabled)
-      .map((entry) => ({ code: entry.code, name: entry.name, version: entry.version })),
-    moduleData,
+      .map((entry) => ({ code: entry.code, name: entry.name })),
     /** Entités que ce serveur accepte en écriture hors-ligne. */
     syncEntities: syncDispatcher.entities(),
     offlineAuthUsers: await buildOfflineAuthUsers(companyId, platform),

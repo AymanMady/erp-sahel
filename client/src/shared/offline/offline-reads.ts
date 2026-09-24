@@ -166,14 +166,12 @@ export function lowStockOffline(snapshot: OfflineSnapshot) {
 
 /**
  * Fiche produit hors ligne : produit, variantes et stock de l'instantané. Les
- * fournisseurs référencés n'y figurent pas ; le profil Auto Parts, si présent, oui.
+ * fournisseurs référencés n'y figurent pas.
  */
 export function productDetailOffline(snapshot: OfflineSnapshot, id: string, pending: Product[]) {
   const product =
     pending.find((row) => row.id === id) ?? snapshot.products.find((row) => row.id === id);
   if (!product) return null;
-  const autoParts = snapshot.moduleData?.auto_parts;
-  const profile = autoParts?.profiles.find((row) => row.productId === id);
   return {
     ...product,
     variants: snapshot.variants
@@ -187,18 +185,6 @@ export function productDetailOffline(snapshot: OfflineSnapshot, id: string, pend
         updatedAt: product.updatedAt,
       })),
     suppliers: [],
-    profile: profile
-      ? {
-          ...profile,
-          manufacturerName:
-            autoParts?.manufacturers.find((row) => row.id === profile.manufacturerId)?.name ?? null,
-          countryName:
-            autoParts?.countries.find((row) => row.id === profile.countryId)?.name ?? null,
-          qualityLabel:
-            autoParts?.qualityLevels.find((row) => row.id === profile.qualityLevelId)?.label ??
-            null,
-        }
-      : null,
     stockQuantity: stockQuantityOf(snapshot, id),
   };
 }

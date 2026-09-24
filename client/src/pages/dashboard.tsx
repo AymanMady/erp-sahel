@@ -15,7 +15,6 @@ import {
   IconPackages,
   IconPlus,
   IconReceipt2,
-  IconSearch,
   IconTrendingUp,
   IconTruckDelivery,
   IconUserPlus,
@@ -62,13 +61,6 @@ const QUICK_ACTIONS: {
   permission: PermissionCode;
 }[] = [
   { label: "Vendre", href: "/pos", icon: IconCashRegister, module: "pos", permission: "pos.use" },
-  {
-    label: "Chercher une pièce",
-    href: "/modules/auto-parts/search",
-    icon: IconSearch,
-    module: "auto_parts",
-    permission: "auto_parts.read",
-  },
   {
     label: "Nouvelle facture",
     href: "/invoices/new",

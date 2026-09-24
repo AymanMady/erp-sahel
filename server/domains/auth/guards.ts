@@ -1,5 +1,5 @@
 /**
- * Gardes HTTP : authentification, autorisation RBAC et garde d'activation de module.
+ * Gardes HTTP : authentification et autorisation RBAC.
  *
  * Ces trois gardes sont la **seule** barrière qui compte : le client masque des écrans
  * par confort, le serveur refuse par contrat ([NFR-SEC-2], [BR-12], [FR-PLAT-4]).
@@ -8,12 +8,7 @@
 import type { NextFunction, Request, RequestHandler, Response } from "express";
 
 import { hasAllPermissions, hasAnyPermission, type PermissionCode } from "@shared/rbac";
-import type { ModuleCode } from "@shared/schema";
-import {
-  ForbiddenError,
-  ModuleDisabledError,
-  UnauthorizedError,
-} from "../../shared/errors/app-error";
+import { ForbiddenError, UnauthorizedError } from "../../shared/errors/app-error";
 import { bearerToken, verifyAccessToken } from "./tokens";
 
 /** Renseigne `req.auth` à partir du jeton ; échoue si le jeton manque ou est invalide. */
@@ -77,22 +72,6 @@ export function authorize(options: AuthorizeOptions): RequestHandler {
     }
     if (options.allPermissions && !hasAllPermissions(auth.permissions, options.allPermissions)) {
       next(new ForbiddenError("Vous n'avez pas la permission d'effectuer cette action."));
-      return;
-    }
-    next();
-  };
-}
-
-/** Refuse l'accès aux endpoints d'un module non activé pour la société ([BR-12]). */
-export function requireModule(moduleCode: ModuleCode): RequestHandler {
-  return (req, _res, next) => {
-    const auth = req.auth;
-    if (!auth) {
-      next(new UnauthorizedError("Authentification requise"));
-      return;
-    }
-    if (!auth.enabledModules.includes(moduleCode)) {
-      next(new ModuleDisabledError(moduleCode));
       return;
     }
     next();

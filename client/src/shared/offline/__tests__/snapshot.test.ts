@@ -1,15 +1,14 @@
 /**
  * Recherche hors-ligne sur l'instantané local.
  *
- * L'enjeu : au comptoir sans réseau, la recherche par OEM doit donner **le même
- * résultat** qu'en ligne, équivalences transitives comprises ([FR-SRCH-2], [FR-SYNC-1]).
+ * L'enjeu : au comptoir sans réseau, la recherche doit donner **le même résultat**
+ * qu'en ligne ([FR-SRCH-2], [FR-SYNC-1]).
  */
 
 import "fake-indexeddb/auto";
 
 import { describe, expect, it } from "vitest";
 
-import { normalizeOem } from "@shared/oem";
 import {
   findByBarcodeOffline,
   searchPartiesOffline,
@@ -23,7 +22,7 @@ function buildSnapshot(): OfflineSnapshot {
     ({
       id,
       companyId: "c1",
-      profileType: "AUTO_PARTS",
+      profileType: "GENERIC",
       sku,
       name,
       description: "",
@@ -53,7 +52,16 @@ function buildSnapshot(): OfflineSnapshot {
       product("p2", "FH-DEN-001", "Filtre à huile Denso"),
       product("p3", "PLQ-001", "Plaquettes de frein", "1234567890123"),
     ],
-    variants: [],
+    variants: [
+      {
+        id: "v1",
+        productId: "p2",
+        sku: "FH-DEN-001-XL",
+        barcode: "9990001112223",
+        attributes: { taille: "XL" },
+        salePriceCents: null,
+      },
+    ],
     stock: [
       { productId: "p1", warehouseId: "w1", quantity: "12" },
       { productId: "p1", warehouseId: "w2", quantity: "8" },
@@ -74,51 +82,7 @@ function buildSnapshot(): OfflineSnapshot {
     registers: [],
     paymentAccounts: [],
     session: null,
-    modules: [{ code: "auto_parts", name: "Pièces auto", version: "1.0.0" }],
-    moduleData: {
-      auto_parts: {
-        profiles: [
-          {
-            productId: "p1",
-            oemReference: "90915-YZZD3",
-            oemNormalized: normalizeOem("90915-YZZD3"),
-            manufacturerId: "m1",
-            countryId: "co1",
-            qualityLevelId: "q1",
-            manufacturerRef: "",
-            warrantyMonths: 12,
-          },
-          {
-            productId: "p2",
-            oemReference: "90915-YZZE1",
-            oemNormalized: normalizeOem("90915-YZZE1"),
-            manufacturerId: "m2",
-            countryId: "co2",
-            qualityLevelId: "q2",
-            manufacturerRef: "",
-            warrantyMonths: 6,
-          },
-        ],
-        equivalences: [
-          { normA: normalizeOem("90915-10004"), normB: normalizeOem("90915-YZZD3") },
-          { normA: normalizeOem("90915-YZZD3"), normB: normalizeOem("90915-YZZE1") },
-        ],
-        compatibilities: [],
-        countries: [
-          { id: "co1", code: "JP", name: "Japon" },
-          { id: "co2", code: "TH", name: "Thaïlande" },
-        ],
-        qualityLevels: [
-          { id: "q1", code: "OEM", label: "Original (OEM)", rank: 1 },
-          { id: "q2", code: "PREMIUM", label: "Premium", rank: 3 },
-        ],
-        manufacturers: [
-          { id: "m1", name: "Toyota Genuine" },
-          { id: "m2", name: "Denso" },
-        ],
-        vehicles: { brands: [], models: [], generations: [], engines: [] },
-      },
-    },
+    modules: [{ code: "pos", name: "Caisse" }],
     syncEntities: [],
   };
 }
@@ -135,17 +99,9 @@ describe("recherche produit hors ligne", () => {
     expect(searchProductsOffline(snapshot, "FH-TOY")).toHaveLength(1);
   });
 
-  /** Le cas décisif : une référence non portée par aucun produit, mais équivalente. */
-  it("retrouve les articles via la fermeture transitive des équivalences", () => {
-    const results = searchProductsOffline(snapshot, "90915-10004");
-    expect(results.map((product) => product.id).sort()).toEqual(["p1", "p2"]);
-  });
-
-  it("enrichit les résultats avec fabricant, origine et qualité", () => {
-    const [first] = searchProductsOffline(snapshot, "FH-TOY");
-    expect(first.manufacturerName).toBe("Toyota Genuine");
-    expect(first.countryName).toBe("Japon");
-    expect(first.qualityLabel).toBe("Original (OEM)");
+  it("trouve par code-barres d'une variante", () => {
+    const results = searchProductsOffline(snapshot, "9990001112223");
+    expect(results.map((product) => product.id)).toEqual(["p2"]);
   });
 
   it("agrège le stock de tous les magasins", () => {
@@ -155,6 +111,7 @@ describe("recherche produit hors ligne", () => {
 
   it("résout un code-barres scanné", () => {
     expect(findByBarcodeOffline(snapshot, "1234567890123")?.id).toBe("p3");
+    expect(findByBarcodeOffline(snapshot, "9990001112223")?.id).toBe("p2");
     expect(findByBarcodeOffline(snapshot, "0000")).toBeNull();
   });
 });

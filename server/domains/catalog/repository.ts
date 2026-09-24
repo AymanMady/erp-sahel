@@ -1,6 +1,6 @@
 /** Persistance du catalogue générique (produits, variantes, catégories, fournisseurs). */
 
-import { and, asc, eq, inArray, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, eq, or, sql, type SQL } from "drizzle-orm";
 
 import {
   categories,
@@ -23,13 +23,8 @@ export const productVariantsRepository = new TenantRepository(productVariants, [
 export interface ProductSearchOptions {
   search?: string;
   categoryId?: string | null;
-  profileType?: string | null;
   isService?: boolean | null;
   includeArchived?: boolean;
-  /** Restriction fournie par un module (sous-requête sur `products.id`). */
-  moduleFilter?: SQL;
-  /** Identifiants explicites — utilisé par la recherche OEM avec équivalences. */
-  productIds?: string[] | null;
   limit?: number;
   offset?: number;
   orderBy?: "name" | "sku" | "price" | "recent";
@@ -47,10 +42,7 @@ export class CatalogRepository {
       eq(products.companyId, companyId),
       options.includeArchived ? undefined : eq(products.isActive, true),
       options.categoryId ? eq(products.categoryId, options.categoryId) : undefined,
-      options.profileType ? eq(products.profileType, options.profileType as never) : undefined,
       options.isService == null ? undefined : eq(products.isService, options.isService),
-      options.moduleFilter,
-      options.productIds ? inArray(products.id, options.productIds) : undefined,
     ];
 
     if (options.search) {

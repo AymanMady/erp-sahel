@@ -8,22 +8,10 @@ import type { ReactNode } from "react";
 import { IconPuzzle } from "@tabler/icons-react";
 import { Link, useLocation } from "wouter";
 
-import { FEATURE_MODULES } from "@shared/modules-catalog";
+import { moduleName } from "@shared/modules-catalog";
 import { useSession } from "@/shared/auth/session";
 import { moduleForPath } from "@/shared/config/nav";
 import { Button } from "@/shared/ui/button";
-
-const BUSINESS_NAMES: Record<string, string> = {
-  auto_parts: "Pièces auto",
-  clothing: "Vêtements",
-  market: "Alimentation",
-};
-
-function moduleName(code: string): string {
-  return (
-    FEATURE_MODULES.find((feature) => feature.code === code)?.name ?? BUSINESS_NAMES[code] ?? code
-  );
-}
 
 export function ModuleGate({ children }: { children: ReactNode }) {
   const [pathname] = useLocation();

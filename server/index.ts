@@ -1,8 +1,8 @@
 /**
  * Point d'entrée du serveur ERP Sahel.
  *
- * Démarrage : validation de la configuration → enregistrement des modules →
- * installation du registre de plugins → routes → client (Vite en dev, statique en prod).
+ * Démarrage : validation de la configuration → routes → client (Vite en dev, statique
+ * en prod).
  */
 
 import "dotenv/config";
@@ -10,7 +10,6 @@ import { createServer, type Server } from "node:http";
 
 import { createApp } from "./app";
 import { closeDatabase, pool } from "./db";
-import { pluginRegistry } from "./domains/plugins/registry";
 import { logger } from "./shared/logging/logger";
 
 let httpServer: Server | undefined;
@@ -32,7 +31,6 @@ async function bootstrap(): Promise<void> {
   server.listen(port, () => {
     logger.info(`ERP Sahel démarré sur http://localhost:${port}`, {
       env: process.env.NODE_ENV ?? "development",
-      modules: pluginRegistry.list().map((plugin) => plugin.meta.code),
     });
   });
 }

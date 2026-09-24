@@ -13,10 +13,14 @@ import {
   type Company,
   type InsertCompany,
 } from "@shared/schema";
+import { MODULE_PRESETS } from "@shared/modules-catalog";
 import { runInTransaction, type Database } from "../../db";
 import { NotFoundError } from "../../shared/errors/app-error";
 import { accountingApplication } from "../accounting/application";
+import { moduleRegistry } from "../plugins/registry";
 import { companiesRepository } from "./repository";
+
+const SIMPLE_PRESET = MODULE_PRESETS.find((preset) => preset.code === "simple")!;
 
 class TenancyApplication {
   async requireCompany(companyId: string): Promise<Company> {
@@ -34,6 +38,9 @@ class TenancyApplication {
     return runInTransaction(async (tx) => {
       const company = await companiesRepository.create(input, tx);
       await this.bootstrap(tx, company);
+      // Une nouvelle société démarre au niveau « Simple » (caisse, stock, achats) :
+      // un menu court dès le premier jour. Elle active le reste quand elle en a besoin.
+      await moduleRegistry.applySelection(company.id, SIMPLE_PRESET.modules, tx);
       return company;
     });
   }

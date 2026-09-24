@@ -60,8 +60,6 @@ export interface BuiltDocument {
 
 export interface BuildDocumentOptions {
   globalDiscountBp?: number;
-  /** Pays d'origine par produit, fourni par un module (Auto Parts) ([FR-VNT-5]). */
-  originCountries?: Map<string, string>;
 }
 
 /**
@@ -164,9 +162,7 @@ export async function buildDocumentLines(
       totalVatCents: computed.totalVatCents,
       totalTtcCents: computed.totalTtcCents,
       position: index,
-      originCountry:
-        entry.raw.originCountry ||
-        (entry.raw.productId ? (options.originCountries?.get(entry.raw.productId) ?? "") : ""),
+      originCountry: entry.raw.originCountry ?? "",
     };
   });
 

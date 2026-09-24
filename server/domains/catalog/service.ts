@@ -19,20 +19,7 @@ import {
 export class CatalogService {
   async searchProducts(companyId: string, query: unknown) {
     const parsed = productSearchQuerySchema.parse(query ?? {});
-    const { withStock, limit, offset, orderBy, includeArchived, ...rest } = parsed;
-    return catalogApplication.search(companyId, {
-      search: rest.search,
-      categoryId: rest.categoryId,
-      profileType: rest.profileType,
-      isService: rest.isService,
-      includeArchived,
-      limit,
-      offset,
-      orderBy,
-      withStock,
-      // Les critères non consommés par le noyau sont relayés aux modules tels quels.
-      moduleQuery: rest as Record<string, unknown>,
-    });
+    return catalogApplication.search(companyId, parsed);
   }
 
   async getProduct(companyId: string, id: unknown) {

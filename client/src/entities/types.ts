@@ -94,46 +94,7 @@ export interface ProductDetail extends Product {
     supplierName: string;
     supplierCode: string;
   }[];
-  profile: AutoPartProfileView | ClothingProfileView | MarketProfileView | null;
   stockQuantity: number;
-}
-
-export interface AutoPartProfileView {
-  productId: string;
-  oemReference: string;
-  oemNormalized: string;
-  manufacturerId: string | null;
-  countryId: string | null;
-  qualityLevelId: string | null;
-  manufacturerRef: string;
-  warrantyMonths: number;
-  manufacturerName?: string | null;
-  countryName?: string | null;
-  countryCode?: string | null;
-  qualityLabel?: string | null;
-}
-
-export interface ClothingProfileView {
-  productId: string;
-  brand: string;
-  gender: string;
-  season: string;
-  material: string;
-  collection: string;
-  sizeGridId: string | null;
-  colors: string[];
-  sizeGridName?: string | null;
-}
-
-export interface MarketProfileView {
-  productId: string;
-  brand: string;
-  measureUnit: string;
-  weightGrams: number;
-  volumeMl: number;
-  taxCategory: string;
-  isPerishable: boolean;
-  expiryAlertDays: number;
 }
 
 export interface PartyDetail extends Party {
@@ -271,21 +232,11 @@ export interface DashboardData {
 
 export interface ModuleDescriptor {
   code: ModuleCode;
-  /** `feature` : caisse, achats, stock… ; `business` : pièces auto, vêtements, marché. */
-  kind: "feature" | "business";
-  defaultEnabled: boolean;
   name: string;
   description: string;
-  version: string;
-  coreVersion: string;
-  dependencies: string[];
-  profileType?: string;
   icon: string;
-  permissions: string[];
-  navigation: unknown[];
-  searchCriteria: { key: string; label: string; type: string; optionsEndpoint?: string }[];
+  dependencies: string[];
   isEnabled: boolean;
-  enabledVersion: string | null;
 }
 
 export interface UserWithRoles extends PublicUser {

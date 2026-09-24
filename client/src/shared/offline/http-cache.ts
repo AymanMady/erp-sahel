@@ -45,10 +45,6 @@ const SNAPSHOT_BACKED_PATHS = new Set([
   "/api/warehouses",
   "/api/pos/registers",
   "/api/pos/sessions/current",
-  "/api/modules/auto-parts/countries",
-  "/api/modules/auto-parts/quality-levels",
-  "/api/modules/auto-parts/manufacturers",
-  "/api/modules/auto-parts/vehicles",
 ]);
 
 interface CachedResponse {

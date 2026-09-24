@@ -1,12 +1,10 @@
 /**
  * Navigation de l'application.
  *
- * Chaque entrée porte sa **permission** et, pour les modules métier, son **code de
- * module** : la barre latérale est filtrée à l'affichage, de sorte qu'un caissier ne
- * voie pas la comptabilité et qu'une société sans module Vêtements n'ait pas d'entrée
- * « Vêtements » ([FR-PLAT-3], [BR-12]). Les fonctionnalités (caisse, achats, stock…)
- * sont elles aussi des modules : une boutique qui n'utilise que la caisse et le stock
- * n'a qu'un menu de quelques lignes.
+ * Chaque entrée porte sa **permission** et, le cas échéant, son **module** (caisse,
+ * achats, stock…) : la barre latérale est filtrée à l'affichage, de sorte qu'un
+ * caissier ne voie pas la comptabilité et qu'une boutique qui n'utilise que la caisse
+ * et le stock n'ait qu'un menu de quelques lignes.
  *
  * Ce filtrage est **ergonomique**, pas sécuritaire : l'autorisation réelle est
  * vérifiée côté serveur sur chaque endpoint.
@@ -18,20 +16,16 @@ import {
   IconBuildingBank,
   IconBuildingStore,
   IconCalculator,
-  IconCar,
   IconCashRegister,
   IconChartBar,
   IconClipboardList,
   IconFileInvoice,
-  IconHistory,
   IconLayoutDashboard,
   IconPackages,
   IconPuzzle,
   IconReceipt,
   IconRefresh,
   IconSettings,
-  IconShirt,
-  IconShoppingBag,
   IconShoppingCart,
   IconTool,
   IconTruckDelivery,
@@ -55,7 +49,7 @@ export interface NavItem {
   icon?: Icon;
   badge?: string;
   permission?: PermissionCode;
-  /** Entrée conditionnée à l'activation d'un module métier. */
+  /** Entrée conditionnée à l'activation d'un module. */
   module?: ModuleCode;
   items?: NavChild[];
 }
@@ -162,40 +156,6 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: "Mon métier",
-    items: [
-      {
-        title: "Pièces auto",
-        icon: IconCar,
-        module: "auto_parts",
-        permission: "auto_parts.read",
-        items: [
-          { title: "Chercher une référence", url: "/modules/auto-parts/search" },
-          { title: "Équivalences", url: "/modules/auto-parts/equivalences" },
-          { title: "Fabricants", url: "/modules/auto-parts/manufacturers" },
-          { title: "Véhicules", url: "/modules/auto-parts/vehicles" },
-        ],
-      },
-      {
-        title: "Vêtements",
-        icon: IconShirt,
-        module: "clothing",
-        permission: "clothing.read",
-        items: [{ title: "Tailles", url: "/modules/clothing/size-grids" }],
-      },
-      {
-        title: "Alimentation",
-        icon: IconShoppingBag,
-        module: "market",
-        permission: "market.read",
-        items: [
-          { title: "Lots et dates", url: "/modules/market/lots" },
-          { title: "Bientôt périmés", url: "/modules/market/expiring" },
-        ],
-      },
-    ],
-  },
-  {
     label: "Argent",
     items: [
       {
@@ -259,12 +219,6 @@ export const navGroups: NavGroup[] = [
         ],
       },
       { title: "Synchronisation", url: "/sync", icon: IconRefresh },
-      {
-        title: "Journal d'audit",
-        url: "/settings/audit",
-        icon: IconHistory,
-        permission: "audit.read",
-      },
     ],
   },
 ];

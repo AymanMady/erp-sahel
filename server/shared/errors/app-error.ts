@@ -38,8 +38,8 @@ export class ForbiddenError extends AppError {
 
 /** Écran ou endpoint d'un module non activé pour la société courante ([BR-12]). */
 export class ModuleDisabledError extends ForbiddenError {
-  constructor(moduleCode: string) {
-    super(`Le module « ${moduleCode} » n'est pas activé pour cette société.`, "MODULE_DISABLED");
+  constructor(moduleName: string) {
+    super(`Le module « ${moduleName} » n'est pas activé pour cette société.`, "MODULE_DISABLED");
   }
 }
 
@@ -102,9 +102,6 @@ const UNIQUE_CONSTRAINT_MESSAGES: Record<string, string> = {
   uq_pos_registers_company_code: "Une caisse avec ce code existe déjà.",
   uq_users_username: "Cet identifiant est déjà utilisé.",
   uq_companies_subdomain: "Ce sous-domaine est déjà pris.",
-  uq_ap_manufacturers: "Ce fabricant existe déjà.",
-  uq_ap_vehicle_brands: "Cette marque véhicule existe déjà.",
-  uq_ap_oem_equivalences: "Cette équivalence est déjà déclarée.",
 };
 
 function uniqueConstraintMessage(constraint?: string): string {

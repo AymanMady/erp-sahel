@@ -12,13 +12,11 @@ import express, { type Express } from "express";
 
 import { assertTokenConfiguration } from "./domains/auth/tokens";
 import { authRepository } from "./domains/auth/repository";
-import { pluginRegistry } from "./domains/plugins/registry";
-import { registerPlugins } from "./modules";
 import { registerRoutes } from "./routes";
 import { logger } from "./shared/logging/logger";
 
 /**
- * Valide la configuration, installe les modules et enregistre les routes API.
+ * Valide la configuration et enregistre les routes API.
  * Le client (Vite ou statique) reste à la charge de l'appelant.
  */
 export async function createApp(): Promise<Express> {
@@ -58,9 +56,6 @@ export async function createApp(): Promise<Express> {
     });
     next();
   });
-
-  registerPlugins();
-  await pluginRegistry.installAll();
 
   const purged = await authRepository.purgeExpiredTokens();
   if (purged > 0) logger.info("Sessions expirées purgées", { count: purged });

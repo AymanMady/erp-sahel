@@ -1,7 +1,7 @@
 /**
  * Stock multi-critères : magasin → emplacement → lot, pour un produit/variante donné
- * ([FR-STK-1], [BR-9]). Deux articles de même OEM mais fabricants différents sont deux
- * produits distincts, donc deux stocks distincts ([BR-2], [FR-STK-2]).
+ * ([FR-STK-1], [BR-9]). Deux articles de même référence mais de fournisseurs différents
+ * sont deux produits distincts, donc deux stocks distincts ([BR-2], [FR-STK-2]).
  *
  * **Le domaine `inventory` est le seul propriétaire de l'état de stock** : aucune autre
  * couche n'écrit `stock_items` ni `stock_movements` (règle d'architecture, cf.
@@ -80,7 +80,7 @@ export const stockItems = pgTable(
       .notNull()
       .references(() => warehouses.id, { onDelete: "cascade" }),
     locationId: uuid("location_id").references(() => stockLocations.id, { onDelete: "set null" }),
-    /** Lot optionnel (Q5) ; porte la DLC pour le module Market. */
+    /** Lot optionnel (Q5). */
     lotNumber: text("lot_number").default("").notNull(),
     quantity: quantity("quantity").default("0").notNull(),
     reservedQuantity: quantity("reserved_quantity").default("0").notNull(),

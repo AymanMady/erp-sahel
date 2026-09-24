@@ -14,7 +14,6 @@ import type {
   PosRegister,
   PosSession,
 } from "@shared/schema";
-import { normalizeOem, resolveEquivalents } from "@shared/oem";
 import { api } from "@/shared/api/http";
 import { devicePlatform } from "@/shared/desktop/desktop";
 import { readSnapshotCache, writeSnapshotCache } from "./storage";
@@ -25,41 +24,6 @@ export interface SnapshotStock {
   productId: string;
   warehouseId: string;
   quantity: string;
-}
-
-export interface AutoPartsSnapshot {
-  profiles: {
-    productId: string;
-    oemReference: string;
-    oemNormalized: string;
-    manufacturerId: string | null;
-    countryId: string | null;
-    qualityLevelId: string | null;
-    manufacturerRef: string;
-    warrantyMonths: number;
-  }[];
-  equivalences: { normA: string; normB: string }[];
-  compatibilities: {
-    productId: string;
-    modelId: string;
-    generationId: string | null;
-    engineId: string | null;
-  }[];
-  countries: { id: string; code: string; name: string }[];
-  qualityLevels: { id: string; code: string; label: string; rank: number }[];
-  manufacturers: { id: string; name: string }[];
-  vehicles: {
-    brands: { id: string; name: string }[];
-    models: { id: string; brandId: string; name: string }[];
-    generations: {
-      id: string;
-      modelId: string;
-      name: string;
-      yearStart: number;
-      yearEnd: number | null;
-    }[];
-    engines: { id: string; generationId: string; code: string; label: string }[];
-  };
 }
 
 export interface OfflineSnapshot {
@@ -103,8 +67,7 @@ export interface OfflineSnapshot {
     isDefault: boolean;
   }[];
   session: PosSession | null;
-  modules: { code: string; name: string; version: string }[];
-  moduleData: { auto_parts?: AutoPartsSnapshot; [key: string]: unknown };
+  modules: { code: string; name: string }[];
   syncEntities: string[];
 }
 
@@ -171,19 +134,11 @@ export function stockQuantityOf(snapshot: OfflineSnapshot, productId: string): n
 
 export interface OfflineProductResult extends Product {
   stockQuantity: number;
-  /** Profil Auto Parts, quand le module est actif. */
-  oemReference?: string;
-  manufacturerName?: string;
-  countryName?: string;
-  qualityLabel?: string;
 }
 
 /**
- * Recherche produit **hors ligne**.
- *
- * Reproduit le comportement du serveur, y compris la recherche par OEM avec
- * **fermeture transitive des équivalences** : c'est le cœur de la valeur métier du
- * comptoir, il ne doit pas disparaître avec le réseau ([FR-SRCH-2], [FR-SRCH-3]).
+ * Recherche produit **hors ligne** (nom, référence, code-barres) : même comportement
+ * que le serveur, pour que le comptoir continue de vendre sans réseau ([FR-SRCH-2]).
  */
 export function searchProductsOffline(
   snapshot: OfflineSnapshot,
@@ -191,22 +146,6 @@ export function searchProductsOffline(
   limit = 50
 ): OfflineProductResult[] {
   const term = query.trim().toLowerCase();
-  const autoParts = snapshot.moduleData?.auto_parts;
-
-  const profileByProduct = new Map(
-    (autoParts?.profiles ?? []).map((profile) => [profile.productId, profile])
-  );
-  const manufacturerById = new Map(
-    (autoParts?.manufacturers ?? []).map((row) => [row.id, row.name])
-  );
-  const countryById = new Map((autoParts?.countries ?? []).map((row) => [row.id, row.name]));
-  const qualityById = new Map((autoParts?.qualityLevels ?? []).map((row) => [row.id, row.label]));
-
-  // Classe d'équivalence de la saisie, pour retrouver les articles « compatibles ».
-  const equivalentNorms = term
-    ? new Set(resolveEquivalents(term, autoParts?.equivalences ?? []))
-    : new Set<string>();
-  const normalizedTerm = normalizeOem(term);
 
   const matches = snapshot.products.filter((product) => {
     if (!product.isActive) return false;
@@ -214,26 +153,16 @@ export function searchProductsOffline(
     if (product.name.toLowerCase().includes(term)) return true;
     if (product.sku.toLowerCase().includes(term)) return true;
     if (product.barcode && product.barcode.toLowerCase() === term) return true;
-
-    const profile = profileByProduct.get(product.id);
-    if (!profile) return false;
-    if (profile.oemNormalized === normalizedTerm) return true;
-    return equivalentNorms.has(profile.oemNormalized);
+    // Une variante (taille, couleur…) peut porter son propre code-barres.
+    return snapshot.variants.some(
+      (variant) => variant.productId === product.id && variant.barcode.toLowerCase() === term
+    );
   });
 
-  return matches.slice(0, limit).map((product) => {
-    const profile = profileByProduct.get(product.id);
-    return {
-      ...product,
-      stockQuantity: stockQuantityOf(snapshot, product.id),
-      oemReference: profile?.oemReference,
-      manufacturerName: profile?.manufacturerId
-        ? manufacturerById.get(profile.manufacturerId)
-        : undefined,
-      countryName: profile?.countryId ? countryById.get(profile.countryId) : undefined,
-      qualityLabel: profile?.qualityLevelId ? qualityById.get(profile.qualityLevelId) : undefined,
-    };
-  });
+  return matches.slice(0, limit).map((product) => ({
+    ...product,
+    stockQuantity: stockQuantityOf(snapshot, product.id),
+  }));
 }
 
 /** Recherche de tiers hors ligne (nom, code, téléphone). */
@@ -269,12 +198,9 @@ export function findByBarcodeOffline(snapshot: OfflineSnapshot, barcode: string)
 
 export interface OfflineProductFilters {
   search?: string;
-  profileType?: string | null;
   categoryId?: string | null;
   isService?: boolean | null;
   includeArchived?: boolean;
-  oem?: string;
-  manufacturerId?: string | null;
   orderBy?: "name" | "sku" | "price" | "recent";
   limit?: number;
   offset?: number;
@@ -298,23 +224,12 @@ export function listProductsOffline(
   const limit = filters.limit ?? 25;
   const offset = filters.offset ?? 0;
   const term = filters.search?.trim().toLowerCase() ?? "";
-  const autoParts = snapshot.moduleData?.auto_parts;
-  const profileByProduct = new Map(
-    (autoParts?.profiles ?? []).map((profile) => [profile.productId, profile])
-  );
   const categoryById = new Map(snapshot.categories.map((row) => [row.id, row.name]));
-  const oemNorm = filters.oem ? normalizeOem(filters.oem) : "";
 
   const matches = [...pending, ...snapshot.products].filter((product) => {
     if (!filters.includeArchived && !product.isActive) return false;
-    if (filters.profileType && product.profileType !== filters.profileType) return false;
     if (filters.categoryId && product.categoryId !== filters.categoryId) return false;
     if (typeof filters.isService === "boolean" && product.isService !== filters.isService) {
-      return false;
-    }
-    const profile = profileByProduct.get(product.id);
-    if (oemNorm && profile?.oemNormalized !== oemNorm) return false;
-    if (filters.manufacturerId && profile?.manufacturerId !== filters.manufacturerId) {
       return false;
     }
     if (!term) return true;

@@ -38,15 +38,15 @@ leur duplication à chaque amorçage.
 
 ### Modules
 
-`installed_plugins` (état global) · `company_plugins` (activation par société)
+`company_plugins` (activation par société ; sans ligne, le module est actif)
 
 ### Catalogue
 
 `categories` · `products` · `product_variants` · `attribute_definitions` ·
 `product_suppliers`
 
-`products` est **générique** : aucun attribut métier. Les profils OEM, taille/couleur ou
-poids/péremption vivent dans les tables des modules, attachés 1–1.
+`products` est **générique** : il sert tout type de commerce. Ce qui distingue les
+articles (taille, couleur, conditionnement…) passe par les variantes et leurs attributs.
 
 ### Tiers
 
@@ -119,27 +119,22 @@ du document.
 `sync_operations` (journal d'ingestion, unique sur `client_uuid`) · `sync_devices`
 (supervision des postes)
 
-### Modules métier
+### Tables historiques
 
-- **Auto Parts** : `ap_countries`, `ap_quality_levels`, `ap_manufacturers`,
-  `ap_vehicle_brands`, `ap_vehicle_models`, `ap_vehicle_generations`, `ap_vehicle_engines`,
-  `ap_part_profiles`, `ap_part_vehicle_compat`, `ap_oem_equivalences`
-- **Clothing** : `cl_size_grids`, `cl_profiles`
-- **Market** : `mk_profiles`, `mk_product_lots`
+Les tables des anciens modules métier (`ap_*`, `cl_*`, `mk_*`, `installed_plugins`)
+restent en base mais ne sont plus utilisées ; voir [`MODULES.md`](MODULES.md) §5.
 
 ---
 
 ## Règles métier portées par le schéma
 
-| Règle                                         | Mise en œuvre                                                     |
-| --------------------------------------------- | ----------------------------------------------------------------- |
-| Une même OEM, plusieurs articles distincts    | `ap_part_profiles.oem_reference` indexé, **non unique**           |
-| Équivalences symétriques                      | Paire canonique ordonnée + unicité `(company, norm_a, norm_b)`    |
-| Stock indexé par article et axes, pas par OEM | Unicité `(company, product, warehouse, lot)`                      |
-| Facture validée inaltérable                   | `is_locked` + refus applicatif                                    |
-| Écriture équilibrée                           | `total_debit_cents = total_credit_cents`, vérifié avant insertion |
-| Synchronisation exactement une fois           | Index unique sur `client_uuid`, sur chaque entité                 |
-| Isolation multi-société                       | `company_id` + filtrage systématique par `TenantRepository`       |
+| Règle                               | Mise en œuvre                                                     |
+| ----------------------------------- | ----------------------------------------------------------------- |
+| Stock indexé par article et axes    | Unicité `(company, product, warehouse, lot)`                      |
+| Facture validée inaltérable         | `is_locked` + refus applicatif                                    |
+| Écriture équilibrée                 | `total_debit_cents = total_credit_cents`, vérifié avant insertion |
+| Synchronisation exactement une fois | Index unique sur `client_uuid`, sur chaque entité                 |
+| Isolation multi-société             | `company_id` + filtrage systématique par `TenantRepository`       |
 
 ---
 

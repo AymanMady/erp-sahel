@@ -10,15 +10,12 @@ import type { Category, Paginated, ProductDetail, ProductListItem } from "@/enti
 export interface ProductFilters {
   search?: string;
   categoryId?: string | null;
-  profileType?: string | null;
   isService?: boolean | null;
   includeArchived?: boolean;
   withStock?: boolean;
   orderBy?: "name" | "sku" | "price" | "recent";
   limit?: number;
   offset?: number;
-  /** Critères contribués par les modules (OEM, fabricant, taille…). */
-  [key: string]: unknown;
 }
 
 export const catalogApi = {
@@ -30,16 +27,12 @@ export const catalogApi = {
           snapshot,
           {
             search: filters.search,
-            profileType: filters.profileType,
             categoryId: filters.categoryId,
             isService: filters.isService,
             includeArchived: filters.includeArchived,
             orderBy: filters.orderBy,
             limit: filters.limit,
             offset: filters.offset,
-            oem: typeof filters.oem === "string" ? filters.oem : undefined,
-            manufacturerId:
-              typeof filters.manufacturerId === "string" ? filters.manufacturerId : null,
           },
           await pendingProducts()
         )

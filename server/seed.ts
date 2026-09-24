@@ -11,8 +11,9 @@
  */
 
 import "dotenv/config";
-import { eq, sql } from "drizzle-orm";
+import { eq, notInArray, sql } from "drizzle-orm";
 
+import { MODULE_PRESETS } from "@shared/modules-catalog";
 import { computeDocumentTotals } from "@shared/pricing";
 import { todayInput, addDays } from "@shared/format";
 import {
@@ -25,8 +26,6 @@ import { slugify } from "@shared/format";
 import {
   bankAccounts,
   categories,
-  manufacturers,
-  partVehicleCompat,
   parties,
   permissions as permissionsTable,
   posRegisters,
@@ -37,23 +36,16 @@ import {
   userCompanies,
   userRoles,
   users,
-  vehicleBrands,
-  vehicleEngines,
-  vehicleGenerations,
-  vehicleModels,
   warehouses,
   type Company,
-  type QualityCode,
 } from "@shared/schema";
 import { closeDatabase, db } from "./db";
 import { hashPassword } from "./domains/auth/application";
-import { autoPartsRepository } from "./modules/auto-parts/repository";
+import { moduleRegistry } from "./domains/plugins/registry";
 import { catalogApplication } from "./domains/catalog/application";
 import { invoicingApplication } from "./domains/invoicing/application";
 import { paymentsApplication } from "./domains/payments/application";
-import { pluginRegistry } from "./domains/plugins/registry";
 import { posApplication } from "./domains/pos/application";
-import { registerPlugins } from "./modules";
 import { salesApplication } from "./domains/sales/application";
 import { tenancyApplication } from "./domains/tenancy/application";
 import { logger } from "./shared/logging/logger";
@@ -66,13 +58,18 @@ async function seedPermissionsAndRoles(): Promise<void> {
       .values({
         code,
         label: PERMISSIONS[code],
-        moduleCode: code.split(".")[0].includes("_") ? code.split(".")[0] : "core",
+        moduleCode: "core",
       })
       .onConflictDoUpdate({
         target: permissionsTable.code,
         set: { label: PERMISSIONS[code], updatedAt: new Date() },
       });
   }
+  // Droits retirés du catalogue (anciens modules métier) : supprimés avec leurs
+  // affectations, pour ne plus apparaître dans l'écran des rôles.
+  await db
+    .delete(permissionsTable)
+    .where(notInArray(permissionsTable.code, [...ALL_PERMISSION_CODES]));
 
   for (const preset of DEFAULT_ROLES) {
     const [role] = await db
@@ -118,9 +115,9 @@ async function seedCompany(): Promise<Company> {
   if (existing) return existing;
 
   const company = await tenancyApplication.create({
-    name: process.env.SEED_COMPANY_NAME ?? "Sahel Pièces Auto",
+    name: process.env.SEED_COMPANY_NAME ?? "Sahel Commerce",
     subdomain,
-    legalName: process.env.SEED_COMPANY_NAME ?? "Sahel Pièces Auto SARL",
+    legalName: process.env.SEED_COMPANY_NAME ?? "Sahel Commerce SARL",
     currency: "MRU",
     language: "fr",
     accountingStandard: "OHADA",
@@ -128,7 +125,6 @@ async function seedCompany(): Promise<Company> {
     defaultVatRateBp: 1600,
     city: "Nouakchott",
     country: "Mauritanie",
-    primaryModule: "auto_parts",
   });
   logger.info("Société créée", { name: company.name, subdomain: company.subdomain });
   return company;
@@ -193,168 +189,88 @@ async function isCompanyEmpty(companyId: string): Promise<boolean> {
   return (row?.value ?? 0) === 0;
 }
 
-const MANUFACTURERS = [
-  { name: "Toyota Genuine", country: "JP" },
-  { name: "Bosch", country: "DE" },
-  { name: "Denso", country: "JP" },
-  { name: "NGK", country: "JP" },
-  { name: "SKF", country: "DE" },
-  { name: "KYB", country: "JP" },
-  { name: "Aisin", country: "JP" },
-  { name: "Febi Bilstein", country: "DE" },
-];
-
-const VEHICLES = [
-  {
-    brand: "Toyota",
-    models: [
-      {
-        name: "Hilux",
-        generations: [
-          { name: "AN120", yearStart: 2016, yearEnd: 2020, engines: ["2GD-FTV", "1GD-FTV"] },
-          { name: "AN130", yearStart: 2021, yearEnd: null, engines: ["2GD-FTV"] },
-        ],
-      },
-      {
-        name: "Land Cruiser",
-        generations: [
-          { name: "J150", yearStart: 2009, yearEnd: 2023, engines: ["1GD-FTV", "2TR-FE"] },
-        ],
-      },
-    ],
-  },
-  {
-    brand: "Nissan",
-    models: [
-      {
-        name: "Navara",
-        generations: [{ name: "D23", yearStart: 2014, yearEnd: null, engines: ["YS23DDTT"] }],
-      },
-    ],
-  },
-  {
-    brand: "Hyundai",
-    models: [
-      {
-        name: "H1",
-        generations: [{ name: "TQ", yearStart: 2007, yearEnd: 2021, engines: ["D4CB"] }],
-      },
-    ],
-  },
-];
-
-/**
- * Catalogue de démonstration.
- * Le premier bloc illustre **[BR-2]** : trois articles distincts partagent la même
- * référence OEM `90915-YZZD3` avec des fabricants, origines, prix et qualités différents.
- */
-const AUTO_PARTS_DEMO: {
+/** Catalogue de démonstration : une boutique générale, pour montrer un ERP multi-usage. */
+const DEMO_PRODUCTS: {
   sku: string;
   name: string;
-  oem: string;
-  manufacturer: string;
-  country: string;
-  quality: QualityCode;
+  category: string;
+  unit: string;
   purchase: number;
   sale: number;
   stock: number;
 }[] = [
   {
-    sku: "FH-TOY-001",
-    name: "Filtre à huile Hilux 2.4D",
-    oem: "90915-YZZD3",
-    manufacturer: "Toyota Genuine",
-    country: "JP",
-    quality: "OEM",
-    purchase: 32000,
-    sale: 52000,
-    stock: 24,
-  },
-  {
-    sku: "FH-DEN-001",
-    name: "Filtre à huile Hilux 2.4D (Denso)",
-    oem: "90915-YZZD3",
-    manufacturer: "Denso",
-    country: "TH",
-    quality: "PREMIUM",
-    purchase: 21000,
-    sale: 36000,
+    sku: "RIZ-25",
+    name: "Riz 25 kg",
+    category: "Alimentation",
+    unit: "sac",
+    purchase: 90000,
+    sale: 110000,
     stock: 40,
   },
   {
-    sku: "FH-BOS-001",
-    name: "Filtre à huile Hilux 2.4D (Bosch)",
-    oem: "90915-YZZD3",
-    manufacturer: "Bosch",
-    country: "DE",
-    quality: "AFTERMARKET",
-    purchase: 15000,
-    sale: 27000,
+    sku: "HUI-5L",
+    name: "Huile 5 L",
+    category: "Alimentation",
+    unit: "bidon",
+    purchase: 38000,
+    sale: 45000,
     stock: 60,
   },
   {
-    sku: "PLG-NGK-002",
-    name: "Bougie d'allumage iridium",
-    oem: "90919-01253",
-    manufacturer: "NGK",
-    country: "JP",
-    quality: "PREMIUM",
+    sku: "SUC-1",
+    name: "Sucre 1 kg",
+    category: "Alimentation",
+    unit: "paquet",
+    purchase: 4000,
+    sale: 5000,
+    stock: 150,
+  },
+  {
+    sku: "THE-500",
+    name: "Thé vert 500 g",
+    category: "Alimentation",
+    unit: "paquet",
     purchase: 9000,
-    sale: 16500,
-    stock: 120,
+    sale: 12000,
+    stock: 80,
   },
   {
-    sku: "AMO-KYB-010",
-    name: "Amortisseur avant Hilux",
-    oem: "48510-0K640",
-    manufacturer: "KYB",
-    country: "JP",
-    quality: "OEM",
-    purchase: 145000,
-    sale: 225000,
-    stock: 12,
-  },
-  {
-    sku: "ROU-SKF-004",
-    name: "Roulement de roue avant",
-    oem: "90369-T0003",
-    manufacturer: "SKF",
-    country: "DE",
-    quality: "PREMIUM",
-    purchase: 68000,
-    sale: 112000,
-    stock: 18,
-  },
-  {
-    sku: "PLQ-FEB-021",
-    name: "Plaquettes de frein avant",
-    oem: "04465-0K260",
-    manufacturer: "Febi Bilstein",
-    country: "DE",
-    quality: "AFTERMARKET",
-    purchase: 42000,
-    sale: 75000,
+    sku: "CHG-USB",
+    name: "Chargeur téléphone USB",
+    category: "Électronique",
+    unit: "pièce",
+    purchase: 15000,
+    sale: 25000,
     stock: 30,
   },
   {
-    sku: "EMB-AIS-007",
-    name: "Kit d'embrayage complet",
-    oem: "31250-0K240",
-    manufacturer: "Aisin",
-    country: "JP",
-    quality: "OEM",
-    purchase: 380000,
-    sale: 590000,
-    stock: 6,
+    sku: "FH-HLX",
+    name: "Filtre à huile Hilux",
+    category: "Pièces auto",
+    unit: "pièce",
+    purchase: 21000,
+    sale: 36000,
+    stock: 24,
   },
-];
-
-/** Équivalences constructeur du cahier des charges ([FR-XREF-1]). */
-const EQUIVALENCES = [
-  { refA: "90915-10004", refB: "90915-YZZD3" },
-  { refA: "90915-YZZD3", refB: "90915-YZZE1" },
-  { refA: "90915-YZZE1", refB: "90915-30002" },
-  { refA: "04465-0K260", refB: "04465-YZZQ7" },
+  {
+    sku: "BOU-1",
+    name: "Boubou homme",
+    category: "Vêtements",
+    unit: "pièce",
+    purchase: 150000,
+    sale: 250000,
+    stock: 12,
+  },
+  {
+    sku: "MLH-1",
+    name: "Melhfa femme",
+    category: "Vêtements",
+    unit: "pièce",
+    purchase: 120000,
+    sale: 200000,
+    stock: 15,
+  },
 ];
 
 async function seedDemoData(company: Company, userId: string): Promise<void> {
@@ -363,124 +279,41 @@ async function seedDemoData(company: Company, userId: string): Promise<void> {
   )[0];
   if (!warehouse) throw new Error("Magasin par défaut absent : amorçage société incomplet.");
 
-  // --- Référentiels Auto Parts --------------------------------------------
-  const countryRows = await autoPartsRepository.listCountries();
-  const qualityRows = await autoPartsRepository.listQualityLevels();
-  const countryByCode = new Map(countryRows.map((row) => [row.code, row.id]));
-  const qualityByCode = new Map(qualityRows.map((row) => [row.code, row.id]));
+  // La démonstration montre tous les modules ; une vraie société démarre en « Simple ».
+  await moduleRegistry.applySelection(
+    company.id,
+    MODULE_PRESETS.find((preset) => preset.code === "full")!.modules
+  );
 
-  const manufacturerIds = new Map<string, string>();
-  for (const entry of MANUFACTURERS) {
-    const [row] = await db
-      .insert(manufacturers)
-      .values({
-        companyId: company.id,
-        name: entry.name,
-        countryId: countryByCode.get(entry.country) ?? null,
-      })
-      .onConflictDoNothing()
-      .returning();
-    if (row) manufacturerIds.set(entry.name, row.id);
-  }
-
-  for (const brandEntry of VEHICLES) {
-    const [brand] = await db
-      .insert(vehicleBrands)
-      .values({ companyId: company.id, name: brandEntry.brand })
-      .onConflictDoNothing()
-      .returning();
-    if (!brand) continue;
-    for (const modelEntry of brandEntry.models) {
-      const [model] = await db
-        .insert(vehicleModels)
-        .values({ companyId: company.id, brandId: brand.id, name: modelEntry.name })
-        .onConflictDoNothing()
-        .returning();
-      if (!model) continue;
-      for (const generationEntry of modelEntry.generations) {
-        const [generation] = await db
-          .insert(vehicleGenerations)
-          .values({
-            companyId: company.id,
-            modelId: model.id,
-            name: generationEntry.name,
-            yearStart: generationEntry.yearStart,
-            yearEnd: generationEntry.yearEnd,
-          })
-          .onConflictDoNothing()
-          .returning();
-        if (!generation) continue;
-        for (const engineCode of generationEntry.engines) {
-          await db
-            .insert(vehicleEngines)
-            .values({
-              companyId: company.id,
-              generationId: generation.id,
-              code: engineCode,
-              label: engineCode,
-              fuel: engineCode.includes("TR") ? "ESSENCE" : "DIESEL",
-            })
-            .onConflictDoNothing();
-        }
-      }
-    }
-  }
-
-  for (const equivalence of EQUIVALENCES) {
-    await autoPartsRepository.insertEquivalence(company.id, {
-      ...equivalence,
-      source: "Catalogue constructeur",
-    });
-  }
-
-  // --- Catégories ----------------------------------------------------------
-  const categoryNames = ["Filtration", "Freinage", "Suspension", "Moteur", "Transmission"];
+  // --- Catégories et produits --------------------------------------------
   const categoryIds = new Map<string, string>();
-  for (const name of categoryNames) {
+  for (const name of new Set(DEMO_PRODUCTS.map((product) => product.category))) {
     const [row] = await db.insert(categories).values({ companyId: company.id, name }).returning();
     if (row) categoryIds.set(name, row.id);
   }
 
-  const categoryFor = (sku: string): string | null => {
-    if (sku.startsWith("FH")) return categoryIds.get("Filtration") ?? null;
-    if (sku.startsWith("PLQ")) return categoryIds.get("Freinage") ?? null;
-    if (sku.startsWith("AMO")) return categoryIds.get("Suspension") ?? null;
-    if (sku.startsWith("EMB")) return categoryIds.get("Transmission") ?? null;
-    return categoryIds.get("Moteur") ?? null;
-  };
-
-  // --- Produits Auto Parts -------------------------------------------------
   const createdProducts: { id: string; sku: string; salePriceCents: number }[] = [];
-  for (const part of AUTO_PARTS_DEMO) {
+  for (const item of DEMO_PRODUCTS) {
     const product = await catalogApplication.create(
       company.id,
       {
-        sku: part.sku,
-        name: part.name,
-        description: `Référence OEM ${part.oem} — ${part.manufacturer}`,
-        profileType: "AUTO_PARTS",
-        categoryId: categoryFor(part.sku),
-        unit: "pièce",
+        sku: item.sku,
+        name: item.name,
+        description: "",
+        categoryId: categoryIds.get(item.category) ?? null,
+        unit: item.unit,
         barcode: "",
-        purchasePriceCents: part.purchase,
-        salePriceCents: part.sale,
+        purchasePriceCents: item.purchase,
+        salePriceCents: item.sale,
         vatRateBp: company.defaultVatRateBp,
         isService: false,
         imageUrls: [],
         minStock: "5",
         variants: [],
-        profile: {
-          oemReference: part.oem,
-          manufacturerId: manufacturerIds.get(part.manufacturer) ?? null,
-          countryId: countryByCode.get(part.country) ?? null,
-          qualityLevelId: qualityByCode.get(part.quality) ?? null,
-          manufacturerRef: "",
-          warrantyMonths: 12,
-        },
         initialStock: {
           warehouseId: warehouse.id,
-          quantity: part.stock,
-          unitCostCents: part.purchase,
+          quantity: item.stock,
+          unitCostCents: item.purchase,
         },
       },
       userId
@@ -492,26 +325,11 @@ async function seedDemoData(company: Company, userId: string): Promise<void> {
     });
   }
 
-  // Compatibilité : les filtres à huile équipent toutes les Hilux AN120.
-  const [hilux] = await db
-    .select()
-    .from(vehicleModels)
-    .where(sql`${vehicleModels.companyId} = ${company.id} and ${vehicleModels.name} = 'Hilux'`)
-    .limit(1);
-  if (hilux) {
-    for (const product of createdProducts.filter((row) => row.sku.startsWith("FH"))) {
-      await db
-        .insert(partVehicleCompat)
-        .values({ companyId: company.id, productId: product.id, modelId: hilux.id })
-        .onConflictDoNothing();
-    }
-  }
-
   // --- Prestations ---------------------------------------------------------
   const SERVICES = [
-    { code: "MO-DIAG", name: "Diagnostic électronique", priceCents: 150000, billingType: "FLAT" },
-    { code: "MO-VID", name: "Vidange complète", priceCents: 80000, billingType: "FLAT" },
-    { code: "MO-HEURE", name: "Main d'œuvre mécanique", priceCents: 120000, billingType: "HOURLY" },
+    { code: "LIV", name: "Livraison", priceCents: 50000, billingType: "FLAT" },
+    { code: "INST", name: "Installation", priceCents: 100000, billingType: "FLAT" },
+    { code: "MO-HEURE", name: "Main d'œuvre", priceCents: 120000, billingType: "HOURLY" },
   ] as const;
   for (const service of SERVICES) {
     await db
@@ -531,7 +349,7 @@ async function seedDemoData(company: Company, userId: string): Promise<void> {
   const PARTIES = [
     {
       code: "CLI-0001",
-      name: "Garage El Amine",
+      name: "Boutique El Amine",
       partyType: "CUSTOMER",
       phone: "+222 45 25 10 10",
       creditLimitCents: 5_000_000,
@@ -547,7 +365,7 @@ async function seedDemoData(company: Company, userId: string): Promise<void> {
     },
     {
       code: "CLI-0003",
-      name: "Atelier Nouadhibou",
+      name: "Épicerie Nouadhibou",
       partyType: "CUSTOMER",
       phone: "+222 45 74 30 30",
       creditLimitCents: 0,
@@ -555,14 +373,14 @@ async function seedDemoData(company: Company, userId: string): Promise<void> {
     },
     {
       code: "FRN-0001",
-      name: "Gulf Auto Parts FZE",
+      name: "Gulf Trading FZE",
       partyType: "SUPPLIER",
       phone: "+971 4 123 4567",
       defaultLeadTimeDays: 21,
     },
     {
       code: "FRN-0002",
-      name: "Dakar Pièces Import",
+      name: "Dakar Import",
       partyType: "SUPPLIER",
       phone: "+221 33 820 00 00",
       defaultLeadTimeDays: 10,
@@ -593,11 +411,11 @@ async function seedDemoData(company: Company, userId: string): Promise<void> {
     company,
     {
       partyId: customerId,
-      notes: "Devis entretien périodique — flotte Hilux.",
+      notes: "Devis d'approvisionnement mensuel.",
       lines: [
         { productId: createdProducts[0].id, quantity: 4 },
         { productId: createdProducts[3].id, quantity: 16 },
-        { description: "Main d'œuvre mécanique", quantity: 3, unitPriceCents: 120000 },
+        { description: "Livraison", quantity: 1, unitPriceCents: 50000 },
       ],
     },
     userId
@@ -695,18 +513,10 @@ async function seedDemoData(company: Company, userId: string): Promise<void> {
 async function main(): Promise<void> {
   const coreOnly = process.argv.includes("--core-only");
 
-  registerPlugins();
-  await pluginRegistry.installAll();
   await seedPermissionsAndRoles();
 
   const company = await seedCompany();
   const userId = await seedAdminUser(company);
-
-  // Tous les modules (fonctionnalités et métiers) sont activés : la démonstration doit
-  // montrer la plateforme complète, et une société réelle peut en désactiver à tout moment.
-  for (const plugin of pluginRegistry.list()) {
-    await pluginRegistry.enableForCompany(company.id, plugin.meta.code);
-  }
 
   if (coreOnly) {
     logger.info("Amorçage limité au noyau (option --core-only).");

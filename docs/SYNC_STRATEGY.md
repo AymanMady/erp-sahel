@@ -178,7 +178,7 @@ saisie en ligne : il n'existe pas deux chemins métier à maintenir.
 
 Aucune page n'est exclue du mode hors ligne. Les écritures sans entité dédiée
 (catégories, magasins, achats, trésorerie, comptabilité, paramètres, rôles,
-utilisateurs, modules métier…) passent par la file générique
+utilisateurs, modules…) passent par la file générique
 (`client/src/shared/offline/offline-http.ts`) :
 
 1. toute écriture authentifiée porte une clé `Idempotency-Key` dès le premier envoi ;
@@ -211,4 +211,4 @@ préchargées.
 | Fermer puis rouvrir, vérifier la persistance | `outbox.test.ts` (réouverture IndexedDB) + `e2e`                 |
 | Rétablir la connexion                        | `e2e`                                                            |
 | Synchronisation **sans duplication**         | `sync-idempotence.test.ts` : rejeu ×3, stock décrémenté une fois |
-| Recherche OEM hors ligne                     | `snapshot.test.ts`                                               |
+| Recherche produit hors ligne                 | `snapshot.test.ts`                                               |

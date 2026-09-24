@@ -75,9 +75,6 @@ export const syncProductPayloadSchema = z.object({
   isService: z.boolean().default(false),
   categoryId: z.string().uuid().nullish(),
   minStock: z.union([z.number(), z.string()]).default("0"),
-  /** Profil métier (Auto Parts, Vêtements, Marché), validé par le module à l'ingestion. */
-  profileType: z.enum(["GENERIC", "AUTO_PARTS", "CLOTHING", "MARKET"]).default("GENERIC"),
-  profile: z.record(z.unknown()).nullish(),
   initialStock: z
     .object({
       warehouseId: z.string().uuid(),

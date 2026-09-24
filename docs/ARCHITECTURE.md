@@ -16,7 +16,7 @@ pas décidée au cas par cas dans un fichier.
 ┌───────────────────────────▼────────────────────────────────────┐
 │ server/  Express 5                                             │
 │   routes → controller → service → application → repository     │
-│   modules/  plugins métier, branchés au seul point de composition│
+│   featureGate : modules activables (caisse, achats, stock…)    │
 └───────────────────────────┬────────────────────────────────────┘
                             │ Drizzle ORM
 ┌───────────────────────────▼────────────────────────────────────┐
@@ -25,7 +25,7 @@ pas décidée au cas par cas dans un fichier.
 ```
 
 `shared/` est compilé dans les deux bundles : schéma, calculs de prix, règles comptables,
-normalisation OEM, contrat de synchronisation. **Une règle métier qui existe des deux côtés
+catalogue des modules, contrat de synchronisation. **Une règle métier qui existe des deux côtés
 n'est écrite qu'une fois.**
 
 ---
@@ -76,28 +76,13 @@ les requêtes sont séquentielles.
 
 ---
 
-## 3. Modules métier (plugins)
+## 3. Modules activables
 
-Le noyau ne connaît qu'un **contrat** (`server/domains/plugins/contract.ts`) :
-
-```ts
-interface ErpPlugin {
-  meta: PluginMeta;                    // code, versions, dépendances
-  permissions: PermissionCode[];       // RBAC contribué
-  navigation: PluginNavItem[];         // entrées de menu
-  searchCriteria: SearchCriterion[];   // filtres catalogue
-  productProfile?: ProductProfileExtension;  // profil 1–1 du produit
-  buildSnapshot?(db, companyId): Promise<Record<string, unknown>>;  // données hors ligne
-  install?/enable?/disable?/seedDemo?  // cycle de vie
-}
-```
-
-**La dépendance est strictement `module → noyau`.** Une règle ESLint
-(`no-restricted-imports` sur `server/domains/**`) échoue au lint si le noyau importe un
-module. Le seul fichier qui connaît les deux mondes est `server/modules/index.ts`.
-
-Ajouter un domaine métier se fait sans toucher au noyau : voir
-[`MODULES.md`](MODULES.md).
+L'ERP est **générique** : un seul catalogue et un seul stock pour tout type de commerce.
+Chaque fonctionnalité (caisse, achats, stock, factures…) est un module que la société
+active ou désactive. Tout est décrit une fois dans `shared/modules-catalog.ts` ; le
+serveur ferme les routes d'un module désactivé (`featureGate`) et le client retire ses
+écrans du menu. Voir [`MODULES.md`](MODULES.md).
 
 ---
 
@@ -140,8 +125,7 @@ Ces règles sont testées, pas seulement documentées.
 | Écriture toujours équilibrée                      | `assertBalanced` avant insertion                                  | `accounting.test.ts`       |
 | Synchronisation exactement une fois               | `client_uuid` unique + journal `sync_operations`                  | `sync-idempotence.test.ts` |
 | Somme des lignes = total du document              | Reliquat d'arrondi reporté sur la dernière ligne                  | `pricing.test.ts`          |
-| Équivalences OEM symétriques et transitives       | Parcours en largeur du graphe                                     | `oem.test.ts`              |
-| Module désactivé ⇒ inaccessible                   | `requireModule` côté serveur                                      | `isolation-rbac.test.ts`   |
+| Module désactivé ⇒ inaccessible                   | `featureGate` côté serveur                                        | `feature-modules.test.ts`  |
 
 ---
 
