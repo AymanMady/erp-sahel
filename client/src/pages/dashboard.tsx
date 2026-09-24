@@ -11,10 +11,16 @@ import {
   IconAlertTriangle,
   IconBuildingBank,
   IconCashRegister,
+  IconFileInvoice,
   IconPackages,
+  IconPlus,
   IconReceipt2,
+  IconSearch,
   IconTrendingUp,
+  IconTruckDelivery,
+  IconUserPlus,
   IconUsers,
+  type Icon,
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
@@ -32,6 +38,8 @@ import { addDays, formatDate, todayInput } from "@shared/format";
 import { centsToMajor } from "@shared/money";
 import { reportsApi } from "@/entities/reports/api";
 import { queryKeys } from "@/shared/api/query-client";
+import type { PermissionCode } from "@shared/rbac";
+import type { ModuleCode } from "@shared/schema";
 import { useSession } from "@/shared/auth/session";
 import { PageHeader } from "@/shared/components/page-header";
 import { Money, useMoneyFormatter } from "@/shared/components/money";
@@ -42,6 +50,50 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/sha
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { Skeleton } from "@/shared/ui/skeleton";
 
+/**
+ * Actions du quotidien, en gros boutons : un commerçant retrouve ce qu'il fait tous
+ * les jours sans parcourir le menu. Seules celles des modules actifs s'affichent.
+ */
+const QUICK_ACTIONS: {
+  label: string;
+  href: string;
+  icon: Icon;
+  module?: ModuleCode;
+  permission: PermissionCode;
+}[] = [
+  { label: "Vendre", href: "/pos", icon: IconCashRegister, module: "pos", permission: "pos.use" },
+  {
+    label: "Chercher une pièce",
+    href: "/modules/auto-parts/search",
+    icon: IconSearch,
+    module: "auto_parts",
+    permission: "auto_parts.read",
+  },
+  {
+    label: "Nouvelle facture",
+    href: "/invoices/new",
+    icon: IconFileInvoice,
+    module: "invoicing",
+    permission: "invoicing.write",
+  },
+  {
+    label: "Acheter",
+    href: "/purchase-orders/new",
+    icon: IconTruckDelivery,
+    module: "purchasing",
+    permission: "purchasing.write",
+  },
+  { label: "Nouveau produit", href: "/products/new", icon: IconPlus, permission: "catalog.write" },
+  {
+    label: "Voir le stock",
+    href: "/inventory",
+    icon: IconPackages,
+    module: "inventory",
+    permission: "inventory.read",
+  },
+  { label: "Nouveau client", href: "/parties", icon: IconUserPlus, permission: "parties.write" },
+];
+
 const PERIODS = [
   { value: "7", label: "7 derniers jours" },
   { value: "30", label: "30 derniers jours" },
@@ -49,7 +101,10 @@ const PERIODS = [
 ];
 
 export default function DashboardPage() {
-  const { user, can } = useSession();
+  const { user, can, hasModule } = useSession();
+  const quickActions = QUICK_ACTIONS.filter(
+    (action) => (!action.module || hasModule(action.module)) && can(action.permission)
+  );
   const [days, setDays] = useState("30");
   const formatMoneyValue = useMoneyFormatter();
 
@@ -90,7 +145,7 @@ export default function DashboardPage() {
             ))}
           </SelectContent>
         </Select>
-        {can("pos.use") ? (
+        {can("pos.use") && hasModule("pos") ? (
           <Button asChild>
             <Link href="/pos">
               <IconCashRegister className="size-4" />
@@ -99,6 +154,23 @@ export default function DashboardPage() {
           </Button>
         ) : null}
       </PageHeader>
+
+      {quickActions.length > 0 ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {quickActions.map((action) => (
+            <Link
+              key={action.href}
+              href={action.href}
+              className="flex flex-col items-center justify-center gap-2 rounded-xl border bg-card p-4 text-center text-sm font-medium shadow-xs transition-colors hover:border-primary hover:bg-primary/5"
+            >
+              <span className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <action.icon className="size-6" />
+              </span>
+              {action.label}
+            </Link>
+          ))}
+        </div>
+      ) : null}
 
       {error && !data ? (
         <Card>
@@ -258,9 +330,11 @@ export default function DashboardPage() {
               </CardTitle>
               <CardDescription>Articles au seuil ou en dessous.</CardDescription>
             </div>
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/inventory">Voir le stock</Link>
-            </Button>
+            {hasModule("inventory") ? (
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/inventory">Voir le stock</Link>
+              </Button>
+            ) : null}
           </CardHeader>
           <CardContent className="space-y-2">
             {isLoading ? (
@@ -317,13 +391,15 @@ export default function DashboardPage() {
               href="/products"
               loading={isLoading}
             />
-            <CountRow
-              icon={<IconReceipt2 className="size-4" />}
-              label="Prestations"
-              value={data?.counts.services}
-              href="/services"
-              loading={isLoading}
-            />
+            {hasModule("services") ? (
+              <CountRow
+                icon={<IconReceipt2 className="size-4" />}
+                label="Prestations"
+                value={data?.counts.services}
+                href="/services"
+                loading={isLoading}
+              />
+            ) : null}
           </CardContent>
         </Card>
       </div>

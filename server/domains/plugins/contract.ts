@@ -20,6 +20,13 @@ import type { Database } from "../../db";
 
 export interface PluginMeta {
   code: ModuleCode;
+  /** `feature` : fonctionnalité du noyau masquable ; `business` : module métier. */
+  kind: "feature" | "business";
+  /**
+   * État retenu tant que la société n'a jamais basculé ce module. Les fonctionnalités
+   * sont actives par défaut : les sociétés existantes gardent tout leur périmètre.
+   */
+  defaultEnabled: boolean;
   name: string;
   description: string;
   /** Version du module (SemVer). */
@@ -28,8 +35,8 @@ export interface PluginMeta {
   coreVersion: string;
   /** Autres modules requis — vérifiés à l'activation ([BR-19]). */
   dependencies: ModuleCode[];
-  /** Type de profil produit servi par ce module. */
-  profileType: ProfileType;
+  /** Type de profil produit servi par ce module (modules métier seulement). */
+  profileType?: ProfileType;
   /** Icône Tabler utilisée par la navigation du client. */
   icon: string;
 }

@@ -16,6 +16,7 @@ import { Redirect, Route, Switch, useLocation } from "wouter";
 
 import { useSession } from "@/shared/auth/session";
 import { AppLayout, FullscreenLayout } from "@/widgets/layout/app-layout";
+import { ModuleGate } from "@/widgets/layout/module-gate";
 import { Skeleton } from "@/shared/ui/skeleton";
 
 const LoginPage = lazy(() => import("@/pages/login"));
@@ -192,9 +193,11 @@ export function AppRouter() {
   if (location.startsWith("/pos")) {
     return (
       <FullscreenLayout>
-        <Suspense fallback={<PageFallback />}>
-          <Route path="/pos" component={PosPage} />
-        </Suspense>
+        <ModuleGate>
+          <Suspense fallback={<PageFallback />}>
+            <Route path="/pos" component={PosPage} />
+          </Suspense>
+        </ModuleGate>
       </FullscreenLayout>
     );
   }
@@ -203,7 +206,9 @@ export function AppRouter() {
 
   return (
     <AppLayout>
-      <AppRoutes />
+      <ModuleGate>
+        <AppRoutes />
+      </ModuleGate>
     </AppLayout>
   );
 }

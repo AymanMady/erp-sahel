@@ -4,7 +4,9 @@
  * Chaque entrée porte sa **permission** et, pour les modules métier, son **code de
  * module** : la barre latérale est filtrée à l'affichage, de sorte qu'un caissier ne
  * voie pas la comptabilité et qu'une société sans module Vêtements n'ait pas d'entrée
- * « Vêtements » ([FR-PLAT-3], [BR-12]).
+ * « Vêtements » ([FR-PLAT-3], [BR-12]). Les fonctionnalités (caisse, achats, stock…)
+ * sont elles aussi des modules : une boutique qui n'utilise que la caisse et le stock
+ * n'a qu'un menu de quelques lignes.
  *
  * Ce filtrage est **ergonomique**, pas sécuritaire : l'autorisation réelle est
  * vérifiée côté serveur sur chaque endpoint.
@@ -24,6 +26,7 @@ import {
   IconHistory,
   IconLayoutDashboard,
   IconPackages,
+  IconPuzzle,
   IconReceipt,
   IconRefresh,
   IconSettings,
@@ -43,6 +46,7 @@ export interface NavChild {
   title: string;
   url: string;
   permission?: PermissionCode;
+  module?: ModuleCode;
 }
 
 export interface NavItem {
@@ -63,50 +67,53 @@ export interface NavGroup {
 
 export const navGroups: NavGroup[] = [
   {
-    label: "Pilotage",
-    items: [
-      { title: "Tableau de bord", url: "/", icon: IconLayoutDashboard },
-      {
-        title: "Rapports",
-        icon: IconChartBar,
-        permission: "reports.read",
-        items: [
-          { title: "Ventes", url: "/reports/sales" },
-          { title: "Stock", url: "/reports/stock" },
-          { title: "Achats", url: "/reports/purchases" },
-        ],
-      },
-    ],
+    label: "Accueil",
+    items: [{ title: "Tableau de bord", url: "/", icon: IconLayoutDashboard }],
   },
   {
-    label: "Vente",
+    label: "Vendre",
     items: [
-      { title: "Caisse (POS)", url: "/pos", icon: IconCashRegister, permission: "pos.use" },
-      { title: "Devis", url: "/quotes", icon: IconClipboardList, permission: "sales.read" },
       {
-        title: "Commandes",
+        title: "Caisse",
+        url: "/pos",
+        icon: IconCashRegister,
+        module: "pos",
+        permission: "pos.use",
+      },
+      {
+        title: "Devis",
+        url: "/quotes",
+        icon: IconClipboardList,
+        module: "sales",
+        permission: "sales.read",
+      },
+      {
+        title: "Commandes clients",
         url: "/sales-orders",
         icon: IconShoppingCart,
+        module: "sales",
         permission: "sales.read",
       },
       {
         title: "Factures",
         icon: IconFileInvoice,
+        module: "invoicing",
         permission: "invoicing.read",
         items: [
           { title: "Factures clients", url: "/invoices" },
-          { title: "Avoirs", url: "/credit-notes" },
+          { title: "Avoirs (retours)", url: "/credit-notes" },
         ],
       },
-      { title: "Règlements", url: "/payments", icon: IconReceipt, permission: "payments.read" },
+      { title: "Paiements", url: "/payments", icon: IconReceipt, permission: "payments.read" },
     ],
   },
   {
-    label: "Achat & stock",
+    label: "Acheter et stocker",
     items: [
       {
         title: "Achats",
         icon: IconTruckDelivery,
+        module: "purchasing",
         permission: "purchasing.read",
         items: [
           { title: "Commandes fournisseurs", url: "/purchase-orders" },
@@ -117,38 +124,102 @@ export const navGroups: NavGroup[] = [
       {
         title: "Stock",
         icon: IconPackages,
+        module: "inventory",
         permission: "inventory.read",
         items: [
-          { title: "État du stock", url: "/inventory" },
-          { title: "Mouvements", url: "/inventory/movements" },
+          { title: "Ce qui reste", url: "/inventory" },
+          { title: "Entrées et sorties", url: "/inventory/movements" },
           { title: "Magasins", url: "/warehouses" },
         ],
       },
     ],
   },
   {
-    label: "Référentiels",
+    label: "Produits et clients",
     items: [
-      { title: "Tiers", url: "/parties", icon: IconAddressBook, permission: "parties.read" },
       {
-        title: "Catalogue",
+        title: "Produits",
         icon: IconBox,
         permission: "catalog.read",
         items: [
-          { title: "Produits", url: "/products" },
+          { title: "Liste des produits", url: "/products" },
           { title: "Catégories", url: "/categories" },
         ],
       },
-      { title: "Prestations", url: "/services", icon: IconTool, permission: "services.read" },
+      {
+        title: "Prestations",
+        url: "/services",
+        icon: IconTool,
+        module: "services",
+        permission: "services.read",
+      },
+      {
+        title: "Clients et fournisseurs",
+        url: "/parties",
+        icon: IconAddressBook,
+        permission: "parties.read",
+      },
     ],
   },
   {
-    label: "Finance",
+    label: "Mon métier",
     items: [
-      { title: "Trésorerie", url: "/banking", icon: IconBuildingBank, permission: "banking.read" },
+      {
+        title: "Pièces auto",
+        icon: IconCar,
+        module: "auto_parts",
+        permission: "auto_parts.read",
+        items: [
+          { title: "Chercher une référence", url: "/modules/auto-parts/search" },
+          { title: "Équivalences", url: "/modules/auto-parts/equivalences" },
+          { title: "Fabricants", url: "/modules/auto-parts/manufacturers" },
+          { title: "Véhicules", url: "/modules/auto-parts/vehicles" },
+        ],
+      },
+      {
+        title: "Vêtements",
+        icon: IconShirt,
+        module: "clothing",
+        permission: "clothing.read",
+        items: [{ title: "Tailles", url: "/modules/clothing/size-grids" }],
+      },
+      {
+        title: "Alimentation",
+        icon: IconShoppingBag,
+        module: "market",
+        permission: "market.read",
+        items: [
+          { title: "Lots et dates", url: "/modules/market/lots" },
+          { title: "Bientôt périmés", url: "/modules/market/expiring" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Argent",
+    items: [
+      {
+        title: "Caisse et banque",
+        url: "/banking",
+        icon: IconBuildingBank,
+        module: "banking",
+        permission: "banking.read",
+      },
+      {
+        title: "Rapports",
+        icon: IconChartBar,
+        module: "reports",
+        permission: "reports.read",
+        items: [
+          { title: "Ventes", url: "/reports/sales" },
+          { title: "Stock", url: "/reports/stock" },
+          { title: "Achats", url: "/reports/purchases" },
+        ],
+      },
       {
         title: "Comptabilité",
         icon: IconCalculator,
+        module: "accounting",
         permission: "accounting.read",
         items: [
           { title: "Journal", url: "/accounting/entries" },
@@ -160,52 +231,22 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: "Modules métier",
+    label: "Réglages",
     items: [
       {
-        title: "Pièces auto",
-        icon: IconCar,
-        module: "auto_parts",
-        permission: "auto_parts.read",
-        items: [
-          { title: "Recherche OEM", url: "/modules/auto-parts/search" },
-          { title: "Équivalences", url: "/modules/auto-parts/equivalences" },
-          { title: "Fabricants", url: "/modules/auto-parts/manufacturers" },
-          { title: "Véhicules", url: "/modules/auto-parts/vehicles" },
-        ],
+        title: "Modules",
+        url: "/settings/modules",
+        icon: IconPuzzle,
+        permission: "settings.read",
       },
-      {
-        title: "Vêtements",
-        icon: IconShirt,
-        module: "clothing",
-        permission: "clothing.read",
-        items: [{ title: "Grilles de tailles", url: "/modules/clothing/size-grids" }],
-      },
-      {
-        title: "Marché",
-        icon: IconShoppingBag,
-        module: "market",
-        permission: "market.read",
-        items: [
-          { title: "Lots & DLC", url: "/modules/market/lots" },
-          { title: "Alertes péremption", url: "/modules/market/expiring" },
-        ],
-      },
-    ],
-  },
-  {
-    label: "Administration",
-    items: [
-      { title: "Synchronisation", url: "/sync", icon: IconRefresh },
       {
         title: "Paramètres",
         icon: IconSettings,
         permission: "settings.read",
         items: [
-          { title: "Société", url: "/settings/company" },
-          { title: "Modules", url: "/settings/modules" },
+          { title: "Ma société", url: "/settings/company" },
           { title: "Numérotation", url: "/settings/numbering" },
-          { title: "Caisses", url: "/settings/registers" },
+          { title: "Caisses", url: "/settings/registers", module: "pos" },
         ],
       },
       {
@@ -214,9 +255,10 @@ export const navGroups: NavGroup[] = [
         permission: "users.read",
         items: [
           { title: "Comptes", url: "/settings/users" },
-          { title: "Rôles & permissions", url: "/settings/roles" },
+          { title: "Rôles et droits", url: "/settings/roles" },
         ],
       },
+      { title: "Synchronisation", url: "/sync", icon: IconRefresh },
       {
         title: "Journal d'audit",
         url: "/settings/audit",
@@ -226,6 +268,26 @@ export const navGroups: NavGroup[] = [
     ],
   },
 ];
+
+/**
+ * Module requis par une adresse de l'application, déduit du menu : un écran d'un
+ * module désactivé affiche une invitation à l'activer plutôt qu'une erreur.
+ */
+export function moduleForPath(pathname: string): ModuleCode | undefined {
+  let best: { module: ModuleCode; length: number } | undefined;
+  const consider = (url: string | undefined, module: ModuleCode | undefined) => {
+    if (!url || !module || url === "/") return;
+    if (pathname !== url && !pathname.startsWith(`${url}/`)) return;
+    if (!best || url.length > best.length) best = { module, length: url.length };
+  };
+  for (const group of navGroups) {
+    for (const item of group.items) {
+      consider(item.url, item.module);
+      for (const child of item.items ?? []) consider(child.url, child.module ?? item.module);
+    }
+  }
+  return best?.module;
+}
 
 /** Icône de l'enseigne affichée dans l'en-tête de la barre latérale. */
 export const brandIcon = IconBuildingStore;
@@ -242,11 +304,24 @@ export function visibleNavGroups(
   return navGroups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => {
-        if (item.module && !hasModule(item.module)) return false;
-        if (item.permission && !can(item.permission)) return false;
-        return true;
-      }),
+      items: group.items
+        .filter((item) => {
+          if (item.module && !hasModule(item.module)) return false;
+          if (item.permission && !can(item.permission)) return false;
+          return true;
+        })
+        .map((item) =>
+          item.items
+            ? {
+                ...item,
+                items: item.items.filter(
+                  (child) =>
+                    (!child.module || hasModule(child.module)) &&
+                    (!child.permission || can(child.permission))
+                ),
+              }
+            : item
+        ),
     }))
     .filter((group) => group.items.length > 0);
 }

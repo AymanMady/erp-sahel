@@ -47,6 +47,8 @@ export const clothingPlugin: ErpPlugin = {
     name: "Vêtements",
     description:
       "Profil vêtement (marque, genre, saison, matière, collection), grilles de tailles et déclinaisons taille × couleur.",
+    kind: "business",
+    defaultEnabled: false,
     version: "1.0.0",
     coreVersion: "^1.0.0",
     dependencies: [],

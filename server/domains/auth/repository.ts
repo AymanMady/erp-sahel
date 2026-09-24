@@ -4,7 +4,6 @@ import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
 import {
   companies,
-  companyPlugins,
   permissions as permissionsTable,
   refreshTokens,
   rolePermissions,
@@ -75,15 +74,6 @@ export class AuthRepository {
           or(isNull(roles.companyId), eq(roles.companyId, companyId))
         )
       );
-    return rows.map((row) => row.code);
-  }
-
-  /** Modules activés pour la société — sert la garde d'activation ([BR-12]). */
-  async listEnabledModules(companyId: string): Promise<string[]> {
-    const rows = await this.database
-      .select({ code: companyPlugins.pluginCode })
-      .from(companyPlugins)
-      .where(and(eq(companyPlugins.companyId, companyId), eq(companyPlugins.isEnabled, true)));
     return rows.map((row) => row.code);
   }
 

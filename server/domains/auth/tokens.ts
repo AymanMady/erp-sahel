@@ -22,6 +22,11 @@ export interface AccessTokenClaims {
   isSuperuser: boolean;
   permissions: PermissionCode[];
   modules: string[];
+  /**
+   * Présent sur les jetons dont `modules` inclut les fonctionnalités (caisse, achats…).
+   * Un jeton plus ancien n'en porte pas : il ne doit pas être refusé pour autant.
+   */
+  featureGating?: boolean;
 }
 
 function secret(): string {

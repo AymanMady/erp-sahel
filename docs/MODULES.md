@@ -19,7 +19,43 @@ société**.
 
 ---
 
-## 2. Modules livrés
+## 2. Fonctionnalités activables et types d'activité
+
+Les **fonctionnalités** du noyau sont elles aussi des modules, activables par société :
+
+| Code         | Libellé            | Routes fermées quand désactivé                                          | Dépend de   |
+| ------------ | ------------------ | ----------------------------------------------------------------------- | ----------- |
+| `pos`        | Caisse             | `/api/pos`                                                              | —           |
+| `invoicing`  | Factures           | `/api/invoices`, `/api/credit-notes`                                    | —           |
+| `sales`      | Devis et commandes | `/api/quotes`, `/api/sales-orders`                                      | `invoicing` |
+| `purchasing` | Achats             | `/api/purchase-orders`, `/api/goods-receipts`, `/api/supplier-invoices` | `inventory` |
+| `inventory`  | Stock              | `/api/inventory`                                                        | —           |
+| `services`   | Prestations        | `/api/services` (lecture ouverte)                                       | —           |
+| `banking`    | Caisse et banque   | `/api/banking` (lecture des comptes ouverte)                            | —           |
+| `accounting` | Comptabilité       | `/api/accounting`                                                       | —           |
+| `reports`    | Rapports           | `/api/reports`                                                          | —           |
+
+Restent toujours actifs : tableau de bord, produits, clients/fournisseurs, magasins,
+paiements, paramètres, utilisateurs et synchronisation.
+
+- **Source unique** : `shared/modules-catalog.ts` (libellés, routes, dépendances,
+  préréglages), lu par le serveur et par le client.
+- **Actives par défaut** : tant qu'une société n'a pas basculé une fonctionnalité, elle
+  reste active (`defaultEnabled`). Les sociétés existantes ne perdent donc rien.
+- **Garde API** : `featureGate` (`server/domains/plugins/features.ts`) répond 403 sur les
+  routes d'une fonctionnalité désactivée. Les services internes, eux, continuent de
+  s'appeler : une vente en caisse crée toujours sa facture. La synchronisation hors ligne
+  n'est pas filtrée, pour qu'une vente saisie sans réseau ne soit jamais perdue.
+- **Types d'activité** : Boutique, Pièces auto, Vêtements, Grossiste, Tout activer.
+  `POST /api/platform/modules/selection` avec `{ preset }` ou `{ modules }` active
+  exactement cette sélection (dépendances comprises) et désactive le reste.
+- **Interface** : le menu est filtré par module ; un écran d'un module désactivé affiche
+  une invitation à l'activer (`ModuleGate`) ; le tableau de bord n'affiche que les
+  actions rapides des modules actifs.
+
+---
+
+## 3. Modules métier livrés
 
 ### Pièces auto (`auto_parts`)
 
@@ -52,7 +88,7 @@ optionnelle des **lots datés**. La péremption réutilise les lots du noyau
 
 ---
 
-## 3. Le contrat
+## 4. Le contrat
 
 ```ts
 // server/domains/plugins/contract.ts
@@ -108,7 +144,7 @@ ils sont rejoués à chaque démarrage sans effet de bord.
 
 ---
 
-## 4. Ajouter un module
+## 5. Ajouter un module
 
 Exemple : un module « Pharmacie ».
 
@@ -152,7 +188,7 @@ prévus pour cela.
 
 ---
 
-## 5. Compatibilité de versions
+## 6. Compatibilité de versions
 
 Chaque module déclare la plage de noyau qu'il supporte (`coreVersion`, par exemple
 `"^1.0.0"`). L'enregistrement échoue au démarrage si la version du noyau n'est pas
@@ -164,7 +200,7 @@ l'utilise.
 
 ---
 
-## 6. Activation par société
+## 7. Activation par société
 
 `company_plugins` porte l'état par société. Une société active **un ou plusieurs** modules
 — il n'existe pas de « type d'activité » exclusif. Une même société peut donc vendre des

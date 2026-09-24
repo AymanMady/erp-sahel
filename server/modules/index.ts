@@ -9,6 +9,7 @@
 
 import type { Express } from "express";
 
+import { featurePlugins } from "../domains/plugins/features";
 import { pluginRegistry } from "../domains/plugins/registry";
 import { logger } from "../shared/logging/logger";
 import { autoPartsPlugin } from "./auto-parts/plugin";
@@ -21,11 +22,13 @@ import { registerMarketRoutes } from "./market/routes";
 /** Enregistre les modules dans le registre et valide leurs dépendances. */
 export function registerPlugins(): void {
   if (pluginRegistry.list().length > 0) return;
+  // Fonctionnalités du noyau (caisse, achats, stock…), activables comme les métiers.
+  featurePlugins.forEach((plugin) => pluginRegistry.register(plugin));
   pluginRegistry.register(autoPartsPlugin);
   pluginRegistry.register(clothingPlugin);
   pluginRegistry.register(marketPlugin);
   pluginRegistry.validate();
-  logger.info("Modules métier enregistrés", {
+  logger.info("Modules enregistrés", {
     modules: pluginRegistry.list().map((plugin) => plugin.meta.code),
   });
 }

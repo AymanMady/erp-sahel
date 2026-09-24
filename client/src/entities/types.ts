@@ -11,6 +11,7 @@ import type {
   Contact,
   JournalEntry,
   JournalLine,
+  ModuleCode,
   Party,
   PartyAddress,
   Payment,
@@ -269,13 +270,16 @@ export interface DashboardData {
 }
 
 export interface ModuleDescriptor {
-  code: "auto_parts" | "clothing" | "market";
+  code: ModuleCode;
+  /** `feature` : caisse, achats, stock… ; `business` : pièces auto, vêtements, marché. */
+  kind: "feature" | "business";
+  defaultEnabled: boolean;
   name: string;
   description: string;
   version: string;
   coreVersion: string;
   dependencies: string[];
-  profileType: string;
+  profileType?: string;
   icon: string;
   permissions: string[];
   navigation: unknown[];

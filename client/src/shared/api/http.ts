@@ -110,7 +110,12 @@ const GATEWAY_ERRORS = new Set([502, 503, 504]);
  */
 let refreshInFlight: Promise<boolean> | null = null;
 
-async function refreshSession(): Promise<boolean> {
+/*
+ * Exporté aussi pour les changements de droits (activation d'un module) : le jeton
+ * d'accès porte les modules actifs, il doit être réémis pour que le serveur les voie.
+ */
+
+export async function refreshSession(): Promise<boolean> {
   if (refreshInFlight) return refreshInFlight;
   const refreshToken = getRefreshToken();
   if (!refreshToken) return false;

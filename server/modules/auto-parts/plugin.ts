@@ -66,6 +66,8 @@ export const autoPartsPlugin: ErpPlugin = {
     name: "Pièces détachées auto",
     description:
       "Références OEM, équivalences, fabricants, pays d'origine, qualité et compatibilité véhicule à quatre niveaux.",
+    kind: "business",
+    defaultEnabled: false,
     version: "1.0.0",
     coreVersion: "^1.0.0",
     dependencies: [],

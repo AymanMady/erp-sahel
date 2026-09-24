@@ -1,6 +1,6 @@
 /** Accès API du paramétrage (société, utilisateurs, rôles, modules, prestations). */
 
-import { api } from "@/shared/api/http";
+import { api, apiRequest } from "@/shared/api/http";
 import { listServicesOffline, withOfflineFallback } from "@/shared/offline/offline-reads";
 import type {
   Company,
@@ -31,6 +31,13 @@ export const settingsApi = {
     api.post<{ success: true; modules: ModuleDescriptor[] }>(
       `/api/platform/modules/${code}/disable`
     ),
+  /** Type d'activité : exige le réseau, car il bascule plusieurs modules à la fois. */
+  applyModuleSelection: (body: { preset: string } | { modules: string[] }) =>
+    apiRequest<{ success: true; modules: ModuleDescriptor[] }>("/api/platform/modules/selection", {
+      method: "POST",
+      body,
+      queueOffline: false,
+    }),
 
   listUsers: () => api.get<UserWithRoles[]>("/api/users"),
   createUser: (body: unknown) => api.post<UserWithRoles>("/api/users", body),

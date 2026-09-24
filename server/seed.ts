@@ -702,8 +702,8 @@ async function main(): Promise<void> {
   const company = await seedCompany();
   const userId = await seedAdminUser(company);
 
-  // Les trois modules sont activés par défaut : la démonstration doit montrer la
-  // plateforme complète, et une société réelle peut en désactiver à tout moment.
+  // Tous les modules (fonctionnalités et métiers) sont activés : la démonstration doit
+  // montrer la plateforme complète, et une société réelle peut en désactiver à tout moment.
   for (const plugin of pluginRegistry.list()) {
     await pluginRegistry.enableForCompany(company.id, plugin.meta.code);
   }

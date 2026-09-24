@@ -12,7 +12,26 @@ import { z } from "zod";
 import { baseColumns } from "./_base";
 import { companies } from "./tenancy";
 
-export const MODULE_CODES = ["auto_parts", "clothing", "market"] as const;
+/**
+ * Deux familles de modules, activables de la même façon :
+ *  - **fonctionnalités** : caisse, achats, stock… (code du noyau, simplement masquable) ;
+ *  - **métiers** : pièces auto, vêtements, marché (profil produit propre).
+ */
+export const FEATURE_MODULE_CODES = [
+  "pos",
+  "sales",
+  "invoicing",
+  "purchasing",
+  "inventory",
+  "services",
+  "banking",
+  "accounting",
+  "reports",
+] as const;
+export const BUSINESS_MODULE_CODES = ["auto_parts", "clothing", "market"] as const;
+export const MODULE_CODES = [...FEATURE_MODULE_CODES, ...BUSINESS_MODULE_CODES] as const;
+export type FeatureModuleCode = (typeof FEATURE_MODULE_CODES)[number];
+export type BusinessModuleCode = (typeof BUSINESS_MODULE_CODES)[number];
 export type ModuleCode = (typeof MODULE_CODES)[number];
 export const moduleCodeSchema = z.enum(MODULE_CODES);
 

@@ -22,6 +22,7 @@ import { registerInventoryRoutes } from "./domains/inventory/routes";
 import { registerInvoicingRoutes } from "./domains/invoicing/routes";
 import { registerPartiesRoutes } from "./domains/parties/routes";
 import { registerPaymentsRoutes } from "./domains/payments/routes";
+import { featureGate } from "./domains/plugins/features";
 import { registerPluginsRoutes } from "./domains/plugins/routes";
 import { registerPosRoutes } from "./domains/pos/routes";
 import { registerPurchasingRoutes } from "./domains/purchasing/routes";
@@ -57,6 +58,9 @@ export function registerRoutes(app: Express): void {
       res.status(503).json({ status: "degraded", database: "down", code: "DB_CONNECTION" });
     }
   });
+
+  // Fonctionnalités désactivées pour la société (caisse, achats…) : 403 d'emblée.
+  app.use("/api", featureGate);
 
   // --- Noyau ---------------------------------------------------------------
   registerAuthRoutes(app);

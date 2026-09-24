@@ -144,26 +144,41 @@ class PluginRegistry {
           );
         }
       }
+      // Insertion plutôt que simple mise à jour : une fonctionnalité active par défaut
+      // n'a pas encore de ligne, et doit pourtant pouvoir être désactivée.
       await tx
-        .update(companyPlugins)
-        .set({ isEnabled: false, updatedAt: new Date() })
-        .where(
-          and(
-            eq(companyPlugins.companyId, companyId),
-            eq(companyPlugins.pluginCode, plugin.meta.code)
-          )
-        );
+        .insert(companyPlugins)
+        .values({
+          companyId,
+          pluginCode: plugin.meta.code,
+          isEnabled: false,
+          enabledVersion: plugin.meta.version,
+        })
+        .onConflictDoUpdate({
+          target: [companyPlugins.companyId, companyPlugins.pluginCode],
+          set: { isEnabled: false, updatedAt: new Date() },
+        });
       await plugin.disable?.(tx, companyId);
     });
   }
 
+  /**
+   * État effectif : la ligne `company_plugins` si la société a déjà basculé le module,
+   * sinon l'état par défaut du module (`defaultEnabled`).
+   */
   async isEnabled(companyId: string, code: string, database: Database = db): Promise<boolean> {
     const [row] = await database
       .select({ isEnabled: companyPlugins.isEnabled })
       .from(companyPlugins)
       .where(and(eq(companyPlugins.companyId, companyId), eq(companyPlugins.pluginCode, code)))
       .limit(1);
-    return Boolean(row?.isEnabled);
+    return row ? row.isEnabled : Boolean(this.get(code)?.meta.defaultEnabled);
+  }
+
+  /** Codes des modules actifs pour la société — portés par le jeton d'accès. */
+  async enabledCodes(companyId: string, database: Database = db): Promise<ModuleCode[]> {
+    const modules = await this.listForCompany(companyId, database);
+    return modules.filter((module) => module.isEnabled).map((module) => module.code);
   }
 
   async listForCompany(companyId: string, database: Database = db) {
@@ -172,14 +187,55 @@ class PluginRegistry {
       .from(companyPlugins)
       .where(eq(companyPlugins.companyId, companyId));
     const byCode = new Map(rows.map((row) => [row.pluginCode, row]));
-    return this.list().map((plugin) => ({
-      ...plugin.meta,
-      permissions: plugin.permissions,
-      navigation: plugin.navigation,
-      searchCriteria: plugin.searchCriteria,
-      isEnabled: Boolean(byCode.get(plugin.meta.code)?.isEnabled),
-      enabledVersion: byCode.get(plugin.meta.code)?.enabledVersion ?? null,
-    }));
+    return this.list().map((plugin) => {
+      const row = byCode.get(plugin.meta.code);
+      return {
+        ...plugin.meta,
+        permissions: plugin.permissions,
+        navigation: plugin.navigation,
+        searchCriteria: plugin.searchCriteria,
+        isEnabled: row ? row.isEnabled : plugin.meta.defaultEnabled,
+        enabledVersion: row?.enabledVersion ?? null,
+      };
+    });
+  }
+
+  /**
+   * Applique un type d'activité : active exactement `codes` (plus leurs dépendances)
+   * et désactive le reste, en une transaction. Les données ne sont jamais supprimées.
+   */
+  async applySelection(companyId: string, codes: readonly string[]): Promise<void> {
+    const target = new Set<ModuleCode>();
+    const add = (code: string) => {
+      const plugin = this.require(code);
+      if (target.has(plugin.meta.code)) return;
+      target.add(plugin.meta.code);
+      plugin.meta.dependencies.forEach(add);
+    };
+    codes.forEach(add);
+
+    await runInTransaction(async (tx) => {
+      const current = new Map(
+        (await this.listForCompany(companyId, tx)).map((module) => [module.code, module.isEnabled])
+      );
+      for (const plugin of this.list()) {
+        const enable = target.has(plugin.meta.code);
+        await tx
+          .insert(companyPlugins)
+          .values({
+            companyId,
+            pluginCode: plugin.meta.code,
+            isEnabled: enable,
+            enabledVersion: plugin.meta.version,
+          })
+          .onConflictDoUpdate({
+            target: [companyPlugins.companyId, companyPlugins.pluginCode],
+            set: { isEnabled: enable, enabledVersion: plugin.meta.version, updatedAt: new Date() },
+          });
+        if (current.get(plugin.meta.code) === enable) continue;
+        await (enable ? plugin.enable?.(tx, companyId) : plugin.disable?.(tx, companyId));
+      }
+    });
   }
 }
 

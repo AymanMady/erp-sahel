@@ -30,6 +30,8 @@ export const marketPlugin: ErpPlugin = {
     name: "Marché / commerce général",
     description:
       "Profil marchandise (marque, poids/volume, unité, catégorie de taxe) et gestion optionnelle des lots avec date limite de consommation.",
+    kind: "business",
+    defaultEnabled: false,
     version: "1.0.0",
     coreVersion: "^1.0.0",
     dependencies: [],
