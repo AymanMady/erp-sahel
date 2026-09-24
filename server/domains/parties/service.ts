@@ -1,7 +1,8 @@
-/** Frontière applicative des tiers. */
+/** Application boundary of parties. */
 
 import { runInTransaction } from "../../db";
 import { NotFoundError } from "../../shared/errors/app-error";
+import { tr } from "../../shared/i18n";
 import { partiesApplication } from "./application";
 import { contactsRepository, partiesExtraRepository, partyAddressesRepository } from "./repository";
 import {
@@ -58,14 +59,14 @@ export class PartiesService {
       id,
       contactSchema.partial().parse(body)
     );
-    if (!contact) throw new NotFoundError("Contact introuvable.");
+    if (!contact) throw new NotFoundError("Contact not found.");
     return contact;
   }
 
   async archiveContact(companyId: string, contactId: unknown) {
     const { id } = idParamSchema.parse({ id: contactId });
     const archived = await contactsRepository.archive(companyId, id);
-    if (!archived) throw new NotFoundError("Contact introuvable.");
+    if (!archived) throw new NotFoundError("Contact not found.");
     return { success: true as const };
   }
 
@@ -77,7 +78,12 @@ export class PartiesService {
   async createAddress(companyId: string, id: unknown, body: unknown) {
     const { id: partyId } = idParamSchema.parse({ id });
     await partiesApplication.requireParty(companyId, partyId);
-    return partyAddressesRepository.create(companyId, { ...addressSchema.parse(body), partyId });
+    const data = addressSchema.parse(body);
+    return partyAddressesRepository.create(companyId, {
+      ...data,
+      country: data.country ?? tr("Mauritania"),
+      partyId,
+    });
   }
 
   async updateAddress(companyId: string, addressId: unknown, body: unknown) {
@@ -87,14 +93,14 @@ export class PartiesService {
       id,
       addressSchema.partial().parse(body)
     );
-    if (!address) throw new NotFoundError("Adresse introuvable.");
+    if (!address) throw new NotFoundError("Address not found.");
     return address;
   }
 
   async archiveAddress(companyId: string, addressId: unknown) {
     const { id } = idParamSchema.parse({ id: addressId });
     const archived = await partyAddressesRepository.archive(companyId, id);
-    if (!archived) throw new NotFoundError("Adresse introuvable.");
+    if (!archived) throw new NotFoundError("Address not found.");
     return { success: true as const };
   }
 }

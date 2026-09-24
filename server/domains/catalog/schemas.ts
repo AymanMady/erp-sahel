@@ -1,4 +1,4 @@
-/** Contrats de validation du catalogue. */
+/** Catalog validation contracts. */
 
 import { z } from "zod";
 
@@ -26,7 +26,7 @@ export type ProductSearchQuery = z.infer<typeof productSearchQuerySchema>;
 
 const variantSchema = z.object({
   id: z.string().uuid().optional(),
-  sku: z.string().min(1, "Référence de variante obligatoire").max(64),
+  sku: z.string().min(1, "Variant SKU is required").max(64),
   barcode: z.string().max(64).default(""),
   attributes: z.record(z.string()).default({}),
   salePriceCents: z.number().int().nullish(),
@@ -34,11 +34,12 @@ const variantSchema = z.object({
 });
 
 export const createProductSchema = z.object({
-  sku: z.string().min(1, "La référence interne est obligatoire").max(64),
-  name: z.string().min(1, "La désignation est obligatoire").max(255),
+  sku: z.string().min(1, "Internal SKU is required").max(64),
+  name: z.string().min(1, "Product name is required").max(255),
   description: z.string().max(4000).default(""),
   categoryId: z.string().uuid().nullish(),
-  unit: z.string().max(32).default("unité"),
+  /** Defaults to the translated "unit" at creation time (see the application layer). */
+  unit: z.string().max(32).optional(),
   barcode: z.string().max(64).default(""),
   purchasePriceCents: z.number().int().min(0).default(0),
   salePriceCents: z.number().int().min(0).default(0),
@@ -48,7 +49,7 @@ export const createProductSchema = z.object({
   imageUrls: z.array(z.string().max(2000)).default([]),
   minStock: z.union([z.number(), z.string()]).default("0"),
   variants: z.array(variantSchema).default([]),
-  /** Stock initial, saisi à la création pour éviter un second écran. */
+  /** Initial stock, entered at creation to avoid a second screen. */
   initialStock: z
     .object({
       warehouseId: z.string().uuid(),
@@ -61,7 +62,7 @@ export const createProductSchema = z.object({
 export const updateProductSchema = createProductSchema.partial().omit({ initialStock: true });
 
 export const createCategorySchema = z.object({
-  name: z.string().min(1, "Le nom est obligatoire").max(150),
+  name: z.string().min(1, "Name is required").max(150),
   parentId: z.string().uuid().nullish(),
   description: z.string().max(1000).default(""),
 });
@@ -77,7 +78,7 @@ export const productSupplierSchema = z.object({
   isPreferred: z.boolean().default(false),
 });
 
-export const idParamSchema = z.object({ id: z.string().uuid("Identifiant invalide") });
+export const idParamSchema = z.object({ id: z.string().uuid("Invalid identifier") });
 
 export type CreateProductInput = z.infer<typeof createProductSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;

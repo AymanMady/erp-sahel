@@ -1,8 +1,8 @@
 /**
- * Coquille applicative : barre latérale, en-tête, bandeau hors-ligne et contenu.
+ * Application shell: sidebar, header, offline banner and content.
  *
- * C'est ici que le moteur de synchronisation est monté : il tourne tant que
- * l'utilisateur est connecté, quel que soit l'écran affiché.
+ * This is where the sync engine is mounted: it runs as long as the user is signed
+ * in, whatever screen is displayed.
  */
 
 import type { ReactNode } from "react";
@@ -34,8 +34,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
 }
 
 /**
- * Coquille plein écran du point de vente : ni barre latérale ni en-tête, pour
- * maximiser la surface utile sur un écran de caisse (souvent petit et tactile).
+ * Full-screen point-of-sale shell: no sidebar nor header, to maximize the usable
+ * area on a checkout screen (often small and touch-based).
  */
 export function FullscreenLayout({ children }: { children: ReactNode }) {
   useSyncEngine(true);

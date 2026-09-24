@@ -1,0 +1,51 @@
+{
+  "filters": {
+    "fromDate": "Date de début",
+    "toDate": "Date de fin"
+  },
+  "sales": {
+    "title": "Rapport des ventes",
+    "description": "Chiffre d'affaires, articles et encaissements.",
+    "revenueExclTax": "CA HT",
+    "revenueInclTax": "CA TTC",
+    "collected": "Encaissé",
+    "outstanding": "Restant dû",
+    "dailyRevenue": "Chiffre d'affaires quotidien",
+    "noSales": "Aucune vente sur la période.",
+    "topSales": "Meilleures ventes",
+    "emptyTitle": "Aucune vente",
+    "emptyDescription": "Aucun article vendu sur la période.",
+    "collectionsByMethod": "Encaissements par mode",
+    "noCollections": "Aucun encaissement sur la période.",
+    "paymentsCount_one": "{{count}} règlement",
+    "paymentsCount_other": "{{count}} règlements",
+    "columns": {
+      "item": "Article",
+      "soldQuantity": "Quantité vendue"
+    }
+  },
+  "stock": {
+    "title": "Rapport de stock",
+    "description": "Valorisation au coût moyen et alertes de rupture.",
+    "allWarehouses": "Tous les magasins",
+    "stockValue": "Valeur du stock",
+    "skus": "Références",
+    "totalQuantity": "Quantité totale",
+    "belowThreshold": "Articles sous le seuil d'alerte",
+    "emptyTitle": "Aucune alerte",
+    "emptyDescription": "Tous les articles suivis sont au-dessus de leur seuil de réapprovisionnement.",
+    "columns": {
+      "item": "Article",
+      "currentStock": "Stock actuel",
+      "alertThreshold": "Seuil d'alerte"
+    }
+  },
+  "purchases": {
+    "title": "Rapport des achats",
+    "description": "Volume d'approvisionnement sur la période.",
+    "ordersPlaced": "Commandes passées",
+    "amountExclTax": "Montant HT",
+    "amountInclTax": "Montant TTC",
+    "periodNote": "Période analysée : du {{from}} au {{to}}. Les montants incluent toutes les commandes fournisseurs, y compris celles non encore réceptionnées."
+  }
+}

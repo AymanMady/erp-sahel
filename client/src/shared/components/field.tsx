@@ -1,9 +1,8 @@
 /**
- * Champ de formulaire : libellé, aide, message d'erreur.
+ * Form field: label, hint, error message.
  *
- * Volontairement plus simple que le `Form` de shadcn/ui : les formulaires de cet ERP
- * sont pilotés par `react-hook-form`, et une couche de contexte supplémentaire
- * n'apporterait ici que de l'indirection.
+ * Deliberately simpler than shadcn/ui's `Form`: this ERP's forms are driven by
+ * `react-hook-form`, and an extra context layer would only add indirection here.
  */
 
 import type { ReactNode } from "react";
@@ -46,7 +45,7 @@ export function Field({
   );
 }
 
-/** Grille de champs : une colonne sur mobile, deux à partir de `sm`. */
+/** Field grid: one column on mobile, two from `sm` upward. */
 export function FieldGrid({
   children,
   columns = 2,

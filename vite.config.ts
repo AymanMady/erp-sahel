@@ -9,9 +9,9 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig(({ mode }) => {
   /**
-   * Build « desktop » : coquille statique embarquée par Tauri (`src-tauri`).
-   * Chemins relatifs + routage par hash, puisque la page est servie depuis `file://`
-   * / `asset://` et non par notre serveur Express.
+   * "Desktop" build: static shell embedded by Tauri (`src-tauri`).
+   * Relative paths + hash routing, since the page is served from `file://` /
+   * `asset://` and not by our Express server.
    */
   const isDesktop = mode === "desktop";
 
@@ -34,8 +34,8 @@ export default defineConfig(({ mode }) => {
         : path.resolve(rootDir, "dist", "public"),
       emptyOutDir: true,
       sourcemap: mode !== "production",
-      // Le shell admin + POS part en une seule entrée ; le bundle dépasse
-      // régulièrement le seuil de 500 kB de Vite sans que ce soit anormal.
+      // The admin + POS shell ships as a single entry; the bundle routinely exceeds
+      // Vite's 500 kB threshold, which is expected.
       chunkSizeWarningLimit: 1600,
     },
     server: {

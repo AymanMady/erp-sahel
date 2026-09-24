@@ -1,9 +1,9 @@
 /**
- * Garde API des modules (caisse, achats, stock…).
+ * API guard of the modules (POS, purchasing, stock…).
  *
- * Désactiver un module ne supprime rien : ses routes API répondent 403 et ses écrans
- * sortent du menu. Les services internes continuent de s'appeler entre eux — une vente
- * en caisse crée toujours sa facture, même si l'écran « Factures » est masqué.
+ * Disabling a module deletes nothing: its API routes answer 403 and its screens leave
+ * the menu. Internal services keep calling each other — a POS sale still creates its
+ * invoice, even when the "Invoices" screen is hidden.
  */
 
 import type { RequestHandler } from "express";
@@ -17,12 +17,12 @@ function matchesPrefix(path: string, prefix: string): boolean {
 }
 
 /**
- * Refuse les appels vers une fonctionnalité désactivée pour la société.
+ * Rejects calls to a feature that is disabled for the company.
  *
- * Monté une seule fois devant les routes du noyau. Sans jeton valide, il laisse
- * passer : `requireAuth` de la route répondra 401, ce qui reste le bon message.
- * La synchronisation hors ligne n'est volontairement pas filtrée : une vente saisie
- * sans réseau ne doit jamais être perdue parce qu'un module a été masqué entre-temps.
+ * Mounted once in front of the core routes. Without a valid token it lets the request
+ * through: the route's `requireAuth` will answer 401, which is still the right message.
+ * Offline sync is deliberately not filtered: a sale entered without network must never
+ * be lost because a module was hidden in the meantime.
  */
 export const featureGate: RequestHandler = (req, _res, next) => {
   const path = req.originalUrl.split("?")[0] ?? "";

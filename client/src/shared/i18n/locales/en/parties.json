@@ -1,0 +1,102 @@
+{
+  "offlineUnavailable": "This party is not available offline.",
+  "fields": {
+    "vatNumber": "Tax ID",
+    "creditLimit": "Credit limit",
+    "creditLimitHint": "0 = no limit",
+    "paymentTermsDays": "Payment terms (days)"
+  },
+  "addressTypes": {
+    "billing": "Billing",
+    "shipping": "Shipping",
+    "other": "Other"
+  },
+  "list": {
+    "title": "Parties",
+    "description": "The company's customers, suppliers and prospects.",
+    "new": "New party",
+    "searchPlaceholder": "Name, code, phone, tax ID…",
+    "allTypes": "All parties",
+    "vatNumberShort": "Tax ID {{number}}",
+    "unlimited": "unlimited",
+    "termsDays": "{{days}} d",
+    "cash": "cash",
+    "columns": {
+      "contact": "Contact",
+      "paymentTerms": "Terms"
+    },
+    "empty": {
+      "title": "No parties",
+      "description": "Create your first customer or supplier to start invoicing."
+    }
+  },
+  "create": {
+    "title": "New party",
+    "description": "The code is generated automatically based on the type (CLI, FRN, PSP).",
+    "creating": "Creating…",
+    "submit": "Create party",
+    "created": "Party “{{name}}” created ({{code}}).",
+    "savedOffline": "Party “{{name}}” saved offline.",
+    "savedOfflineDescription": "It will be created on the server at the next synchronization."
+  },
+  "detail": {
+    "notFound": "Party not found.",
+    "outstanding": "Current outstanding balance",
+    "creditLimit": "Credit limit:",
+    "noCreditLimit": "No credit limit set.",
+    "paymentTerms": "Payment terms",
+    "termsDays_one": "{{count}} day",
+    "termsDays_other": "{{count}} days",
+    "cash": "Cash",
+    "leadTime_one": "Supplier lead time: {{count}} day",
+    "leadTime_other": "Supplier lead time: {{count}} days",
+    "noLeadTime": "No default lead time.",
+    "contactInfo": "Contact details",
+    "noEmail": "No email",
+    "noVatNumber": "No tax ID",
+    "tabs": {
+      "history": "History",
+      "contacts": "Contacts ({{n}})",
+      "addresses": "Addresses ({{n}})"
+    },
+    "invoices": {
+      "title": "Invoices",
+      "description": "Documents issued for this party.",
+      "empty": "No invoices for this party."
+    },
+    "payments": {
+      "title": "Payments",
+      "empty": "No payments recorded."
+    },
+    "contacts": {
+      "title": "Contacts",
+      "empty": "No contacts recorded."
+    },
+    "addresses": {
+      "title": "Addresses",
+      "empty": "No addresses recorded."
+    }
+  },
+  "edit": {
+    "title": "Edit party",
+    "saved": "Party updated."
+  },
+  "contact": {
+    "title": "New contact",
+    "added": "Contact added.",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "role": "Job title",
+    "rolePlaceholder": "Purchasing manager, accountant…"
+  },
+  "address": {
+    "title": "New address",
+    "added": "Address added.",
+    "type": "Address type",
+    "street": "Street",
+    "city": "City",
+    "postalCode": "Postal code",
+    "country": "Country",
+    "defaultCountry": "Mauritania"
+  }
+}

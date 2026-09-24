@@ -1,11 +1,11 @@
-/** Contrats de validation du domaine authentification. */
+/** Validation contracts of the authentication domain. */
 
 import { z } from "zod";
 
 export const loginSchema = z.object({
-  username: z.string().min(1, "Identifiant requis").max(150),
-  password: z.string().min(1, "Mot de passe requis").max(200),
-  /** Société ciblée à la connexion (multi-société) ; sinon la société par défaut. */
+  username: z.string().min(1, "Username is required").max(150),
+  password: z.string().min(1, "Password is required").max(200),
+  /** Company targeted at login (multi-company); otherwise the default company. */
   companyId: z.string().uuid().nullish(),
 });
 
@@ -27,14 +27,14 @@ export const changePasswordSchema = z
     currentPassword: z.string().min(1),
     newPassword: z
       .string()
-      .min(8, "8 caractères minimum")
+      .min(8, "At least 8 characters")
       .max(200)
-      .regex(/[A-Za-z]/, "Le mot de passe doit contenir au moins une lettre")
-      .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre"),
+      .regex(/[A-Za-z]/, "The password must contain at least one letter")
+      .regex(/[0-9]/, "The password must contain at least one digit"),
     confirmPassword: z.string(),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "La confirmation ne correspond pas",
+    message: "The confirmation does not match",
     path: ["confirmPassword"],
   });
 

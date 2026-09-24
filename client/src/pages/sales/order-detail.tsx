@@ -1,6 +1,7 @@
-/** Fiche d'une commande de vente : statut et conversion en facture. */
+/** Sales order detail: status and conversion into an invoice. */
 
 import { IconArrowLeft, IconFileInvoice, IconPrinter } from "@tabler/icons-react";
+import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useParams } from "wouter";
 import { toast } from "sonner";
@@ -19,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/shared/ui/skeleton";
 
 export default function SalesOrderDetailPage() {
+  const { t } = useTranslation("sales");
   const params = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
@@ -33,7 +35,7 @@ export default function SalesOrderDetailPage() {
   const setStatus = useMutation({
     mutationFn: (status: string) => salesApi.setOrderStatus(params.id, status),
     onSuccess: () => {
-      toast.success("Statut mis à jour.");
+      toast.success(t("statusUpdated"));
       void queryClient.invalidateQueries({ queryKey: queryKeys.salesOrder(params.id) });
       void queryClient.invalidateQueries({ queryKey: ["sales-orders"] });
     },
@@ -43,7 +45,7 @@ export default function SalesOrderDetailPage() {
   const invoice = useMutation({
     mutationFn: () => salesApi.invoiceOrder(params.id),
     onSuccess: (created) => {
-      toast.success("Facture créée en brouillon depuis la commande.");
+      toast.success(t("order.invoiced"));
       void queryClient.invalidateQueries({ queryKey: ["invoices"] });
       navigate(`/invoices/${created.id}`);
     },
@@ -55,7 +57,7 @@ export default function SalesOrderDetailPage() {
     return (
       <Card>
         <CardContent className="py-10 text-center text-sm text-muted-foreground">
-          {error ? errorMessage(error) : "Commande introuvable."}
+          {error ? errorMessage(error) : t("order.notFound")}
         </CardContent>
       </Card>
     );
@@ -64,19 +66,19 @@ export default function SalesOrderDetailPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`Commande ${data.number}`}
+        title={t("order.pageTitle", { number: data.number })}
         description={data.partyName}
         className="print-hidden"
       >
         <Button variant="outline" asChild>
           <Link href="/sales-orders">
-            <IconArrowLeft className="size-4" />
-            Retour
+            <IconArrowLeft className="size-4 rtl:rotate-180" />
+            {t("common:actions.back")}
           </Link>
         </Button>
         <Button variant="outline" onClick={() => window.print()}>
           <IconPrinter className="size-4" />
-          Imprimer
+          {t("common:actions.print")}
         </Button>
         {can("sales.write") ? (
           <Select value={data.status} onValueChange={(value) => setStatus.mutate(value)}>
@@ -100,13 +102,13 @@ export default function SalesOrderDetailPage() {
             }
           >
             <IconFileInvoice className="size-4" />
-            Facturer
+            {t("order.invoice")}
           </Button>
         ) : null}
       </PageHeader>
 
       <DocumentView
-        title="Commande"
+        title={t("order.documentTitle")}
         number={data.number}
         date={data.date}
         dueDate={data.deliveryDate}

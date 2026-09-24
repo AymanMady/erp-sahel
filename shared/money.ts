@@ -1,28 +1,30 @@
 /**
- * Arithmétique monétaire exacte.
+ * Exact money arithmetic.
  *
- * Tous les montants persistés et transportés par l'API sont des **entiers en unités
- * mineures** (centimes / khoums) — jamais des flottants. Les taux (TVA, remise) sont
- * des **points de base** (`bp`) : 16 % ⇒ `1600`. Cela satisfait [BR-7] (écritures
- * équilibrées au centime près) sans dépendre d'une librairie décimale côté client,
- * et reste exact après un aller-retour JSON (contrairement à `numeric` → `string`).
+ * Every amount persisted and carried by the API is an **integer in minor units**
+ * (cents / khoums) — never a float. Rates (VAT, discount) are **basis points** (`bp`):
+ * 16 % ⇒ `1600`. This satisfies [BR-7] (entries balanced to the cent) without relying
+ * on a decimal library on the client, and stays exact through a JSON round-trip
+ * (unlike `numeric` → `string`).
  *
- * Les quantités sont des nombres à 3 décimales maximum (`numeric(14,3)` en base) :
- * elles ne participent jamais seules à un total, toujours via `applyRate`.
+ * Quantities are numbers with at most 3 decimals (`numeric(14,3)` in the database):
+ * they never contribute to a total on their own, always through `applyRate`.
  */
 
-/** Nombre de décimales conservées sur une quantité (kg, litres, heures…). */
+import { formatLocale } from "./intl";
+
+/** Number of decimals kept on a quantity (kg, litres, hours…). */
 export const QUANTITY_SCALE = 3;
 
-/** 100 % exprimé en points de base. */
+/** 100 % expressed in basis points. */
 export const BP_SCALE = 10_000;
 
-/** Arrondi « demi vers le haut » symétrique (évite le biais de `Math.round` sur les négatifs). */
+/** Symmetric "round half up" (avoids the bias of `Math.round` on negative values). */
 export function roundHalfUp(value: number): number {
   return value < 0 ? -Math.round(-value) : Math.round(value);
 }
 
-/** Normalise une quantité saisie (string ou number) à `QUANTITY_SCALE` décimales. */
+/** Normalizes an entered quantity (string or number) to `QUANTITY_SCALE` decimals. */
 export function normalizeQuantity(value: string | number | null | undefined): number {
   const parsed = typeof value === "number" ? value : Number.parseFloat(String(value ?? "0"));
   if (!Number.isFinite(parsed)) return 0;
@@ -30,42 +32,61 @@ export function normalizeQuantity(value: string | number | null | undefined): nu
   return roundHalfUp(parsed * factor) / factor;
 }
 
-/** Applique un taux en points de base à un montant en centimes (arrondi au centime). */
+/** Applies a rate in basis points to an amount in cents (rounded to the cent). */
 export function applyRate(amountCents: number, rateBp: number): number {
   return roundHalfUp((amountCents * rateBp) / BP_SCALE);
 }
 
-/** Montant restant après une remise exprimée en points de base. */
+/** Amount remaining after a discount expressed in basis points. */
 export function applyDiscount(amountCents: number, discountBp: number): number {
   return amountCents - applyRate(amountCents, discountBp);
 }
 
-/** Convertit une saisie utilisateur (« 1 250,50 ») en centimes entiers. */
+/** Converts a user input ("1 250,50") into integer cents. */
 export function parseAmountToCents(input: string | number | null | undefined): number {
   if (typeof input === "number") return roundHalfUp(input * 100);
-  const cleaned = String(input ?? "")
-    // Les séparateurs de milliers français incluent l'espace fine insécable (U+202F)
-    // et l'espace insécable (U+00A0) : on les retire avant de parser.
-    .replace(/[\s\u202f\u00a0]/g, "")
-    .replace(",", ".");
-  const parsed = Number.parseFloat(cleaned);
+  const parsed = Number.parseFloat(normalizeDecimalInput(String(input ?? "")));
   return Number.isFinite(parsed) ? roundHalfUp(parsed * 100) : 0;
 }
 
-/** Convertit des centimes en unité majeure (pour affichage ou export). */
+/**
+ * Normalizes a number typed in any UI language to `1234.56`.
+ *
+ * Accepts "1 250,50" (fr), "1,250.50" (en) and the Arabic separators (٫ decimal,
+ * ٬ thousands). When both "," and "." appear, the last one is the decimal separator;
+ * a lone "," is a decimal comma unless it repeats ("1,250,000").
+ */
+export function normalizeDecimalInput(value: string): string {
+  // Spaces, including the narrow no-break space (U+202F) and the no-break space
+  // (U+00A0) used as French thousands separators, and the Arabic thousands separator.
+  let cleaned = value.replace(/[\s\u202f\u00a0\u066c]/g, "").replace(/\u066b/g, ".");
+  const lastComma = cleaned.lastIndexOf(",");
+  const lastDot = cleaned.lastIndexOf(".");
+  if (lastComma >= 0 && lastDot >= 0) {
+    cleaned =
+      lastComma > lastDot
+        ? cleaned.replace(/\./g, "").replace(",", ".")
+        : cleaned.replace(/,/g, "");
+  } else if (lastComma >= 0) {
+    cleaned =
+      cleaned.indexOf(",") === lastComma ? cleaned.replace(",", ".") : cleaned.replace(/,/g, "");
+  }
+  return cleaned;
+}
+
+/** Converts cents into the major unit (for display or export). */
 export function centsToMajor(cents: number): number {
   return cents / 100;
 }
 
-/** Convertit un pourcentage utilisateur (16, « 16,5 ») en points de base. */
+/** Converts a user percentage (16, "16,5") into basis points. */
 export function parsePercentToBp(input: string | number | null | undefined): number {
   if (typeof input === "number") return roundHalfUp(input * 100);
-  const cleaned = String(input ?? "").replace(",", ".");
-  const parsed = Number.parseFloat(cleaned);
+  const parsed = Number.parseFloat(normalizeDecimalInput(String(input ?? "")));
   return Number.isFinite(parsed) ? roundHalfUp(parsed * 100) : 0;
 }
 
-/** Points de base → pourcentage lisible (1600 ⇒ 16). */
+/** Basis points → readable percentage (1600 ⇒ 16). */
 export function bpToPercent(bp: number): number {
   return bp / 100;
 }
@@ -77,13 +98,13 @@ const CURRENCY_FRACTION_DIGITS: Record<string, number> = {
 };
 
 /**
- * Formate un montant en centimes pour l'affichage.
- * `Intl` refuse les codes ISO inconnus : on retombe alors sur un format neutre suffixé.
+ * Formats an amount in cents for display.
+ * `Intl` rejects unknown ISO codes, so the currency code is appended as a plain suffix.
  */
 export function formatMoney(
   cents: number,
   currency = "MRU",
-  locale = "fr-FR",
+  locale = formatLocale(),
   options: { withSymbol?: boolean } = {}
 ): string {
   const digits = CURRENCY_FRACTION_DIGITS[currency] ?? 2;
@@ -96,13 +117,13 @@ export function formatMoney(
   return withSymbol ? `${formatted} ${currency}` : formatted;
 }
 
-/** Formate une quantité sans zéros décimaux inutiles (« 2 » plutôt que « 2,000 »). */
-export function formatQuantity(value: string | number, locale = "fr-FR"): string {
+/** Formats a quantity without useless trailing decimal zeros ("2" rather than "2.000"). */
+export function formatQuantity(value: string | number, locale = formatLocale()): string {
   const qty = normalizeQuantity(value);
   return new Intl.NumberFormat(locale, { maximumFractionDigits: QUANTITY_SCALE }).format(qty);
 }
 
-/** Formate un taux en points de base (« 16 % »). */
-export function formatRate(bp: number, locale = "fr-FR"): string {
+/** Formats a rate in basis points ("16 %"). */
+export function formatRate(bp: number, locale = formatLocale()): string {
   return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(bpToPercent(bp))} %`;
 }

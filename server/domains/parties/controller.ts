@@ -1,4 +1,4 @@
-/** Frontière HTTP des tiers. */
+/** HTTP boundary of parties. */
 
 import type { Request, Response } from "express";
 

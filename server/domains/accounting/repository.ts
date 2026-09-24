@@ -1,4 +1,4 @@
-/** Persistance comptable : plan, journaux, écritures, grand livre, balance. */
+/** Accounting persistence: chart, journals, entries, general ledger, trial balance. */
 
 import { and, asc, desc, eq, gte, inArray, lte, sql, type SQL } from "drizzle-orm";
 
@@ -62,7 +62,7 @@ export class AccountingRepository {
     return row ?? null;
   }
 
-  /** Comptes adossés aux clés logiques — résolution des écritures automatiques. */
+  /** Accounts backing the logical keys — resolution of automatic entries. */
   async loadMappings(companyId: string): Promise<Map<AccountMappingKey, string>> {
     const rows = await this.database
       .select({ key: accountMappings.key, accountId: accountMappings.accountId })
@@ -193,7 +193,7 @@ export class AccountingRepository {
       .orderBy(asc(journalLines.position));
   }
 
-  /** Grand livre : écritures d'un compte sur une période [FR-CPT-2]. */
+  /** General ledger: entries of an account over a period [FR-CPT-2]. */
   async ledger(
     companyId: string,
     options: {
@@ -247,7 +247,7 @@ export class AccountingRepository {
     return { items: rows as LedgerRow[], total: countRow?.value ?? 0 };
   }
 
-  /** Balance : cumuls débit/crédit par compte [FR-CPT-3]. */
+  /** Trial balance: debit/credit totals per account [FR-CPT-3]. */
   async balance(
     companyId: string,
     options: { fromDate?: string | null; toDate?: string | null } = {}
@@ -277,7 +277,7 @@ export class AccountingRepository {
     return rows as BalanceRow[];
   }
 
-  /** Solde d'un compte de trésorerie, pour rapprocher `bank_accounts.balance_cents`. */
+  /** Balance of a treasury account, to reconcile `bank_accounts.balance_cents`. */
   async accountBalance(companyId: string, accountId: string) {
     const [row] = await this.database
       .select({

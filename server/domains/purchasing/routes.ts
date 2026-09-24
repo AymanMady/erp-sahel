@@ -1,4 +1,4 @@
-/** Routes des achats. */
+/** Purchasing routes. */
 
 import type { Express } from "express";
 

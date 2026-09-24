@@ -1,0 +1,52 @@
+{
+  "pos": {
+    "name": "Caisse",
+    "description": "Vendre au comptoir rapidement, encaisser et imprimer le ticket."
+  },
+  "invoicing": {
+    "name": "Factures",
+    "description": "Faire des factures clients et des avoirs."
+  },
+  "sales": {
+    "name": "Devis et commandes",
+    "description": "Préparer un devis, le transformer en commande puis en facture."
+  },
+  "purchasing": {
+    "name": "Achats",
+    "description": "Commander chez les fournisseurs et recevoir la marchandise."
+  },
+  "inventory": {
+    "name": "Stock",
+    "description": "Voir ce qui reste en magasin, les entrées et les sorties."
+  },
+  "services": {
+    "name": "Prestations",
+    "description": "Vendre des services (pose, réparation, livraison…)."
+  },
+  "banking": {
+    "name": "Caisse et banque",
+    "description": "Suivre l'argent en caisse, en banque et sur Bankily / Masrvi / Sedad."
+  },
+  "accounting": {
+    "name": "Comptabilité",
+    "description": "Journal, grand livre et balance (pour le comptable)."
+  },
+  "reports": {
+    "name": "Rapports",
+    "description": "Chiffres des ventes, des achats et du stock."
+  },
+  "presets": {
+    "simple": {
+      "name": "Simple",
+      "description": "Caisse, stock et achats. Idéal pour une boutique."
+    },
+    "invoices": {
+      "name": "Avec factures",
+      "description": "En plus : devis, factures, prestations et rapports."
+    },
+    "full": {
+      "name": "Complet",
+      "description": "Tout, y compris la banque et la comptabilité."
+    }
+  }
+}

@@ -1,4 +1,4 @@
-/** Accès API du paramétrage (société, utilisateurs, rôles, modules, prestations). */
+/** Settings API access (company, users, roles, modules, services). */
 
 import { api, apiRequest } from "@/shared/api/http";
 import { listServicesOffline, withOfflineFallback } from "@/shared/offline/offline-reads";
@@ -30,7 +30,7 @@ export const settingsApi = {
     api.post<{ success: true; modules: ModuleDescriptor[] }>(
       `/api/platform/modules/${code}/disable`
     ),
-  /** Niveau (préréglage) : exige le réseau, car il bascule plusieurs modules à la fois. */
+  /** Level (preset): requires the network, since it switches several modules at once. */
   applyModuleSelection: (body: { preset: string } | { modules: string[] }) =>
     apiRequest<{ success: true; modules: ModuleDescriptor[] }>("/api/platform/modules/selection", {
       method: "POST",

@@ -1,0 +1,33 @@
+{
+  "ui": {
+    "breadcrumb": "Fil d'Ariane",
+    "more": "Plus",
+    "commandPalette": "Palette de commandes",
+    "commandPaletteDescription": "Rechercher une commande à exécuter…",
+    "sidebar": "Navigation",
+    "sidebarDescription": "Affiche le menu de navigation mobile.",
+    "toggleSidebar": "Afficher ou masquer la barre latérale"
+  },
+  "searchInput": {
+    "clear": "Effacer la recherche"
+  },
+  "deleteDialog": {
+    "defaultName": "cet élément",
+    "title": "Supprimer {{name}} ?",
+    "description": "{{name}} sera supprimé définitivement. Cette action est irréversible.",
+    "deleted": "{{name}} supprimé",
+    "deletedDescription": "L'enregistrement a été supprimé."
+  },
+  "resourceTable": {
+    "emptyTitle": "Aucun résultat",
+    "emptyDescription": "Aucun élément ne correspond à votre recherche.",
+    "itemCount_one": "{{count}} élément",
+    "itemCount_other": "{{count}} éléments",
+    "perPage": "Par page",
+    "pageOf": "Page {{page}} / {{pageCount}}",
+    "firstPage": "Première page",
+    "previousPage": "Page précédente",
+    "nextPage": "Page suivante",
+    "lastPage": "Dernière page"
+  }
+}

@@ -1,22 +1,22 @@
 /**
- * Contrat de synchronisation Online/Offline — partagé client ⇄ serveur.
+ * Online/Offline synchronization contract — shared between client and server.
  *
- * Trois endpoints, pas un de plus (`SYNC_STRATEGY.md` §2) :
- *  - `GET  /api/sync/snapshot` — instantané complet servant d'amorçage du cache local ;
- *  - `GET  /api/sync/pull?since=` — delta depuis un curseur (changements des autres postes) ;
- *  - `POST /api/sync/push` — ingestion **idempotente** de l'outbox, dans l'ordre causal.
+ * Three endpoints, no more (`SYNC_STRATEGY.md` §2):
+ *  - `GET  /api/sync/snapshot` — full snapshot used to bootstrap the local cache;
+ *  - `GET  /api/sync/pull?since=` — delta since a cursor (changes from other devices);
+ *  - `POST /api/sync/push` — **idempotent** ingestion of the outbox, in causal order.
  *
- * Principes appliqués ici :
- *  - le client émet des **intentions** identifiées par `clientUuid` ; le serveur est
- *    autorité sur les numéros légaux, le stock consolidé et les écritures ([BR-8]) ;
- *  - une opération rejouée renvoie `duplicate` + l'identifiant déjà créé, **sans écrire** ;
- *  - une dépendance non encore résolue renvoie `deferred` : le client rejoue au cycle
- *    suivant au lieu d'échouer définitivement (`SYNC_STRATEGY.md` §4).
+ * Principles applied here:
+ *  - the client emits **intents** identified by `clientUuid`; the server is the
+ *    authority on legal numbers, consolidated stock and accounting entries ([BR-8]);
+ *  - a replayed operation returns `duplicate` + the already-created id, **without writing**;
+ *  - a dependency not yet resolved returns `deferred`: the client replays on the next
+ *    cycle instead of failing permanently (`SYNC_STRATEGY.md` §4).
  */
 
 import { z } from "zod";
 
-/** Entités acceptées en écriture hors-ligne, préfixées par domaine. */
+/** Entities accepted for offline writes, prefixed by domain. */
 export const SYNC_ENTITIES = [
   "core.party",
   "catalog.product",
@@ -34,10 +34,10 @@ export const syncEntitySchema = z.enum(SYNC_ENTITIES);
 export const SYNC_OPERATION_STATUSES = ["created", "duplicate", "error", "deferred"] as const;
 export type SyncOperationStatus = (typeof SYNC_OPERATION_STATUSES)[number];
 
-/** Ligne de document transportée par une opération hors-ligne. */
+/** Document line carried by an offline operation. */
 export const syncDocumentLineSchema = z.object({
   productId: z.string().uuid().nullish(),
-  /** Produit lui-même créé hors-ligne : résolu via l'opération `catalog.product` du lot. */
+  /** Product itself created offline: resolved via the batch's `catalog.product` operation. */
   productClientUuid: z.string().uuid().nullish(),
   variantId: z.string().uuid().nullish(),
   serviceId: z.string().uuid().nullish(),
@@ -86,7 +86,7 @@ export const syncProductPayloadSchema = z.object({
 
 export const syncInvoicePayloadSchema = z.object({
   partyId: z.string().uuid().nullish(),
-  /** Client créé dans le même lot hors-ligne. */
+  /** Customer created in the same offline batch. */
   partyClientUuid: z.string().uuid().nullish(),
   warehouseId: z.string().uuid().nullish(),
   posSessionId: z.string().uuid().nullish(),
@@ -96,7 +96,7 @@ export const syncInvoicePayloadSchema = z.object({
   dueDate: z.string().nullish(),
   globalDiscountBp: z.number().int().min(0).max(10_000).default(0),
   notes: z.string().default(""),
-  /** Numéro provisoire affiché hors-ligne ; remplacé par le numéro définitif à l'ACK. */
+  /** Provisional number shown offline; replaced by the final number on ACK. */
   provisionalNumber: z.string().default(""),
   lines: z.array(syncDocumentLineSchema).min(1),
 });
@@ -146,7 +146,7 @@ export const syncStockMovementPayloadSchema = z.object({
   productId: z.string().uuid(),
   warehouseId: z.string().uuid(),
   movementType: z.enum(["IN", "OUT", "ADJUSTMENT", "RETURN"]),
-  /** Sens explicite d'un ajustement ; sinon déduit du type de mouvement. */
+  /** Explicit direction of an adjustment; otherwise inferred from the movement type. */
   direction: z.enum(["IN", "OUT"]).nullish(),
   quantity: z.union([z.number(), z.string()]),
   unitCostCents: z.number().int().min(0).nullish(),
@@ -154,15 +154,15 @@ export const syncStockMovementPayloadSchema = z.object({
   lotNumber: z.string().default(""),
 });
 
-/** Opération unitaire de l'outbox. */
+/** Single outbox operation. */
 export const syncOperationSchema = z.object({
-  /** Clé d'idempotence générée sur le poste (UUIDv4). */
+  /** Idempotency key generated on the device (UUIDv4). */
   clientUuid: z.string().uuid(),
-  /** Compteur local monotone : garantit l'ordre causal du rejeu (`SYNC_STRATEGY.md` §4). */
+  /** Monotonic local counter: guarantees the causal replay order (`SYNC_STRATEGY.md` §4). */
   localSeq: z.number().int().nonnegative(),
   entity: syncEntitySchema,
   action: z.enum(["create", "update"]).default("create"),
-  /** `clientUuid` d'opérations dont celle-ci dépend ; sinon `deferred`. */
+  /** `clientUuid`s of the operations this one depends on; otherwise `deferred`. */
   dependsOn: z.array(z.string().uuid()).default([]),
   createdAt: z.string(),
   payload: z.record(z.unknown()),
@@ -171,7 +171,7 @@ export type SyncOperationInput = z.infer<typeof syncOperationSchema>;
 
 export const syncPushRequestSchema = z.object({
   deviceId: z.string().min(1).max(128),
-  /** Au-delà, le client découpe : un lot doit rester traitable dans une requête HTTP. */
+  /** Beyond this, the client splits: a batch must stay processable in a single HTTP request. */
   operations: z.array(syncOperationSchema).max(200),
 });
 export type SyncPushRequest = z.infer<typeof syncPushRequestSchema>;
@@ -180,22 +180,22 @@ export interface SyncOperationResult {
   clientUuid: string;
   entity: SyncEntity;
   status: SyncOperationStatus;
-  /** Identifiant serveur créé (ou existant pour un `duplicate`). */
+  /** Server id created (or existing, for a `duplicate`). */
   serverId?: string;
-  /** Numéro légal définitif attribué — remplace le numéro provisoire côté client. */
+  /** Final legal number assigned — replaces the provisional number on the client. */
   assignedNumber?: string;
-  /** Message d'erreur lisible, présent si `status` vaut `error` ou `deferred`. */
+  /** Human-readable error message (in the request language), present when `status` is `error` or `deferred`. */
   detail?: string;
 }
 
 export interface SyncPushResponse {
   results: SyncOperationResult[];
-  /** Curseur à passer au prochain `pull`. */
+  /** Cursor to pass to the next `pull`. */
   cursor: string;
   serverTime: string;
 }
 
-/** Sélectionne le schéma de payload correspondant à une entité. */
+/** Maps each entity to its payload schema. */
 export const SYNC_PAYLOAD_SCHEMAS = {
   "core.party": syncPartyPayloadSchema,
   "catalog.product": syncProductPayloadSchema,
@@ -207,7 +207,7 @@ export const SYNC_PAYLOAD_SCHEMAS = {
   "inventory.stock_movement": syncStockMovementPayloadSchema,
 } as const satisfies Record<SyncEntity, z.ZodTypeAny>;
 
-/** Ordre de rejeu recommandé quand deux opérations ont le même `localSeq`. */
+/** Recommended replay order when two operations share the same `localSeq`. */
 export const SYNC_ENTITY_PRIORITY: Record<SyncEntity, number> = {
   "core.party": 10,
   "catalog.product": 10,
@@ -219,7 +219,7 @@ export const SYNC_ENTITY_PRIORITY: Record<SyncEntity, number> = {
   "pos.session_close": 90,
 };
 
-/** Tri canonique d'un lot : `localSeq` d'abord, priorité d'entité en départage. */
+/** Canonical batch ordering: `localSeq` first, entity priority as tie-breaker. */
 export function sortOperations<T extends { localSeq: number; entity: SyncEntity }>(
   operations: T[]
 ): T[] {

@@ -1,6 +1,6 @@
 /**
- * Modules exposés au client : activer un module change le menu et les écrans
- * immédiatement, sans redéploiement.
+ * Modules exposed to the client: enabling a module changes the menu and screens
+ * immediately, without redeploying.
  */
 
 import type { Express } from "express";
@@ -57,7 +57,7 @@ export function registerPluginsRoutes(app: Express): void {
     })
   );
 
-  /** Préréglage (simple, avec factures, complet) ou sélection complète, en une fois. */
+  /** Preset (simple, with invoices, full) or a complete selection, in one go. */
   app.post(
     "/api/platform/modules/selection",
     requireAuth,

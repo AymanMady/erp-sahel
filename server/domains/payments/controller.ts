@@ -1,4 +1,4 @@
-/** Frontière HTTP des règlements. */
+/** HTTP boundary of payments. */
 
 import type { Request, Response } from "express";
 

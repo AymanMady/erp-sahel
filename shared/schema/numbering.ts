@@ -1,11 +1,11 @@
 /**
- * Séquences de numérotation légale des documents ([FR-VNT-7], Q6).
+ * Legal document numbering sequences ([FR-VNT-7], Q6).
  *
- * Une séquence par société **et par exercice** : `FAC-2026-0001`. L'allocation se fait
- * côté serveur, dans la transaction du document, par `UPDATE ... RETURNING` sur la ligne
- * verrouillée — deux postes hors-ligne ne peuvent donc pas produire le même numéro
- * (`SYNC_STRATEGY.md` §6). Hors ligne, le client affiche un numéro provisoire `OFFLINE-n`
- * qui est remplacé à l'ACK de synchronisation.
+ * One sequence per company **and per fiscal year**: `FAC-2026-0001`. Allocation happens
+ * server-side, inside the document's transaction, via `UPDATE ... RETURNING` on the
+ * locked row — so two offline workstations cannot produce the same number
+ * (`SYNC_STRATEGY.md` §6). While offline, the client shows a provisional `OFFLINE-n`
+ * number that is replaced on the sync ACK.
  */
 
 import { integer, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
@@ -29,7 +29,7 @@ export const DOCUMENT_TYPES = [
 ] as const;
 export type DocumentType = (typeof DOCUMENT_TYPES)[number];
 
-/** Préfixe affiché par type de document (français, cohérent avec l'ERP d'origine). */
+/** Displayed prefix per document type (French abbreviations, consistent with the original ERP). */
 export const DOCUMENT_PREFIXES: Record<DocumentType, string> = {
   QUOTE: "DEV",
   SALES_ORDER: "CMD",
@@ -53,7 +53,7 @@ export const documentSequences = pgTable(
       .notNull()
       .references(() => companies.id, { onDelete: "cascade" }),
     documentType: text("document_type").$type<DocumentType>().notNull(),
-    /** Exercice de la séquence (année civile ou exercice décalé). */
+    /** Fiscal year of the sequence (calendar year or offset fiscal year). */
     year: integer("year").notNull(),
     lastNumber: integer("last_number").default(0).notNull(),
     prefix: text("prefix").default("").notNull(),
@@ -65,17 +65,17 @@ export const documentSequences = pgTable(
 
 export type DocumentSequence = typeof documentSequences.$inferSelect;
 
-/** Format d'un numéro alloué : `PREFIX-ANNÉE-0001`. */
+/** Format of an allocated number: `PREFIX-YEAR-0001`. */
 export function formatDocumentNumber(prefix: string, year: number, sequence: number): string {
   return `${prefix}-${year}-${String(sequence).padStart(4, "0")}`;
 }
 
-/** Numéro provisoire visible hors ligne, remplacé à l'ingestion (`SYNC_STRATEGY.md` §6). */
+/** Provisional number visible offline, replaced on ingestion (`SYNC_STRATEGY.md` §6). */
 export function formatProvisionalNumber(prefix: string, localSeq: number): string {
   return `OFFLINE-${prefix}-${String(localSeq).padStart(4, "0")}`;
 }
 
-/** Vrai si le numéro est encore provisoire (document non synchronisé). */
+/** True if the number is still provisional (document not yet synced). */
 export function isProvisionalNumber(value: string | null | undefined): boolean {
   return typeof value === "string" && value.startsWith("OFFLINE-");
 }

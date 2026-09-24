@@ -1,4 +1,4 @@
-/** Frontière applicative de la trésorerie. */
+/** Application boundary of treasury. */
 
 import { asc } from "drizzle-orm";
 
@@ -38,14 +38,14 @@ export class BankingService {
       accountId,
       updateBankAccountSchema.parse(body)
     );
-    if (!account) throw new NotFoundError("Compte de trésorerie introuvable.");
+    if (!account) throw new NotFoundError("Cash/bank account not found.");
     return account;
   }
 
   async archiveAccount(companyId: string, id: unknown) {
     const { id: accountId } = idParamSchema.parse({ id });
     const archived = await bankAccountsRepository.archive(companyId, accountId);
-    if (!archived) throw new NotFoundError("Compte de trésorerie introuvable.");
+    if (!archived) throw new NotFoundError("Cash/bank account not found.");
     return { success: true as const };
   }
 
@@ -75,7 +75,7 @@ export class BankingService {
     const { id: transactionId } = idParamSchema.parse({ id });
     const { reconciled } = reconcileSchema.parse(body);
     const transaction = await bankingRepository.setReconciled(companyId, transactionId, reconciled);
-    if (!transaction) throw new NotFoundError("Mouvement introuvable.");
+    if (!transaction) throw new NotFoundError("Transaction not found.");
     return transaction;
   }
 

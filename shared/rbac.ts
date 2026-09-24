@@ -1,48 +1,51 @@
 /**
- * Catalogue des permissions et rôles par défaut (RBAC) — [FR-AUTH-2], [NFR-SEC-2].
+ * Catalog of permissions and default roles (RBAC) — [FR-AUTH-2], [NFR-SEC-2].
  *
- * Source unique partagée : le serveur l'utilise pour semer `permissions`/`roles` et
- * garder chaque endpoint ; le client l'utilise pour masquer une entrée de menu ou une
- * action. **Masquer côté client n'est jamais une protection** : l'autorisation fait foi
- * côté serveur, le client ne fait que de l'ergonomie.
+ * Single shared source: the server uses it to seed `permissions`/`roles` and to guard
+ * every endpoint; the client uses it to hide a menu entry or an action. **Hiding on the
+ * client is never a protection**: authorization is enforced by the server, the client
+ * only handles ergonomics.
+ *
+ * Labels are the English source text; the client translates them by code. Role slugs
+ * are stored identifiers and must not change.
  */
 
-/** Une permission = `<domaine>.<action>`. */
+/** A permission = `<domain>.<action>`. */
 export const PERMISSIONS = {
-  // Référentiels
-  "parties.read": "Consulter les tiers",
-  "parties.write": "Créer et modifier les tiers",
-  "catalog.read": "Consulter le catalogue",
-  "catalog.write": "Créer et modifier les produits",
-  "services.read": "Consulter les prestations",
-  "services.write": "Créer et modifier les prestations",
-  // Opérations
-  "inventory.read": "Consulter le stock",
-  "inventory.write": "Mouvements et ajustements de stock",
-  "purchasing.read": "Consulter les achats",
-  "purchasing.write": "Créer commandes et réceptions",
-  "sales.read": "Consulter devis et commandes",
-  "sales.write": "Créer devis et commandes",
-  "invoicing.read": "Consulter les factures",
-  "invoicing.write": "Créer et valider les factures",
-  "invoicing.cancel": "Annuler une facture et émettre un avoir",
-  "payments.read": "Consulter les règlements",
-  "payments.write": "Enregistrer les règlements",
-  "banking.read": "Consulter la trésorerie",
-  "banking.write": "Saisir et rapprocher les mouvements bancaires",
-  "pos.use": "Utiliser la caisse",
-  "pos.session.close": "Clôturer une session de caisse",
-  // Comptabilité & pilotage
-  "accounting.read": "Consulter la comptabilité",
-  "accounting.write": "Saisir des écritures",
-  "reports.read": "Consulter les rapports",
+  // Master data
+  "parties.read": "View parties",
+  "parties.write": "Create and edit parties",
+  "catalog.read": "View the catalog",
+  "catalog.write": "Create and edit products",
+  "services.read": "View services",
+  "services.write": "Create and edit services",
+  // Operations
+  "inventory.read": "View stock",
+  "inventory.write": "Stock movements and adjustments",
+  "purchasing.read": "View purchasing",
+  "purchasing.write": "Create orders and receipts",
+  "sales.read": "View quotes and orders",
+  "sales.write": "Create quotes and orders",
+  "invoicing.read": "View invoices",
+  "invoicing.write": "Create and validate invoices",
+  "invoicing.cancel": "Cancel an invoice and issue a credit note",
+  "payments.read": "View payments",
+  "payments.write": "Record payments",
+  "banking.read": "View cash and bank",
+  "banking.write": "Enter and reconcile bank transactions",
+  "pos.use": "Use the point of sale",
+  "pos.session.close": "Close a POS session",
+  // Accounting & reporting
+  "accounting.read": "View accounting",
+  "accounting.write": "Enter journal entries",
+  "reports.read": "View reports",
   // Administration
-  "settings.read": "Consulter les paramètres",
-  "settings.write": "Modifier les paramètres de la société",
-  "users.read": "Consulter les utilisateurs",
-  "users.write": "Gérer utilisateurs et rôles",
-  "modules.manage": "Activer ou désactiver les modules",
-  "audit.read": "Consulter le journal d'audit",
+  "settings.read": "View settings",
+  "settings.write": "Edit company settings",
+  "users.read": "View users",
+  "users.write": "Manage users and roles",
+  "modules.manage": "Enable or disable modules",
+  "audit.read": "View the audit log",
 } as const;
 
 export type PermissionCode = keyof typeof PERMISSIONS;
@@ -51,7 +54,7 @@ export const ALL_PERMISSION_CODES = Object.keys(PERMISSIONS) as PermissionCode[]
 
 const READ_ONLY: PermissionCode[] = ALL_PERMISSION_CODES.filter((code) => code.endsWith(".read"));
 
-/** Rôles système proposés à la création d'une société ([§3 SRS] — acteurs). */
+/** System roles offered when a company is created ([§3 SRS] — actors). */
 export const DEFAULT_ROLES: {
   slug: string;
   name: string;
@@ -60,14 +63,14 @@ export const DEFAULT_ROLES: {
 }[] = [
   {
     slug: "administrateur",
-    name: "Administrateur",
-    description: "Paramétrage société, utilisateurs, référentiels et comptabilité.",
+    name: "Administrator",
+    description: "Company settings, users, master data and accounting.",
     permissions: "*",
   },
   {
     slug: "responsable-magasin",
-    name: "Responsable magasin",
-    description: "Achats, stock, catalogue et rapports du magasin.",
+    name: "Store manager",
+    description: "Store purchasing, stock, catalog and reports.",
     permissions: [
       "parties.read",
       "parties.write",
@@ -92,8 +95,8 @@ export const DEFAULT_ROLES: {
   },
   {
     slug: "vendeur",
-    name: "Vendeur / Caissier",
-    description: "Ventes, devis, factures, encaissements et session de caisse.",
+    name: "Salesperson / Cashier",
+    description: "Sales, quotes, invoices, collections and POS session.",
     permissions: [
       "parties.read",
       "parties.write",
@@ -112,8 +115,8 @@ export const DEFAULT_ROLES: {
   },
   {
     slug: "comptable",
-    name: "Comptable",
-    description: "Journal, grand livre, balance et rapprochement bancaire.",
+    name: "Accountant",
+    description: "Journal, general ledger, trial balance and bank reconciliation.",
     permissions: [
       "parties.read",
       "catalog.read",
@@ -131,18 +134,18 @@ export const DEFAULT_ROLES: {
   },
   {
     slug: "consultation",
-    name: "Consultation",
-    description: "Accès en lecture seule à l'ensemble des écrans autorisés.",
+    name: "Read-only",
+    description: "Read-only access to all authorized screens.",
     permissions: READ_ONLY,
   },
 ];
 
-/** Développe `"*"` en liste complète. */
+/** Expands `"*"` into the full list. */
 export function resolveRolePermissions(permissions: PermissionCode[] | "*"): PermissionCode[] {
   return permissions === "*" ? [...ALL_PERMISSION_CODES] : permissions;
 }
 
-/** Vrai si l'ensemble de permissions couvre **au moins une** des permissions requises. */
+/** True if the granted permissions cover **at least one** of the required permissions. */
 export function hasAnyPermission(
   granted: readonly string[],
   required: readonly PermissionCode[]
@@ -151,7 +154,7 @@ export function hasAnyPermission(
   return required.some((code) => granted.includes(code));
 }
 
-/** Vrai si l'ensemble de permissions couvre **toutes** les permissions requises. */
+/** True if the granted permissions cover **all** the required permissions. */
 export function hasAllPermissions(
   granted: readonly string[],
   required: readonly PermissionCode[]

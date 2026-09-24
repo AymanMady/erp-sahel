@@ -1,16 +1,18 @@
 /**
- * Moteur d'ingestion de l'outbox hors-ligne.
+ * Ingestion engine for the offline outbox.
  *
- * Choix structurants :
- *  - **une transaction par opération**, pas une par lot. Si la cinquième opération
- *    échoue, les quatre précédentes restent acquittées et ne seront pas rejouées ;
- *    un lot entièrement rejeté obligerait le poste à tout renvoyer, et une erreur
- *    permanente sur une seule opération bloquerait indéfiniment la file ;
- *  - **journalisation systématique** dans `sync_operations`, y compris pour les
- *    échecs : c'est ce journal qui rend les rejeux idempotents ([BR-8]) et qui sert
- *    de piste d'audit terrain ;
- *  - une dépendance non résolue donne `deferred`, jamais `error` : le poste rejouera
- *    au cycle suivant, quand l'opération dont elle dépend sera passée.
+ * Key design choices:
+ *  - **one transaction per operation**, not one per batch. If the fifth operation
+ *    fails, the previous four stay acknowledged and will not be replayed; rejecting
+ *    the whole batch would force the device to resend everything, and a permanent
+ *    error on a single operation would block the queue forever;
+ *  - **systematic logging** in `sync_operations`, failures included: this journal is
+ *    what makes replays idempotent ([BR-8]) and serves as a field audit trail;
+ *  - an unresolved dependency yields `deferred`, never `error`: the device will replay
+ *    it on the next cycle, once the operation it depends on has gone through.
+ *
+ * `detail` messages are produced in the request language: they are both returned to
+ * the device and stored in the journal for the supervision screen.
  */
 
 import {
@@ -21,6 +23,7 @@ import {
 import type { Company } from "@shared/schema";
 import { runInTransaction } from "../../db";
 import { AppError } from "../../shared/errors/app-error";
+import { tr } from "../../shared/i18n";
 import { logger } from "../../shared/logging/logger";
 import { DeferredDependencyError, syncDispatcher } from "./dispatcher";
 import { syncRepository } from "./repository";
@@ -33,15 +36,15 @@ export interface PushContext {
 
 class SyncApplication {
   /**
-   * Ingère un lot. Les opérations sont traitées **séquentiellement** dans l'ordre
-   * causal : une facture doit voir le client créé juste avant elle.
+   * Ingests a batch. Operations are processed **sequentially** in causal order:
+   * an invoice must see the customer created right before it.
    */
   async push(
     context: PushContext,
     operations: SyncOperationInput[]
   ): Promise<SyncOperationResult[]> {
     const results: SyncOperationResult[] = [];
-    /** Références résolues durant ce lot, pour éviter une requête par dépendance. */
+    /** References resolved during this batch, to avoid one query per dependency. */
     const resolvedInBatch = new Map<string, string>();
 
     for (const operation of sortOperations(operations)) {
@@ -63,7 +66,7 @@ class SyncApplication {
     operation: SyncOperationInput,
     resolvedInBatch: Map<string, string>
   ): Promise<SyncOperationResult> {
-    // 1. Idempotence : une opération déjà ingérée ne réécrit rien.
+    // 1. Idempotency: an already-ingested operation writes nothing.
     const existing = await syncRepository.findByClientUuid(operation.clientUuid);
     if (existing && (existing.status === "created" || existing.status === "duplicate")) {
       if (existing.serverId) resolvedInBatch.set(operation.clientUuid, existing.serverId);
@@ -82,22 +85,24 @@ class SyncApplication {
         clientUuid: operation.clientUuid,
         entity: operation.entity,
         status: "error",
-        detail: `Entité « ${operation.entity} » non prise en charge par ce serveur.`,
+        detail: tr('Entity "{entity}" is not supported by this server.', {
+          entity: operation.entity,
+        }),
       });
     }
 
-    // 2. Dépendances explicites déclarées par le client.
+    // 2. Explicit dependencies declared by the client.
     const missing = await this.findMissingDependencies(operation.dependsOn, resolvedInBatch);
     if (missing) {
       return this.record(context, operation, {
         clientUuid: operation.clientUuid,
         entity: operation.entity,
         status: "deferred",
-        detail: `En attente de la synchronisation de ${missing}.`,
+        detail: tr("Waiting for {dependency} to be synchronized.", { dependency: missing }),
       });
     }
 
-    // 3. Rejeu du cas d'usage métier dans sa propre transaction.
+    // 3. Replay the business use case in its own transaction.
     try {
       const outcome = await runInTransaction(async (tx) =>
         handler(
@@ -137,13 +142,16 @@ class SyncApplication {
           detail: error.message,
         });
       }
+      // Constant `AppError` messages are English source text that the error handler
+      // would normally translate; here they go into the result, so translate them now
+      // (an already-translated message has no catalog entry and is returned unchanged).
       const detail =
         error instanceof AppError
-          ? error.message
+          ? tr(error.message)
           : error instanceof Error
             ? error.message
-            : "Erreur inconnue à l'ingestion.";
-      logger.warn("Opération de synchronisation refusée", {
+            : tr("Unknown error during ingestion.");
+      logger.warn("Sync operation rejected", {
         clientUuid: operation.clientUuid,
         entity: operation.entity,
         deviceId: context.deviceId,
@@ -171,9 +179,9 @@ class SyncApplication {
   }
 
   /**
-   * Journalise le résultat. Les statuts `deferred` ne sont **pas** persistés : ils
-   * doivent pouvoir être rejoués au cycle suivant, et une ligne `sync_operations`
-   * avec ce `client_uuid` bloquerait la seconde tentative sur la contrainte d'unicité.
+   * Records the result. `deferred` statuses are **not** persisted: they must be
+   * replayable on the next cycle, and a `sync_operations` row with this `client_uuid`
+   * would block the second attempt on the unique constraint.
    */
   private async record(
     context: PushContext,
@@ -193,8 +201,8 @@ class SyncApplication {
         localSeq: operation.localSeq,
         deviceId: context.deviceId,
         detail: result.detail ?? "",
-        // Le payload d'une opération refusée est conservé pour le diagnostic ;
-        // celui d'une opération réussie ne l'est pas (la donnée est déjà en base).
+        // The payload of a rejected operation is kept for diagnostics; that of a
+        // successful one is not (the data is already in the database).
         payload: result.status === "error" ? operation.payload : null,
       });
     }

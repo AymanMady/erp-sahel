@@ -1,7 +1,8 @@
-/** Journal des mouvements de stock — la source de vérité auditable des soldes. */
+/** Stock movement journal — the auditable source of truth for balances. */
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import { formatDateTime } from "@shared/format";
 import { errorMessage } from "@/shared/api/api-error";
@@ -17,17 +18,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const ALL = "ALL";
 
-const ORIGIN_LABELS: Record<string, string> = {
-  purchase_receipt: "Réception achat",
-  sales_invoice: "Facture de vente",
-  credit_note: "Avoir",
-  pos_ticket: "Ticket de caisse",
-  manual: "Saisie manuelle",
-  inventory_count: "Inventaire",
-  transfer: "Transfert",
+/** Translation keys (inventory namespace) for each movement origin. */
+const ORIGIN_LABEL_KEYS: Record<string, string> = {
+  purchase_receipt: "movements.origins.purchaseReceipt",
+  sales_invoice: "movements.origins.salesInvoice",
+  credit_note: "movements.origins.creditNote",
+  pos_ticket: "movements.origins.posTicket",
+  manual: "movements.origins.manual",
+  inventory_count: "movements.origins.inventoryCount",
+  transfer: "movements.origins.transfer",
 };
 
 export default function MovementsPage() {
+  const { t } = useTranslation("inventory");
   const [warehouseId, setWarehouseId] = useState(ALL);
   const [originType, setOriginType] = useState(ALL);
   const [page, setPage] = useState({ limit: 25, offset: 0 });
@@ -49,10 +52,10 @@ export default function MovementsPage() {
   });
 
   const columns: Column<MovementRow>[] = [
-    { id: "date", header: "Date", cell: (row) => formatDateTime(row.createdAt) },
+    { id: "date", header: t("common:labels.date"), cell: (row) => formatDateTime(row.createdAt) },
     {
       id: "product",
-      header: "Article",
+      header: t("movements.item"),
       cell: (row) => (
         <div className="min-w-0">
           <p className="truncate font-medium">{row.productName}</p>
@@ -60,10 +63,15 @@ export default function MovementsPage() {
         </div>
       ),
     },
-    { id: "warehouse", header: "Magasin", hideOnMobile: true, cell: (row) => row.warehouseName },
+    {
+      id: "warehouse",
+      header: t("common:labels.warehouse"),
+      hideOnMobile: true,
+      cell: (row) => row.warehouseName,
+    },
     {
       id: "type",
-      header: "Type",
+      header: t("common:labels.type"),
       cell: (row) => (
         <Badge
           variant="outline"
@@ -75,11 +83,15 @@ export default function MovementsPage() {
     },
     {
       id: "origin",
-      header: "Origine",
+      header: t("movements.origin"),
       hideOnMobile: true,
       cell: (row) => (
         <div className="text-sm">
-          <p>{ORIGIN_LABELS[row.originType] ?? row.originType}</p>
+          <p>
+            {ORIGIN_LABEL_KEYS[row.originType]
+              ? t(ORIGIN_LABEL_KEYS[row.originType])
+              : row.originType}
+          </p>
           {row.reference ? (
             <p className="tabular text-xs text-muted-foreground">{row.reference}</p>
           ) : null}
@@ -88,7 +100,7 @@ export default function MovementsPage() {
     },
     {
       id: "quantity",
-      header: "Quantité",
+      header: t("common:labels.quantity"),
       align: "end",
       cell: (row) => (
         <span className={row.direction === "IN" ? "text-status-success" : "text-status-danger"}>
@@ -99,14 +111,14 @@ export default function MovementsPage() {
     },
     {
       id: "balance",
-      header: "Solde après",
+      header: t("movements.balanceAfter"),
       align: "end",
       hideOnMobile: true,
       cell: (row) => <Quantity value={row.balanceAfter} />,
     },
     {
       id: "cost",
-      header: "Coût unitaire",
+      header: t("movements.unitCost"),
       align: "end",
       hideOnMobile: true,
       cell: (row) => <Money cents={row.unitCostCents} />,
@@ -115,10 +127,7 @@ export default function MovementsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Mouvements de stock"
-        description="Chaque entrée, sortie ou ajustement est tracé avec son origine."
-      />
+      <PageHeader title={t("movements.title")} description={t("movements.description")} />
 
       <div className="flex flex-col gap-2 sm:flex-row">
         <Select value={warehouseId} onValueChange={setWarehouseId}>
@@ -126,7 +135,7 @@ export default function MovementsPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>Tous les magasins</SelectItem>
+            <SelectItem value={ALL}>{t("allWarehouses")}</SelectItem>
             {(warehouses ?? []).map((warehouse) => (
               <SelectItem key={warehouse.id} value={warehouse.id}>
                 {warehouse.name}
@@ -139,10 +148,10 @@ export default function MovementsPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>Toutes les origines</SelectItem>
-            {Object.entries(ORIGIN_LABELS).map(([value, label]) => (
+            <SelectItem value={ALL}>{t("movements.allOrigins")}</SelectItem>
+            {Object.entries(ORIGIN_LABEL_KEYS).map(([value, labelKey]) => (
               <SelectItem key={value} value={value}>
-                {label}
+                {t(labelKey)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -155,8 +164,8 @@ export default function MovementsPage() {
         rowKey={(row) => row.id}
         loading={isLoading}
         error={error ? errorMessage(error) : null}
-        emptyTitle="Aucun mouvement"
-        emptyDescription="Les mouvements apparaissent dès la première réception ou vente."
+        emptyTitle={t("movements.emptyTitle")}
+        emptyDescription={t("movements.emptyDescription")}
         pagination={{
           total: data?.total ?? 0,
           limit: page.limit,

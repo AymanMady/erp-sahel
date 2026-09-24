@@ -1,0 +1,110 @@
+{
+  "offlineUnavailable": "هذا الطرف غير متاح دون اتصال.",
+  "fields": {
+    "vatNumber": "الرقم الضريبي",
+    "creditLimit": "سقف الائتمان",
+    "creditLimitHint": "0 = بدون سقف",
+    "paymentTermsDays": "أجل السداد (بالأيام)"
+  },
+  "addressTypes": {
+    "billing": "الفوترة",
+    "shipping": "التسليم",
+    "other": "أخرى"
+  },
+  "list": {
+    "title": "الأطراف",
+    "description": "عملاء الشركة ومورّدوها وعملاؤها المحتملون.",
+    "new": "طرف جديد",
+    "searchPlaceholder": "الاسم، الرمز، الهاتف، الرقم الضريبي…",
+    "allTypes": "كل الأطراف",
+    "vatNumberShort": "الرقم الضريبي {{number}}",
+    "unlimited": "غير محدود",
+    "termsDays": "{{days}} يوم",
+    "cash": "نقدًا",
+    "columns": {
+      "contact": "جهة الاتصال",
+      "paymentTerms": "السداد"
+    },
+    "empty": {
+      "title": "لا توجد أطراف",
+      "description": "أنشئ أول عميل أو مورّد لبدء الفوترة."
+    }
+  },
+  "create": {
+    "title": "طرف جديد",
+    "description": "يُنشأ الرمز تلقائيًا حسب النوع (CLI، FRN، PSP).",
+    "creating": "جارٍ الإنشاء…",
+    "submit": "إنشاء الطرف",
+    "created": "تم إنشاء الطرف «{{name}}» ({{code}}).",
+    "savedOffline": "تم حفظ الطرف «{{name}}» دون اتصال.",
+    "savedOfflineDescription": "سيتم إنشاؤه على الخادم عند المزامنة القادمة."
+  },
+  "detail": {
+    "notFound": "الطرف غير موجود.",
+    "outstanding": "الرصيد المستحق الحالي",
+    "creditLimit": "سقف الائتمان:",
+    "noCreditLimit": "لم يُحدَّد سقف ائتمان.",
+    "paymentTerms": "شروط السداد",
+    "termsDays_zero": "{{count}} يوم",
+    "termsDays_one": "يوم واحد",
+    "termsDays_two": "يومان",
+    "termsDays_few": "{{count}} أيام",
+    "termsDays_many": "{{count}} يومًا",
+    "termsDays_other": "{{count}} يوم",
+    "cash": "نقدًا",
+    "leadTime_zero": "مهلة توريد المورّد: {{count}} يوم",
+    "leadTime_one": "مهلة توريد المورّد: يوم واحد",
+    "leadTime_two": "مهلة توريد المورّد: يومان",
+    "leadTime_few": "مهلة توريد المورّد: {{count}} أيام",
+    "leadTime_many": "مهلة توريد المورّد: {{count}} يومًا",
+    "leadTime_other": "مهلة توريد المورّد: {{count}} يوم",
+    "noLeadTime": "لا توجد مهلة توريد افتراضية.",
+    "contactInfo": "بيانات الاتصال",
+    "noEmail": "لا يوجد بريد إلكتروني",
+    "noVatNumber": "لا يوجد رقم ضريبي",
+    "tabs": {
+      "history": "السجل",
+      "contacts": "جهات الاتصال ({{n}})",
+      "addresses": "العناوين ({{n}})"
+    },
+    "invoices": {
+      "title": "الفواتير",
+      "description": "المستندات الصادرة لهذا الطرف.",
+      "empty": "لا توجد فواتير لهذا الطرف."
+    },
+    "payments": {
+      "title": "المدفوعات",
+      "empty": "لا توجد مدفوعات مسجّلة."
+    },
+    "contacts": {
+      "title": "جهات الاتصال",
+      "empty": "لا توجد جهات اتصال مسجّلة."
+    },
+    "addresses": {
+      "title": "العناوين",
+      "empty": "لا توجد عناوين مسجّلة."
+    }
+  },
+  "edit": {
+    "title": "تعديل الطرف",
+    "saved": "تم تحديث الطرف."
+  },
+  "contact": {
+    "title": "جهة اتصال جديدة",
+    "added": "تمت إضافة جهة الاتصال.",
+    "firstName": "الاسم الأول",
+    "lastName": "اسم العائلة",
+    "role": "الوظيفة",
+    "rolePlaceholder": "مسؤول المشتريات، محاسب…"
+  },
+  "address": {
+    "title": "عنوان جديد",
+    "added": "تمت إضافة العنوان.",
+    "type": "نوع العنوان",
+    "street": "الشارع",
+    "city": "المدينة",
+    "postalCode": "الرمز البريدي",
+    "country": "البلد",
+    "defaultCountry": "موريتانيا"
+  }
+}

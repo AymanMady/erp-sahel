@@ -1,0 +1,68 @@
+{
+  "title": "Treasury",
+  "description": "Accounts, transactions and bank reconciliation.",
+  "markReconciled": "Mark as reconciled",
+  "accountTypes": {
+    "bank": "Bank account",
+    "cash": "Cash",
+    "mobileMoney": "Mobile money"
+  },
+  "transactionTypes": {
+    "deposit": "Deposit",
+    "withdrawal": "Withdrawal",
+    "transfer": "Transfer"
+  },
+  "columns": {
+    "account": "Account",
+    "label": "Label",
+    "reconciled": "Reconciled"
+  },
+  "actions": {
+    "transfer": "Internal transfer",
+    "newMovement": "Record a transaction",
+    "newAccount": "New account"
+  },
+  "stats": {
+    "total": "Total treasury",
+    "cash": "Cash",
+    "bank": "Bank",
+    "mobile": "Mobile money"
+  },
+  "accounts": {
+    "title": "Accounts",
+    "empty": "No treasury account. Create one to record payments."
+  },
+  "filters": {
+    "allAccounts": "All accounts"
+  },
+  "empty": {
+    "title": "No transactions",
+    "description": "Payments feed this journal automatically."
+  },
+  "accountDialog": {
+    "title": "New treasury account",
+    "accountNumber": "Account number",
+    "iban": "IBAN",
+    "isDefault": "Default account for this payment type"
+  },
+  "movementDialog": {
+    "title": "Treasury transaction",
+    "description": "For a deposit or withdrawal with no related invoice (capital contribution, bank fees…).",
+    "direction": "Direction",
+    "deposit": "Deposit (+)",
+    "withdrawal": "Withdrawal (−)"
+  },
+  "transferDialog": {
+    "title": "Internal transfer",
+    "description": "Transfer between two company accounts (depositing cash at the bank, for example).",
+    "defaultDescription": "Internal transfer",
+    "from": "From",
+    "to": "To",
+    "submit": "Transfer"
+  },
+  "toasts": {
+    "accountCreated": "Account created.",
+    "movementSaved": "Transaction recorded.",
+    "transferDone": "Transfer completed."
+  }
+}

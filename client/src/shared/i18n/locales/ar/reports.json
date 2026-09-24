@@ -1,0 +1,55 @@
+{
+  "filters": {
+    "fromDate": "تاريخ البداية",
+    "toDate": "تاريخ النهاية"
+  },
+  "sales": {
+    "title": "تقرير المبيعات",
+    "description": "رقم الأعمال والأصناف والتحصيلات.",
+    "revenueExclTax": "رقم الأعمال دون الضريبة",
+    "revenueInclTax": "رقم الأعمال شامل الضريبة",
+    "collected": "المحصَّل",
+    "outstanding": "المتبقي المستحق",
+    "dailyRevenue": "رقم الأعمال اليومي",
+    "noSales": "لا توجد مبيعات خلال الفترة.",
+    "topSales": "الأكثر مبيعًا",
+    "emptyTitle": "لا توجد مبيعات",
+    "emptyDescription": "لم يُبع أي صنف خلال الفترة.",
+    "collectionsByMethod": "التحصيلات حسب طريقة الدفع",
+    "noCollections": "لا توجد تحصيلات خلال الفترة.",
+    "paymentsCount_zero": "لا توجد تسويات",
+    "paymentsCount_one": "تسوية واحدة",
+    "paymentsCount_two": "تسويتان",
+    "paymentsCount_few": "{{count}} تسويات",
+    "paymentsCount_many": "{{count}} تسوية",
+    "paymentsCount_other": "{{count}} تسوية",
+    "columns": {
+      "item": "الصنف",
+      "soldQuantity": "الكمية المباعة"
+    }
+  },
+  "stock": {
+    "title": "تقرير المخزون",
+    "description": "التقييم بمتوسط التكلفة وتنبيهات نفاد المخزون.",
+    "allWarehouses": "جميع المخازن",
+    "stockValue": "قيمة المخزون",
+    "skus": "المراجع",
+    "totalQuantity": "الكمية الإجمالية",
+    "belowThreshold": "الأصناف دون حد التنبيه",
+    "emptyTitle": "لا توجد تنبيهات",
+    "emptyDescription": "جميع الأصناف المتابَعة فوق حد إعادة الطلب.",
+    "columns": {
+      "item": "الصنف",
+      "currentStock": "المخزون الحالي",
+      "alertThreshold": "حد التنبيه"
+    }
+  },
+  "purchases": {
+    "title": "تقرير المشتريات",
+    "description": "حجم التموين خلال الفترة.",
+    "ordersPlaced": "الطلبيات المُصدرة",
+    "amountExclTax": "المبلغ دون الضريبة",
+    "amountInclTax": "المبلغ شامل الضريبة",
+    "periodNote": "الفترة المحللة: من {{from}} إلى {{to}}. تشمل المبالغ جميع طلبيات الموردين، بما فيها تلك التي لم تُستلم بعد."
+  }
+}

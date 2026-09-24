@@ -1,4 +1,4 @@
-/** Contrats de validation des achats. */
+/** Purchasing validation contracts. */
 
 import { z } from "zod";
 
@@ -16,13 +16,13 @@ export const listOrdersQuerySchema = z.object({
 });
 
 export const createOrderSchema = z.object({
-  supplierId: z.string().uuid("Sélectionnez un fournisseur"),
+  supplierId: z.string().uuid("Select a supplier"),
   warehouseId: z.string().uuid().nullish(),
   date: z.string().date().optional(),
   expectedDate: z.string().date().nullish(),
   globalDiscountBp: z.number().int().min(0).max(10_000).default(0),
   notes: z.string().max(4000).default(""),
-  lines: z.array(documentLineSchema).min(1, "Ajoutez au moins une ligne"),
+  lines: z.array(documentLineSchema).min(1, "Add at least one line"),
 });
 
 export const updateOrderSchema = createOrderSchema.partial();
@@ -46,7 +46,7 @@ export const createReceiptSchema = z.object({
         unitCostCents: z.number().int().min(0).default(0),
       })
     )
-    .min(1, "Indiquez au moins un article reçu"),
+    .min(1, "Specify at least one received item"),
 });
 
 export const listSupplierInvoicesQuerySchema = z.object({
@@ -57,14 +57,14 @@ export const listSupplierInvoicesQuerySchema = z.object({
 });
 
 export const createSupplierInvoiceSchema = z.object({
-  supplierId: z.string().uuid("Sélectionnez un fournisseur"),
+  supplierId: z.string().uuid("Select a supplier"),
   supplierReference: z.string().max(100).default(""),
   purchaseOrderId: z.string().uuid().nullish(),
   receiptId: z.string().uuid().nullish(),
   date: z.string().date().optional(),
   dueDate: z.string().date().nullish(),
   notes: z.string().max(4000).default(""),
-  lines: z.array(documentLineSchema).min(1, "Ajoutez au moins une ligne"),
+  lines: z.array(documentLineSchema).min(1, "Add at least one line"),
 });
 
-export const idParamSchema = z.object({ id: z.string().uuid("Identifiant invalide") });
+export const idParamSchema = z.object({ id: z.string().uuid("Invalid identifier") });

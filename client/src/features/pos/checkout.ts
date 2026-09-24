@@ -1,10 +1,10 @@
 /**
- * Encaissement d'un ticket, en ligne **ou** hors ligne.
+ * Ticket checkout, online **or** offline.
  *
- * C'est le point où le mode hors ligne devient concret : la même action utilisateur
- * produit soit un appel API, soit deux opérations d'outbox liées entre elles par leurs
- * `clientUuid` (facture puis règlement). Le serveur rejouera exactement la même chaîne
- * métier à l'ingestion, y compris le décrément de stock et l'écriture comptable
+ * This is where offline mode becomes concrete: the same user action produces either an
+ * API call or two outbox operations linked together by their `clientUuid` (invoice then
+ * payment). At ingestion the server replays exactly the same business chain, including
+ * the stock decrement and the accounting entry
  * ([FR-POS-3], [FR-SYNC-2], `SYNC_STRATEGY.md` §3).
  */
 
@@ -12,6 +12,7 @@ import type { PaymentMethod } from "@shared/schema";
 import { formatProvisionalNumber } from "@shared/numbering-helpers";
 import { computeDocumentTotals } from "@shared/pricing";
 import { todayInput } from "@shared/format";
+import { i18n } from "@/shared/i18n";
 import { posApi } from "@/entities/pos/api";
 import { isNetworkError } from "@/shared/offline/offline-writes";
 import { enqueue, newUuid } from "@/shared/offline/outbox";
@@ -38,7 +39,7 @@ export interface TicketPayment {
 
 export interface CheckoutInput {
   sessionId: string;
-  /** `clientUuid` de la session si elle a été ouverte hors ligne. */
+  /** Session `clientUuid` when it was opened offline. */
   sessionClientUuid?: string | null;
   partyId?: string | null;
   lines: CartLine[];
@@ -46,19 +47,19 @@ export interface CheckoutInput {
   globalDiscountBp?: number;
   notes?: string;
   vatEnabled: boolean;
-  /** Numéro provisoire local, incrémenté par poste. */
+  /** Local provisional number, incremented per register. */
   localTicketSeq: number;
 }
 
 export interface CheckoutResult {
   mode: "online" | "offline";
-  /** Numéro définitif (en ligne) ou provisoire (hors ligne). */
+  /** Final number (online) or provisional number (offline). */
   number: string;
   totalTtcCents: number;
   invoiceId?: string;
 }
 
-/** Totaux du panier — même fonction que le serveur, donc aucun écart possible. */
+/** Cart totals — same function as the server, so no discrepancy is possible. */
 export function cartTotals(
   lines: CartLine[],
   options: { globalDiscountBp?: number; vatEnabled: boolean }
@@ -89,8 +90,8 @@ function toSyncLines(lines: CartLine[]) {
 }
 
 /**
- * Encaisse en ligne. Toute erreur est propagée : l'appelant décidera de basculer
- * hors ligne ou d'afficher le refus (stock insuffisant, session close…).
+ * Checks out online. Every error is propagated: the caller decides whether to fall back
+ * to offline mode or to display the rejection (insufficient stock, closed session…).
  */
 async function checkoutOnline(input: CheckoutInput): Promise<CheckoutResult> {
   const response = await posApi.createTicket({
@@ -115,9 +116,9 @@ async function checkoutOnline(input: CheckoutInput): Promise<CheckoutResult> {
 }
 
 /**
- * Encaisse hors ligne : la facture et ses règlements partent dans l'outbox.
- * Les règlements déclarent la facture en dépendance, ce qui garantit l'ordre de rejeu
- * même si le lot est découpé ou rejoué plusieurs fois.
+ * Checks out offline: the invoice and its payments go to the outbox.
+ * Payments declare the invoice as a dependency, which guarantees the replay order
+ * even if the batch is split or replayed several times.
  */
 async function checkoutOffline(input: CheckoutInput): Promise<CheckoutResult> {
   const totals = cartTotals(input.lines, {
@@ -130,7 +131,7 @@ async function checkoutOffline(input: CheckoutInput): Promise<CheckoutResult> {
   await enqueue({
     clientUuid: invoiceClientUuid,
     entity: "invoicing.sales_invoice",
-    label: `Ticket ${provisionalNumber}`,
+    label: i18n.t("pos:outbox.ticket", { number: provisionalNumber }),
     amountCents: totals.totalTtcCents,
     provisionalNumber,
     payload: {
@@ -150,7 +151,7 @@ async function checkoutOffline(input: CheckoutInput): Promise<CheckoutResult> {
   for (const payment of input.payments) {
     await enqueue({
       entity: "payments.payment",
-      label: `Règlement ${provisionalNumber}`,
+      label: i18n.t("pos:outbox.payment", { number: provisionalNumber }),
       amountCents: payment.amountCents,
       payload: {
         partyId: input.partyId ?? null,
@@ -172,12 +173,12 @@ async function checkoutOffline(input: CheckoutInput): Promise<CheckoutResult> {
 }
 
 /**
- * Encaisse le ticket.
+ * Checks out the ticket.
  *
- * En ligne d'abord ; si le serveur est injoignable, bascule automatiquement hors ligne.
- * Une erreur **métier** (stock insuffisant, montant incohérent) n'est jamais convertie
- * en écriture hors ligne : elle serait rejetée de la même façon à l'ingestion, et la
- * vente resterait bloquée dans la file sans que le caissier le sache.
+ * Online first; if the server is unreachable, automatically falls back to offline mode.
+ * A **business** error (insufficient stock, inconsistent amount) is never turned into
+ * an offline write: it would be rejected the same way at ingestion, and the sale would
+ * stay stuck in the queue without the cashier knowing.
  */
 export async function checkout(
   input: CheckoutInput,
@@ -195,7 +196,7 @@ export async function checkout(
   }
 }
 
-/** Ouvre une session de caisse, en ligne ou hors ligne. */
+/** Opens a register session, online or offline. */
 export async function openSession(
   input: { registerId: string; openingBalanceCents: number; notes?: string },
   options: { online: boolean }
@@ -209,7 +210,7 @@ export async function openSession(
       });
       return { mode: "online", sessionId: session.id, clientUuid: null };
     } catch (error) {
-      // Réseau perdu pendant l'envoi : l'ouverture part dans la file, comme hors ligne.
+      // Network lost while sending: the opening goes to the queue, as when offline.
       if (!isNetworkError(error)) throw error;
     }
   }
@@ -218,7 +219,7 @@ export async function openSession(
   await enqueue({
     clientUuid,
     entity: "pos.session_open",
-    label: "Ouverture de caisse",
+    label: i18n.t("pos:outbox.sessionOpen"),
     amountCents: input.openingBalanceCents,
     payload: {
       registerId: input.registerId,
@@ -228,12 +229,12 @@ export async function openSession(
     },
   });
   await refreshCounters();
-  // Hors ligne, l'identifiant de session est le `clientUuid` : le serveur le
-  // remplacera par l'identifiant définitif au moment de l'ingestion.
+  // Offline, the session id is the `clientUuid`: the server will replace it with the
+  // final id at ingestion time.
   return { mode: "offline", sessionId: clientUuid, clientUuid };
 }
 
-/** Clôture une session de caisse, en ligne ou hors ligne. */
+/** Closes a register session, online or offline. */
 export async function closeSession(
   input: {
     sessionId: string;
@@ -257,7 +258,7 @@ export async function closeSession(
 
   await enqueue({
     entity: "pos.session_close",
-    label: "Clôture de caisse",
+    label: i18n.t("pos:outbox.sessionClose"),
     amountCents: input.closingBalanceCents,
     payload: {
       sessionId: input.sessionClientUuid ? null : input.sessionId,
@@ -268,13 +269,13 @@ export async function closeSession(
     },
     dependsOn: input.sessionClientUuid ? [input.sessionClientUuid] : [],
   });
-  // Hors ligne, la session courante est lue dans l'instantané : elle doit y apparaître
-  // close, sinon la caisse la rouvrirait aussitôt.
+  // Offline, the current session is read from the snapshot: it must appear closed
+  // there, otherwise the register would immediately reopen it.
   const snapshot = await readSnapshot();
   if (snapshot?.session && snapshot.session.id === input.sessionId) {
     await writeSnapshot({ ...snapshot, session: null });
   }
   await refreshCounters();
-  // L'écart n'est connu qu'après recalcul serveur des encaissements de la session.
+  // The difference is only known once the server recomputes the session's receipts.
   return { mode: "offline", differenceCents: null };
 }

@@ -1,12 +1,13 @@
 /**
- * Création d'une facture client.
+ * Customer invoice creation.
  *
- * Deux gestes distincts, volontairement séparés : **enregistrer un brouillon** (aucun
- * effet) et **valider** (numéro légal, décrément de stock, écriture comptable, document
- * verrouillé). Rendre les deux identiques ferait valider des factures par accident.
+ * Two distinct actions, deliberately kept apart: **save a draft** (no effect) and
+ * **validate** (legal number, stock decrement, accounting entry, locked document).
+ * Making them look alike would get invoices validated by accident.
  */
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { IconArrowLeft, IconCheck, IconDeviceFloppy } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
@@ -39,6 +40,7 @@ import { Textarea } from "@/shared/ui/textarea";
 const DEFAULT_WAREHOUSE = "DEFAULT";
 
 export default function InvoiceFormPage() {
+  const { t } = useTranslation("invoicing");
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const { company } = useSession();
@@ -70,9 +72,9 @@ export default function InvoiceFormPage() {
       return onlineOrQueued(
         () => invoicingApi.create({ ...input, validate }),
         async (): Promise<{ provisionalNumber: string; draft?: boolean }> => {
-          // Une facture validée hors ligne passe par l'opération de synchronisation
-          // dédiée (numéro, stock, comptabilité) ; un brouillon, qui n'engage rien, est
-          // simplement rejoué tel quel au retour du réseau.
+          // An invoice validated offline goes through the dedicated sync operation
+          // (number, stock, accounting); a draft, which commits nothing, is simply
+          // replayed as-is once the network is back.
           if (!validate) {
             await queueHttpWrite(
               { method: "POST", url: "/api/invoices", body: { ...input, validate: false } },
@@ -87,15 +89,15 @@ export default function InvoiceFormPage() {
     onSuccess: (outcome) => {
       void queryClient.invalidateQueries({ queryKey: ["invoices"] });
       if (outcome.mode === "offline" && outcome.result.draft) {
-        toast.success("Brouillon de facture enregistré hors ligne.", {
-          description: "Il sera créé sur le serveur à la prochaine synchronisation.",
+        toast.success(t("invoiceForm.draftSavedOffline"), {
+          description: t("invoiceForm.draftSavedOfflineDescription"),
         });
         navigate("/sync");
         return;
       }
       if (outcome.mode === "offline") {
-        toast.success(`Facture ${outcome.result.provisionalNumber} enregistrée hors ligne.`, {
-          description: "Elle sera validée (stock et comptabilité) à la prochaine synchronisation.",
+        toast.success(t("invoiceForm.savedOffline", { number: outcome.result.provisionalNumber }), {
+          description: t("invoiceForm.savedOfflineDescription"),
         });
         navigate("/sync");
         return;
@@ -103,8 +105,8 @@ export default function InvoiceFormPage() {
       const invoice = outcome.result;
       toast.success(
         invoice.status === "DRAFT"
-          ? "Brouillon de facture enregistré."
-          : `Facture ${invoice.number} validée : stock et comptabilité mis à jour.`
+          ? t("invoiceForm.draftSaved")
+          : t("invoiceForm.validated", { number: invoice.number })
       );
       navigate(`/invoices/${invoice.id}`);
     },
@@ -113,7 +115,7 @@ export default function InvoiceFormPage() {
 
   const canSubmit = Boolean(party) && toApiLines(lines).length > 0;
 
-  // Échéance déduite des conditions de règlement du client dès qu'il est choisi.
+  // Due date derived from the customer's payment terms as soon as one is picked.
   const applyParty = (next: Party | null) => {
     setParty(next);
     if (next && next.paymentTermsDays > 0) setDueDate(addDays(date, next.paymentTermsDays));
@@ -121,14 +123,11 @@ export default function InvoiceFormPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Nouvelle facture"
-        description="Un brouillon n'a aucun effet ; la validation décrémente le stock et comptabilise."
-      >
+      <PageHeader title={t("invoiceForm.title")} description={t("invoiceForm.description")}>
         <Button variant="outline" asChild>
           <Link href="/invoices">
-            <IconArrowLeft className="size-4" />
-            Retour
+            <IconArrowLeft className="size-4 rtl:rotate-180" />
+            {t("common:actions.back")}
           </Link>
         </Button>
         <Button
@@ -137,40 +136,42 @@ export default function InvoiceFormPage() {
           disabled={!canSubmit || submit.isPending}
         >
           <IconDeviceFloppy className="size-4" />
-          Enregistrer le brouillon
+          {t("invoiceForm.saveDraft")}
         </Button>
         <Button onClick={() => submit.mutate(true)} disabled={!canSubmit || submit.isPending}>
           <IconCheck className="size-4" />
-          {submit.isPending ? "Traitement…" : "Valider la facture"}
+          {submit.isPending ? t("invoiceForm.processing") : t("invoiceForm.validate")}
         </Button>
       </PageHeader>
 
       <Card>
         <CardHeader>
-          <CardTitle>En-tête</CardTitle>
+          <CardTitle>{t("invoiceForm.header")}</CardTitle>
         </CardHeader>
         <CardContent>
           <FieldGrid columns={3}>
-            <Field label="Client" required>
+            <Field label={t("common:labels.customer")} required>
               <PartyPicker value={party} onChange={applyParty} role="CUSTOMER" />
             </Field>
-            <Field label="Date de facture">
+            <Field label={t("invoiceForm.date")}>
               <Input type="date" value={date} onChange={(event) => setDate(event.target.value)} />
             </Field>
-            <Field label="Échéance">
+            <Field label={t("common:labels.dueDate")}>
               <Input
                 type="date"
                 value={dueDate}
                 onChange={(event) => setDueDate(event.target.value)}
               />
             </Field>
-            <Field label="Magasin de livraison" hint="Détermine d'où le stock est sorti.">
+            <Field label={t("invoiceForm.warehouse")} hint={t("invoiceForm.warehouseHint")}>
               <Select value={warehouseId} onValueChange={setWarehouseId}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={DEFAULT_WAREHOUSE}>Magasin par défaut</SelectItem>
+                  <SelectItem value={DEFAULT_WAREHOUSE}>
+                    {t("invoiceForm.defaultWarehouse")}
+                  </SelectItem>
                   {(warehouses ?? []).map((warehouse) => (
                     <SelectItem key={warehouse.id} value={warehouse.id}>
                       {warehouse.name}
@@ -185,7 +186,7 @@ export default function InvoiceFormPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Lignes</CardTitle>
+          <CardTitle>{t("invoiceForm.lines")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <LineEditor
@@ -194,7 +195,7 @@ export default function InvoiceFormPage() {
             globalDiscountBp={globalDiscountBp}
             onGlobalDiscountChange={setGlobalDiscountBp}
           />
-          <Field label="Notes">
+          <Field label={t("common:labels.notes")}>
             <Textarea rows={3} value={notes} onChange={(event) => setNotes(event.target.value)} />
           </Field>
         </CardContent>

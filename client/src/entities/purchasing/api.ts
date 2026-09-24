@@ -1,4 +1,4 @@
-/** Accès API des achats. */
+/** Purchasing API access. */
 
 import { api } from "@/shared/api/http";
 import type {

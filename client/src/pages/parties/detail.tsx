@@ -1,8 +1,9 @@
-/** Fiche d'un tiers : identité, contacts, adresses et historique des transactions. */
+/** Party detail page: identity, contacts, addresses and transaction history. */
 
 import { useState } from "react";
 import { IconArrowLeft, IconPlus } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Link, useParams } from "wouter";
 import { toast } from "sonner";
 
@@ -28,6 +29,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { Textarea } from "@/shared/ui/textarea";
 
 export default function PartyDetailPage() {
+  const { t } = useTranslation("parties");
   const params = useParams<{ id: string }>();
   const partyId = params.id;
   const queryClient = useQueryClient();
@@ -55,7 +57,7 @@ export default function PartyDetailPage() {
     return (
       <Card>
         <CardContent className="py-10 text-center text-sm text-muted-foreground">
-          {error ? errorMessage(error) : "Tiers introuvable."}
+          {error ? errorMessage(error) : t("detail.notFound")}
         </CardContent>
       </Card>
     );
@@ -71,17 +73,19 @@ export default function PartyDetailPage() {
       >
         <Button variant="outline" asChild>
           <Link href="/parties">
-            <IconArrowLeft className="size-4" />
-            Retour
+            <IconArrowLeft className="size-4 rtl:rotate-180" />
+            {t("common:actions.back")}
           </Link>
         </Button>
-        {can("parties.write") ? <Button onClick={() => setEditing(true)}>Modifier</Button> : null}
+        {can("parties.write") ? (
+          <Button onClick={() => setEditing(true)}>{t("common:actions.edit")}</Button>
+        ) : null}
       </PageHeader>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Encours actuel</CardDescription>
+            <CardDescription>{t("detail.outstanding")}</CardDescription>
             <CardTitle className="text-2xl">
               <Money cents={data.outstandingCents} />
             </CardTitle>
@@ -89,55 +93,67 @@ export default function PartyDetailPage() {
           <CardContent className="text-xs text-muted-foreground">
             {data.creditLimitCents > 0 ? (
               <>
-                Plafond autorisé : <Money cents={data.creditLimitCents} />
+                {t("detail.creditLimit")} <Money cents={data.creditLimitCents} />
               </>
             ) : (
-              "Aucun plafond d'encours défini."
+              t("detail.noCreditLimit")
             )}
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Conditions de règlement</CardDescription>
+            <CardDescription>{t("detail.paymentTerms")}</CardDescription>
             <CardTitle className="text-2xl tabular">
-              {data.paymentTermsDays > 0 ? `${data.paymentTermsDays} jours` : "Comptant"}
+              {data.paymentTermsDays > 0
+                ? t("detail.termsDays", { count: data.paymentTermsDays })
+                : t("detail.cash")}
             </CardTitle>
           </CardHeader>
           <CardContent className="text-xs text-muted-foreground">
             {data.defaultLeadTimeDays > 0
-              ? `Délai de livraison fournisseur : ${data.defaultLeadTimeDays} jours`
-              : "Aucun délai de livraison par défaut."}
+              ? t("detail.leadTime", { count: data.defaultLeadTimeDays })
+              : t("detail.noLeadTime")}
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Coordonnées</CardDescription>
-            <CardTitle className="text-base">{data.phone || "—"}</CardTitle>
+            <CardDescription>{t("detail.contactInfo")}</CardDescription>
+            <CardTitle className="text-base" dir="ltr">
+              {data.phone || "—"}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-1 text-xs text-muted-foreground">
-            <p>{data.email || "Aucun e-mail"}</p>
-            <p>{data.vatNumber ? `NIF ${data.vatNumber}` : "Aucun identifiant fiscal"}</p>
+            <p>{data.email || t("detail.noEmail")}</p>
+            <p>
+              {data.vatNumber
+                ? t("list.vatNumberShort", { number: data.vatNumber })
+                : t("detail.noVatNumber")}
+            </p>
           </CardContent>
         </Card>
       </div>
 
       <Tabs defaultValue="history">
         <TabsList>
-          <TabsTrigger value="history">Historique</TabsTrigger>
-          <TabsTrigger value="contacts">Contacts ({data.contacts.length})</TabsTrigger>
-          <TabsTrigger value="addresses">Adresses ({data.addresses.length})</TabsTrigger>
+          <TabsTrigger value="history">{t("detail.tabs.history")}</TabsTrigger>
+          <TabsTrigger value="contacts">
+            {t("detail.tabs.contacts", { n: data.contacts.length })}
+          </TabsTrigger>
+          <TabsTrigger value="addresses">
+            {t("detail.tabs.addresses", { n: data.addresses.length })}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="history" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Factures</CardTitle>
-              <CardDescription>Documents émis pour ce tiers.</CardDescription>
+              <CardTitle>{t("detail.invoices.title")}</CardTitle>
+              <CardDescription>{t("detail.invoices.description")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               {data.history.invoices.length === 0 ? (
                 <p className="py-6 text-center text-sm text-muted-foreground">
-                  Aucune facture pour ce tiers.
+                  {t("detail.invoices.empty")}
                 </p>
               ) : (
                 data.history.invoices.map((invoice) => (
@@ -162,12 +178,12 @@ export default function PartyDetailPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Règlements</CardTitle>
+              <CardTitle>{t("detail.payments.title")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {data.history.payments.length === 0 ? (
                 <p className="py-6 text-center text-sm text-muted-foreground">
-                  Aucun règlement enregistré.
+                  {t("detail.payments.empty")}
                 </p>
               ) : (
                 data.history.payments.map((payment) => (
@@ -199,18 +215,18 @@ export default function PartyDetailPage() {
         <TabsContent value="contacts">
           <Card>
             <CardHeader className="flex-row items-center justify-between space-y-0">
-              <CardTitle>Contacts</CardTitle>
+              <CardTitle>{t("detail.contacts.title")}</CardTitle>
               {can("parties.write") ? (
                 <Button size="sm" variant="outline" onClick={() => setContactOpen(true)}>
                   <IconPlus className="size-4" />
-                  Ajouter
+                  {t("common:actions.add")}
                 </Button>
               ) : null}
             </CardHeader>
             <CardContent className="space-y-2">
               {data.contacts.length === 0 ? (
                 <p className="py-6 text-center text-sm text-muted-foreground">
-                  Aucun contact enregistré.
+                  {t("detail.contacts.empty")}
                 </p>
               ) : (
                 data.contacts.map((contact) => (
@@ -234,28 +250,28 @@ export default function PartyDetailPage() {
         <TabsContent value="addresses">
           <Card>
             <CardHeader className="flex-row items-center justify-between space-y-0">
-              <CardTitle>Adresses</CardTitle>
+              <CardTitle>{t("detail.addresses.title")}</CardTitle>
               {can("parties.write") ? (
                 <Button size="sm" variant="outline" onClick={() => setAddressOpen(true)}>
                   <IconPlus className="size-4" />
-                  Ajouter
+                  {t("common:actions.add")}
                 </Button>
               ) : null}
             </CardHeader>
             <CardContent className="space-y-2">
               {data.addresses.length === 0 ? (
                 <p className="py-6 text-center text-sm text-muted-foreground">
-                  Aucune adresse enregistrée.
+                  {t("detail.addresses.empty")}
                 </p>
               ) : (
                 data.addresses.map((address) => (
                   <div key={address.id} className="rounded-md border px-3 py-2">
                     <Badge variant="outline" className="mb-1">
                       {address.addressType === "BILLING"
-                        ? "Facturation"
+                        ? t("addressTypes.billing")
                         : address.addressType === "SHIPPING"
-                          ? "Livraison"
-                          : "Autre"}
+                          ? t("addressTypes.shipping")
+                          : t("addressTypes.other")}
                     </Badge>
                     <p className="text-sm">{address.street}</p>
                     <p className="text-xs text-muted-foreground">
@@ -314,6 +330,7 @@ function EditPartyDialog({
   };
   onSaved: () => void;
 }) {
+  const { t } = useTranslation("parties");
   const [form, setForm] = useState({
     name: party.name,
     partyType: party.partyType as PartyType,
@@ -328,7 +345,7 @@ function EditPartyDialog({
   const mutation = useMutation({
     mutationFn: () => partyApi.update(party.id, form),
     onSuccess: () => {
-      toast.success("Tiers mis à jour.");
+      toast.success(t("edit.saved"));
       onSaved();
       onOpenChange(false);
     },
@@ -339,7 +356,7 @@ function EditPartyDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Modifier le tiers</DialogTitle>
+          <DialogTitle>{t("edit.title")}</DialogTitle>
         </DialogHeader>
         <form
           className="space-y-4"
@@ -348,7 +365,7 @@ function EditPartyDialog({
             mutation.mutate();
           }}
         >
-          <Field label="Nom" required>
+          <Field label={t("common:labels.name")} required>
             <Input
               value={form.name}
               onChange={(event) => setForm({ ...form, name: event.target.value })}
@@ -356,7 +373,7 @@ function EditPartyDialog({
             />
           </Field>
           <FieldGrid>
-            <Field label="Type">
+            <Field label={t("common:labels.type")}>
               <Select
                 value={form.partyType}
                 onValueChange={(value) => setForm({ ...form, partyType: value as PartyType })}
@@ -373,32 +390,32 @@ function EditPartyDialog({
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Téléphone">
+            <Field label={t("common:labels.phone")}>
               <Input
                 value={form.phone}
                 onChange={(event) => setForm({ ...form, phone: event.target.value })}
               />
             </Field>
-            <Field label="E-mail">
+            <Field label={t("common:labels.email")}>
               <Input
                 type="email"
                 value={form.email}
                 onChange={(event) => setForm({ ...form, email: event.target.value })}
               />
             </Field>
-            <Field label="Identifiant fiscal">
+            <Field label={t("fields.vatNumber")}>
               <Input
                 value={form.vatNumber}
                 onChange={(event) => setForm({ ...form, vatNumber: event.target.value })}
               />
             </Field>
-            <Field label="Encours autorisé" hint="0 = aucun plafond">
+            <Field label={t("fields.creditLimit")} hint={t("fields.creditLimitHint")}>
               <MoneyInput
                 valueCents={form.creditLimitCents}
                 onChange={(cents) => setForm({ ...form, creditLimitCents: cents })}
               />
             </Field>
-            <Field label="Délai de règlement (jours)">
+            <Field label={t("fields.paymentTermsDays")}>
               <Input
                 type="number"
                 min={0}
@@ -410,7 +427,7 @@ function EditPartyDialog({
               />
             </Field>
           </FieldGrid>
-          <Field label="Notes">
+          <Field label={t("common:labels.notes")}>
             <Textarea
               rows={3}
               value={form.notes}
@@ -419,10 +436,10 @@ function EditPartyDialog({
           </Field>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
+              {t("common:actions.cancel")}
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
-              Enregistrer
+              {t("common:actions.save")}
             </Button>
           </DialogFooter>
         </form>
@@ -442,6 +459,7 @@ function ContactDialog({
   partyId: string;
   onSaved: () => void;
 }) {
+  const { t } = useTranslation("parties");
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -453,7 +471,7 @@ function ContactDialog({
   const mutation = useMutation({
     mutationFn: () => partyApi.createContact(partyId, form),
     onSuccess: () => {
-      toast.success("Contact ajouté.");
+      toast.success(t("contact.added"));
       onSaved();
       onOpenChange(false);
       setForm({ firstName: "", lastName: "", email: "", phone: "", role: "" });
@@ -465,7 +483,7 @@ function ContactDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Nouveau contact</DialogTitle>
+          <DialogTitle>{t("contact.title")}</DialogTitle>
         </DialogHeader>
         <form
           className="space-y-4"
@@ -475,26 +493,26 @@ function ContactDialog({
           }}
         >
           <FieldGrid>
-            <Field label="Prénom" required>
+            <Field label={t("contact.firstName")} required>
               <Input
                 value={form.firstName}
                 onChange={(event) => setForm({ ...form, firstName: event.target.value })}
                 required
               />
             </Field>
-            <Field label="Nom">
+            <Field label={t("contact.lastName")}>
               <Input
                 value={form.lastName}
                 onChange={(event) => setForm({ ...form, lastName: event.target.value })}
               />
             </Field>
-            <Field label="Téléphone">
+            <Field label={t("common:labels.phone")}>
               <Input
                 value={form.phone}
                 onChange={(event) => setForm({ ...form, phone: event.target.value })}
               />
             </Field>
-            <Field label="E-mail">
+            <Field label={t("common:labels.email")}>
               <Input
                 type="email"
                 value={form.email}
@@ -502,19 +520,19 @@ function ContactDialog({
               />
             </Field>
           </FieldGrid>
-          <Field label="Fonction">
+          <Field label={t("contact.role")}>
             <Input
               value={form.role}
               onChange={(event) => setForm({ ...form, role: event.target.value })}
-              placeholder="Responsable achats, comptable…"
+              placeholder={t("contact.rolePlaceholder")}
             />
           </Field>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
+              {t("common:actions.cancel")}
             </Button>
             <Button type="submit" disabled={mutation.isPending || !form.firstName.trim()}>
-              Ajouter
+              {t("common:actions.add")}
             </Button>
           </DialogFooter>
         </form>
@@ -534,18 +552,19 @@ function AddressDialog({
   partyId: string;
   onSaved: () => void;
 }) {
-  const [form, setForm] = useState({
+  const { t } = useTranslation("parties");
+  const [form, setForm] = useState(() => ({
     addressType: "BILLING" as (typeof ADDRESS_TYPES)[number],
     street: "",
     city: "",
     postalCode: "",
-    country: "Mauritanie",
-  });
+    country: t("address.defaultCountry"),
+  }));
 
   const mutation = useMutation({
     mutationFn: () => partyApi.createAddress(partyId, form),
     onSuccess: () => {
-      toast.success("Adresse ajoutée.");
+      toast.success(t("address.added"));
       onSaved();
       onOpenChange(false);
       setForm({
@@ -553,7 +572,7 @@ function AddressDialog({
         street: "",
         city: "",
         postalCode: "",
-        country: "Mauritanie",
+        country: t("address.defaultCountry"),
       });
     },
     onError: (error) => toast.error(errorMessage(error)),
@@ -563,7 +582,7 @@ function AddressDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Nouvelle adresse</DialogTitle>
+          <DialogTitle>{t("address.title")}</DialogTitle>
         </DialogHeader>
         <form
           className="space-y-4"
@@ -572,7 +591,7 @@ function AddressDialog({
             mutation.mutate();
           }}
         >
-          <Field label="Type d'adresse">
+          <Field label={t("address.type")}>
             <Select
               value={form.addressType}
               onValueChange={(value) =>
@@ -583,33 +602,33 @@ function AddressDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="BILLING">Facturation</SelectItem>
-                <SelectItem value="SHIPPING">Livraison</SelectItem>
-                <SelectItem value="OTHER">Autre</SelectItem>
+                <SelectItem value="BILLING">{t("addressTypes.billing")}</SelectItem>
+                <SelectItem value="SHIPPING">{t("addressTypes.shipping")}</SelectItem>
+                <SelectItem value="OTHER">{t("addressTypes.other")}</SelectItem>
               </SelectContent>
             </Select>
           </Field>
-          <Field label="Rue">
+          <Field label={t("address.street")}>
             <Input
               value={form.street}
               onChange={(event) => setForm({ ...form, street: event.target.value })}
             />
           </Field>
           <FieldGrid>
-            <Field label="Ville">
+            <Field label={t("address.city")}>
               <Input
                 value={form.city}
                 onChange={(event) => setForm({ ...form, city: event.target.value })}
               />
             </Field>
-            <Field label="Code postal">
+            <Field label={t("address.postalCode")}>
               <Input
                 value={form.postalCode}
                 onChange={(event) => setForm({ ...form, postalCode: event.target.value })}
               />
             </Field>
           </FieldGrid>
-          <Field label="Pays">
+          <Field label={t("address.country")}>
             <Input
               value={form.country}
               onChange={(event) => setForm({ ...form, country: event.target.value })}
@@ -617,10 +636,10 @@ function AddressDialog({
           </Field>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
+              {t("common:actions.cancel")}
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
-              Ajouter
+              {t("common:actions.add")}
             </Button>
           </DialogFooter>
         </form>

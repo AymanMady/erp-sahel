@@ -1,4 +1,4 @@
-/** Frontière applicative des achats. */
+/** Application boundary of purchasing. */
 
 import { tenancyApplication } from "../tenancy/application";
 import { purchasingApplication } from "./application";

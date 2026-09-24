@@ -1,11 +1,11 @@
 /**
- * Construction des lignes d'un document commercial.
+ * Building the lines of a commercial document.
  *
- * Point d'entrée unique pour devis, commandes, factures, avoirs et tickets POS : les
- * prix, taux et pays d'origine sont **résolus côté serveur** à partir du catalogue,
- * jamais repris tels quels du client. Un poste hors-ligne peut donc proposer un prix,
- * le serveur reste juge — c'est exactement l'asymétrie décrite dans `SYNC_STRATEGY.md`
- * §1 (« le client produit des intentions »).
+ * Single entry point for quotes, orders, invoices, credit notes and POS tickets: prices,
+ * rates and countries of origin are **resolved server-side** from the catalog, never
+ * taken as-is from the client. An offline terminal may therefore propose a price, but
+ * the server has the final say — exactly the asymmetry described in `SYNC_STRATEGY.md`
+ * §1 ("the client produces intents").
  */
 
 import { and, eq, inArray } from "drizzle-orm";
@@ -14,8 +14,9 @@ import { computeDocumentTotals, type PricingLineInput } from "@shared/pricing";
 import { products, services, type Company } from "@shared/schema";
 import type { Database } from "../../db";
 import { BusinessRuleError, ValidationError } from "../errors/app-error";
+import { tr } from "../i18n";
 
-/** Ligne telle que reçue de l'API ou d'une opération de synchronisation. */
+/** Line as received from the API or from a sync operation. */
 export interface RawDocumentLine {
   productId?: string | null;
   variantId?: string | null;
@@ -24,10 +25,10 @@ export interface RawDocumentLine {
   productSku?: string;
   quantity: number | string;
   unit?: string;
-  /** Prix proposé ; le prix catalogue s'applique s'il est omis. */
+  /** Proposed price; the catalog price applies when omitted. */
   unitPriceCents?: number | null;
   discountBp?: number;
-  /** Taux proposé ; le taux du produit s'applique s'il est omis. */
+  /** Proposed rate; the product rate applies when omitted. */
   vatRateBp?: number | null;
   originCountry?: string;
 }
@@ -63,9 +64,9 @@ export interface BuildDocumentOptions {
 }
 
 /**
- * Résout les lignes contre le catalogue puis applique `computeDocumentTotals`.
- * Refuse une ligne dont ni le produit ni la prestation ni la description ne permettent
- * d'identifier ce qui est vendu : une facture illisible n'est pas une facture.
+ * Resolves the lines against the catalog, then applies `computeDocumentTotals`.
+ * Rejects a line where neither the product, the service nor the description identifies
+ * what is being sold: an unreadable invoice is not an invoice.
  */
 export async function buildDocumentLines(
   tx: Database,
@@ -74,15 +75,15 @@ export async function buildDocumentLines(
   options: BuildDocumentOptions = {}
 ): Promise<BuiltDocument> {
   if (rawLines.length === 0) {
-    throw new ValidationError("Le document doit comporter au moins une ligne.");
+    throw new ValidationError("The document must have at least one line.");
   }
 
   const productIds = [...new Set(rawLines.map((l) => l.productId).filter(Boolean))] as string[];
   const serviceIds = [...new Set(rawLines.map((l) => l.serviceId).filter(Boolean))] as string[];
 
-  // Requêtes **séquentielles** et non `Promise.all` : `tx` est lié à une seule
-  // connexion PostgreSQL, sur laquelle deux requêtes concurrentes se marcheraient
-  // dessus (avertissement `pg` « client is already executing a query »).
+  // **Sequential** queries rather than `Promise.all`: `tx` is bound to a single
+  // PostgreSQL connection, on which two concurrent queries would step on each other
+  // (`pg` warning "client is already executing a query").
   const productRows =
     productIds.length > 0
       ? await tx
@@ -107,16 +108,18 @@ export async function buildDocumentLines(
 
     if (line.productId && !product) {
       throw new BusinessRuleError(
-        `Ligne ${index + 1} : produit introuvable ou appartenant à une autre société.`
+        tr("Line {line}: product not found or belongs to another company.", { line: index + 1 })
       );
     }
     if (line.serviceId && !service) {
-      throw new BusinessRuleError(`Ligne ${index + 1} : prestation introuvable.`);
+      throw new BusinessRuleError(tr("Line {line}: service not found.", { line: index + 1 }));
     }
 
     const description = (line.description ?? product?.name ?? service?.name ?? "").trim();
     if (!description) {
-      throw new ValidationError(`Ligne ${index + 1} : la désignation est obligatoire.`);
+      throw new ValidationError(
+        tr("Line {line}: the description is required.", { line: index + 1 })
+      );
     }
 
     const unitPriceCents =
@@ -154,7 +157,7 @@ export async function buildDocumentLines(
       productSku: entry.raw.productSku || entry.product?.sku || entry.service?.code || "",
       description: entry.description,
       quantity: computed.quantity.toFixed(3),
-      unit: entry.raw.unit || entry.product?.unit || "unité",
+      unit: entry.raw.unit || entry.product?.unit || tr("unit"),
       unitPriceCents: computed.unitPriceCents,
       discountBp: computed.discountBp,
       vatRateBp: computed.vatRateBp,

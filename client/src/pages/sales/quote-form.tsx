@@ -1,6 +1,7 @@
-/** Création d'un devis. */
+/** Quote creation. */
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { IconArrowLeft, IconDeviceFloppy } from "@tabler/icons-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
@@ -27,6 +28,7 @@ import { Input } from "@/shared/ui/input";
 import { Textarea } from "@/shared/ui/textarea";
 
 export default function QuoteFormPage() {
+  const { t } = useTranslation("sales");
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const { company } = useSession();
@@ -56,14 +58,14 @@ export default function QuoteFormPage() {
     onSuccess: (outcome) => {
       void queryClient.invalidateQueries({ queryKey: ["quotes"] });
       if (outcome.mode === "offline") {
-        // Pas encore d'identifiant serveur : la fiche n'existe qu'après synchronisation.
-        toast.success(`Devis ${outcome.result.provisionalNumber} enregistré hors ligne.`, {
-          description: "Il recevra son numéro définitif à la prochaine synchronisation.",
+        // No server id yet: the detail page only exists after sync.
+        toast.success(t("quoteForm.savedOffline", { number: outcome.result.provisionalNumber }), {
+          description: t("quoteForm.savedOfflineDescription"),
         });
         navigate("/sync");
         return;
       }
-      toast.success(`Devis ${outcome.result.number} créé.`);
+      toast.success(t("quoteForm.created", { number: outcome.result.number }));
       navigate(`/quotes/${outcome.result.id}`);
     },
     onError: (error) => toast.error(errorMessage(error)),
@@ -73,35 +75,32 @@ export default function QuoteFormPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Nouveau devis"
-        description="Proposition commerciale, sans effet sur le stock."
-      >
+      <PageHeader title={t("quoteForm.title")} description={t("quoteForm.description")}>
         <Button variant="outline" asChild>
           <Link href="/quotes">
-            <IconArrowLeft className="size-4" />
-            Retour
+            <IconArrowLeft className="size-4 rtl:rotate-180" />
+            {t("common:actions.back")}
           </Link>
         </Button>
         <Button onClick={() => mutation.mutate()} disabled={!canSubmit || mutation.isPending}>
           <IconDeviceFloppy className="size-4" />
-          {mutation.isPending ? "Création…" : "Créer le devis"}
+          {mutation.isPending ? t("quoteForm.creating") : t("quoteForm.submit")}
         </Button>
       </PageHeader>
 
       <Card>
         <CardHeader>
-          <CardTitle>En-tête</CardTitle>
+          <CardTitle>{t("quoteForm.header")}</CardTitle>
         </CardHeader>
         <CardContent>
           <FieldGrid columns={3}>
-            <Field label="Client" required>
+            <Field label={t("common:labels.customer")} required>
               <PartyPicker value={party} onChange={setParty} role="CUSTOMER" />
             </Field>
-            <Field label="Date du devis">
+            <Field label={t("quoteForm.date")}>
               <Input type="date" value={date} onChange={(event) => setDate(event.target.value)} />
             </Field>
-            <Field label="Valable jusqu'au">
+            <Field label={t("quoteForm.expiryDate")}>
               <Input
                 type="date"
                 value={expiryDate}
@@ -114,7 +113,7 @@ export default function QuoteFormPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Lignes</CardTitle>
+          <CardTitle>{t("quoteForm.lines")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <LineEditor
@@ -123,12 +122,12 @@ export default function QuoteFormPage() {
             globalDiscountBp={globalDiscountBp}
             onGlobalDiscountChange={setGlobalDiscountBp}
           />
-          <Field label="Notes">
+          <Field label={t("common:labels.notes")}>
             <Textarea
               rows={3}
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
-              placeholder="Conditions particulières, délais, mentions…"
+              placeholder={t("quoteForm.notesPlaceholder")}
             />
           </Field>
         </CardContent>

@@ -1,0 +1,149 @@
+{
+  "company": {
+    "title": "Société",
+    "description": "Identité, fiscalité et référentiel comptable.",
+    "saved": "Paramètres enregistrés.",
+    "identity": "Identité",
+    "taxAccounting": "Fiscalité et comptabilité",
+    "taxAccountingDescription": "Le référentiel comptable détermine le plan installé ; les comptes utilisés par les automatismes restent modifiables dans le plan comptable.",
+    "vatEnabled": "Société assujettie à la TVA",
+    "fields": {
+      "name": "Nom commercial",
+      "legalName": "Raison sociale",
+      "taxId": "Identifiant fiscal",
+      "website": "Site web",
+      "city": "Ville",
+      "country": "Pays",
+      "currencyHint": "Code ISO à trois lettres.",
+      "accountingStandard": "Référentiel comptable",
+      "defaultVatRate": "Taux de TVA par défaut",
+      "fiscalYearStart": "Début d'exercice"
+    },
+    "logo": {
+      "title": "Logo",
+      "description": "Affiché dans la barre latérale et sur les documents imprimés.",
+      "alt": "Logo de la société",
+      "none": "Aucun logo",
+      "choose": "Choisir une image",
+      "remove": "Retirer le logo",
+      "tooLarge": "Logo trop volumineux (400 Ko maximum)."
+    }
+  },
+  "numbering": {
+    "title": "Numérotation",
+    "description": "Séquences légales par type de document et par exercice.",
+    "info": "Les numéros sont attribués par le serveur au moment de la validation, dans la transaction du document : deux postes ne peuvent pas obtenir le même. Hors ligne, un numéro provisoire <code>{{code}}</code> est affiché jusqu'à la synchronisation.",
+    "emptyTitle": "Aucune séquence",
+    "emptyDescription": "Les séquences se créent à l'émission du premier document de chaque type.",
+    "columns": {
+      "documentType": "Type de document",
+      "year": "Exercice",
+      "prefix": "Préfixe",
+      "lastNumber": "Dernier numéro"
+    },
+    "documentTypes": {
+      "QUOTE": "Devis",
+      "SALES_ORDER": "Commandes de vente",
+      "SALES_INVOICE": "Factures clients",
+      "CREDIT_NOTE": "Avoirs",
+      "PURCHASE_ORDER": "Commandes fournisseurs",
+      "GOODS_RECEIPT": "Bons de réception",
+      "SUPPLIER_INVOICE": "Factures fournisseurs",
+      "PAYMENT": "Règlements",
+      "JOURNAL_ENTRY": "Écritures comptables",
+      "INVENTORY_COUNT": "Inventaires",
+      "POS_TICKET": "Tickets de caisse",
+      "PARTY": "Tiers"
+    }
+  },
+  "registers": {
+    "title": "Caisses",
+    "description": "Postes de vente et historique des sessions.",
+    "new": "Nouvelle caisse",
+    "archived": "Caisse archivée.",
+    "created": "Caisse créée.",
+    "tabs": {
+      "registers": "Caisses",
+      "sessions": "Sessions"
+    },
+    "columns": {
+      "register": "Caisse",
+      "cashier": "Caissier",
+      "openedAt": "Ouverture",
+      "closedAt": "Clôture",
+      "sales": "Ventes",
+      "difference": "Écart"
+    },
+    "emptyRegistersTitle": "Aucune caisse",
+    "emptyRegistersDescription": "Une caisse est nécessaire pour ouvrir une session de vente.",
+    "emptySessionsTitle": "Aucune session",
+    "emptySessionsDescription": "Les sessions apparaissent dès la première ouverture de caisse.",
+    "dialog": {
+      "warehouse": "Magasin rattaché",
+      "warehouseHint": "Détermine d'où sort le stock vendu.",
+      "cashAccount": "Compte de caisse",
+      "cashAccountHint": "Crédité par les encaissements en espèces.",
+      "defaultAccount": "Compte par défaut"
+    }
+  },
+  "users": {
+    "title": "Utilisateurs",
+    "description": "Comptes rattachés à cette société et rôles qui leur sont affectés.",
+    "new": "Nouvel utilisateur",
+    "updated": "Utilisateur mis à jour.",
+    "created": "Utilisateur créé.",
+    "noRole": "aucun",
+    "allowed": "Autorisée",
+    "never": "jamais",
+    "activateAccount": "Activer le compte",
+    "emptyTitle": "Aucun utilisateur",
+    "emptyDescription": "Créez des comptes pour vos vendeurs, magasiniers et comptables.",
+    "columns": {
+      "user": "Utilisateur",
+      "roles": "Rôles",
+      "offlineLogin": "Connexion hors ligne",
+      "lastLogin": "Dernière connexion"
+    },
+    "dialog": {
+      "editTitle": "Modifier l'utilisateur",
+      "description": "Les rôles affectés ne valent que pour la société courante.",
+      "username": "Identifiant",
+      "newPassword": "Nouveau mot de passe",
+      "password": "Mot de passe",
+      "keepPasswordHint": "Laisser vide pour ne pas modifier.",
+      "passwordHint": "8 caractères, lettres et chiffres.",
+      "firstName": "Prénom",
+      "lastName": "Nom",
+      "allowOffline": "Autoriser la connexion hors ligne sur un poste desktop synchronisé"
+    }
+  },
+  "roles": {
+    "title": "Rôles & permissions",
+    "description": "Le masquage côté interface est un confort ; l'autorisation est vérifiée à chaque appel serveur.",
+    "new": "Nouveau rôle",
+    "deleted": "Rôle supprimé.",
+    "updated": "Rôle mis à jour.",
+    "created": "Rôle créé.",
+    "permissionCount_one": "{{count}} permission",
+    "permissionCount_other": "{{count}} permissions",
+    "dialog": {
+      "systemTitle": "Rôle système — {{name}}",
+      "editTitle": "Modifier le rôle"
+    }
+  },
+  "modules": {
+    "title": "Modules",
+    "description": "Activez seulement ce que vous utilisez : le menu reste simple. Désactiver un module n'efface jamais vos données.",
+    "enabled": "Module activé.",
+    "disabled": "Module désactivé.",
+    "presetApplied": "Niveau « {{name}} » appliqué.",
+    "step1Title": "1. Choisissez un niveau",
+    "step1Description": "Pour tout type de commerce. Vous pourrez ajuster ensuite.",
+    "step2Title": "2. Ou ajustez module par module",
+    "step2Description": "Produits, clients, paiements et réglages sont toujours disponibles.",
+    "requires": "Nécessite : {{modules}}",
+    "enableAria": "Activer {{name}}",
+    "confirmTitle": "Passer au niveau « {{name}} » ?",
+    "confirmDescription": "Modules activés : {{modules}}. Les autres seront masqués, sans perte de données."
+  }
+}

@@ -16,8 +16,8 @@ export default defineConfig({
     environment: "node",
     include: ["**/__tests__/**/*.test.ts", "**/*.test.ts"],
     exclude: ["node_modules/**", "dist/**", "e2e/**"],
-    // Les tests d'intégration partagent une base PostgreSQL : les exécuter en
-    // parallèle les ferait se marcher dessus (mêmes séquences, mêmes sociétés).
+    // Integration tests share a PostgreSQL database: running them in parallel would
+    // make them step on each other (same sequences, same companies).
     fileParallelism: false,
     testTimeout: 30_000,
     hookTimeout: 30_000,

@@ -1,40 +1,41 @@
 /**
- * Répartiteur d'entités synchronisables.
+ * Dispatcher of synchronizable entities.
  *
- * Le moteur de synchronisation ne connaît pas les domaines : il connaît une table
- * `entité → handler`. Ajouter une entité synchronisable (y compris depuis un module)
- * revient donc à enregistrer un handler, sans toucher au moteur ([FR-PLUG-1]).
+ * The sync engine does not know about domains: it knows an `entity → handler` table.
+ * Adding a synchronizable entity (including from a module) therefore means registering
+ * a handler, without touching the engine ([FR-PLUG-1]).
  */
 
 import type { SyncEntity } from "@shared/sync-protocol";
 import type { Company } from "@shared/schema";
 import type { Database } from "../../db";
+import { tr } from "../../shared/i18n";
 
-/** Contexte fourni à chaque handler d'ingestion. */
+/** Context passed to each ingestion handler. */
 export interface SyncHandlerContext {
   tx: Database;
   company: Company;
   userId: string;
   /**
-   * Clé d'idempotence de l'opération en cours.
+   * Idempotency key of the current operation.
    *
-   * Les entités qui portent une colonne `client_uuid` doivent la renseigner : c'est
-   * elle qui relie le document au numéro provisoire affiché sur le poste, et elle
-   * fournit une seconde barrière anti-doublon au niveau de la base (index unique),
-   * indépendante du journal `sync_operations` ([BR-8], `SYNC_STRATEGY.md` §5).
+   * Entities that have a `client_uuid` column must fill it in: it links the document
+   * to the provisional number shown on the device, and provides a second anti-duplicate
+   * barrier at the database level (unique index), independent of the `sync_operations`
+   * journal ([BR-8], `SYNC_STRATEGY.md` §5).
    */
   clientUuid: string;
   /**
-   * Résout le `clientUuid` d'une entité créée hors-ligne vers son identifiant serveur.
-   * Lève `DeferredDependencyError` si la dépendance n'est pas encore ingérée — le
-   * moteur reporte alors l'opération au cycle suivant plutôt que de l'échouer.
+   * Resolves the `clientUuid` of an entity created offline to its server id.
+   * Throws `DeferredDependencyError` if the dependency has not been ingested yet — the
+   * engine then postpones the operation to the next cycle instead of failing it.
    */
   resolveRef(clientUuid: string): Promise<string>;
 }
 
 export interface SyncHandlerResult {
   serverId: string;
-  /** Numéro légal attribué, à substituer au numéro provisoire côté client. */
+  /** Assigned legal number, to replace the provisional number on the client. */
   assignedNumber?: string;
 }
 
@@ -43,11 +44,13 @@ export type SyncHandler = (
   payload: Record<string, unknown>
 ) => Promise<SyncHandlerResult>;
 
-/** Dépendance non encore résolue : l'opération est reportée, pas rejetée. */
+/** Dependency not resolved yet: the operation is postponed, not rejected. */
 export class DeferredDependencyError extends Error {
   constructor(readonly clientUuid: string) {
     super(
-      `Dépendance non encore synchronisée (${clientUuid}) : opération reportée au prochain cycle.`
+      tr("Dependency not synchronized yet ({clientUuid}): operation postponed to the next cycle.", {
+        clientUuid,
+      })
     );
     this.name = "DeferredDependencyError";
   }
@@ -58,7 +61,7 @@ class SyncDispatcher {
 
   register(entity: SyncEntity | string, handler: SyncHandler): void {
     if (this.handlers.has(entity)) {
-      throw new Error(`Handler de synchronisation déjà enregistré pour « ${entity} ».`);
+      throw new Error(`Sync handler already registered for "${entity}".`);
     }
     this.handlers.set(entity, handler);
   }

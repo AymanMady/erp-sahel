@@ -1,17 +1,17 @@
 /**
- * Préchargement hors-ligne : remplit le cache HTTP (`http-cache.ts`) pour que les pages
- * **jamais ouvertes** sur ce poste restent consultables sans réseau.
+ * Offline prefetching: fills the HTTP cache (`http-cache.ts`) so that pages **never
+ * opened** on this device stay viewable without network.
  *
- * On appelle les mêmes fonctions d'API que les pages, avec leurs filtres par défaut ;
- * les listes sont demandées en grand (200 lignes) pour couvrir plusieurs pages de
- * pagination — et, hors ligne, les autres filtres sont appliqués localement à ces
- * listes (`http-cache.ts`). Les fiches de chaque document listé sont aussi préchargées.
+ * The same API functions as the pages are called, with their default filters; lists
+ * are requested large (200 rows) to cover several pagination pages — and, offline,
+ * the other filters are applied locally to these lists (`http-cache.ts`). The detail
+ * of each listed document is also prefetched.
  *
- * **Toutes** les pages de l'application sont couvertes, administration comprise.
+ * **Every** page of the app is covered, administration included.
  *
- * Coût maîtrisé : au plus une passe toutes les 30 minutes, requêtes en série limitée,
- * fiches rechargées seulement si elles ont changé depuis la passe précédente, et
- * chaque échec (droits, module inactif) est ignoré.
+ * Controlled cost: at most one pass every 30 minutes, limited concurrent requests,
+ * details reloaded only if they changed since the previous pass, and every failure
+ * (permissions, inactive module) is ignored.
  */
 
 import { addDays, todayInput } from "@shared/format";
@@ -35,7 +35,7 @@ import { readSnapshot } from "./snapshot";
 const LAST_RUN_KEY = "prefetch.lastRunAt";
 const MIN_INTERVAL_MS = 30 * 60 * 1000;
 const LIST_SIZE = 200;
-/** Fiches préchargées par type de document : toutes celles de la liste préchargée. */
+/** Details prefetched per document type: all those of the prefetched list. */
 const DETAIL_COUNT = LIST_SIZE;
 const CONCURRENCY = 4;
 
@@ -48,12 +48,12 @@ async function runAll(tasks: Task[]): Promise<void> {
   const worker = async () => {
     while (index < tasks.length) {
       const task = tasks[index++];
-      // Serveur perdu en cours de route : inutile d'enchaîner des échecs.
+      // Server lost along the way: no point in chaining failures.
       if (!lastKnownOnline()) return;
       try {
         await task();
       } catch {
-        // Droit manquant, module inactif… : la page correspondante restera vide.
+        // Missing permission, inactive module…: the corresponding page will stay empty.
       }
     }
   };
@@ -80,9 +80,9 @@ function rowsOf(result: unknown): ListedRow[] {
 }
 
 /**
- * Liste + fiches de ses éléments. Une fiche déjà en cache avec la même date de mise à
- * jour que la ligne de liste n'est pas redemandée : après la première passe, seules
- * les fiches modifiées transitent.
+ * List + details of its items. A detail already cached with the same update date as
+ * the list row is not requested again: after the first pass, only modified details
+ * are transferred.
  */
 function listWithDetails(
   list: () => Promise<unknown>,
@@ -103,8 +103,8 @@ function listWithDetails(
 async function prefetch(): Promise<void> {
   const snapshot = await readSnapshot();
   const modules = new Set((snapshot?.modules ?? []).map((row) => row.code));
-  // Un module désactivé répond 403 : inutile de précharger ses écrans. Sans liste de
-  // modules (ancien instantané), on précharge tout, comme avant.
+  // A disabled module answers 403: no point in prefetching its screens. Without a
+  // module list (old snapshot), everything is prefetched, as before.
   const when = (code: string, tasks: Task[]): Task[] =>
     modules.size === 0 || modules.has(code) ? tasks : [];
   const page = { limit: LIST_SIZE, offset: 0 };
@@ -112,7 +112,7 @@ async function prefetch(): Promise<void> {
   const last30Days = { fromDate: addDays(today, -29), toDate: today };
 
   const tasks: Task[] = [
-    // Tableau de bord (chaque période proposée) et rapports (périodes par défaut).
+    // Dashboard (each offered period) and reports (default periods).
     ...[7, 30, 90].map(
       (days) => () => reportsApi.dashboard({ fromDate: addDays(today, -(days - 1)), toDate: today })
     ),
@@ -122,14 +122,14 @@ async function prefetch(): Promise<void> {
       () => reportsApi.stock(null),
     ]),
 
-    // Le référentiel (produits, tiers, stock, magasins…) vient de l'instantané ; on ne
-    // précharge ici que ce qu'il ne contient pas.
+    // Master data (products, parties, stock, warehouses…) comes from the snapshot;
+    // only what it does not contain is prefetched here.
     ...when("inventory", [
       () => inventoryApi.listMovements(page),
       () => inventoryApi.valuation(null),
     ]),
 
-    // Fiches tiers (contacts, adresses, historique) : absentes de l'instantané.
+    // Party details (contacts, addresses, history): missing from the snapshot.
     async () => {
       const parties = [...(snapshot?.parties ?? [])]
         .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))
@@ -142,7 +142,7 @@ async function prefetch(): Promise<void> {
       await runAll(stale.map((id) => () => partyApi.get(id)));
     },
 
-    // Ventes, facturation, règlements.
+    // Sales, invoicing, payments.
     ...when("sales", [
       listWithDetails(
         () => salesApi.listQuotes(page),
@@ -165,7 +165,7 @@ async function prefetch(): Promise<void> {
     ]),
     () => paymentApi.list(page),
 
-    // Achats.
+    // Purchasing.
     ...when("purchasing", [
       listWithDetails(
         () => purchasingApi.listOrders(page),
@@ -176,7 +176,7 @@ async function prefetch(): Promise<void> {
       () => purchasingApi.listSupplierInvoices(),
     ]),
 
-    // Trésorerie et comptabilité.
+    // Treasury and accounting.
     () => bankingApi.listAccounts(),
     ...when("banking", [() => bankingApi.totals(), () => bankingApi.listTransactions(page)]),
     ...when("accounting", [
@@ -189,13 +189,13 @@ async function prefetch(): Promise<void> {
       () => accountingApi.balance({}),
     ]),
 
-    // Caisse.
+    // Point of sale.
     ...when("pos", [
       () => posApi.listSessions(),
       ...(snapshot?.session ? [() => posApi.sessionSummary(snapshot.session!.id)] : []),
     ]),
 
-    // Paramètres et administration (société, numérotation, modules, comptes, rôles).
+    // Settings and administration (company, numbering, modules, accounts, roles).
     () => settingsApi.getCompany(),
     () => settingsApi.listSettings(),
     () => settingsApi.listSequences(),
@@ -204,7 +204,7 @@ async function prefetch(): Promise<void> {
     () => settingsApi.listRoles(),
     () => settingsApi.listPermissions(),
 
-    // Supervision de la synchronisation.
+    // Synchronization monitoring.
     () => syncApi.status(),
     () => syncApi.journal(),
   ];
@@ -213,8 +213,8 @@ async function prefetch(): Promise<void> {
 }
 
 /**
- * Lance une passe de préchargement si la précédente date de plus de 30 minutes.
- * Ne lève jamais ; les appels concurrents partagent la même passe.
+ * Runs a prefetch pass if the previous one is more than 30 minutes old.
+ * Never throws; concurrent calls share the same pass.
  */
 export async function prefetchForOffline(options: { force?: boolean } = {}): Promise<void> {
   if (running) return running;
@@ -224,11 +224,11 @@ export async function prefetchForOffline(options: { force?: boolean } = {}): Pro
       const lastRun = Number((await readMeta(LAST_RUN_KEY)) ?? 0);
       if (!options.force && Date.now() - lastRun < MIN_INTERVAL_MS) return;
       await prefetch();
-      // Horodatée seulement une fois la passe menée à bout : une passe interrompue
-      // (onglet fermé, réseau perdu) est reprise au cycle suivant, pas 30 minutes après.
+      // Timestamped only once the pass is complete: an interrupted pass (tab closed,
+      // network lost) is resumed on the next cycle, not 30 minutes later.
       if (lastKnownOnline()) await writeMeta(LAST_RUN_KEY, String(Date.now()));
     } catch {
-      // Un préchargement raté se rattrapera à la passe suivante.
+      // A failed prefetch will catch up on the next pass.
     } finally {
       running = null;
     }

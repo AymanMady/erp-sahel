@@ -1,0 +1,37 @@
+{
+  "ui": {
+    "breadcrumb": "مسار التنقل",
+    "more": "المزيد",
+    "commandPalette": "لوحة الأوامر",
+    "commandPaletteDescription": "ابحث عن أمر لتنفيذه…",
+    "sidebar": "التنقل",
+    "sidebarDescription": "يعرض قائمة التنقل على الهاتف.",
+    "toggleSidebar": "إظهار الشريط الجانبي أو إخفاؤه"
+  },
+  "searchInput": {
+    "clear": "مسح البحث"
+  },
+  "deleteDialog": {
+    "defaultName": "هذا العنصر",
+    "title": "حذف {{name}}؟",
+    "description": "سيُحذف {{name}} نهائيًا. لا يمكن التراجع عن هذا الإجراء.",
+    "deleted": "تم حذف {{name}}",
+    "deletedDescription": "تم حذف السجل."
+  },
+  "resourceTable": {
+    "emptyTitle": "لا توجد نتائج",
+    "emptyDescription": "لا يوجد عنصر يطابق بحثك.",
+    "itemCount_zero": "لا عناصر",
+    "itemCount_one": "عنصر واحد",
+    "itemCount_two": "عنصران",
+    "itemCount_few": "{{count}} عناصر",
+    "itemCount_many": "{{count}} عنصرًا",
+    "itemCount_other": "{{count}} عنصر",
+    "perPage": "لكل صفحة",
+    "pageOf": "الصفحة {{page}} / {{pageCount}}",
+    "firstPage": "الصفحة الأولى",
+    "previousPage": "الصفحة السابقة",
+    "nextPage": "الصفحة التالية",
+    "lastPage": "الصفحة الأخيرة"
+  }
+}

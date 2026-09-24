@@ -1,9 +1,10 @@
-/** Liste des commandes fournisseurs. */
+/** Purchase order list. */
 
 import { useState } from "react";
 import { IconPlus } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 
 import { PURCHASE_ORDER_STATUSES } from "@shared/schema";
 import { formatDate } from "@shared/format";
@@ -24,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 const ALL = "ALL";
 
 export default function PurchaseOrdersPage() {
+  const { t } = useTranslation("purchasing");
   const [, navigate] = useLocation();
   const { can } = useSession();
   const [search, setSearch] = useState("");
@@ -45,25 +47,29 @@ export default function PurchaseOrdersPage() {
   const columns: Column<PurchaseOrder & { supplierName: string }>[] = [
     {
       id: "number",
-      header: "Numéro",
+      header: t("common:labels.number"),
       cell: (row) => <span className="tabular font-medium">{row.number}</span>,
     },
-    { id: "date", header: "Date", cell: (row) => formatDate(row.date) },
+    { id: "date", header: t("common:labels.date"), cell: (row) => formatDate(row.date) },
     {
       id: "supplier",
-      header: "Fournisseur",
+      header: t("common:labels.supplier"),
       cell: (row) => <span className="font-medium">{row.supplierName}</span>,
     },
     {
       id: "expected",
-      header: "Livraison prévue",
+      header: t("orders.expectedDelivery"),
       hideOnMobile: true,
       cell: (row) => (row.expectedDate ? formatDate(row.expectedDate) : "—"),
     },
-    { id: "status", header: "Statut", cell: (row) => <StatusBadge status={row.status} /> },
+    {
+      id: "status",
+      header: t("common:labels.status"),
+      cell: (row) => <StatusBadge status={row.status} />,
+    },
     {
       id: "total",
-      header: "Total TTC",
+      header: t("common:labels.totalInclTax"),
       align: "end",
       cell: (row) => <Money cents={row.totalTtcCents} />,
     },
@@ -71,15 +77,12 @@ export default function PurchaseOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Commandes fournisseurs"
-        description="Approvisionnement : la réception fait entrer la marchandise en stock."
-      >
+      <PageHeader title={t("orders.title")} description={t("orders.description")}>
         {can("purchasing.write") ? (
           <Button asChild>
             <Link href="/purchase-orders/new">
               <IconPlus className="size-4" />
-              Nouvelle commande
+              {t("orders.new")}
             </Link>
           </Button>
         ) : null}
@@ -92,7 +95,7 @@ export default function PurchaseOrdersPage() {
             setSearch(value);
             setPage((current) => ({ ...current, offset: 0 }));
           }}
-          placeholder="Numéro ou fournisseur…"
+          placeholder={t("orders.searchPlaceholder")}
           className="sm:max-w-sm"
         />
         <Select value={status} onValueChange={setStatus}>
@@ -100,7 +103,7 @@ export default function PurchaseOrdersPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>Tous les statuts</SelectItem>
+            <SelectItem value={ALL}>{t("orders.allStatuses")}</SelectItem>
             {PURCHASE_ORDER_STATUSES.map((entry) => (
               <SelectItem key={entry} value={entry}>
                 {statusLabel(entry)}
@@ -116,8 +119,8 @@ export default function PurchaseOrdersPage() {
         rowKey={(row) => row.id}
         loading={isLoading}
         error={error ? errorMessage(error) : null}
-        emptyTitle="Aucune commande d'achat"
-        emptyDescription="Créez une commande pour suivre vos approvisionnements."
+        emptyTitle={t("orders.emptyTitle")}
+        emptyDescription={t("orders.emptyDescription")}
         onRowClick={(row) => navigate(`/purchase-orders/${row.id}`)}
         pagination={{
           total: data?.total ?? 0,

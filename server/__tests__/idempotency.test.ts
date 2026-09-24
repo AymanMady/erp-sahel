@@ -1,6 +1,6 @@
 /**
- * Une écriture rejouée par la file hors ligne avec la même `Idempotency-Key` ne doit
- * s'exécuter qu'une fois : le rejeu reçoit la réponse d'origine ([BR-8]).
+ * A write replayed by the offline queue with the same `Idempotency-Key` must run only
+ * once: the replay receives the original response ([BR-8]).
  */
 
 import { randomUUID } from "node:crypto";
@@ -22,7 +22,7 @@ vi.mock("../domains/sync/repository", () => ({
   },
 }));
 
-process.env.JWT_SECRET ??= "secret-de-test-suffisamment-long";
+process.env.JWT_SECRET ??= "test-secret-that-is-long-enough";
 
 const { idempotency } = await import("../middleware/idempotency");
 const { signAccessToken } = await import("../domains/auth/tokens");
@@ -34,7 +34,7 @@ let executions = 0;
 function token(companyId: string): string {
   return signAccessToken({
     sub: randomUUID(),
-    username: "caissier",
+    username: "cashier",
     companyId,
     isSuperuser: false,
     permissions: [],
@@ -52,7 +52,7 @@ beforeAll(async () => {
   });
   app.post("/api/fail", (_req, res) => {
     executions += 1;
-    res.status(422).json({ error: "refus" });
+    res.status(422).json({ error: "rejected" });
   });
   server = app.listen(0);
   baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
@@ -67,7 +67,7 @@ beforeEach(() => {
   executions = 0;
 });
 
-function post(path: string, key: string, auth: string, body: unknown = { name: "Filtres" }) {
+function post(path: string, key: string, auth: string, body: unknown = { name: "Filters" }) {
   return fetch(`${baseUrl}${path}`, {
     method: "POST",
     headers: {
@@ -79,8 +79,8 @@ function post(path: string, key: string, auth: string, body: unknown = { name: "
   });
 }
 
-describe("idempotence des écritures rejouées", () => {
-  it("n'exécute qu'une fois et renvoie la réponse d'origine au rejeu", async () => {
+describe("idempotency of replayed writes", () => {
+  it("runs only once and returns the original response on replay", async () => {
     const key = randomUUID();
     const auth = token(randomUUID());
 
@@ -94,7 +94,7 @@ describe("idempotence des écritures rejouées", () => {
     expect(executions).toBe(1);
   });
 
-  it("laisse retenter une écriture refusée", async () => {
+  it("allows retrying a rejected write", async () => {
     const key = randomUUID();
     const auth = token(randomUUID());
     await post("/api/fail", key, auth);
@@ -102,7 +102,7 @@ describe("idempotence des écritures rejouées", () => {
     expect(executions).toBe(2);
   });
 
-  it("refuse la réutilisation d'une clé par une autre société", async () => {
+  it("refuses reuse of a key by another company", async () => {
     const key = randomUUID();
     await post("/api/catalog/categories", key, token(randomUUID()));
     const other = await post("/api/catalog/categories", key, token(randomUUID()));

@@ -1,4 +1,4 @@
-/** Persistance du point de vente : caisses et sessions. */
+/** Point-of-sale persistence: registers and sessions. */
 
 import { and, desc, eq } from "drizzle-orm";
 
@@ -18,7 +18,7 @@ export class PosRepository {
     return new PosRepository(tx);
   }
 
-  /** Session ouverte d'une caisse — au plus une à la fois ([FR-POS-2]). */
+  /** Open session of a register — at most one at a time ([FR-POS-2]). */
   async findOpenSession(companyId: string, registerId: string): Promise<PosSession | null> {
     const [row] = await this.database
       .select()
@@ -34,7 +34,7 @@ export class PosRepository {
     return row ?? null;
   }
 
-  /** Session ouverte de l'utilisateur, toutes caisses confondues. */
+  /** Open session of the user, across all registers. */
   async findOpenSessionForUser(companyId: string, userId: string): Promise<PosSession | null> {
     const [row] = await this.database
       .select()

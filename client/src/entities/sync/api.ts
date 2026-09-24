@@ -1,4 +1,4 @@
-/** Accès API de la supervision de synchronisation. */
+/** API access for synchronization monitoring. */
 
 import { api } from "@/shared/api/http";
 import type { SyncOperation } from "@/entities/types";

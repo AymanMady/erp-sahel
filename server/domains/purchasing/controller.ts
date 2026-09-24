@@ -1,4 +1,4 @@
-/** Frontière HTTP des achats. */
+/** HTTP boundary of purchasing. */
 
 import type { Request, Response } from "express";
 

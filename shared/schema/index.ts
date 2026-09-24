@@ -1,8 +1,8 @@
 /**
- * Schéma de base de données complet — point d'entrée unique (`@shared/schema`).
+ * Complete database schema — single entry point (`@shared/schema`).
  *
- * Organisation : un fichier par domaine. Toutes les tables sont exportées à plat, pour
- * que `drizzle-kit` les découvre.
+ * Layout: one file per domain. All tables are re-exported flat so that `drizzle-kit`
+ * discovers them.
  */
 
 export * from "./_base";

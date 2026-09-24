@@ -1,8 +1,8 @@
 /**
- * Réinitialise complètement la base : suppression du schéma public puis recréation.
+ * Fully resets the database: drops the public schema, then recreates it.
  *
- * Réservé au développement et aux démonstrations. Le garde-fou `NODE_ENV=production`
- * est volontaire : effacer une base de production par inadvertance est irréversible.
+ * Intended for development and demos only. The `NODE_ENV=production` guard is
+ * deliberate: accidentally wiping a production database is irreversible.
  */
 
 import "dotenv/config";
@@ -11,15 +11,13 @@ import { closeDatabase, pool } from "../server/db";
 
 async function main(): Promise<void> {
   if (process.env.NODE_ENV === "production" && process.env.ALLOW_DB_RESET !== "yes") {
-    throw new Error(
-      "Refusé en production. Définissez ALLOW_DB_RESET=yes si c'est réellement voulu."
-    );
+    throw new Error("Refused in production. Set ALLOW_DB_RESET=yes if this is really intended.");
   }
 
-  console.log("→ Suppression du schéma public…");
+  console.log("→ Dropping public schema…");
   await pool.query("drop schema if exists public cascade");
   await pool.query("create schema public");
-  console.log("✔ Base réinitialisée. Lancez « npm run db:push » puis « npm run db:seed ».");
+  console.log('✔ Database reset. Run "npm run db:push" then "npm run db:seed".');
 }
 
 main()

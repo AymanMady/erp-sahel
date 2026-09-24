@@ -1,19 +1,19 @@
 /**
- * Idempotence des écritures HTTP rejouées depuis la file hors ligne du poste.
+ * Idempotency of HTTP writes replayed from the device's offline queue.
  *
- * Quand le réseau tombe pendant une écriture, le client ne sait pas si le serveur l'a
- * traitée ; il la met en file et la rejoue plus tard avec la **même** clé
- * `Idempotency-Key`. La première réponse réussie est journalisée dans
- * `sync_operations` (entité `http.request`) : un rejeu reçoit cette réponse telle
- * quelle, sans réécrire ([BR-8]). Seules les réponses JSON réussies sont journalisées : un
- * échec doit pouvoir être retenté, et une réponse vide (suppression) se rejoue sans
- * dommage — le client tient un 404 rejoué comme un succès.
+ * When the network drops during a write, the client does not know whether the server
+ * processed it; it queues it and replays it later with the **same** `Idempotency-Key`.
+ * The first successful response is logged in `sync_operations` (entity `http.request`):
+ * a replay receives that response as is, without writing again ([BR-8]). Only successful
+ * JSON responses are logged: a failure must remain retryable, and an empty response
+ * (deletion) replays harmlessly — the client treats a replayed 404 as a success.
  */
 
 import type { NextFunction, Request, Response } from "express";
 
 import { bearerToken, verifyAccessToken } from "../domains/auth/tokens";
 import { syncRepository } from "../domains/sync/repository";
+import { tr } from "../shared/i18n";
 import { logger } from "../shared/logging/logger";
 
 export const HTTP_REQUEST_ENTITY = "http.request";
@@ -28,12 +28,12 @@ interface StoredResponse {
   body: unknown;
 }
 
-/** Chemin complet (sans requête), indépendant du point de montage du middleware. */
+/** Full path (without query string), independent of the middleware mount point. */
 function requestPath(req: Request): string {
   return req.originalUrl.split("?")[0];
 }
 
-/** Société du jeton, sans lever : la route reste seule juge de l'authentification. */
+/** Company of the token, without throwing: the route alone decides on authentication. */
 function companyOf(req: Request): { companyId: string; userId: string } | null {
   const token = bearerToken(req.headers.authorization);
   if (!token) return null;
@@ -61,7 +61,7 @@ export async function idempotency(req: Request, res: Response, next: NextFunctio
     const existing = await syncRepository.findByClientUuid(key);
     if (existing) {
       const stored = existing.payload as unknown as StoredResponse | null;
-      // Une clé ne vaut que pour la société et la requête qui l'ont créée.
+      // A key is only valid for the company and the request that created it.
       if (
         existing.companyId !== identity.companyId ||
         existing.entity !== HTTP_REQUEST_ENTITY ||
@@ -70,7 +70,7 @@ export async function idempotency(req: Request, res: Response, next: NextFunctio
         stored.path !== requestPath(req)
       ) {
         res.status(409).json({
-          error: "Clé d'idempotence déjà utilisée pour une autre requête.",
+          error: tr("Idempotency key already used for another request."),
           code: "IDEMPOTENCY_CONFLICT",
           requestId: req.requestId,
         });
@@ -85,14 +85,14 @@ export async function idempotency(req: Request, res: Response, next: NextFunctio
       return;
     }
   } catch (error) {
-    // Journal indisponible : on traite la requête normalement plutôt que de la bloquer.
-    logger.warn("Idempotence : lecture du journal impossible", { requestId: req.requestId, error });
+    // Log unavailable: process the request normally rather than blocking it.
+    logger.warn("Idempotency: unable to read the log", { requestId: req.requestId, error });
     next();
     return;
   }
 
-  // La réponse est journalisée **avant** d'être envoyée : sur Vercel, la fonction peut
-  // être gelée dès la réponse partie, et un journal écrit après serait perdu.
+  // The response is logged **before** being sent: on Vercel the function may be frozen
+  // as soon as the response is out, and a log written afterwards would be lost.
   const path = requestPath(req);
   const json = res.json.bind(res);
   res.json = (body: unknown) => {

@@ -1,9 +1,9 @@
 /**
- * Registre des modules : activation par société et contrôle des dépendances.
+ * Module registry: per-company activation and dependency checks.
  *
- * Les modules sont décrits une seule fois dans `shared/modules-catalog.ts`. Tant
- * qu'une société n'a pas basculé un module, il est actif : une société existante garde
- * tout son périmètre. Désactiver un module ne supprime jamais de données.
+ * Modules are described once in `shared/modules-catalog.ts`. As long as a company has
+ * not toggled a module, it is enabled: an existing company keeps its whole scope.
+ * Disabling a module never deletes data.
  */
 
 import { eq } from "drizzle-orm";
@@ -12,13 +12,14 @@ import { FEATURE_MODULES, moduleName } from "@shared/modules-catalog";
 import { companyPlugins, type ModuleCode } from "@shared/schema";
 import { db, runInTransaction, type Database } from "../../db";
 import { BusinessRuleError, NotFoundError } from "../../shared/errors/app-error";
+import { tr } from "../../shared/i18n";
 
-/** Version enregistrée avec chaque bascule (traçabilité). */
+/** Version recorded with each toggle (traceability). */
 const MODULE_VERSION = "1.0.0";
 
 function requireModule(code: string) {
   const module = FEATURE_MODULES.find((candidate) => candidate.code === code);
-  if (!module) throw new NotFoundError(`Module « ${code} » inconnu.`);
+  if (!module) throw new NotFoundError(tr('Unknown module "{code}".', { code }));
   return module;
 }
 
@@ -54,20 +55,23 @@ class ModuleRegistry {
     return modules.find((module) => module.code === code)?.isEnabled ?? false;
   }
 
-  /** Codes des modules actifs pour la société — portés par le jeton d'accès. */
+  /** Codes of the company's enabled modules — carried by the access token. */
   async enabledCodes(companyId: string, database: Database = db): Promise<ModuleCode[]> {
     const modules = await this.listForCompany(companyId, database);
     return modules.filter((module) => module.isEnabled).map((module) => module.code);
   }
 
-  /** Active un module, après contrôle de ses dépendances. */
+  /** Enables a module after checking its dependencies. */
   async enableForCompany(companyId: string, code: string): Promise<void> {
     const module = requireModule(code);
     await runInTransaction(async (tx) => {
       for (const dependency of module.dependencies) {
         if (!(await this.isEnabled(companyId, dependency, tx))) {
           throw new BusinessRuleError(
-            `Activez d'abord « ${moduleName(dependency)} », nécessaire pour « ${module.name} ».`,
+            tr('First enable "{dependency}", which "{module}" requires.', {
+              dependency: tr(moduleName(dependency)),
+              module: tr(module.name),
+            }),
             "MODULE_DEPENDENCY_MISSING"
           );
         }
@@ -76,7 +80,7 @@ class ModuleRegistry {
     });
   }
 
-  /** Désactive un module, sauf si un autre module actif en dépend. */
+  /** Disables a module, unless another enabled module depends on it. */
   async disableForCompany(companyId: string, code: string): Promise<void> {
     const module = requireModule(code);
     await runInTransaction(async (tx) => {
@@ -84,7 +88,10 @@ class ModuleRegistry {
         if (!dependent.dependencies.includes(module.code)) continue;
         if (await this.isEnabled(companyId, dependent.code, tx)) {
           throw new BusinessRuleError(
-            `Désactivez d'abord « ${dependent.name} », qui a besoin de « ${module.name} ».`,
+            tr('First disable "{dependent}", which needs "{module}".', {
+              dependent: tr(dependent.name),
+              module: tr(module.name),
+            }),
             "MODULE_DEPENDENT_ENABLED"
           );
         }
@@ -94,7 +101,7 @@ class ModuleRegistry {
   }
 
   /**
-   * Active exactement `codes` (plus leurs dépendances) et désactive le reste, en une
+   * Enables exactly `codes` (plus their dependencies) and disables the rest, in a single
    * transaction.
    */
   async applySelection(companyId: string, codes: readonly string[], tx?: Database): Promise<void> {

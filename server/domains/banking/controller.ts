@@ -1,4 +1,4 @@
-/** Frontière HTTP de la trésorerie. */
+/** HTTP boundary of treasury. */
 
 import type { Request, Response } from "express";
 

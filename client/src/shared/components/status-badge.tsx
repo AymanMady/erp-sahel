@@ -1,10 +1,15 @@
 /**
- * Pastilles de statut des documents.
+ * Document status pills.
  *
- * Un libellé et une couleur par statut, définis une seule fois : sans cela, chaque
- * écran finirait par traduire « PARTIALLY_PAID » à sa façon.
+ * One label and one color per status, defined once: otherwise every screen would end
+ * up translating "PARTIALLY_PAID" its own way. Labels live in the `status` namespace,
+ * keyed by the status code, and are resolved at call time so they follow the UI
+ * language.
  */
 
+import { useTranslation } from "react-i18next";
+
+import { i18n } from "@/shared/i18n";
 import { cn } from "@/shared/lib/utils";
 
 type Tone = "draft" | "info" | "pending" | "success" | "danger";
@@ -17,92 +22,77 @@ const TONE_CLASSES: Record<Tone, string> = {
   danger: "bg-status-danger-bg text-status-danger",
 };
 
-const STATUS_MAP: Record<string, { label: string; tone: Tone }> = {
-  // Documents commerciaux
-  DRAFT: { label: "Brouillon", tone: "draft" },
-  SENT: { label: "Envoyé", tone: "info" },
-  ACCEPTED: { label: "Accepté", tone: "success" },
-  REJECTED: { label: "Refusé", tone: "danger" },
-  EXPIRED: { label: "Expiré", tone: "draft" },
-  CONVERTED: { label: "Converti", tone: "success" },
-  CONFIRMED: { label: "Confirmée", tone: "info" },
-  PROCESSING: { label: "En préparation", tone: "pending" },
-  SHIPPED: { label: "Expédiée", tone: "info" },
-  DELIVERED: { label: "Livrée", tone: "success" },
-  INVOICED: { label: "Facturée", tone: "success" },
-  CANCELLED: { label: "Annulé", tone: "danger" },
-  VALIDATED: { label: "Validée", tone: "info" },
-  PARTIALLY_PAID: { label: "Partiellement payée", tone: "pending" },
-  PAID: { label: "Payée", tone: "success" },
-  // Achats
-  ORDERED: { label: "Commandée", tone: "info" },
-  PARTIALLY_RECEIVED: { label: "Partiellement reçue", tone: "pending" },
-  RECEIVED: { label: "Reçue", tone: "success" },
-  // Caisse
-  OPEN: { label: "Ouverte", tone: "success" },
-  CLOSED: { label: "Clôturée", tone: "draft" },
-  // Règlements
-  PENDING: { label: "En attente", tone: "pending" },
-  // Synchronisation
-  created: { label: "Créé", tone: "success" },
-  duplicate: { label: "Doublon ignoré", tone: "info" },
-  error: { label: "Erreur", tone: "danger" },
-  deferred: { label: "Reporté", tone: "pending" },
-  synced: { label: "Synchronisé", tone: "success" },
-  sending: { label: "Envoi…", tone: "info" },
-  pending: { label: "En attente", tone: "pending" },
+const STATUS_TONES: Record<string, Tone> = {
+  // Commercial documents
+  DRAFT: "draft",
+  SENT: "info",
+  ACCEPTED: "success",
+  REJECTED: "danger",
+  EXPIRED: "draft",
+  CONVERTED: "success",
+  CONFIRMED: "info",
+  PROCESSING: "pending",
+  SHIPPED: "info",
+  DELIVERED: "success",
+  INVOICED: "success",
+  CANCELLED: "danger",
+  VALIDATED: "info",
+  PARTIALLY_PAID: "pending",
+  PAID: "success",
+  // Purchasing
+  ORDERED: "info",
+  PARTIALLY_RECEIVED: "pending",
+  RECEIVED: "success",
+  // Point of sale
+  OPEN: "success",
+  CLOSED: "draft",
+  // Payments
+  PENDING: "pending",
+  // Synchronization
+  created: "success",
+  duplicate: "info",
+  error: "danger",
+  deferred: "pending",
+  synced: "success",
+  sending: "info",
+  pending: "pending",
 };
 
+/** Translated label of `status:<group>.<code>`, or the raw code when unknown. */
+function lookup(group: string, code: string): string {
+  const key = `status:${group}.${code}`;
+  return i18n.exists(key) ? i18n.t(key) : code;
+}
+
 export function statusLabel(status: string): string {
-  return STATUS_MAP[status]?.label ?? status;
+  return lookup("labels", status);
 }
 
 export function StatusBadge({ status, className }: { status: string; className?: string }) {
-  const entry = STATUS_MAP[status] ?? { label: status, tone: "draft" as Tone };
+  // Subscribes the badge to language changes.
+  useTranslation("status");
+  const tone = STATUS_TONES[status] ?? "draft";
   return (
     <span
       className={cn(
         "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap",
-        TONE_CLASSES[entry.tone],
+        TONE_CLASSES[tone],
         className
       )}
     >
-      {entry.label}
+      {statusLabel(status)}
     </span>
   );
 }
 
-const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  CASH: "Espèces",
-  BANK_TRANSFER: "Virement",
-  CHECK: "Chèque",
-  CARD: "Carte",
-  MOBILE_MONEY: "Mobile Money",
-};
-
 export function paymentMethodLabel(method: string): string {
-  return PAYMENT_METHOD_LABELS[method] ?? method;
+  return lookup("paymentMethods", method);
 }
-
-const MOVEMENT_LABELS: Record<string, string> = {
-  IN: "Entrée",
-  OUT: "Sortie",
-  TRANSFER: "Transfert",
-  ADJUSTMENT: "Ajustement",
-  RETURN: "Retour",
-};
 
 export function movementLabel(type: string): string {
-  return MOVEMENT_LABELS[type] ?? type;
+  return lookup("movements", type);
 }
 
-const PARTY_TYPE_LABELS: Record<string, string> = {
-  CUSTOMER: "Client",
-  SUPPLIER: "Fournisseur",
-  BOTH: "Client & fournisseur",
-  PROSPECT: "Prospect",
-};
-
 export function partyTypeLabel(type: string): string {
-  return PARTY_TYPE_LABELS[type] ?? type;
+  return lookup("partyTypes", type);
 }

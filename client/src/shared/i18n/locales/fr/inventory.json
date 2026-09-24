@@ -1,0 +1,75 @@
+{
+  "allWarehouses": "Tous les magasins",
+  "warehouses": {
+    "title": "Magasins",
+    "description": "Emplacements physiques où le stock est détenu.",
+    "archived": "Magasin archivé.",
+    "defaultBadge": "par défaut",
+    "new": "Nouveau magasin",
+    "emptyTitle": "Aucun magasin",
+    "emptyDescription": "Au moins un magasin est nécessaire pour valider une facture.",
+    "updated": "Magasin mis à jour.",
+    "created": "Magasin créé.",
+    "editTitle": "Modifier le magasin",
+    "isDefault": "Magasin par défaut des documents"
+  },
+  "movements": {
+    "title": "Mouvements de stock",
+    "description": "Chaque entrée, sortie ou ajustement est tracé avec son origine.",
+    "item": "Article",
+    "origin": "Origine",
+    "balanceAfter": "Solde après",
+    "unitCost": "Coût unitaire",
+    "allOrigins": "Toutes les origines",
+    "emptyTitle": "Aucun mouvement",
+    "emptyDescription": "Les mouvements apparaissent dès la première réception ou vente.",
+    "origins": {
+      "purchaseReceipt": "Réception achat",
+      "salesInvoice": "Facture de vente",
+      "creditNote": "Avoir",
+      "posTicket": "Ticket de caisse",
+      "manual": "Saisie manuelle",
+      "inventoryCount": "Inventaire",
+      "transfer": "Transfert"
+    }
+  },
+  "stock": {
+    "title": "Stock",
+    "description": "Soldes par article, magasin et lot.",
+    "lot": "Lot",
+    "averageCost": "Coût moyen",
+    "value": "Valeur",
+    "transfer": "Transfert",
+    "manualMovement": "Mouvement manuel",
+    "stockValue": "Valeur du stock",
+    "stockValueHint": "Au coût moyen pondéré",
+    "skuCount": "Références en stock",
+    "totalQuantity": "Quantité totale",
+    "searchPlaceholder": "Article, référence, code-barres…",
+    "lowStockOnly": "Sous le seuil d'alerte",
+    "emptyTitle": "Aucun stock",
+    "emptyDescription": "Le stock se crée par une réception d'achat ou un mouvement manuel.",
+    "selectItem": "Sélectionner un article",
+    "movementDialog": {
+      "title": "Mouvement de stock",
+      "description": "Tout mouvement est journalisé avec son motif : le solde reste auditable.",
+      "savedOffline": "Mouvement enregistré hors ligne.",
+      "savedOfflineDescription": "Le stock sera mis à jour à la prochaine synchronisation.",
+      "saved": "Mouvement enregistré.",
+      "direction": "Sens",
+      "in": "Entrée (+)",
+      "out": "Sortie (−)",
+      "unitCostHint": "Utilisé pour la valorisation des entrées.",
+      "reason": "Motif",
+      "reasonPlaceholder": "Inventaire, casse, correction de saisie…"
+    },
+    "transferDialog": {
+      "title": "Transfert entre magasins",
+      "description": "La sortie et l'entrée sont enregistrées ensemble : la marchandise ne peut pas disparaître entre les deux.",
+      "done": "Transfert effectué.",
+      "from": "Magasin source",
+      "to": "Magasin destination",
+      "submit": "Transférer"
+    }
+  }
+}

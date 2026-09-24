@@ -1,4 +1,4 @@
-/** Accès API de la trésorerie. */
+/** Treasury (banking) API access. */
 
 import { api } from "@/shared/api/http";
 import type { BankAccount, BankTransaction } from "@/entities/types";

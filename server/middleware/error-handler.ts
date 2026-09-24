@@ -1,4 +1,4 @@
-/** Conversion des exceptions en réponses JSON normalisées. */
+/** Converts exceptions into normalized JSON responses, translated into the request locale. */
 
 import type { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
@@ -10,6 +10,7 @@ import {
   ValidationError,
   translateDatabaseError,
 } from "../shared/errors/app-error";
+import { lookup, tr } from "../shared/i18n";
 import { logger } from "../shared/logging/logger";
 
 export interface ErrorEnvelope {
@@ -22,17 +23,17 @@ export interface ErrorEnvelope {
 function normalize(error: unknown): AppError {
   if (error instanceof AppError) return error;
   if (error instanceof ZodError) {
-    return new ValidationError("Données invalides", error.errors);
+    return new ValidationError("Invalid data", error.errors);
   }
   if (isDatabaseConnectivityError(error)) {
     return new ServiceUnavailableError(
-      "Base de données momentanément injoignable. Réessayez dans un instant.",
+      "Database temporarily unreachable. Please try again in a moment.",
       "DB_CONNECTION"
     );
   }
   const translated = translateDatabaseError(error);
   if (translated) return translated;
-  return new AppError(error instanceof Error ? error.message : "Erreur interne du serveur");
+  return new AppError(error instanceof Error ? error.message : "Internal server error");
 }
 
 export function errorHandler(
@@ -59,27 +60,39 @@ export function errorHandler(
   });
 
   const body: ErrorEnvelope = {
-    // Un 500 ne divulgue jamais le message interne au client.
-    error: isServerFault ? "Erreur interne du serveur" : appError.message,
+    // A 500 never leaks the internal message to the client.
+    error: lookup(isServerFault ? "Internal server error" : appError.message),
     code: appError.code,
     requestId: req.requestId,
   };
-  // Les détails de validation restent utiles au client ; les détails d'une 500, non.
+  // Validation details stay useful to the client; the details of a 500 do not.
   if (appError.details !== undefined && !isServerFault) {
-    body.details = appError.details;
+    body.details = translateIssues(appError.details);
   }
 
   res.status(appError.status).json(body);
 }
 
-/** 404 pour toute route `/api` inconnue (les autres chemins servent la SPA). */
+/** Translates the messages of serialized Zod issues (written in English in the schemas). */
+function translateIssues(details: unknown): unknown {
+  if (!Array.isArray(details)) return details;
+  return details.map((issue) =>
+    issue &&
+    typeof issue === "object" &&
+    typeof (issue as { message?: unknown }).message === "string"
+      ? { ...issue, message: lookup((issue as { message: string }).message) }
+      : issue
+  );
+}
+
+/** 404 for any unknown `/api` route (other paths serve the SPA). */
 export function apiNotFound(req: Request, res: Response, next: NextFunction): void {
   if (!req.path.startsWith("/api")) {
     next();
     return;
   }
   res.status(404).json({
-    error: `Endpoint inconnu : ${req.method} ${req.path}`,
+    error: tr("Unknown endpoint: {method} {path}", { method: req.method, path: req.path }),
     code: "NOT_FOUND",
     requestId: req.requestId,
   } satisfies ErrorEnvelope);

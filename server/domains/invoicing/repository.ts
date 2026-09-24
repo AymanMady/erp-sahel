@@ -1,4 +1,4 @@
-/** Persistance de la facturation client (factures, lignes, avoirs). */
+/** Customer invoicing persistence (invoices, lines, credit notes). */
 
 import { and, asc, desc, eq, gte, inArray, lte, sql, type SQL } from "drizzle-orm";
 
@@ -165,8 +165,8 @@ export class InvoicingRepository {
   }
 
   /**
-   * Incrémente le montant réglé **en base** (`paid + delta`), pas depuis une valeur lue
-   * en amont : deux encaissements simultanés sur la même facture restent cohérents.
+   * Increments the paid amount **in the database** (`paid + delta`), not from a value
+   * read beforehand: two simultaneous receipts on the same invoice stay consistent.
    */
   async addPaidAmount(
     companyId: string,
@@ -243,7 +243,7 @@ export class InvoicingRepository {
     await this.database.insert(creditNoteLines).values(values);
   }
 
-  /** Chiffre d'affaires et impayés — tableau de bord et rapports [FR-RPT-1]. */
+  /** Revenue and unpaid amounts — dashboard and reports [FR-RPT-1]. */
   async salesSummary(companyId: string, fromDate: string, toDate: string) {
     const [row] = await this.database
       .select({
@@ -270,7 +270,7 @@ export class InvoicingRepository {
     };
   }
 
-  /** Chiffre d'affaires quotidien, pour le graphique du tableau de bord. */
+  /** Daily revenue, for the dashboard chart. */
   async dailyRevenue(companyId: string, fromDate: string, toDate: string) {
     return this.database
       .select({
@@ -292,7 +292,7 @@ export class InvoicingRepository {
       .orderBy(asc(salesInvoices.date));
   }
 
-  /** Meilleures ventes par produit sur une période [FR-RPT-3]. */
+  /** Best-selling products over a period [FR-RPT-3]. */
   async topProducts(companyId: string, fromDate: string, toDate: string, limit = 10) {
     return this.database
       .select({

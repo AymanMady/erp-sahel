@@ -1,10 +1,10 @@
 /**
- * Comptabilité : plan comptable **configurable** (OHADA par défaut), journaux, écritures.
+ * Accounting: **configurable** chart of accounts (OHADA by default), journals, entries.
  *
- * Le référentiel n'est pas codé en dur ([BR-21], Q1) : le plan est une table de données
- * et les comptes utilisés par les automatismes (vente, TVA, client, caisse…) sont résolus
- * via `account_mappings`. Passer d'OHADA à PCG/CGNC/IFRS ne demande qu'un nouveau jeu de
- * données + mappings, sans refonte du modèle.
+ * The accounting framework is not hard-coded ([BR-21], Q1): the chart is a data table
+ * and the accounts used by automated postings (sales, VAT, customer, cash…) are resolved
+ * through `account_mappings`. Switching from OHADA to PCG/CGNC/IFRS only requires a new
+ * dataset + mappings, with no model redesign.
  */
 
 import {
@@ -36,7 +36,7 @@ export const accounts = pgTable(
     name: text("name").notNull(),
     accountType: text("account_type").$type<AccountType>().notNull(),
     parentId: uuid("parent_id"),
-    /** Compte de regroupement : ne reçoit pas d'écriture directe. */
+    /** Summary account: does not receive direct postings. */
     isGroup: boolean("is_group").default(false).notNull(),
     reconciliationAllowed: boolean("reconciliation_allowed").default(true).notNull(),
   },
@@ -49,8 +49,8 @@ export const accounts = pgTable(
 export type Account = typeof accounts.$inferSelect;
 
 /**
- * Comptes utilisés par les automatismes comptables.
- * Une clé logique (`SALES_REVENUE`, `VAT_COLLECTED`…) → un compte du plan de la société.
+ * Accounts used by automated accounting postings.
+ * One logical key (`SALES_REVENUE`, `VAT_COLLECTED`…) → one account of the company's chart.
  */
 export const ACCOUNT_MAPPING_KEYS = [
   "SALES_REVENUE",
@@ -141,8 +141,8 @@ export const ENTRY_ORIGINS = [
 export type EntryOrigin = (typeof ENTRY_ORIGINS)[number];
 
 /**
- * Écriture comptable. L'équilibre débit = crédit est vérifié **avant** insertion
- * (`assertBalanced`) et re-vérifié par une contrainte d'intégrité applicative [FR-CPT-1].
+ * Journal entry. The debit = credit balance is checked **before** insertion
+ * (`assertBalanced`) and re-checked by an application-level integrity constraint [FR-CPT-1].
  */
 export const journalEntries = pgTable(
   "journal_entries",
@@ -192,7 +192,7 @@ export const journalLines = pgTable(
     debitCents: moneyCents("debit_cents").default(0).notNull(),
     creditCents: moneyCents("credit_cents").default(0).notNull(),
     label: text("label").default("").notNull(),
-    /** Tiers rattaché : permet le grand livre auxiliaire clients/fournisseurs. */
+    /** Linked party: enables the customer/supplier subsidiary ledger. */
     partyId: uuid("party_id").references(() => parties.id, { onDelete: "set null" }),
     reconciled: boolean("reconciled").default(false).notNull(),
     position: integer("position").default(0).notNull(),

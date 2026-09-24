@@ -1,13 +1,17 @@
 /**
- * Amorçage de la base : référentiels obligatoires puis jeu de démonstration.
+ * Database seeding: mandatory master data, then a demo data set.
  *
- * Deux étages, volontairement séparés :
- *  1. `seedCore()` — **indispensable en production** : permissions, rôles système,
- *     société, compte administrateur, plan comptable. Idempotent.
- *  2. `seedDemo()` — jeu de démonstration (catalogue, tiers, ventes, caisse). Ne
- *     s'exécute que si la société est vide, pour ne jamais polluer des données réelles.
+ * Two deliberately separate stages:
+ *  1. Core — **required in production**: permissions, system roles, company,
+ *     administrator account, chart of accounts. Idempotent.
+ *  2. Demo — demo data set (catalog, parties, sales, POS). Only runs when the company
+ *     is empty, so it never pollutes real data.
  *
- * Usage : `npm run db:seed` (cœur + démo) · `npm run db:seed -- --core-only`.
+ * The demo company is French-speaking (Nouakchott): the whole seed runs in the "fr"
+ * locale, so default accounts, journals, warehouse and register get French names, and
+ * the demo business data is written in French as well.
+ *
+ * Usage: `npm run db:seed` (core + demo) · `npm run db:seed -- --core-only`.
  */
 
 import "dotenv/config";
@@ -48,9 +52,10 @@ import { paymentsApplication } from "./domains/payments/application";
 import { posApplication } from "./domains/pos/application";
 import { salesApplication } from "./domains/sales/application";
 import { tenancyApplication } from "./domains/tenancy/application";
+import { withLocale } from "./shared/i18n";
 import { logger } from "./shared/logging/logger";
 
-/** Permissions et rôles système — partagés par toutes les sociétés. */
+/** Permissions and system roles — shared by every company. */
 async function seedPermissionsAndRoles(): Promise<void> {
   for (const code of ALL_PERMISSION_CODES) {
     await db
@@ -65,8 +70,8 @@ async function seedPermissionsAndRoles(): Promise<void> {
         set: { label: PERMISSIONS[code], updatedAt: new Date() },
       });
   }
-  // Droits retirés du catalogue (anciens modules métier) : supprimés avec leurs
-  // affectations, pour ne plus apparaître dans l'écran des rôles.
+  // Permissions removed from the catalog (former business modules): deleted along
+  // with their assignments, so they no longer appear on the roles screen.
   await db
     .delete(permissionsTable)
     .where(notInArray(permissionsTable.code, [...ALL_PERMISSION_CODES]));
@@ -102,13 +107,13 @@ async function seedPermissionsAndRoles(): Promise<void> {
         .onConflictDoNothing();
     }
   }
-  logger.info("Permissions et rôles système semés", {
+  logger.info("Permissions and system roles seeded", {
     permissions: ALL_PERMISSION_CODES.length,
     roles: DEFAULT_ROLES.length,
   });
 }
 
-/** Société de travail : celle décrite par l'environnement, créée si absente. */
+/** Working company: the one described by the environment, created if missing. */
 async function seedCompany(): Promise<Company> {
   const subdomain = slugify(process.env.SEED_COMPANY_SUBDOMAIN ?? "sahel");
   const existing = await tenancyApplication.findBySubdomain(subdomain);
@@ -126,11 +131,11 @@ async function seedCompany(): Promise<Company> {
     city: "Nouakchott",
     country: "Mauritanie",
   });
-  logger.info("Société créée", { name: company.name, subdomain: company.subdomain });
+  logger.info("Company created", { name: company.name, subdomain: company.subdomain });
   return company;
 }
 
-/** Compte administrateur initial, rattaché à la société avec le rôle Administrateur. */
+/** Initial administrator account, linked to the company with the Administrator role. */
 async function seedAdminUser(company: Company): Promise<string> {
   const username = process.env.SEED_ADMIN_USERNAME ?? "admin";
   const password = process.env.SEED_ADMIN_PASSWORD ?? "Admin123!";
@@ -175,12 +180,12 @@ async function seedAdminUser(company: Company): Promise<string> {
   }
 
   if (!existing) {
-    logger.info("Compte administrateur créé", { username, password });
+    logger.info("Administrator account created", { username, password });
   }
   return user.id;
 }
 
-/** Vrai si la société ne contient encore aucun produit : la démo peut s'installer. */
+/** True if the company has no product yet: the demo can be installed. */
 async function isCompanyEmpty(companyId: string): Promise<boolean> {
   const [row] = await db
     .select({ value: sql<number>`count(*)::int` })
@@ -189,7 +194,7 @@ async function isCompanyEmpty(companyId: string): Promise<boolean> {
   return (row?.value ?? 0) === 0;
 }
 
-/** Catalogue de démonstration : une boutique générale, pour montrer un ERP multi-usage. */
+/** Demo catalog: a general store, to show a multi-purpose ERP. */
 const DEMO_PRODUCTS: {
   sku: string;
   name: string;
@@ -277,15 +282,15 @@ async function seedDemoData(company: Company, userId: string): Promise<void> {
   const warehouse = (
     await db.select().from(warehouses).where(eq(warehouses.companyId, company.id)).limit(1)
   )[0];
-  if (!warehouse) throw new Error("Magasin par défaut absent : amorçage société incomplet.");
+  if (!warehouse) throw new Error("Default warehouse missing: company bootstrap is incomplete.");
 
-  // La démonstration montre tous les modules ; une vraie société démarre en « Simple ».
+  // The demo shows every module; a real company starts at "Simple".
   await moduleRegistry.applySelection(
     company.id,
     MODULE_PRESETS.find((preset) => preset.code === "full")!.modules
   );
 
-  // --- Catégories et produits --------------------------------------------
+  // --- Categories and products --------------------------------------------
   const categoryIds = new Map<string, string>();
   for (const name of new Set(DEMO_PRODUCTS.map((product) => product.category))) {
     const [row] = await db.insert(categories).values({ companyId: company.id, name }).returning();
@@ -325,7 +330,7 @@ async function seedDemoData(company: Company, userId: string): Promise<void> {
     });
   }
 
-  // --- Prestations ---------------------------------------------------------
+  // --- Services ------------------------------------------------------------
   const SERVICES = [
     { code: "LIV", name: "Livraison", priceCents: 50000, billingType: "FLAT" },
     { code: "INST", name: "Installation", priceCents: 100000, billingType: "FLAT" },
@@ -345,7 +350,7 @@ async function seedDemoData(company: Company, userId: string): Promise<void> {
       .onConflictDoNothing();
   }
 
-  // --- Tiers ---------------------------------------------------------------
+  // --- Parties -------------------------------------------------------------
   const PARTIES = [
     {
       code: "CLI-0001",
@@ -406,7 +411,7 @@ async function seedDemoData(company: Company, userId: string): Promise<void> {
   const customerId = partyIds.get("CLI-0001");
   if (!customerId) return;
 
-  // --- Chaîne commerciale : devis → facture → règlement --------------------
+  // --- Sales chain: quote → invoice → payment ------------------------------
   await salesApplication.createQuote(
     company,
     {
@@ -448,7 +453,7 @@ async function seedDemoData(company: Company, userId: string): Promise<void> {
     userId
   );
 
-  // --- Vente comptoir : session de caisse + ticket encaissé ----------------
+  // --- Counter sale: POS session + paid ticket -----------------------------
   const [register] = await db
     .select()
     .from(posRegisters)
@@ -473,8 +478,8 @@ async function seedDemoData(company: Company, userId: string): Promise<void> {
         unitPriceCents: createdProducts[3].salePriceCents,
       },
     ];
-    // Le POS exige que le total encaissé soit strictement égal au TTC : on applique
-    // ici la **même** fonction de calcul que le serveur, donc aucun écart possible.
+    // The POS requires the amount collected to equal the total incl. tax exactly: we
+    // apply the **same** calculation function as the server, so no gap is possible.
     const totals = computeDocumentTotals(
       ticketLines.map((line) => ({
         quantity: line.quantity,
@@ -491,7 +496,7 @@ async function seedDemoData(company: Company, userId: string): Promise<void> {
     });
   }
 
-  // --- Trésorerie ----------------------------------------------------------
+  // --- Cash and bank -------------------------------------------------------
   await db
     .insert(bankAccounts)
     .values({
@@ -504,9 +509,9 @@ async function seedDemoData(company: Company, userId: string): Promise<void> {
     })
     .onConflictDoNothing();
 
-  logger.info("Jeu de démonstration installé", {
-    produits: createdProducts.length,
-    tiers: partyIds.size,
+  logger.info("Demo data set installed", {
+    products: createdProducts.length,
+    parties: partyIds.size,
   });
 }
 
@@ -519,26 +524,26 @@ async function main(): Promise<void> {
   const userId = await seedAdminUser(company);
 
   if (coreOnly) {
-    logger.info("Amorçage limité au noyau (option --core-only).");
+    logger.info("Seeding limited to the core (--core-only option).");
     return;
   }
 
   if (!(await isCompanyEmpty(company.id))) {
-    logger.info("La société contient déjà des produits : jeu de démonstration ignoré.");
+    logger.info("The company already has products: demo data set skipped.");
     return;
   }
 
   await seedDemoData(company, userId);
 }
 
-main()
+withLocale("fr", main)
   .then(async () => {
-    logger.info("Amorçage terminé.");
+    logger.info("Seeding complete.");
     await closeDatabase();
     process.exit(0);
   })
   .catch(async (error) => {
-    logger.error("Échec de l'amorçage", {
+    logger.error("Seeding failed", {
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });

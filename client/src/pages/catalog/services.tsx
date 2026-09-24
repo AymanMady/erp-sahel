@@ -1,9 +1,10 @@
-/** Prestations facturables (main d'œuvre, forfaits) — [FR-PROD-5]. */
+/** Billable services (labor, flat fees) — [FR-PROD-5]. */
 
 import { useState } from "react";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 import { BILLING_TYPES } from "@shared/schema";
 import { errorMessage } from "@/shared/api/api-error";
@@ -25,13 +26,15 @@ import { Input } from "@/shared/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { Textarea } from "@/shared/ui/textarea";
 
-const BILLING_LABELS: Record<string, string> = {
-  HOURLY: "À l'heure",
-  DAILY: "À la journée",
-  FLAT: "Forfait",
+/** Translation keys (catalog namespace) for each billing type. */
+const BILLING_LABEL_KEYS: Record<string, string> = {
+  HOURLY: "services.billing.hourly",
+  DAILY: "services.billing.daily",
+  FLAT: "services.billing.flat",
 };
 
 export default function ServicesPage() {
+  const { t } = useTranslation("catalog");
   const queryClient = useQueryClient();
   const { can, company } = useSession();
   const [search, setSearch] = useState("");
@@ -49,7 +52,7 @@ export default function ServicesPage() {
   const archive = useMutation({
     mutationFn: (id: string) => settingsApi.archiveService(id),
     onSuccess: () => {
-      toast.success("Prestation archivée.");
+      toast.success(t("services.archived"));
       void queryClient.invalidateQueries({ queryKey: ["services"] });
     },
     onError: (mutationError) => toast.error(errorMessage(mutationError)),
@@ -58,12 +61,12 @@ export default function ServicesPage() {
   const columns: Column<Service>[] = [
     {
       id: "code",
-      header: "Code",
+      header: t("common:labels.code"),
       cell: (row) => <span className="tabular font-medium">{row.code}</span>,
     },
     {
       id: "name",
-      header: "Libellé",
+      header: t("services.label"),
       cell: (row) => (
         <div className="min-w-0">
           <p className="truncate font-medium">{row.name}</p>
@@ -75,22 +78,26 @@ export default function ServicesPage() {
     },
     {
       id: "billing",
-      header: "Facturation",
+      header: t("services.billingColumn"),
       hideOnMobile: true,
       cell: (row) => (
-        <Badge variant="outline">{BILLING_LABELS[row.billingType] ?? row.billingType}</Badge>
+        <Badge variant="outline">
+          {BILLING_LABEL_KEYS[row.billingType]
+            ? t(BILLING_LABEL_KEYS[row.billingType])
+            : row.billingType}
+        </Badge>
       ),
     },
     {
       id: "vat",
-      header: "TVA",
+      header: t("services.vat"),
       align: "end",
       hideOnMobile: true,
       cell: (row) => <Rate bp={row.vatRateBp} />,
     },
     {
       id: "price",
-      header: "Prix HT",
+      header: t("services.priceExclTax"),
       align: "end",
       cell: (row) => <Money cents={row.priceCents} />,
     },
@@ -102,12 +109,12 @@ export default function ServicesPage() {
         can("services.write") ? (
           <div className="flex justify-end gap-1">
             <Button size="sm" variant="ghost" onClick={() => setEditing(row)}>
-              Modifier
+              {t("common:actions.edit")}
             </Button>
             <Button
               size="icon"
               variant="ghost"
-              aria-label="Archiver"
+              aria-label={t("common:actions.archive")}
               onClick={() => archive.mutate(row.id)}
             >
               <IconTrash className="size-4" />
@@ -119,11 +126,11 @@ export default function ServicesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Prestations" description="Services facturables, sans gestion de stock.">
+      <PageHeader title={t("services.title")} description={t("services.description")}>
         {can("services.write") ? (
           <Button onClick={() => setCreating(true)}>
             <IconPlus className="size-4" />
-            Nouvelle prestation
+            {t("services.new")}
           </Button>
         ) : null}
       </PageHeader>
@@ -134,7 +141,7 @@ export default function ServicesPage() {
           setSearch(value);
           setPage((current) => ({ ...current, offset: 0 }));
         }}
-        placeholder="Code ou libellé…"
+        placeholder={t("services.searchPlaceholder")}
         className="sm:max-w-sm"
       />
 
@@ -144,8 +151,8 @@ export default function ServicesPage() {
         rowKey={(row) => row.id}
         loading={isLoading}
         error={error ? errorMessage(error) : null}
-        emptyTitle="Aucune prestation"
-        emptyDescription="Déclarez vos forfaits et taux horaires pour les ajouter aux devis et factures."
+        emptyTitle={t("services.emptyTitle")}
+        emptyDescription={t("services.emptyDescription")}
         pagination={{
           total: data?.total ?? 0,
           limit: page.limit,
@@ -180,6 +187,7 @@ function ServiceDialog({
   service: Service | null;
   defaultVatRateBp: number;
 }) {
+  const { t } = useTranslation("catalog");
   const queryClient = useQueryClient();
   const [form, setForm] = useState({
     code: "",
@@ -208,7 +216,7 @@ function ServiceDialog({
     mutationFn: () =>
       service ? settingsApi.updateService(service.id, form) : settingsApi.createService(form),
     onSuccess: () => {
-      toast.success(service ? "Prestation mise à jour." : "Prestation créée.");
+      toast.success(service ? t("services.updated") : t("services.created"));
       void queryClient.invalidateQueries({ queryKey: ["services"] });
       onOpenChange(false);
     },
@@ -219,7 +227,7 @@ function ServiceDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{service ? "Modifier la prestation" : "Nouvelle prestation"}</DialogTitle>
+          <DialogTitle>{service ? t("services.editTitle") : t("services.new")}</DialogTitle>
         </DialogHeader>
         <form
           className="space-y-4"
@@ -229,7 +237,7 @@ function ServiceDialog({
           }}
         >
           <FieldGrid>
-            <Field label="Code" required>
+            <Field label={t("common:labels.code")} required>
               <Input
                 value={form.code}
                 onChange={(event) => setForm({ ...form, code: event.target.value })}
@@ -237,7 +245,7 @@ function ServiceDialog({
                 disabled={Boolean(service)}
               />
             </Field>
-            <Field label="Mode de facturation">
+            <Field label={t("services.billingMode")}>
               <Select
                 value={form.billingType}
                 onValueChange={(value) =>
@@ -250,14 +258,14 @@ function ServiceDialog({
                 <SelectContent>
                   {BILLING_TYPES.map((type) => (
                     <SelectItem key={type} value={type}>
-                      {BILLING_LABELS[type]}
+                      {t(BILLING_LABEL_KEYS[type])}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </Field>
           </FieldGrid>
-          <Field label="Libellé" required>
+          <Field label={t("services.label")} required>
             <Input
               value={form.name}
               onChange={(event) => setForm({ ...form, name: event.target.value })}
@@ -265,20 +273,20 @@ function ServiceDialog({
             />
           </Field>
           <FieldGrid>
-            <Field label="Prix HT">
+            <Field label={t("services.priceExclTax")}>
               <MoneyInput
                 valueCents={form.priceCents}
                 onChange={(cents) => setForm({ ...form, priceCents: cents })}
               />
             </Field>
-            <Field label="Taux de TVA">
+            <Field label={t("productForm.vatRate")}>
               <RateInput
                 valueBp={form.vatRateBp}
                 onChange={(bp) => setForm({ ...form, vatRateBp: bp })}
               />
             </Field>
           </FieldGrid>
-          <Field label="Description">
+          <Field label={t("common:labels.description")}>
             <Textarea
               rows={3}
               value={form.description}
@@ -287,13 +295,13 @@ function ServiceDialog({
           </Field>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
+              {t("common:actions.cancel")}
             </Button>
             <Button
               type="submit"
               disabled={mutation.isPending || !form.name.trim() || !form.code.trim()}
             >
-              Enregistrer
+              {t("common:actions.save")}
             </Button>
           </DialogFooter>
         </form>

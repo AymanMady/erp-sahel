@@ -1,13 +1,13 @@
 /**
- * Tableau de liste de l'ERP.
+ * ERP list table.
  *
- * Reprend le langage visuel du design system (en-tête gris, bordures arrondies,
- * pagination en pied) en l'adaptant à deux contraintes propres à un ERP :
- *  - **pagination côté serveur** : les listes de factures ou de mouvements dépassent
- *    vite la mémoire du navigateur ;
- *  - **états explicites** : chargement, liste vide et erreur ont chacun leur rendu,
- *    parce qu'un tableau vide sans explication est le meilleur moyen de faire croire
- *    à une perte de données.
+ * Follows the design system's visual language (grey header, rounded borders, footer
+ * pagination) while adapting it to two ERP-specific constraints:
+ *  - **server-side pagination**: invoice or movement lists quickly outgrow the
+ *    browser's memory;
+ *  - **explicit states**: loading, empty list and error each have their own
+ *    rendering, because an empty table without explanation is the surest way to make
+ *    people believe data was lost.
  */
 
 import type { ReactNode } from "react";
@@ -18,6 +18,7 @@ import {
   IconChevronsRight,
   IconInbox,
 } from "@tabler/icons-react";
+import { useTranslation } from "react-i18next";
 
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
@@ -26,14 +27,14 @@ import { Skeleton } from "@/shared/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
 
 export interface Column<T> {
-  /** Clé technique de la colonne (sert de `key` React). */
+  /** Technical column key (used as the React `key`). */
   id: string;
   header: ReactNode;
   cell: (row: T) => ReactNode;
-  /** Alignement du contenu ; `end` pour les montants. */
+  /** Content alignment; `end` for amounts. */
   align?: "start" | "center" | "end";
   className?: string;
-  /** Masque la colonne sous `md` — utile pour les écrans de caisse étroits. */
+  /** Hides the column below `md` — useful for narrow checkout screens. */
   hideOnMobile?: boolean;
 }
 
@@ -47,14 +48,14 @@ export interface ResourceTableProps<T> {
   emptyDescription?: string;
   emptyAction?: ReactNode;
   onRowClick?: (row: T) => void;
-  /** Pagination serveur ; omise, le tableau affiche simplement toutes les lignes. */
+  /** Server pagination; when omitted, the table simply shows every row. */
   pagination?: {
     total: number;
     limit: number;
     offset: number;
     onChange: (next: { limit: number; offset: number }) => void;
   };
-  /** Ligne de pied (totaux) rendue sous les données. */
+  /** Footer row (totals) rendered below the data. */
   footer?: ReactNode;
   minWidthClassName?: string;
 }
@@ -67,14 +68,15 @@ export function ResourceTable<T>({
   rowKey,
   loading,
   error,
-  emptyTitle = "Aucun résultat",
-  emptyDescription = "Aucun élément ne correspond à votre recherche.",
+  emptyTitle,
+  emptyDescription,
   emptyAction,
   onRowClick,
   pagination,
   footer,
   minWidthClassName = "min-w-[720px]",
 }: ResourceTableProps<T>) {
+  const { t } = useTranslation("components");
   const alignClass = (align: Column<T>["align"]) =>
     align === "end" ? "text-end" : align === "center" ? "text-center" : "text-start";
 
@@ -126,8 +128,12 @@ export function ResourceTable<T>({
                 <TableCell colSpan={columns.length} className="h-40">
                   <div className="flex flex-col items-center justify-center gap-2 text-center">
                     <IconInbox className="size-8 text-muted-foreground/60" />
-                    <p className="text-sm font-medium">{emptyTitle}</p>
-                    <p className="max-w-sm text-xs text-muted-foreground">{emptyDescription}</p>
+                    <p className="text-sm font-medium">
+                      {emptyTitle ?? t("resourceTable.emptyTitle")}
+                    </p>
+                    <p className="max-w-sm text-xs text-muted-foreground">
+                      {emptyDescription ?? t("resourceTable.emptyDescription")}
+                    </p>
                     {emptyAction ? <div className="mt-2">{emptyAction}</div> : null}
                   </div>
                 </TableCell>
@@ -162,12 +168,11 @@ export function ResourceTable<T>({
       {pagination ? (
         <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
           <p className="text-sm text-muted-foreground">
-            <span className="tabular">{pagination.total}</span> élément
-            {pagination.total > 1 ? "s" : ""}
+            {t("resourceTable.itemCount", { count: pagination.total })}
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4 sm:justify-end">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Par page</span>
+              <span className="text-sm text-muted-foreground">{t("resourceTable.perPage")}</span>
               <Select
                 value={String(pagination.limit)}
                 onValueChange={(value) => pagination.onChange({ limit: Number(value), offset: 0 })}
@@ -185,24 +190,24 @@ export function ResourceTable<T>({
               </Select>
             </div>
             <span className="tabular text-sm text-muted-foreground">
-              Page {page} / {pageCount}
+              {t("resourceTable.pageOf", { page, pageCount })}
             </span>
             <div className="flex items-center gap-1">
               <Button
                 variant="outline"
                 size="icon"
                 className="size-8"
-                aria-label="Première page"
+                aria-label={t("resourceTable.firstPage")}
                 onClick={() => pagination.onChange({ limit: pagination.limit, offset: 0 })}
                 disabled={page <= 1}
               >
-                <IconChevronsLeft className="size-4" />
+                <IconChevronsLeft className="size-4 rtl:rotate-180" />
               </Button>
               <Button
                 variant="outline"
                 size="icon"
                 className="size-8"
-                aria-label="Page précédente"
+                aria-label={t("resourceTable.previousPage")}
                 onClick={() =>
                   pagination.onChange({
                     limit: pagination.limit,
@@ -211,13 +216,13 @@ export function ResourceTable<T>({
                 }
                 disabled={page <= 1}
               >
-                <IconChevronLeft className="size-4" />
+                <IconChevronLeft className="size-4 rtl:rotate-180" />
               </Button>
               <Button
                 variant="outline"
                 size="icon"
                 className="size-8"
-                aria-label="Page suivante"
+                aria-label={t("resourceTable.nextPage")}
                 onClick={() =>
                   pagination.onChange({
                     limit: pagination.limit,
@@ -226,13 +231,13 @@ export function ResourceTable<T>({
                 }
                 disabled={page >= pageCount}
               >
-                <IconChevronRight className="size-4" />
+                <IconChevronRight className="size-4 rtl:rotate-180" />
               </Button>
               <Button
                 variant="outline"
                 size="icon"
                 className="size-8"
-                aria-label="Dernière page"
+                aria-label={t("resourceTable.lastPage")}
                 onClick={() =>
                   pagination.onChange({
                     limit: pagination.limit,
@@ -241,7 +246,7 @@ export function ResourceTable<T>({
                 }
                 disabled={page >= pageCount}
               >
-                <IconChevronsRight className="size-4" />
+                <IconChevronsRight className="size-4 rtl:rotate-180" />
               </Button>
             </div>
           </div>

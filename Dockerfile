@@ -1,23 +1,23 @@
 # syntax=docker/dockerfile:1
 
-# --- Étape de build ---------------------------------------------------------
+# --- Build stage -------------------------------------------------------------
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Les dépendances sont installées avant le code : la couche est réutilisée tant que
-# le verrou ne change pas, ce qui raccourcit nettement les builds suivants.
+# Dependencies are installed before the code: the layer is reused as long as the
+# lockfile does not change, which noticeably speeds up subsequent builds.
 COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
 RUN npm run build
 
-# --- Étape d'exécution ------------------------------------------------------
+# --- Runtime stage -----------------------------------------------------------
 FROM node:20-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Seules les dépendances de production sont conservées dans l'image finale.
+# Only production dependencies are kept in the final image.
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
@@ -26,7 +26,7 @@ COPY --from=builder /app/migrations ./migrations
 COPY --from=builder /app/shared ./shared
 COPY --from=builder /app/server/seed.ts ./server/seed.ts
 
-# Exécution sans privilèges.
+# Run without privileges.
 USER node
 EXPOSE 5000
 

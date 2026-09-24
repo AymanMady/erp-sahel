@@ -1,4 +1,4 @@
-/** Carte utilisateur du pied de la barre latérale : profil, thème, déconnexion. */
+/** User card in the sidebar footer: profile, theme, sign-out. */
 
 import { useState } from "react";
 import {
@@ -11,12 +11,14 @@ import {
 } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Link } from "wouter";
 
 import { initials } from "@shared/format";
 import { errorMessage } from "@/shared/api/api-error";
 import { useSession } from "@/shared/auth/session";
+import { useDirection } from "@/shared/i18n/direction-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/avatar";
 import {
   DropdownMenu,
@@ -35,6 +37,8 @@ export function NavUser() {
   const { user, logout } = useSession();
   const queryClient = useQueryClient();
   const [signingOut, setSigningOut] = useState(false);
+  const { t } = useTranslation("layout");
+  const direction = useDirection();
 
   const fullName =
     [user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.username || "";
@@ -64,23 +68,23 @@ export function NavUser() {
                 {user?.avatarUrl ? <AvatarImage src={user.avatarUrl} alt={fullName} /> : null}
                 <AvatarFallback className="rounded-lg">{initials(fullName)}</AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 text-left leading-tight">
+              <div className="grid flex-1 text-start leading-tight">
                 <span className="truncate text-sm font-medium">{fullName}</span>
                 <span className="truncate text-xs text-muted-foreground">
                   {user?.email || user?.username}
                 </span>
               </div>
-              <IconDotsVertical className="ml-auto size-4 text-muted-foreground" />
+              <IconDotsVertical className="ms-auto size-4 text-muted-foreground" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-            side={isMobile ? "bottom" : "right"}
+            side={isMobile ? "bottom" : direction === "rtl" ? "left" : "right"}
             align="end"
             sideOffset={4}
           >
             <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-left">
+              <div className="flex items-center gap-2 px-1 py-1.5 text-start">
                 <Avatar className="size-8 rounded-lg">
                   {user?.avatarUrl ? <AvatarImage src={user.avatarUrl} alt={fullName} /> : null}
                   <AvatarFallback className="rounded-lg">{initials(fullName)}</AvatarFallback>
@@ -98,13 +102,13 @@ export function NavUser() {
               <DropdownMenuItem asChild>
                 <Link href="/profile">
                   <IconUserCircle className="size-4" />
-                  Mon profil
+                  {t("userMenu.profile")}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/settings/company">
                   <IconSettings className="size-4" />
-                  Paramètres
+                  {t("userMenu.settings")}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -115,7 +119,7 @@ export function NavUser() {
                 ) : (
                   <IconMoon className="size-4" />
                 )}
-                {resolvedTheme === "dark" ? "Thème clair" : "Thème sombre"}
+                {resolvedTheme === "dark" ? t("userMenu.lightTheme") : t("userMenu.darkTheme")}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
@@ -125,7 +129,7 @@ export function NavUser() {
               onClick={() => void handleLogout()}
             >
               <IconLogout className="size-4" />
-              Se déconnecter
+              {t("userMenu.signOut")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

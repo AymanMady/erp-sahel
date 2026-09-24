@@ -1,0 +1,64 @@
+{
+  "title": "Synchronisation",
+  "description": "File d'attente de ce poste et journal d'ingestion du serveur.",
+  "retryErrors": "Réessayer les erreurs",
+  "syncNow": "Synchroniser",
+  "retried": "Opérations en erreur remises en file.",
+  "discard": "Abandonner",
+  "discarded": "Opération abandonnée.",
+  "never": "jamais",
+  "stats": {
+    "pending": "En attente sur ce poste",
+    "failed": "En erreur",
+    "lastSync": "Dernière synchronisation",
+    "state": "État"
+  },
+  "states": {
+    "offline": "Hors ligne",
+    "syncing": "En cours",
+    "error": "Erreur",
+    "upToDate": "À jour"
+  },
+  "tabs": {
+    "outbox": "File locale",
+    "journal": "Journal serveur",
+    "devices": "Postes"
+  },
+  "columns": {
+    "operation": "Opération",
+    "state": "État",
+    "attempts": "Tentatives",
+    "entity": "Entité",
+    "assignedNumber": "Numéro attribué",
+    "device": "Poste",
+    "result": "Résultat",
+    "detail": "Détail"
+  },
+  "outbox": {
+    "emptyTitle": "File vide",
+    "emptyDescription": "Toutes les opérations de ce poste ont été synchronisées."
+  },
+  "journal": {
+    "emptyTitle": "Journal vide",
+    "emptyDescription": "Aucune opération hors-ligne n'a encore été ingérée."
+  },
+  "devices": {
+    "title": "Postes synchronisés",
+    "description": "Dernière remontée et dernier instantané servi, par poste.",
+    "empty": "Aucun poste enregistré.",
+    "platform": "Plateforme : {{platform}}",
+    "lastPush": "Dernier envoi : {{date}}",
+    "lastSnapshot": "Dernier instantané : {{date}}"
+  },
+  "entities": {
+    "party": "Tiers",
+    "product": "Produit",
+    "quote": "Devis",
+    "invoice": "Facture",
+    "payment": "Règlement",
+    "posSessionOpen": "Ouverture de caisse",
+    "posSessionClose": "Clôture de caisse",
+    "stockMovement": "Mouvement de stock",
+    "offlineEntry": "Saisie hors ligne"
+  }
+}

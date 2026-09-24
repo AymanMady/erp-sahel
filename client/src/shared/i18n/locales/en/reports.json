@@ -1,0 +1,51 @@
+{
+  "filters": {
+    "fromDate": "Start date",
+    "toDate": "End date"
+  },
+  "sales": {
+    "title": "Sales report",
+    "description": "Revenue, items and collections.",
+    "revenueExclTax": "Revenue excl. tax",
+    "revenueInclTax": "Revenue incl. tax",
+    "collected": "Collected",
+    "outstanding": "Outstanding",
+    "dailyRevenue": "Daily revenue",
+    "noSales": "No sales in this period.",
+    "topSales": "Best sellers",
+    "emptyTitle": "No sales",
+    "emptyDescription": "No items sold in this period.",
+    "collectionsByMethod": "Collections by method",
+    "noCollections": "No collections in this period.",
+    "paymentsCount_one": "{{count}} payment",
+    "paymentsCount_other": "{{count}} payments",
+    "columns": {
+      "item": "Item",
+      "soldQuantity": "Quantity sold"
+    }
+  },
+  "stock": {
+    "title": "Stock report",
+    "description": "Valuation at average cost and stock-out alerts.",
+    "allWarehouses": "All warehouses",
+    "stockValue": "Stock value",
+    "skus": "SKUs",
+    "totalQuantity": "Total quantity",
+    "belowThreshold": "Items below the alert threshold",
+    "emptyTitle": "No alerts",
+    "emptyDescription": "All tracked items are above their reorder threshold.",
+    "columns": {
+      "item": "Item",
+      "currentStock": "Current stock",
+      "alertThreshold": "Alert threshold"
+    }
+  },
+  "purchases": {
+    "title": "Purchases report",
+    "description": "Procurement volume over the period.",
+    "ordersPlaced": "Orders placed",
+    "amountExclTax": "Amount excl. tax",
+    "amountInclTax": "Amount incl. tax",
+    "periodNote": "Period analysed: {{from}} to {{to}}. Amounts include all purchase orders, including those not yet received."
+  }
+}

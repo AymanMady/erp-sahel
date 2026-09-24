@@ -1,8 +1,8 @@
 /**
- * Instantané hors-ligne : téléchargement, stockage et lecture.
+ * Offline snapshot: download, storage and reading.
  *
- * C'est la moitié « lecture » du mode hors ligne (l'outbox étant la moitié « écriture ») :
- * sans lui, un poste déconnecté ne pourrait plus chercher un produit ni un client.
+ * It is the "read" half of offline mode (the outbox being the "write" half): without it,
+ * a disconnected device could no longer look up a product or a customer.
  */
 
 import type {
@@ -71,7 +71,7 @@ export interface OfflineSnapshot {
   syncEntities: string[];
 }
 
-/** Télécharge un instantané frais et le persiste. */
+/** Downloads a fresh snapshot and persists it. */
 export async function pullSnapshot(): Promise<OfflineSnapshot> {
   const snapshot = await api.get<OfflineSnapshot>("/api/sync/snapshot", {
     platform: devicePlatform(),
@@ -84,12 +84,12 @@ export async function readSnapshot(): Promise<OfflineSnapshot | null> {
   return readSnapshotCache<OfflineSnapshot>(SNAPSHOT_KEY);
 }
 
-/** Réécrit l'instantané local — reflet des écritures faites hors ligne. */
+/** Rewrites the local snapshot — reflection of writes made offline. */
 export async function writeSnapshot(snapshot: OfflineSnapshot): Promise<void> {
   await writeSnapshotCache(SNAPSHOT_KEY, snapshot);
 }
 
-/** Applique un delta de `pull` sur l'instantané en cache, sans tout retélécharger. */
+/** Applies a `pull` delta to the cached snapshot, without downloading everything again. */
 export async function applyDelta(delta: {
   cursor: string;
   products?: Product[];
@@ -125,7 +125,7 @@ export async function applyDelta(delta: {
   } satisfies OfflineSnapshot);
 }
 
-/** Solde de stock local, tous magasins confondus. */
+/** Local stock balance, across all warehouses. */
 export function stockQuantityOf(snapshot: OfflineSnapshot, productId: string): number {
   return snapshot.stock
     .filter((row) => row.productId === productId)
@@ -137,8 +137,8 @@ export interface OfflineProductResult extends Product {
 }
 
 /**
- * Recherche produit **hors ligne** (nom, référence, code-barres) : même comportement
- * que le serveur, pour que le comptoir continue de vendre sans réseau ([FR-SRCH-2]).
+ * **Offline** product search (name, SKU, barcode): same behavior as the server, so that
+ * the counter keeps selling without network ([FR-SRCH-2]).
  */
 export function searchProductsOffline(
   snapshot: OfflineSnapshot,
@@ -153,7 +153,7 @@ export function searchProductsOffline(
     if (product.name.toLowerCase().includes(term)) return true;
     if (product.sku.toLowerCase().includes(term)) return true;
     if (product.barcode && product.barcode.toLowerCase() === term) return true;
-    // Une variante (taille, couleur…) peut porter son propre code-barres.
+    // A variant (size, color…) may carry its own barcode.
     return snapshot.variants.some(
       (variant) => variant.productId === product.id && variant.barcode.toLowerCase() === term
     );
@@ -165,7 +165,7 @@ export function searchProductsOffline(
   }));
 }
 
-/** Recherche de tiers hors ligne (nom, code, téléphone). */
+/** Offline party search (name, code, phone). */
 export function searchPartiesOffline(
   snapshot: OfflineSnapshot,
   query: string,
@@ -185,7 +185,7 @@ export function searchPartiesOffline(
     .slice(0, limit);
 }
 
-/** Produit correspondant à un code-barres scanné (produit ou variante). */
+/** Product matching a scanned barcode (product or variant). */
 export function findByBarcodeOffline(snapshot: OfflineSnapshot, barcode: string): Product | null {
   const value = barcode.trim();
   if (!value) return null;
@@ -207,13 +207,13 @@ export interface OfflineProductFilters {
 }
 
 /**
- * Liste paginée du catalogue **hors ligne** : même forme que `GET /api/catalog/products`,
- * pour que les écrans de liste restent utilisables quand le serveur est injoignable.
+ * **Offline** paginated catalog list: same shape as `GET /api/catalog/products`, so
+ * that list screens stay usable when the server is unreachable.
  */
 export function listProductsOffline(
   snapshot: OfflineSnapshot,
   filters: OfflineProductFilters = {},
-  /** Produits créés hors ligne, affichés en tête de liste. */
+  /** Products created offline, shown at the top of the list. */
   pending: Product[] = []
 ): {
   items: (Product & { categoryName: string | null; stockQuantity: number })[];

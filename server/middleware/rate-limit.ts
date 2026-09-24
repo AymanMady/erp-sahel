@@ -1,6 +1,8 @@
-/** Limitation de débit — priorité à l'authentification [NFR-SEC-4]. */
+/** Rate limiting — authentication first [NFR-SEC-4]. */
 
 import rateLimit from "express-rate-limit";
+
+import { tr } from "../shared/i18n";
 
 const disabled = process.env.NODE_ENV === "test" || process.env.DISABLE_RATE_LIMIT === "true";
 
@@ -8,13 +10,14 @@ const baseOptions = {
   standardHeaders: true as const,
   legacyHeaders: false as const,
   skip: () => disabled,
-  message: {
-    error: "Trop de requêtes. Réessayez dans un instant.",
+  // A function, so the message is translated into the locale of each request.
+  message: () => ({
+    error: tr("Too many requests. Please try again in a moment."),
     code: "RATE_LIMITED",
-  },
+  }),
 };
 
-/** Connexion : fenêtre courte et quota bas pour contrer le bourrage d'identifiants. */
+/** Login: short window and low quota to counter credential stuffing. */
 export const authRateLimit = rateLimit({
   ...baseOptions,
   windowMs: 15 * 60_000,
@@ -28,9 +31,9 @@ export const apiRateLimit = rateLimit({
 });
 
 /**
- * Synchronisation : quota élevé et fenêtre large. Un poste qui revient après une
- * longue coupure remonte plusieurs lots d'affilée ; le brider reviendrait à retarder
- * la convergence des données, ce qui est exactement ce qu'on cherche à éviter.
+ * Synchronization: high quota and wide window. A device coming back after a long
+ * outage pushes several batches in a row; throttling it would delay data convergence,
+ * which is exactly what we want to avoid.
  */
 export const syncRateLimit = rateLimit({
   ...baseOptions,

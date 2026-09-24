@@ -1,12 +1,12 @@
-/** Manifeste de pré-cache du Service Worker, partagé par les scripts de build. */
+/** Service Worker precache manifest, shared by the build scripts. */
 
 import fs from "node:fs";
 import path from "node:path";
 
 /**
- * Liste les ressources produites par Vite pour que le Service Worker les mette en cache
- * dès l'installation. Sans cela, seules les pages déjà visitées seraient disponibles
- * hors ligne — les routes étant chargées à la demande.
+ * Lists the assets produced by Vite so that the Service Worker caches them at install
+ * time. Without this, only already-visited pages would be available offline — since
+ * routes are loaded on demand.
  */
 export function writePrecacheManifest(publicDir: string): void {
   const assetsDir = path.join(publicDir, "assets");
@@ -24,8 +24,8 @@ export function writePrecacheManifest(publicDir: string): void {
   const urls = [...assets, ...extras];
   fs.writeFileSync(
     path.join(publicDir, "precache-manifest.js"),
-    `// Généré au build — ne pas modifier à la main.\nself.__ERP_PRECACHE = ${JSON.stringify(urls, null, 2)};\n`,
+    `// Generated at build time — do not edit by hand.\nself.__ERP_PRECACHE = ${JSON.stringify(urls, null, 2)};\n`,
     "utf-8"
   );
-  console.log(`  ${urls.length} ressources ajoutées au pré-cache.`);
+  console.log(`  ${urls.length} assets added to the precache.`);
 }

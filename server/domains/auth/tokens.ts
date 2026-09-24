@@ -1,11 +1,11 @@
 /**
- * Émission et vérification des jetons [FR-AUTH-1], [NFR-SEC-1].
+ * Token issuance and verification [FR-AUTH-1], [NFR-SEC-1].
  *
- * - **Access token** : JWT court (15 min par défaut) portant `userId`, `companyId`,
- *   les permissions effectives et les modules actifs. Il est auto-porteur : aucune
- *   requête base n'est nécessaire pour autoriser un appel.
- * - **Refresh token** : valeur aléatoire opaque (jamais un JWT) dont **seul le SHA-256
- *   est stocké**. Rotation à chaque usage ; la révocation est donc effective côté serveur.
+ * - **Access token**: short-lived JWT (15 min by default) carrying `userId`, `companyId`,
+ *   the effective permissions and the enabled modules. It is self-contained: no database
+ *   query is needed to authorize a call.
+ * - **Refresh token**: opaque random value (never a JWT) of which **only the SHA-256
+ *   is stored**. Rotated on every use, so revocation is effective server-side.
  */
 
 import { createHash, randomBytes } from "node:crypto";
@@ -23,8 +23,8 @@ export interface AccessTokenClaims {
   permissions: PermissionCode[];
   modules: string[];
   /**
-   * Présent sur les jetons dont `modules` inclut les fonctionnalités (caisse, achats…).
-   * Un jeton plus ancien n'en porte pas : il ne doit pas être refusé pour autant.
+   * Present on tokens whose `modules` include features (POS, purchasing…).
+   * Older tokens do not carry it: they must not be rejected because of that.
    */
   featureGating?: boolean;
 }
@@ -33,24 +33,24 @@ function secret(): string {
   const value = process.env.JWT_SECRET;
   if (!value || value.length < 16) {
     throw new Error(
-      "JWT_SECRET est absent ou trop court (32 caractères minimum recommandés). Voir .env.example."
+      "JWT_SECRET is missing or too short (at least 32 characters recommended). See .env.example."
     );
   }
   return value;
 }
 
-/** Vérifie au démarrage que la configuration de production est exploitable. */
+/** Checks at startup that the production configuration is usable. */
 export function assertTokenConfiguration(): void {
   if (process.env.NODE_ENV !== "production") return;
   const value = process.env.JWT_SECRET;
   if (!value || value.length < 32) {
     throw new Error(
-      "JWT_SECRET doit faire au moins 32 caractères en production. " +
-        "Générez-le : node -e \"console.log(require('crypto').randomBytes(48).toString('base64url'))\""
+      "JWT_SECRET must be at least 32 characters long in production. " +
+        "Generate one: node -e \"console.log(require('crypto').randomBytes(48).toString('base64url'))\""
     );
   }
   if (value.startsWith("dev-secret")) {
-    throw new Error("JWT_SECRET est resté sur la valeur de développement : changez-le.");
+    throw new Error("JWT_SECRET still has the development value: change it.");
   }
 }
 
@@ -66,11 +66,11 @@ export function verifyAccessToken(token: string): AccessTokenClaims {
     return jwt.verify(token, secret(), { issuer: "erp-sahel" }) as AccessTokenClaims;
   } catch (error) {
     const expired = error instanceof jwt.TokenExpiredError;
-    throw new UnauthorizedError(expired ? "Session expirée" : "Jeton invalide");
+    throw new UnauthorizedError(expired ? "Session expired" : "Invalid token");
   }
 }
 
-/** Nouveau jeton de rafraîchissement : valeur en clair pour le client, hash pour la base. */
+/** New refresh token: plain value for the client, hash for the database. */
 export function createRefreshToken(): { token: string; tokenHash: string } {
   const token = randomBytes(48).toString("base64url");
   return { token, tokenHash: hashRefreshToken(token) };
@@ -85,7 +85,7 @@ export function refreshTokenExpiry(): Date {
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000);
 }
 
-/** Extrait le jeton d'un en-tête `Authorization: Bearer …`. */
+/** Extracts the token from an `Authorization: Bearer …` header. */
 export function bearerToken(header: string | undefined): string | null {
   if (!header) return null;
   const [scheme, value] = header.split(" ");

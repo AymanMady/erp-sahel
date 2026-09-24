@@ -1,4 +1,4 @@
-/** Accès API de la comptabilité. */
+/** Accounting API access. */
 
 import { api } from "@/shared/api/http";
 import type {

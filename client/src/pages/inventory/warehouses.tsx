@@ -1,9 +1,10 @@
-/** Magasins et points de vente de la société. */
+/** Company warehouses and points of sale. */
 
 import { useState } from "react";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 import { errorMessage } from "@/shared/api/api-error";
 import { inventoryApi } from "@/entities/inventory/api";
@@ -21,6 +22,7 @@ import { Input } from "@/shared/ui/input";
 import { Textarea } from "@/shared/ui/textarea";
 
 export default function WarehousesPage() {
+  const { t } = useTranslation("inventory");
   const queryClient = useQueryClient();
   const { can } = useSession();
   const [open, setOpen] = useState(false);
@@ -34,7 +36,7 @@ export default function WarehousesPage() {
   const archive = useMutation({
     mutationFn: (id: string) => inventoryApi.archiveWarehouse(id),
     onSuccess: () => {
-      toast.success("Magasin archivé.");
+      toast.success(t("warehouses.archived"));
       void queryClient.invalidateQueries({ queryKey: queryKeys.warehouses });
     },
     onError: (mutationError) => toast.error(errorMessage(mutationError)),
@@ -43,18 +45,18 @@ export default function WarehousesPage() {
   const columns: Column<Warehouse>[] = [
     {
       id: "code",
-      header: "Code",
+      header: t("common:labels.code"),
       cell: (row) => <span className="tabular font-medium">{row.code}</span>,
     },
     {
       id: "name",
-      header: "Nom",
+      header: t("common:labels.name"),
       cell: (row) => (
         <span className="font-medium">
           {row.name}
           {row.isDefault ? (
             <Badge variant="outline" className="ms-2 text-[10px]">
-              par défaut
+              {t("warehouses.defaultBadge")}
             </Badge>
           ) : null}
         </span>
@@ -62,7 +64,7 @@ export default function WarehousesPage() {
     },
     {
       id: "address",
-      header: "Adresse",
+      header: t("common:labels.address"),
       hideOnMobile: true,
       cell: (row) => <span className="text-sm text-muted-foreground">{row.address || "—"}</span>,
     },
@@ -74,12 +76,12 @@ export default function WarehousesPage() {
         can("settings.write") ? (
           <div className="flex justify-end gap-1">
             <Button size="sm" variant="ghost" onClick={() => setEditing(row)}>
-              Modifier
+              {t("common:actions.edit")}
             </Button>
             <Button
               size="icon"
               variant="ghost"
-              aria-label="Archiver"
+              aria-label={t("common:actions.archive")}
               onClick={() => archive.mutate(row.id)}
             >
               <IconTrash className="size-4" />
@@ -91,11 +93,11 @@ export default function WarehousesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Magasins" description="Emplacements physiques où le stock est détenu.">
+      <PageHeader title={t("warehouses.title")} description={t("warehouses.description")}>
         {can("settings.write") ? (
           <Button onClick={() => setOpen(true)}>
             <IconPlus className="size-4" />
-            Nouveau magasin
+            {t("warehouses.new")}
           </Button>
         ) : null}
       </PageHeader>
@@ -106,8 +108,8 @@ export default function WarehousesPage() {
         rowKey={(row) => row.id}
         loading={isLoading}
         error={error ? errorMessage(error) : null}
-        emptyTitle="Aucun magasin"
-        emptyDescription="Au moins un magasin est nécessaire pour valider une facture."
+        emptyTitle={t("warehouses.emptyTitle")}
+        emptyDescription={t("warehouses.emptyDescription")}
       />
 
       <WarehouseDialog
@@ -133,6 +135,7 @@ function WarehouseDialog({
   onOpenChange: (open: boolean) => void;
   warehouse: Warehouse | null;
 }) {
+  const { t } = useTranslation("inventory");
   const queryClient = useQueryClient();
   const [form, setForm] = useState({ code: "", name: "", address: "", isDefault: false });
 
@@ -154,7 +157,7 @@ function WarehouseDialog({
         ? inventoryApi.updateWarehouse(warehouse.id, form)
         : inventoryApi.createWarehouse(form),
     onSuccess: () => {
-      toast.success(warehouse ? "Magasin mis à jour." : "Magasin créé.");
+      toast.success(warehouse ? t("warehouses.updated") : t("warehouses.created"));
       void queryClient.invalidateQueries({ queryKey: queryKeys.warehouses });
       onOpenChange(false);
     },
@@ -165,7 +168,7 @@ function WarehouseDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{warehouse ? "Modifier le magasin" : "Nouveau magasin"}</DialogTitle>
+          <DialogTitle>{warehouse ? t("warehouses.editTitle") : t("warehouses.new")}</DialogTitle>
         </DialogHeader>
         <form
           className="space-y-4"
@@ -174,7 +177,7 @@ function WarehouseDialog({
             mutation.mutate();
           }}
         >
-          <Field label="Code" required>
+          <Field label={t("common:labels.code")} required>
             <Input
               value={form.code}
               onChange={(event) => setForm({ ...form, code: event.target.value.toUpperCase() })}
@@ -183,14 +186,14 @@ function WarehouseDialog({
               className="tabular"
             />
           </Field>
-          <Field label="Nom" required>
+          <Field label={t("common:labels.name")} required>
             <Input
               value={form.name}
               onChange={(event) => setForm({ ...form, name: event.target.value })}
               required
             />
           </Field>
-          <Field label="Adresse">
+          <Field label={t("common:labels.address")}>
             <Textarea
               rows={2}
               value={form.address}
@@ -202,17 +205,17 @@ function WarehouseDialog({
               checked={form.isDefault}
               onCheckedChange={(checked) => setForm({ ...form, isDefault: checked === true })}
             />
-            Magasin par défaut des documents
+            {t("warehouses.isDefault")}
           </label>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
+              {t("common:actions.cancel")}
             </Button>
             <Button
               type="submit"
               disabled={mutation.isPending || !form.code.trim() || !form.name.trim()}
             >
-              Enregistrer
+              {t("common:actions.save")}
             </Button>
           </DialogFooter>
         </form>

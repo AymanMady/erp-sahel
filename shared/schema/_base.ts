@@ -1,45 +1,45 @@
 /**
- * Briques communes à toutes les tables du schéma.
+ * Building blocks shared by every table of the schema.
  *
- * Conventions non négociables (cf. `docs/ARCHITECTURE.md`) :
- *  - **UUID en clé primaire** partout ([NFR-DATA-1]) : le client hors-ligne génère ses
- *    propres identifiants, ils doivent être acceptables tels quels par le serveur.
- *  - **`company_id` sur toute entité tenant-scoped** ([BR-13]) : l'isolation est une
- *    colonne, pas une convention d'usage.
- *  - **Montants en centimes entiers**, **taux en points de base** (voir `shared/money.ts`).
- *  - **Soft-delete** via `is_active` sur les référentiels ; les documents comptables ne
- *    sont jamais supprimés ([BR-10], [NFR-DATA-2]).
- *  - **`client_uuid` unique** sur les entités synchronisables : c'est la clé d'idempotence
- *    qui garantit « synchronisé exactement une fois » ([BR-8]).
+ * Non-negotiable conventions (see `docs/ARCHITECTURE.md`):
+ *  - **UUID primary keys** everywhere ([NFR-DATA-1]): the offline client generates its
+ *    own identifiers, and the server must accept them as they are.
+ *  - **`company_id` on every tenant-scoped entity** ([BR-13]): isolation is a column,
+ *    not a usage convention.
+ *  - **Amounts in integer cents**, **rates in basis points** (see `shared/money.ts`).
+ *  - **Soft-delete** via `is_active` on master data; accounting documents are never
+ *    deleted ([BR-10], [NFR-DATA-2]).
+ *  - **Unique `client_uuid`** on syncable entities: it is the idempotency key that
+ *    guarantees "synced exactly once" ([BR-8]).
  */
 
 import { boolean, integer, numeric, timestamp, uuid } from "drizzle-orm/pg-core";
 
-/** Horodatage de création/modification présent sur toutes les tables. */
+/** Creation/update timestamps present on every table. */
 export const auditTimestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 };
 
-/** Colonnes de base d'une entité : identité, horodatage, soft-delete. */
+/** Base columns of an entity: identity, timestamps, soft-delete. */
 export const baseColumns = {
   id: uuid("id").primaryKey().defaultRandom(),
   ...auditTimestamps,
   isActive: boolean("is_active").default(true).notNull(),
 };
 
-/** Quantité stockée avec 3 décimales ; côté JS c'est une `string` (jamais un float). */
+/** Quantity stored with 3 decimals; on the JS side it is a `string` (never a float). */
 export const quantity = (name: string) => numeric(name, { precision: 16, scale: 3 });
 
-/** Montant en centimes entiers. `bigint` non nécessaire : 2^31 centimes ≈ 21 M d'unités. */
+/** Amount in integer cents. `bigint` not needed: 2^31 cents ≈ 21 M units. */
 export const moneyCents = (name: string) => integer(name);
 
-/** Taux en points de base (16 % ⇒ 1600). */
+/** Rate in basis points (16 % ⇒ 1600). */
 export const rateBp = (name: string) => integer(name);
 
 /**
- * Clé d'idempotence des opérations créées hors-ligne.
- * `null` pour les entités créées en ligne — la contrainte d'unicité partielle
- * (`WHERE client_uuid IS NOT NULL`) est posée dans la migration.
+ * Idempotency key of operations created offline.
+ * `null` for entities created online — the partial unique constraint
+ * (`WHERE client_uuid IS NOT NULL`) is defined in the migration.
  */
 export const clientUuid = () => uuid("client_uuid");

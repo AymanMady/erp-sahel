@@ -1,4 +1,4 @@
-/** Fiche d'une commande fournisseur : réception et facturation. */
+/** Purchase order detail: receiving and invoicing. */
 
 import { useState } from "react";
 import {
@@ -10,9 +10,10 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "wouter";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 import { normalizeQuantity } from "@shared/money";
-import { todayInput } from "@shared/format";
+import { formatDate, todayInput } from "@shared/format";
 import { errorMessage } from "@/shared/api/api-error";
 import { purchasingApi } from "@/entities/purchasing/api";
 import { queryKeys } from "@/shared/api/query-client";
@@ -38,6 +39,7 @@ import { Skeleton } from "@/shared/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
 
 export default function PurchaseOrderDetailPage() {
+  const { t } = useTranslation("purchasing");
   const params = useParams<{ id: string }>();
   const queryClient = useQueryClient();
   const { can } = useSession();
@@ -73,7 +75,7 @@ export default function PurchaseOrderDetailPage() {
         })),
       }),
     onSuccess: () => {
-      toast.success("Facture fournisseur enregistrée et comptabilisée.");
+      toast.success(t("orderDetail.invoiceCreated"));
       void queryClient.invalidateQueries({ queryKey: ["supplier-invoices"] });
     },
     onError: (mutationError) => toast.error(errorMessage(mutationError)),
@@ -84,7 +86,7 @@ export default function PurchaseOrderDetailPage() {
     return (
       <Card>
         <CardContent className="py-10 text-center text-sm text-muted-foreground">
-          {error ? errorMessage(error) : "Commande introuvable."}
+          {error ? errorMessage(error) : t("orderDetail.notFound")}
         </CardContent>
       </Card>
     );
@@ -97,36 +99,36 @@ export default function PurchaseOrderDetailPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`Commande ${data.number}`}
+        title={t("orderDetail.title", { number: data.number })}
         description={data.supplierName}
         className="print-hidden"
       >
         <Button variant="outline" asChild>
           <Link href="/purchase-orders">
-            <IconArrowLeft className="size-4" />
-            Retour
+            <IconArrowLeft className="size-4 rtl:rotate-180" />
+            {t("common:actions.back")}
           </Link>
         </Button>
         <Button variant="outline" onClick={() => window.print()}>
           <IconPrinter className="size-4" />
-          Imprimer
+          {t("common:actions.print")}
         </Button>
         {can("purchasing.write") && !fullyReceived ? (
           <Button onClick={() => setReceiveOpen(true)}>
             <IconPackageImport className="size-4" />
-            Réceptionner
+            {t("orderDetail.receive")}
           </Button>
         ) : null}
         {can("purchasing.write") ? (
           <Button variant="outline" onClick={() => invoice.mutate()} disabled={invoice.isPending}>
             <IconFileInvoice className="size-4" />
-            Facture fournisseur
+            {t("orderDetail.supplierInvoice")}
           </Button>
         ) : null}
       </PageHeader>
 
       <DocumentView
-        title="Commande d'achat"
+        title={t("orderDetail.documentTitle")}
         number={data.number}
         date={data.date}
         dueDate={data.expectedDate}
@@ -151,15 +153,15 @@ export default function PurchaseOrderDetailPage() {
 
       <Card className="print-hidden">
         <CardContent className="space-y-3 pt-6">
-          <p className="text-sm font-medium">Avancement des réceptions</p>
+          <p className="text-sm font-medium">{t("orderDetail.receiptProgress")}</p>
           <div className="overflow-x-auto rounded-md border">
             <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow className="bg-muted/40">
-                  <TableHead>Article</TableHead>
-                  <TableHead className="text-end">Commandé</TableHead>
-                  <TableHead className="text-end">Reçu</TableHead>
-                  <TableHead className="text-end">Reste</TableHead>
+                  <TableHead>{t("orderDetail.item")}</TableHead>
+                  <TableHead className="text-end">{t("orderDetail.ordered")}</TableHead>
+                  <TableHead className="text-end">{t("orderDetail.received")}</TableHead>
+                  <TableHead className="text-end">{t("orderDetail.remaining")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -193,11 +195,11 @@ export default function PurchaseOrderDetailPage() {
 
           {(receipts?.length ?? 0) > 0 ? (
             <div className="space-y-1">
-              <p className="text-sm font-medium">Bons de réception</p>
+              <p className="text-sm font-medium">{t("orderDetail.receipts")}</p>
               {receipts?.map((receipt) => (
                 <div key={receipt.id} className="rounded-md border px-3 py-2 text-sm">
                   <span className="tabular font-medium">{receipt.number}</span>
-                  <span className="ms-2 text-muted-foreground">{receipt.date}</span>
+                  <span className="ms-2 text-muted-foreground">{formatDate(receipt.date)}</span>
                 </div>
               ))}
             </div>
@@ -242,6 +244,7 @@ function ReceiveDialog({
   };
   onDone: () => void;
 }) {
+  const { t } = useTranslation("purchasing");
   const [date, setDate] = useState(todayInput());
   const [lines, setLines] = useState(() =>
     order.lines
@@ -250,7 +253,7 @@ function ReceiveDialog({
         purchaseOrderLineId: line.id,
         productId: line.productId as string,
         description: line.description,
-        // Par défaut, on propose la quantité restante — le geste le plus fréquent.
+        // Default to the remaining quantity — the most common action.
         quantity: String(
           Math.max(0, normalizeQuantity(line.quantity) - normalizeQuantity(line.receivedQuantity))
         ),
@@ -277,7 +280,7 @@ function ReceiveDialog({
           })),
       }),
     onSuccess: () => {
-      toast.success("Réception validée : stock mis à jour.");
+      toast.success(t("receiveDialog.validated"));
       onDone();
       onOpenChange(false);
     },
@@ -288,14 +291,11 @@ function ReceiveDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Réception de marchandise</DialogTitle>
-          <DialogDescription>
-            Les quantités saisies entrent en stock au coût indiqué et alimentent le coût moyen
-            pondéré.
-          </DialogDescription>
+          <DialogTitle>{t("receiveDialog.title")}</DialogTitle>
+          <DialogDescription>{t("receiveDialog.description")}</DialogDescription>
         </DialogHeader>
 
-        <Field label="Date de réception">
+        <Field label={t("receiveDialog.receiptDate")}>
           <Input type="date" value={date} onChange={(event) => setDate(event.target.value)} />
         </Field>
 
@@ -303,10 +303,10 @@ function ReceiveDialog({
           <Table className="min-w-[560px]">
             <TableHeader>
               <TableRow className="bg-muted/40">
-                <TableHead>Article</TableHead>
-                <TableHead className="w-28 text-end">Quantité</TableHead>
-                <TableHead className="w-32 text-end">Coût unitaire</TableHead>
-                <TableHead className="w-32">Lot</TableHead>
+                <TableHead>{t("orderDetail.item")}</TableHead>
+                <TableHead className="w-28 text-end">{t("common:labels.quantity")}</TableHead>
+                <TableHead className="w-32 text-end">{t("receiveDialog.unitCost")}</TableHead>
+                <TableHead className="w-32">{t("receiveDialog.lot")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -349,7 +349,7 @@ function ReceiveDialog({
                           )
                         )
                       }
-                      placeholder="optionnel"
+                      placeholder={t("receiveDialog.optional")}
                     />
                   </TableCell>
                 </TableRow>
@@ -359,7 +359,7 @@ function ReceiveDialog({
         </div>
 
         <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Valeur réceptionnée</span>
+          <span className="text-muted-foreground">{t("receiveDialog.receivedValue")}</span>
           <Money
             cents={lines.reduce(
               (sum, line) => sum + Math.round(Number(line.quantity) * line.unitCostCents),
@@ -371,13 +371,13 @@ function ReceiveDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
+            {t("common:actions.cancel")}
           </Button>
           <Button
             onClick={() => mutation.mutate()}
             disabled={mutation.isPending || lines.every((line) => Number(line.quantity) <= 0)}
           >
-            Valider la réception
+            {t("receiveDialog.submit")}
           </Button>
         </DialogFooter>
       </DialogContent>

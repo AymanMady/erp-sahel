@@ -1,8 +1,8 @@
 /**
- * Gardes HTTP : authentification et autorisation RBAC.
+ * HTTP guards: authentication and RBAC authorization.
  *
- * Ces trois gardes sont la **seule** barrière qui compte : le client masque des écrans
- * par confort, le serveur refuse par contrat ([NFR-SEC-2], [BR-12], [FR-PLAT-4]).
+ * These three guards are the **only** barrier that matters: the client hides screens
+ * for convenience, the server refuses by contract ([NFR-SEC-2], [BR-12], [FR-PLAT-4]).
  */
 
 import type { NextFunction, Request, RequestHandler, Response } from "express";
@@ -11,11 +11,11 @@ import { hasAllPermissions, hasAnyPermission, type PermissionCode } from "@share
 import { ForbiddenError, UnauthorizedError } from "../../shared/errors/app-error";
 import { bearerToken, verifyAccessToken } from "./tokens";
 
-/** Renseigne `req.auth` à partir du jeton ; échoue si le jeton manque ou est invalide. */
+/** Populates `req.auth` from the token; fails if the token is missing or invalid. */
 export function requireAuth(req: Request, _res: Response, next: NextFunction): void {
   const token = bearerToken(req.headers.authorization);
   if (!token) {
-    next(new UnauthorizedError("Authentification requise"));
+    next(new UnauthorizedError("Authentication required"));
     return;
   }
   const claims = verifyAccessToken(token);
@@ -32,8 +32,8 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction): v
 }
 
 /**
- * Authentification facultative : renseigne `req.auth` si un jeton valide est présent,
- * mais laisse passer sinon (pages publiques, `/api/health`).
+ * Optional authentication: populates `req.auth` when a valid token is present,
+ * but lets the request through otherwise (public pages, `/api/health`).
  */
 export function optionalAuth(req: Request, _res: Response, next: NextFunction): void {
   const token = bearerToken(req.headers.authorization);
@@ -49,9 +49,9 @@ export function optionalAuth(req: Request, _res: Response, next: NextFunction): 
 }
 
 export interface AuthorizeOptions {
-  /** Au moins une de ces permissions suffit. */
+  /** Any one of these permissions is enough. */
   anyPermission?: PermissionCode[];
-  /** Toutes ces permissions sont exigées. */
+  /** All of these permissions are required. */
   allPermissions?: PermissionCode[];
 }
 
@@ -59,7 +59,7 @@ export function authorize(options: AuthorizeOptions): RequestHandler {
   return (req, _res, next) => {
     const auth = req.auth;
     if (!auth) {
-      next(new UnauthorizedError("Authentification requise"));
+      next(new UnauthorizedError("Authentication required"));
       return;
     }
     if (auth.isSuperuser) {
@@ -67,32 +67,32 @@ export function authorize(options: AuthorizeOptions): RequestHandler {
       return;
     }
     if (options.anyPermission && !hasAnyPermission(auth.permissions, options.anyPermission)) {
-      next(new ForbiddenError("Vous n'avez pas la permission d'effectuer cette action."));
+      next(new ForbiddenError("You do not have permission to perform this action."));
       return;
     }
     if (options.allPermissions && !hasAllPermissions(auth.permissions, options.allPermissions)) {
-      next(new ForbiddenError("Vous n'avez pas la permission d'effectuer cette action."));
+      next(new ForbiddenError("You do not have permission to perform this action."));
       return;
     }
     next();
   };
 }
 
-/** Réservé aux super-administrateurs plateforme. */
+/** Restricted to platform super-administrators. */
 export function requireSuperuser(req: Request, _res: Response, next: NextFunction): void {
   if (!req.auth) {
-    next(new UnauthorizedError("Authentification requise"));
+    next(new UnauthorizedError("Authentication required"));
     return;
   }
   if (!req.auth.isSuperuser) {
-    next(new ForbiddenError("Action réservée à l'administration de la plateforme."));
+    next(new ForbiddenError("This action is restricted to platform administrators."));
     return;
   }
   next();
 }
 
-/** Raccourci typé pour les contrôleurs : `req.auth` est garanti après `requireAuth`. */
+/** Typed shortcut for controllers: `req.auth` is guaranteed after `requireAuth`. */
 export function authOf(req: Request) {
-  if (!req.auth) throw new UnauthorizedError("Authentification requise");
+  if (!req.auth) throw new UnauthorizedError("Authentication required");
   return req.auth;
 }

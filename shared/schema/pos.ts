@@ -1,9 +1,9 @@
 /**
- * Point de vente : caisses et sessions [FR-POS-1], [FR-POS-2].
+ * Point of sale: registers and sessions [FR-POS-1], [FR-POS-2].
  *
- * Un ticket POS **est** une facture de vente (`sales_invoices.source = 'POS'`) : la
- * chaîne stock → comptabilité est alors strictement identique à celle du back-office,
- * ce qui évite un second circuit comptable à maintenir.
+ * A POS ticket **is** a sales invoice (`sales_invoices.source = 'POS'`): the
+ * stock → accounting chain is then strictly identical to the back-office one, which
+ * avoids maintaining a second accounting pipeline.
  */
 
 import { boolean, index, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
@@ -26,7 +26,7 @@ export const posRegisters = pgTable(
     warehouseId: uuid("warehouse_id")
       .notNull()
       .references(() => warehouses.id, { onDelete: "cascade" }),
-    /** Compte de trésorerie crédité par les encaissements espèces de cette caisse. */
+    /** Cash account credited by this register's cash receipts. */
     cashAccountId: uuid("cash_account_id").references(() => bankAccounts.id, {
       onDelete: "set null",
     }),
@@ -55,11 +55,11 @@ export const posSessions = pgTable(
       .references(() => users.id),
     openedAt: timestamp("opened_at", { withTimezone: true }).defaultNow().notNull(),
     closedAt: timestamp("closed_at", { withTimezone: true }),
-    /** Fond de caisse déclaré à l'ouverture. */
+    /** Opening float declared when the session opens. */
     openingBalanceCents: moneyCents("opening_balance_cents").default(0).notNull(),
-    /** Montant physiquement compté à la clôture. */
+    /** Amount physically counted at closing. */
     closingBalanceCents: moneyCents("closing_balance_cents").default(0).notNull(),
-    /** Fond + encaissements espèces : ce que la caisse *devrait* contenir. */
+    /** Float + cash receipts: what the register *should* contain. */
     expectedBalanceCents: moneyCents("expected_balance_cents").default(0).notNull(),
     totalSalesCents: moneyCents("total_sales_cents").default(0).notNull(),
     totalCashCents: moneyCents("total_cash_cents").default(0).notNull(),

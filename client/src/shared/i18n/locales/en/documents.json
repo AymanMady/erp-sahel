@@ -1,0 +1,47 @@
+{
+  "view": {
+    "currency": "Currency: {{currency}}",
+    "date": "Date: {{date}}",
+    "dueDate": "Due date: {{date}}",
+    "recipient": "Bill to",
+    "columns": {
+      "description": "Description",
+      "origin": "Origin",
+      "quantity": "Qty",
+      "unitPriceExclTax": "Unit price excl. tax"
+    },
+    "alreadyPaid": "Already paid",
+    "amountDue": "Amount due"
+  },
+  "vat": "VAT",
+  "vatRate": "VAT {{rate}} %",
+  "lineEditor": {
+    "columns": {
+      "description": "Description"
+    },
+    "empty": "No lines. Add an item or a service.",
+    "descriptionPlaceholder": "Line description",
+    "removeLine": "Remove line",
+    "addItem": "Add an item",
+    "freeLine": "Free-text line",
+    "globalDiscount": "Overall discount"
+  },
+  "productPicker": {
+    "title": "Add a line",
+    "description": "Price and VAT rate are taken from the catalog; you can still change them.",
+    "searchPlaceholder": "Item or service…",
+    "service": "service",
+    "stock": "stock {{quantity}}"
+  },
+  "partyPicker": {
+    "selectCustomer": "Select a customer",
+    "chooseCustomer": "Choose a customer",
+    "chooseSupplier": "Choose a supplier",
+    "newParty": "New contact",
+    "noResults": "No contact found."
+  },
+  "units": {
+    "unit": "unit",
+    "service": "service"
+  }
+}

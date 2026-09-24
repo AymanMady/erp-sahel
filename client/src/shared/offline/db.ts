@@ -1,14 +1,14 @@
 /**
- * Base locale IndexedDB (Dexie) — persistance hors-ligne du poste.
+ * Local IndexedDB database (Dexie) — offline persistence on the device.
  *
- * Trois usages, et seulement trois ([NFR-SEC-5] : périmètre minimal) :
- *  1. `outbox` — opérations créées hors ligne, en attente de remontée ([FR-SYNC-2]) ;
- *  2. `cache` — instantané de lecture (catalogue, tiers, stock) pour continuer à
- *     vendre sans réseau ([FR-SYNC-1]) ;
- *  3. `meta` — curseur de synchronisation et compteurs locaux.
+ * Three uses, and only three ([NFR-SEC-5]: minimal scope):
+ *  1. `outbox` — operations created offline, waiting to be uploaded ([FR-SYNC-2]);
+ *  2. `cache` — read snapshot (catalog, parties, stock) to keep selling without
+ *     network ([FR-SYNC-1]);
+ *  3. `meta` — synchronization cursor and local counters.
  *
- * IndexedDB survit à la fermeture du navigateur : c'est ce qui satisfait l'exigence
- * « fermer puis rouvrir → les données sont toujours là » ([FR-SYNC-3], §16.3 CDC).
+ * IndexedDB survives closing the browser: this is what satisfies the requirement
+ * "close then reopen → the data is still there" ([FR-SYNC-3], §16.3 of the spec).
  */
 
 import Dexie, { type Table } from "dexie";
@@ -18,35 +18,35 @@ import type { SyncEntity } from "@shared/sync-protocol";
 export type OutboxStatus = "pending" | "sending" | "synced" | "error" | "deferred";
 
 /**
- * Écriture HTTP quelconque mise en file hors ligne et rejouée telle quelle
- * (`offline-http.ts`) — pour tous les formulaires sans opération de synchronisation
- * dédiée. Entité locale au poste : elle ne transite jamais par `/api/sync/push`.
+ * Any HTTP write queued offline and replayed as is (`offline-http.ts`) — for every
+ * form without a dedicated synchronization operation. Device-local entity: it never
+ * goes through `/api/sync/push`.
  */
 export const HTTP_REQUEST_ENTITY = "http.request";
 
 export type OutboxEntity = SyncEntity | typeof HTTP_REQUEST_ENTITY;
 
 export interface OutboxRecord {
-  /** Clé d'idempotence générée sur le poste ([BR-8]). */
+  /** Idempotency key generated on the device ([BR-8]). */
   clientUuid: string;
-  /** Compteur monotone local : garantit l'ordre causal du rejeu (`SYNC_STRATEGY.md` §4). */
+  /** Local monotonic counter: guarantees the causal order of replay (`SYNC_STRATEGY.md` §4). */
   localSeq: number;
   entity: OutboxEntity;
   action: "create" | "update";
   payload: Record<string, unknown>;
-  /** `clientUuid` des opérations dont celle-ci dépend. */
+  /** `clientUuid` of the operations this one depends on. */
   dependsOn: string[];
   status: OutboxStatus;
   attempts: number;
   lastError: string | null;
-  /** Numéro provisoire affiché tant que le serveur n'a pas attribué le définitif. */
+  /** Provisional number shown until the server assigns the final one. */
   provisionalNumber: string | null;
-  /** Numéro légal renvoyé par le serveur à l'acquittement. */
+  /** Legal number returned by the server on acknowledgement. */
   assignedNumber: string | null;
   serverId: string | null;
   createdAt: string;
   updatedAt: string;
-  /** Résumé lisible pour l'écran « opérations en attente ». */
+  /** Readable summary for the "pending operations" screen. */
   label: string;
   amountCents: number | null;
 }
@@ -80,8 +80,8 @@ class ErpOfflineDatabase extends Dexie {
 export const offlineDb = new ErpOfflineDatabase();
 
 /**
- * Vrai si IndexedDB est utilisable. En navigation privée stricte, ou avec le stockage
- * bloqué, l'application doit rester fonctionnelle **en ligne** plutôt que de planter.
+ * True if IndexedDB is usable. In strict private browsing, or with storage blocked,
+ * the app must remain functional **online** rather than crash.
  */
 export async function isOfflineStorageAvailable(): Promise<boolean> {
   try {
@@ -93,8 +93,8 @@ export async function isOfflineStorageAvailable(): Promise<boolean> {
 }
 
 /**
- * Demande la persistance du stockage au navigateur : sans elle, le système peut
- * évincer IndexedDB sous pression disque — et avec lui des ventes non synchronisées.
+ * Asks the browser for persistent storage: without it, the system may evict
+ * IndexedDB under disk pressure — and unsynchronized sales along with it.
  */
 export async function requestPersistentStorage(): Promise<boolean> {
   try {
@@ -106,7 +106,7 @@ export async function requestPersistentStorage(): Promise<boolean> {
   }
 }
 
-/** Purge complète du stockage local — à la déconnexion ([NFR-SEC-5]). */
+/** Full purge of local storage — on logout ([NFR-SEC-5]). */
 export async function clearOfflineStorage(): Promise<void> {
   try {
     await offlineDb.transaction(
@@ -117,12 +117,12 @@ export async function clearOfflineStorage(): Promise<void> {
       async () => {
         await offlineDb.cache.clear();
         await offlineDb.meta.clear();
-        // L'outbox n'est **pas** purgée : des ventes non synchronisées ne doivent
-        // jamais disparaître parce qu'un utilisateur s'est déconnecté.
+        // The outbox is **not** purged: unsynchronized sales must never
+        // disappear because a user logged out.
       }
     );
   } catch {
-    // Rien à purger si le stockage n'est pas disponible.
+    // Nothing to purge if storage is unavailable.
   }
 }
 
@@ -138,7 +138,7 @@ export async function setMeta(key: string, value: string): Promise<void> {
   try {
     await offlineDb.meta.put({ key, value });
   } catch {
-    // Stockage indisponible : la valeur sera simplement recalculée.
+    // Storage unavailable: the value will simply be recomputed.
   }
 }
 
@@ -155,6 +155,6 @@ export async function setCache(key: string, value: unknown): Promise<void> {
   try {
     await offlineDb.cache.put({ key, value, updatedAt: new Date().toISOString() });
   } catch {
-    // Idem : l'absence de cache dégrade l'expérience hors ligne, sans casser l'app.
+    // Same: a missing cache degrades the offline experience without breaking the app.
   }
 }

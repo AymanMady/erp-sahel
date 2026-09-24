@@ -1,9 +1,9 @@
 /**
- * Types de réponse de l'API, dérivés du schéma partagé.
+ * API response types, derived from the shared schema.
  *
- * Réutiliser `@shared/schema` plutôt que redéclarer des interfaces côté client garantit
- * qu'un changement de colonne casse la compilation du client — et non silencieusement
- * son affichage.
+ * Reusing `@shared/schema` rather than redeclaring interfaces on the client ensures
+ * that a column change breaks the client build — rather than silently breaking its
+ * display.
  */
 
 import type {
@@ -74,7 +74,7 @@ export type {
   Warehouse,
 } from "@shared/schema";
 
-/** Enveloppe de liste paginée renvoyée par toutes les listes de l'API. */
+/** Paginated list envelope returned by every API list. */
 export interface Paginated<T> {
   items: T[];
   total: number;

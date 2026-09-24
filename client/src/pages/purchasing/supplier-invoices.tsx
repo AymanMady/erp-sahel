@@ -1,7 +1,8 @@
-/** Factures fournisseurs : dette et TVA récupérable. */
+/** Supplier invoices: payables and recoverable VAT. */
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import { formatDate } from "@shared/format";
 import { errorMessage } from "@/shared/api/api-error";
@@ -14,6 +15,7 @@ import { ResourceTable, type Column } from "@/shared/components/resource-table";
 import { StatusBadge } from "@/shared/components/status-badge";
 
 export default function SupplierInvoicesPage() {
+  const { t } = useTranslation("purchasing");
   const [page] = useState({ limit: 25, offset: 0 });
 
   const { data, isLoading, error } = useQuery({
@@ -24,31 +26,35 @@ export default function SupplierInvoicesPage() {
   const columns: Column<SupplierInvoice & { supplierName: string }>[] = [
     {
       id: "number",
-      header: "Numéro",
+      header: t("common:labels.number"),
       cell: (row) => <span className="tabular font-medium">{row.number}</span>,
     },
     {
       id: "reference",
-      header: "Réf. fournisseur",
+      header: t("supplierInvoices.supplierReference"),
       hideOnMobile: true,
       cell: (row) => <span className="tabular text-sm">{row.supplierReference || "—"}</span>,
     },
-    { id: "date", header: "Date", cell: (row) => formatDate(row.date) },
+    { id: "date", header: t("common:labels.date"), cell: (row) => formatDate(row.date) },
     {
       id: "supplier",
-      header: "Fournisseur",
+      header: t("common:labels.supplier"),
       cell: (row) => <span className="font-medium">{row.supplierName}</span>,
     },
     {
       id: "due",
-      header: "Échéance",
+      header: t("common:labels.dueDate"),
       hideOnMobile: true,
       cell: (row) => (row.dueDate ? formatDate(row.dueDate) : "—"),
     },
-    { id: "status", header: "Statut", cell: (row) => <StatusBadge status={row.status} /> },
+    {
+      id: "status",
+      header: t("common:labels.status"),
+      cell: (row) => <StatusBadge status={row.status} />,
+    },
     {
       id: "total",
-      header: "Total TTC",
+      header: t("common:labels.totalInclTax"),
       align: "end",
       cell: (row) => <Money cents={row.totalTtcCents} />,
     },
@@ -57,8 +63,8 @@ export default function SupplierInvoicesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Factures fournisseurs"
-        description="Dettes enregistrées et TVA déductible associée."
+        title={t("supplierInvoices.title")}
+        description={t("supplierInvoices.description")}
       />
       <ResourceTable
         columns={columns}
@@ -66,8 +72,8 @@ export default function SupplierInvoicesPage() {
         rowKey={(row) => row.id}
         loading={isLoading}
         error={error ? errorMessage(error) : null}
-        emptyTitle="Aucune facture fournisseur"
-        emptyDescription="Elles se créent depuis une commande d'achat réceptionnée."
+        emptyTitle={t("supplierInvoices.emptyTitle")}
+        emptyDescription={t("supplierInvoices.emptyDescription")}
         minWidthClassName="min-w-[860px]"
       />
     </div>

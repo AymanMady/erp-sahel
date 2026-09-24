@@ -1,8 +1,8 @@
 {
   "name": "ERP Sahel",
   "short_name": "ERP Sahel",
-  "description": "Gestion commerciale, stock, caisse et comptabilité — fonctionne hors ligne.",
-  "lang": "fr",
+  "description": "Sales, inventory, point of sale and accounting — works offline.",
+  "lang": "en",
   "dir": "ltr",
   "start_url": "/",
   "scope": "/",
@@ -17,8 +17,8 @@
     { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "Caisse", "short_name": "Caisse", "url": "/pos", "description": "Ouvrir le point de vente" },
-    { "name": "Factures", "short_name": "Factures", "url": "/invoices" },
+    { "name": "Point of sale", "short_name": "POS", "url": "/pos", "description": "Open the point of sale" },
+    { "name": "Invoices", "short_name": "Invoices", "url": "/invoices" },
     { "name": "Stock", "short_name": "Stock", "url": "/inventory" }
   ]
 }

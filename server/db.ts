@@ -1,10 +1,10 @@
 /**
- * Connexion PostgreSQL et instance Drizzle partagées par tout le serveur.
+ * PostgreSQL connection and Drizzle instance shared by the whole server.
  *
- * Un seul pool pour le processus : les repositories reçoivent soit `db`, soit le
- * `tx` d'une transaction en cours (type `Database`), ce qui permet à une application
- * d'enchaîner plusieurs repositories **dans la même transaction** — indispensable pour
- * « facture + stock + écriture comptable, ou rien » ([BR-6], [BR-7]).
+ * A single pool per process: repositories receive either `db` or the `tx` of an
+ * ongoing transaction (type `Database`), which lets an application chain several
+ * repositories **within the same transaction** — essential for "invoice + stock +
+ * journal entry, or nothing" ([BR-6], [BR-7]).
  */
 
 import "dotenv/config";
@@ -17,14 +17,14 @@ import * as schema from "@shared/schema";
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
   throw new Error(
-    "DATABASE_URL est absent. Copiez .env.example vers .env puis renseignez la chaîne PostgreSQL."
+    "DATABASE_URL is missing. Copy .env.example to .env and fill in the PostgreSQL connection string."
   );
 }
 
 /**
- * `numeric` est renvoyé en `string` par `pg` pour préserver la précision. On garde ce
- * comportement : les quantités transitent en chaîne et ne sont converties qu'au calcul
- * (`normalizeQuantity`). Les montants, eux, sont des entiers — aucun risque.
+ * `numeric` is returned as a `string` by `pg` to preserve precision. We keep that
+ * behavior: quantities travel as strings and are only converted when computing
+ * (`normalizeQuantity`). Amounts are integers — no risk there.
  */
 export const pool = new pg.Pool({
   connectionString,
@@ -34,20 +34,20 @@ export const pool = new pg.Pool({
 });
 
 pool.on("error", (error) => {
-  console.error("[db] erreur inattendue du pool PostgreSQL", error);
+  console.error("[db] unexpected PostgreSQL pool error", error);
 });
 
 export const db = drizzle(pool, { schema });
 
-/** Type accepté par les repositories : le pool, ou une transaction en cours. */
+/** Type accepted by repositories: the pool, or an ongoing transaction. */
 export type Database = NodePgDatabase<typeof schema>;
 
-/** Exécute un bloc dans une transaction ; toute exception provoque le rollback. */
+/** Runs a block in a transaction; any exception triggers a rollback. */
 export async function runInTransaction<T>(fn: (tx: Database) => Promise<T>): Promise<T> {
   return db.transaction(async (tx) => fn(tx as Database));
 }
 
-/** Reconnaît une panne de connectivité pour répondre 503 plutôt que 500. */
+/** Detects a connectivity failure to answer 503 rather than 500. */
 export function isDatabaseConnectivityError(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
   const code = (error as { code?: string }).code;

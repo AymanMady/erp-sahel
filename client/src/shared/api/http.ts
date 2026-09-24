@@ -1,12 +1,12 @@
 /**
- * Client HTTP de l'application.
+ * Application HTTP client.
  *
- * Responsabilités : jeton d'accès, **rafraîchissement automatique** sur 401 (une seule
- * fois, avec dédoublonnage des appels concurrents), normalisation des erreurs,
- * signalement de l'état réseau au détecteur de connectivité, et **mode hors ligne** :
- *  - une lecture sans réseau est servie par le cache local (`http-cache.ts`) ;
- *  - une écriture sans réseau est mise en file et rejouée à la synchronisation
- *    (`offline-http.ts`), avec une clé d'idempotence qui interdit tout doublon.
+ * Responsibilities: access token, **automatic refresh** on 401 (only once, with
+ * de-duplication of concurrent calls), error normalization, reporting the network
+ * state to the connectivity detector, and **offline mode**:
+ *  - a read without network is served from the local cache (`http-cache.ts`);
+ *  - a write without network is queued and replayed at synchronization
+ *    (`offline-http.ts`), with an idempotency key that rules out any duplicate.
  */
 
 import {
@@ -19,14 +19,15 @@ import {
 import { devicePlatform } from "@/shared/desktop/desktop";
 import { readCachedResponse, storeCachedResponse } from "@/shared/offline/http-cache";
 import { isQueueableWrite, queueHttpWrite } from "@/shared/offline/offline-http";
+import { currentLanguage, i18n } from "@/shared/i18n";
 import { newUuid } from "@/shared/offline/outbox";
 import { ApiError } from "./api-error";
 import { reportNetworkResult } from "./network";
 
 /**
- * Paramètres de requête. Typé `object` plutôt que `Record<string, …>` : une interface
- * déclarée (ex. `InvoiceFilters`) n'a pas de signature d'index et ne serait pas
- * assignable à un `Record`. La conversion en chaîne est faite ici.
+ * Query parameters. Typed `object` rather than `Record<string, …>`: a declared
+ * interface (e.g. `InvoiceFilters`) has no index signature and would not be
+ * assignable to a `Record`. String conversion is done here.
  */
 export type QueryParams = object;
 
@@ -35,23 +36,23 @@ export interface RequestOptions {
   body?: unknown;
   query?: QueryParams;
   signal?: AbortSignal;
-  /** N'ajoute pas le jeton (connexion, rafraîchissement, sonde de santé). */
+  /** Does not add the token (login, refresh, health probe). */
   anonymous?: boolean;
-  /** Ne tente pas de rafraîchir la session sur 401 (évite les boucles). */
+  /** Does not try to refresh the session on 401 (avoids loops). */
   skipRefresh?: boolean;
-  /** Clé d'idempotence d'une écriture ; générée automatiquement si absente. */
+  /** Idempotency key of a write; generated automatically when absent. */
   idempotencyKey?: string;
   /**
-   * `false` : sans réseau, l'écriture échoue au lieu d'être mise en file. Utilisé par
-   * le rejeu lui-même, et par les écrans qui ont leur propre file (`onlineOrQueued`).
+   * `false`: without network, the write fails instead of being queued. Used by the
+   * replay itself, and by screens that have their own queue (`onlineOrQueued`).
    */
   queueOffline?: boolean;
 }
 
 /**
- * Délais au-delà desquels le serveur est tenu pour injoignable. Sans eux, un poste
- * relié à un Wi-Fi dont la liaison Internet est coupée resterait bloqué de longues
- * minutes sur chaque requête, au lieu de basculer sur le mode hors ligne.
+ * Delays beyond which the server is considered unreachable. Without them, a device
+ * on a Wi-Fi whose Internet link is down would hang for long minutes on every
+ * request, instead of switching to offline mode.
  */
 const READ_TIMEOUT_MS = 15_000;
 const WRITE_TIMEOUT_MS = 30_000;
@@ -61,8 +62,8 @@ function buildUrl(path: string, query?: QueryParams): string {
   if (!query) return url;
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query as Record<string, unknown>)) {
-    // `null` et chaîne vide signifient « pas de filtre » : les transmettre
-    // ferait échouer les validations `uuid().nullish()` côté serveur.
+    // `null` and empty string mean "no filter": sending them would fail
+    // the server-side `uuid().nullish()` validations.
     if (value === undefined || value === null || value === "") continue;
     if (Array.isArray(value)) {
       for (const entry of value) params.append(key, String(entry));
@@ -87,32 +88,32 @@ async function parseError(response: Response): Promise<ApiError> {
       return new ApiError({
         status: response.status,
         code: body.code || "UNKNOWN_ERROR",
-        message: body.error || response.statusText || "La requête a échoué.",
+        message: body.error || response.statusText || i18n.t("offline:api.requestFailed"),
         details: body.details,
         requestId: body.requestId,
       });
     } catch {
-      // Corps illisible : on retombe sur le message générique ci-dessous.
+      // Unreadable body: fall back to the generic message below.
     }
   }
   return new ApiError({
     status: response.status,
     code: "UNKNOWN_ERROR",
-    message: response.statusText || "La requête a échoué.",
+    message: response.statusText || i18n.t("offline:api.requestFailed"),
   });
 }
 
 const GATEWAY_ERRORS = new Set([502, 503, 504]);
 
 /**
- * Rafraîchissement dédoublonné : si dix requêtes reçoivent 401 en même temps, une
- * seule demande un nouveau jeton et les neuf autres attendent le même résultat.
+ * De-duplicated refresh: if ten requests get a 401 at the same time, only one
+ * asks for a new token and the nine others wait for the same result.
  */
 let refreshInFlight: Promise<boolean> | null = null;
 
 /*
- * Exporté aussi pour les changements de droits (activation d'un module) : le jeton
- * d'accès porte les modules actifs, il doit être réémis pour que le serveur les voie.
+ * Also exported for permission changes (module activation): the access token
+ * carries the active modules, it must be reissued for the server to see them.
  */
 
 export async function refreshSession(): Promise<boolean> {
@@ -128,7 +129,7 @@ export async function refreshSession(): Promise<boolean> {
         body: JSON.stringify({ refreshToken }),
       });
       if (!response.ok) {
-        // Jeton révoqué ou expiré : la session est définitivement close.
+        // Revoked or expired token: the session is permanently closed.
         setAccessToken(null);
         setRefreshToken(null);
         return false;
@@ -141,7 +142,7 @@ export async function refreshSession(): Promise<boolean> {
       setRefreshToken(session.refreshToken);
       return true;
     } catch {
-      // Réseau coupé : on garde le jeton de rafraîchissement pour réessayer plus tard.
+      // Network down: keep the refresh token to try again later.
       return false;
     } finally {
       refreshInFlight = null;
@@ -155,11 +156,11 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   const { method = "GET", body, query, signal, anonymous, skipRefresh } = options;
 
   const url = buildUrl(path, query);
-  // Lectures authentifiées : conservées pour être réaffichées hors ligne.
+  // Authenticated reads: kept so they can be shown again offline.
   const offlineReadable = method === "GET" && !anonymous;
   const isWrite = method !== "GET" && !anonymous;
-  // Même clé au premier envoi et au rejeu : si la réponse s'est perdue en route, le
-  // serveur reconnaît l'écriture au lieu de la refaire.
+  // Same key on first send and on replay: if the response got lost on the way, the
+  // server recognizes the write instead of doing it again.
   const idempotencyKey = isWrite ? (options.idempotencyKey ?? newUuid()) : undefined;
   const offlineQueueable =
     isWrite && options.queueOffline !== false && isQueueableWrite(method, url);
@@ -170,6 +171,8 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       "X-Device-Id": getDeviceId(),
       "X-Device-Platform": devicePlatform(),
     };
+    // Server messages (errors, exports) come back in the UI language.
+    headers["Accept-Language"] = currentLanguage();
     if (body !== undefined) headers["Content-Type"] = "application/json";
     if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
     if (!anonymous) {
@@ -214,8 +217,8 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     response = await send();
     reportNetworkResult(true);
   } catch (error) {
-    // Annulation voulue par l'appelant : ce n'est pas une panne réseau. (Un
-    // dépassement de délai, lui, en est une.)
+    // Cancellation requested by the caller: not a network failure. (A timeout,
+    // however, is one.)
     if (signal?.aborted) throw error;
     reportNetworkResult(false);
     const fallback = await offlineFallback();
@@ -223,12 +226,12 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     throw new ApiError({
       status: 0,
       code: "NETWORK_ERROR",
-      message: "Serveur injoignable.",
+      message: i18n.t("offline:api.serverUnreachable"),
       isNetworkError: true,
     });
   }
 
-  // Passerelle joignable mais serveur indisponible : même repli que sans réseau.
+  // Gateway reachable but server unavailable: same fallback as without network.
   if (GATEWAY_ERRORS.has(response.status)) {
     const fallback = await offlineFallback();
     if (fallback) return fallback.value;

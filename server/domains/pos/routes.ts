@@ -1,4 +1,4 @@
-/** Routes du point de vente. */
+/** Point-of-sale routes. */
 
 import type { Express } from "express";
 

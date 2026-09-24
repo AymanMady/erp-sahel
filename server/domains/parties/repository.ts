@@ -1,4 +1,4 @@
-/** Persistance des tiers, de leurs contacts et de leurs adresses. */
+/** Persistence of parties, their contacts and their addresses. */
 
 import { and, asc, desc, eq, inArray, or, sql } from "drizzle-orm";
 
@@ -40,9 +40,9 @@ export class PartiesExtraRepository {
   }
 
   /**
-   * Prochain code disponible pour un type de tiers (`CLI-0001`, `FRN-0001`).
-   * Le calcul se fait en base pour rester correct malgré les créations concurrentes ;
-   * l'unicité reste garantie par la contrainte `uq_parties_company_code`.
+   * Next available code for a party type (`CLI-0001`, `FRN-0001`).
+   * Computed in the database to stay correct despite concurrent creations; uniqueness
+   * is still guaranteed by the `uq_parties_company_code` constraint.
    */
   async nextCode(companyId: string, prefix: string): Promise<string> {
     const [row] = await this.database
@@ -59,7 +59,7 @@ export class PartiesExtraRepository {
     return `${prefix}-${String((row?.maxSuffix ?? 0) + 1).padStart(4, "0")}`;
   }
 
-  /** Tiers jouant un rôle donné — `BOTH` compte à la fois comme client et fournisseur. */
+  /** Parties playing a given role — `BOTH` counts as both customer and supplier. */
   async listByRole(
     companyId: string,
     role: "CUSTOMER" | "SUPPLIER",
@@ -113,7 +113,7 @@ export class PartiesExtraRepository {
       );
   }
 
-  /** Historique des transactions d'un tiers ([FR-TIERS-5]). */
+  /** Transaction history of a party ([FR-TIERS-5]). */
   async transactionHistory(companyId: string, partyId: string, limit = 50) {
     const [invoices, settlements] = await Promise.all([
       this.database
@@ -147,7 +147,7 @@ export class PartiesExtraRepository {
     return { invoices, payments: settlements };
   }
 
-  /** Encours client : total facturé non réglé — pilote le contrôle de limite de crédit. */
+  /** Customer outstanding balance: total invoiced and unpaid — drives the credit limit check. */
   async outstandingBalanceCents(companyId: string, partyId: string): Promise<number> {
     const [row] = await this.database
       .select({

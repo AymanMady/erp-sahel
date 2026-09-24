@@ -1,18 +1,18 @@
 /**
- * File d'attente des opérations créées hors ligne (« outbox pattern »).
+ * Queue of operations created offline ("outbox pattern").
  *
- * Invariants :
- *  - chaque opération porte un `clientUuid` **généré ici** : c'est la clé d'idempotence
- *    qui garantit qu'un rejeu ne crée jamais de doublon ([BR-8], [FR-SYNC-4]) ;
- *  - `localSeq` est un compteur monotone persistant : il fixe l'ordre causal du rejeu,
- *    de sorte qu'un règlement ne soit jamais envoyé avant sa facture ;
- *  - rien n'est supprimé avant acquittement du serveur.
+ * Invariants:
+ *  - each operation carries a `clientUuid` **generated here**: it is the idempotency key
+ *    that guarantees a replay never creates a duplicate ([BR-8], [FR-SYNC-4]);
+ *  - `localSeq` is a persistent monotonic counter: it sets the causal order of replay,
+ *    so that a payment is never sent before its invoice;
+ *  - nothing is deleted before the server acknowledges it.
  */
 
 import { offlineDb, type OutboxEntity, type OutboxRecord, type OutboxStatus } from "./db";
 import { outboxStorage, readMeta, writeMeta } from "./storage";
 
-/** Statuts qui restent à traiter : « envoyé » et « synchronisé » en sont exclus. */
+/** Statuses still to process: "sending" and "synced" are excluded. */
 const PENDING_STATUSES: OutboxStatus[] = ["pending", "deferred", "error"];
 
 const SEQ_KEY = "outbox.localSeq";
@@ -26,7 +26,7 @@ function newUuid(): string {
   );
 }
 
-/** Alloue le prochain numéro de séquence local (persistant entre deux sessions). */
+/** Allocates the next local sequence number (persistent across sessions). */
 async function nextLocalSeq(): Promise<number> {
   const current = Number.parseInt((await readMeta(SEQ_KEY)) ?? "0", 10);
   const next = Number.isFinite(current) ? current + 1 : 1;
@@ -38,16 +38,16 @@ export interface EnqueueInput {
   entity: OutboxEntity;
   payload: Record<string, unknown>;
   dependsOn?: string[];
-  /** Résumé affiché dans la file d'attente (« Ticket TKT-0003 — 4 500 MRU »). */
+  /** Summary shown in the queue ("Ticket TKT-0003 — 4,500 MRU"), already translated. */
   label: string;
   amountCents?: number | null;
   provisionalNumber?: string | null;
-  /** Permet au POS de pré-générer l'identifiant pour lier facture et règlement. */
+  /** Lets the POS pre-generate the identifier to link invoice and payment. */
   clientUuid?: string;
   action?: OutboxRecord["action"];
 }
 
-/** Ajoute une opération à la file et renvoie son `clientUuid`. */
+/** Adds an operation to the queue and returns its record. */
 export async function enqueue(input: EnqueueInput): Promise<OutboxRecord> {
   const now = new Date().toISOString();
   const record: OutboxRecord = {
@@ -72,7 +72,7 @@ export async function enqueue(input: EnqueueInput): Promise<OutboxRecord> {
   return record;
 }
 
-/** Opérations restant à envoyer, dans l'ordre causal. */
+/** Operations still to send, in causal order. */
 export async function listPending(limit = 200): Promise<OutboxRecord[]> {
   return outboxStorage().pending(limit);
 }
@@ -105,9 +105,9 @@ export interface AckInput {
 }
 
 /**
- * Acquitte une opération.
- * Une opération `deferred` **reste dans la file** : elle sera rejouée au cycle suivant,
- * une fois sa dépendance ingérée (`SYNC_STRATEGY.md` §4).
+ * Acknowledges an operation.
+ * A `deferred` operation **stays in the queue**: it will be replayed on the next cycle,
+ * once its dependency has been ingested (`SYNC_STRATEGY.md` §4).
  */
 export async function acknowledge(ack: AckInput): Promise<void> {
   const record = await offlineDb.outbox.get(ack.clientUuid);
@@ -123,15 +123,15 @@ export async function acknowledge(ack: AckInput): Promise<void> {
 }
 
 /**
- * Purge les opérations acquittées de plus de N jours.
- * On les conserve un temps : elles portent la correspondance « numéro provisoire →
- * numéro définitif », utile à l'audit terrain après une coupure (`SYNC_STRATEGY.md` §6).
+ * Purges operations acknowledged more than N days ago.
+ * They are kept for a while: they hold the "provisional number → final number" mapping,
+ * useful for field audits after an outage (`SYNC_STRATEGY.md` §6).
  */
 export async function purgeSynced(olderThanDays = 7): Promise<number> {
   return outboxStorage().purgeSynced(olderThanDays);
 }
 
-/** Remet en file les opérations en erreur (bouton « Réessayer » de l'UI). */
+/** Requeues failed operations (the UI's "Retry" button). */
 export async function retryFailed(): Promise<number> {
   return offlineDb.outbox
     .where("status")
@@ -140,9 +140,9 @@ export async function retryFailed(): Promise<number> {
 }
 
 /**
- * Abandonne définitivement une opération en erreur.
- * Réservé à une décision explicite de l'utilisateur : supprimer une vente non
- * synchronisée est une perte de donnée, jamais une action automatique.
+ * Permanently discards a failed operation.
+ * Reserved for an explicit user decision: deleting an unsynchronized sale is data
+ * loss, never an automatic action.
  */
 export async function discard(clientUuid: string): Promise<void> {
   await offlineDb.outbox.delete(clientUuid);

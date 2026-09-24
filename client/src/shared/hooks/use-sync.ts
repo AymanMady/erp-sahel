@@ -9,17 +9,17 @@ import {
   type SyncStatus,
 } from "@/shared/offline/sync-engine";
 
-/** Intervalle de reprise : un poste qui reste ouvert finit toujours par se resynchroniser. */
+/** Retry interval: a device that stays open always ends up resynchronizing. */
 const PERIODIC_SYNC_MS = 60_000;
 
 /**
- * Pilote la synchronisation en arrière-plan.
+ * Drives background synchronization.
  *
- * Déclencheurs cumulés, parce qu'aucun ne suffit seul :
- *  - retour de connectivité (`online`) — le cas nominal ;
- *  - reprise de focus / onglet redevenu visible — après une mise en veille ;
- *  - minuteur — filet de sécurité si aucun événement n'est émis ;
- *  - message du Service Worker — reprise déclenchée hors de l'onglet.
+ * Combined triggers, because none is enough on its own:
+ *  - connectivity restored (`online`) — the nominal case;
+ *  - focus regained / tab visible again — after sleep;
+ *  - timer — safety net if no event is emitted;
+ *  - Service Worker message — resume triggered outside the tab.
  */
 export function useSyncEngine(enabled: boolean): SyncStatus {
   const [status, setStatus] = useState<SyncStatus>(getSyncStatus);
@@ -27,8 +27,8 @@ export function useSyncEngine(enabled: boolean): SyncStatus {
   useEffect(() => {
     if (!enabled) return;
     const unsubscribe = onSyncStatusChange(setStatus);
-    // Après une synchronisation réussie, on précharge les pages pour le hors-ligne
-    // (limité à une passe par demi-heure par `prefetchForOffline`).
+    // After a successful synchronization, prefetch pages for offline use
+    // (limited to one pass per half hour by `prefetchForOffline`).
     const syncThenPrefetch = async () => {
       const result = await runSync();
       if (result.state === "idle") void prefetchForOffline();

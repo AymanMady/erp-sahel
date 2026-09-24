@@ -1,0 +1,52 @@
+{
+  "labels": {
+    "DRAFT": "مسودة",
+    "SENT": "مُرسَل",
+    "ACCEPTED": "مقبول",
+    "REJECTED": "مرفوض",
+    "EXPIRED": "منتهي الصلاحية",
+    "CONVERTED": "محوَّل",
+    "CONFIRMED": "مؤكَّد",
+    "PROCESSING": "قيد التجهيز",
+    "SHIPPED": "مشحون",
+    "DELIVERED": "مُسلَّم",
+    "INVOICED": "مُفوتَر",
+    "CANCELLED": "ملغى",
+    "VALIDATED": "مُعتمَد",
+    "PARTIALLY_PAID": "مدفوع جزئيًا",
+    "PAID": "مدفوع",
+    "ORDERED": "مطلوب",
+    "PARTIALLY_RECEIVED": "مستلم جزئيًا",
+    "RECEIVED": "مستلم",
+    "OPEN": "مفتوحة",
+    "CLOSED": "مغلقة",
+    "PENDING": "قيد الانتظار",
+    "created": "تم الإنشاء",
+    "duplicate": "مكرر تم تجاهله",
+    "error": "خطأ",
+    "deferred": "مؤجَّل",
+    "synced": "تمت المزامنة",
+    "sending": "جارٍ الإرسال…",
+    "pending": "قيد الانتظار"
+  },
+  "paymentMethods": {
+    "CASH": "نقدًا",
+    "BANK_TRANSFER": "تحويل بنكي",
+    "CHECK": "شيك",
+    "CARD": "بطاقة",
+    "MOBILE_MONEY": "الدفع عبر الهاتف"
+  },
+  "movements": {
+    "IN": "وارد",
+    "OUT": "صادر",
+    "TRANSFER": "تحويل",
+    "ADJUSTMENT": "تسوية",
+    "RETURN": "مرتجع"
+  },
+  "partyTypes": {
+    "CUSTOMER": "عميل",
+    "SUPPLIER": "مورد",
+    "BOTH": "عميل ومورد",
+    "PROSPECT": "عميل محتمل"
+  }
+}

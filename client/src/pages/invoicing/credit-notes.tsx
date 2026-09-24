@@ -1,6 +1,7 @@
-/** Liste des avoirs émis. */
+/** Issued credit note list. */
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 
 import { formatDate } from "@shared/format";
@@ -15,6 +16,7 @@ import { StatusBadge } from "@/shared/components/status-badge";
 import { Badge } from "@/shared/ui/badge";
 
 export default function CreditNotesPage() {
+  const { t } = useTranslation("invoicing");
   const [page, setPage] = useState({ limit: 25, offset: 0 });
 
   const { data, isLoading, error } = useQuery({
@@ -25,36 +27,40 @@ export default function CreditNotesPage() {
   const columns: Column<CreditNote & { partyName: string }>[] = [
     {
       id: "number",
-      header: "Numéro",
+      header: t("common:labels.number"),
       cell: (row) => <span className="tabular font-medium">{row.number}</span>,
     },
-    { id: "date", header: "Date", cell: (row) => formatDate(row.date) },
+    { id: "date", header: t("common:labels.date"), cell: (row) => formatDate(row.date) },
     {
       id: "party",
-      header: "Client",
+      header: t("common:labels.customer"),
       cell: (row) => <span className="font-medium">{row.partyName}</span>,
     },
     {
       id: "restock",
-      header: "Retour en stock",
+      header: t("creditNotes.columns.restock"),
       hideOnMobile: true,
       cell: (row) =>
         row.restock ? (
-          <Badge variant="outline">Réintégré</Badge>
+          <Badge variant="outline">{t("creditNotes.restocked")}</Badge>
         ) : (
-          <span className="text-sm text-muted-foreground">non</span>
+          <span className="text-sm text-muted-foreground">{t("creditNotes.notRestocked")}</span>
         ),
     },
     {
       id: "reason",
-      header: "Motif",
+      header: t("creditNotes.columns.reason"),
       hideOnMobile: true,
       cell: (row) => <span className="text-sm text-muted-foreground">{row.reason || "—"}</span>,
     },
-    { id: "status", header: "Statut", cell: (row) => <StatusBadge status={row.status} /> },
+    {
+      id: "status",
+      header: t("common:labels.status"),
+      cell: (row) => <StatusBadge status={row.status} />,
+    },
     {
       id: "total",
-      header: "Total TTC",
+      header: t("common:labels.totalInclTax"),
       align: "end",
       cell: (row) => <Money cents={row.totalTtcCents} />,
     },
@@ -62,18 +68,15 @@ export default function CreditNotesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Avoirs"
-        description="Corrections de factures validées : écriture inverse et retour de stock."
-      />
+      <PageHeader title={t("creditNotes.title")} description={t("creditNotes.description")} />
       <ResourceTable
         columns={columns}
         rows={data?.items ?? []}
         rowKey={(row) => row.id}
         loading={isLoading}
         error={error ? errorMessage(error) : null}
-        emptyTitle="Aucun avoir"
-        emptyDescription="Les avoirs s'émettent depuis la fiche d'une facture validée."
+        emptyTitle={t("creditNotes.emptyTitle")}
+        emptyDescription={t("creditNotes.emptyDescription")}
         pagination={{
           total: data?.total ?? 0,
           limit: page.limit,

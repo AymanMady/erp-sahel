@@ -1,4 +1,4 @@
-/** Persistance du catalogue générique (produits, variantes, catégories, fournisseurs). */
+/** Persistence of the generic catalog (products, variants, categories, suppliers). */
 
 import { and, asc, eq, or, sql, type SQL } from "drizzle-orm";
 
@@ -47,8 +47,8 @@ export class CatalogRepository {
 
     if (options.search) {
       const pattern = `%${options.search.trim()}%`;
-      // La recherche par code-barres doit être exacte pour qu'un scan ne remonte
-      // pas des voisins ; le reste est en « contient ».
+      // Barcode search must be an exact match so a scan does not return neighbouring
+      // codes; the other fields use "contains".
       conditions.push(
         or(
           sql`${products.sku} ilike ${pattern}`,
@@ -117,7 +117,7 @@ export class CatalogRepository {
     return row ?? null;
   }
 
-  /** Résolution d'un scan : code-barres produit puis code-barres variante. */
+  /** Resolves a scan: product barcode first, then variant barcode. */
   async findByBarcode(companyId: string, barcode: string): Promise<Product | null> {
     const [direct] = await this.database
       .select()
@@ -195,7 +195,7 @@ export class CatalogRepository {
       .values(variants.map((variant) => ({ ...variant, companyId, productId })));
   }
 
-  /** Fournisseurs référencés pour un produit, avec leur prix d'achat ([FR-ACH-1]). */
+  /** Suppliers listed for a product, with their purchase price ([FR-ACH-1]). */
   async listProductSuppliers(companyId: string, productId: string) {
     return this.database
       .select({
@@ -254,7 +254,7 @@ export class CatalogRepository {
       );
   }
 
-  /** Compteurs du tableau de bord. */
+  /** Dashboard counters. */
   async counts(companyId: string) {
     const [row] = await this.database
       .select({

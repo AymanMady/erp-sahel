@@ -1,7 +1,6 @@
 /**
- * File générique des écritures hors ligne : toute page doit pouvoir enregistrer sans
- * réseau, afficher aussitôt la saisie, puis la rejouer une seule fois au retour du
- * réseau.
+ * Generic queue of offline writes: every page must be able to save without network,
+ * show the entry right away, then replay it exactly once when the network returns.
  */
 
 import "fake-indexeddb/auto";
@@ -10,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api } from "@/shared/api/http";
 import { ApiError } from "@/shared/api/api-error";
+import { i18n } from "@/shared/i18n";
 import { offlineDb, HTTP_REQUEST_ENTITY } from "../db";
 import { readCachedResponse, storeCachedResponse } from "../http-cache";
 import { runSync } from "../sync-engine";
@@ -61,21 +61,21 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("lectures hors ligne", () => {
-  it("réaffiche les rôles déjà consultés", async () => {
+describe("offline reads", () => {
+  it("shows roles already viewed again", async () => {
     online = true;
-    routes = () => json([{ id: "r1", name: "Caissier" }]);
+    routes = () => json([{ id: "r1", name: "Cashier" }]);
     await api.get("/api/roles");
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     online = false;
-    expect(await api.get("/api/roles")).toEqual([{ id: "r1", name: "Caissier" }]);
+    expect(await api.get("/api/roles")).toEqual([{ id: "r1", name: "Cashier" }]);
   });
 });
 
-describe("écritures hors ligne", () => {
-  it("met l'écriture en file, avec la clé d'idempotence déjà envoyée", async () => {
-    const created = (await api.post("/api/roles", { name: "Magasinier", permissions: [] })) as {
+describe("offline writes", () => {
+  it("queues the write with the idempotency key already sent", async () => {
+    const created = (await api.post("/api/roles", { name: "Storekeeper", permissions: [] })) as {
       id: string;
       name: string;
     };
@@ -83,33 +83,33 @@ describe("écritures hors ligne", () => {
     const [record] = await offlineDb.outbox.toArray();
     expect(record.entity).toBe(HTTP_REQUEST_ENTITY);
     expect(record.payload).toMatchObject({ method: "POST", url: "/api/roles" });
-    // Le premier essai portait déjà la clé : si le serveur l'a reçu, le rejeu ne
-    // créera rien de plus.
+    // The first attempt already carried the key: if the server received it, the
+    // replay will not create anything more.
     expect(calls[0].headers["Idempotency-Key"]).toBe(record.clientUuid);
-    expect(created).toMatchObject({ id: record.clientUuid, name: "Magasinier" });
+    expect(created).toMatchObject({ id: record.clientUuid, name: "Storekeeper" });
   });
 
-  it("affiche aussitôt la saisie dans la liste et la fiche", async () => {
-    await storeCachedResponse("/api/roles", [{ id: "r1", name: "Caissier" }]);
+  it("immediately shows the entry in the list and the detail", async () => {
+    await storeCachedResponse("/api/roles", [{ id: "r1", name: "Cashier" }]);
 
-    const created = (await api.post("/api/roles", { name: "Magasinier" })) as { id: string };
+    const created = (await api.post("/api/roles", { name: "Storekeeper" })) as { id: string };
     const roles = (await api.get("/api/roles")) as { id: string; name: string }[];
-    expect(roles.map((role) => role.name)).toEqual(["Magasinier", "Caissier"]);
+    expect(roles.map((role) => role.name)).toEqual(["Storekeeper", "Cashier"]);
 
-    await api.patch(`/api/roles/${created.id}`, { name: "Chef magasinier" });
+    await api.patch(`/api/roles/${created.id}`, { name: "Head storekeeper" });
     const detail = (await readCachedResponse(`/api/roles/${created.id}`)) as { name: string };
-    expect(detail.name).toBe("Chef magasinier");
+    expect(detail.name).toBe("Head storekeeper");
 
     await api.delete("/api/roles/r1");
     const after = (await api.get("/api/roles")) as { id: string }[];
     expect(after.map((role) => role.id)).toEqual([created.id]);
   });
 
-  it("construit un document provisoire affichable (totaux, numéro en attente)", async () => {
+  it("builds a displayable provisional document (totals, pending number)", async () => {
     const order = (await api.post("/api/purchase-orders", {
       supplierId: "7c9e6679-7425-40de-944b-e07fc1f90ae7",
       date: "2026-09-24",
-      lines: [{ description: "Filtre", quantity: 2, unitPriceCents: 1500, vatRateBp: 1600 }],
+      lines: [{ description: "Filter", quantity: 2, unitPriceCents: 1500, vatRateBp: 1600 }],
     })) as {
       id: string;
       number: string;
@@ -117,7 +117,7 @@ describe("écritures hors ligne", () => {
       totalTtcCents: number;
       lines: { id: string; receivedQuantity: string }[];
     };
-    expect(order.number).toBe("En attente");
+    expect(order.number).toBe(i18n.t("offline:write.pendingNumber"));
     expect(order.totalHtCents).toBe(3000);
     expect(order.totalTtcCents).toBe(3480);
     expect(order.lines[0].receivedQuantity).toBe("0");
@@ -126,7 +126,7 @@ describe("écritures hors ligne", () => {
     });
   });
 
-  it("laisse les écrans à file dédiée gérer eux-mêmes l'erreur réseau", async () => {
+  it("lets screens with a dedicated queue handle the network error themselves", async () => {
     await expect(api.post("/api/parties", { name: "Client" })).rejects.toBeInstanceOf(ApiError);
     await expect(api.post("/api/pos/tickets", {})).rejects.toBeInstanceOf(ApiError);
     await expect(api.post("/api/auth/login", {})).rejects.toBeInstanceOf(ApiError);
@@ -134,12 +134,12 @@ describe("écritures hors ligne", () => {
   });
 });
 
-describe("rejeu à la synchronisation", () => {
-  it("rejoue dans l'ordre, une fois, en résolvant les identifiants provisoires", async () => {
-    const category = (await api.post("/api/catalog/categories", { name: "Filtres" })) as {
+describe("replay at synchronization", () => {
+  it("replays in order, once, resolving provisional identifiers", async () => {
+    const category = (await api.post("/api/catalog/categories", { name: "Filters" })) as {
       id: string;
     };
-    await api.patch(`/api/catalog/categories/${category.id}`, { name: "Filtres à huile" });
+    await api.patch(`/api/catalog/categories/${category.id}`, { name: "Oil filters" });
     const [create, update] = await offlineDb.outbox.orderBy("localSeq").toArray();
 
     const serverId = "0b6f1c2e-8d3a-4f5b-9c7d-1e2f3a4b5c6d";
@@ -150,8 +150,8 @@ describe("rejeu à la synchronisation", () => {
       if (call.url.startsWith("/api/sync/snapshot")) {
         return json({ cursor: "c1", products: [], parties: [], modules: [] });
       }
-      if (call.method === "POST") return json({ id: serverId, name: "Filtres" }, 201);
-      return json({ id: serverId, name: "Filtres à huile" });
+      if (call.method === "POST") return json({ id: serverId, name: "Filters" }, 201);
+      return json({ id: serverId, name: "Oil filters" });
     };
 
     await runSync({ force: true });
@@ -167,22 +167,22 @@ describe("rejeu à la synchronisation", () => {
     const records = await offlineDb.outbox.toArray();
     expect(records.every((record) => record.status === "synced")).toBe(true);
 
-    // Un second cycle ne renvoie rien.
+    // A second cycle sends nothing.
     calls = [];
     await runSync({ force: true });
     expect(calls.filter((call) => call.method !== "GET")).toEqual([]);
   });
 
-  it("consigne un refus du serveur sans bloquer les écritures suivantes", async () => {
+  it("records a server rejection without blocking the following writes", async () => {
     await api.post("/api/warehouses", { code: "", name: "" });
-    await api.post("/api/catalog/categories", { name: "Pneus" });
+    await api.post("/api/catalog/categories", { name: "Tyres" });
 
     online = true;
     routes = (call) => {
       if (call.url === "/api/health") return json({ status: "ok" });
       if (call.url.startsWith("/api/sync/snapshot")) return json({ cursor: "c1" });
       if (call.url === "/api/warehouses") {
-        return json({ error: "Code obligatoire", code: "VALIDATION_ERROR" }, 422);
+        return json({ error: "Code is required", code: "VALIDATION_ERROR" }, 422);
       }
       return json({ id: "0b6f1c2e-8d3a-4f5b-9c7d-1e2f3a4b5c6d" }, 201);
     };
@@ -190,6 +190,6 @@ describe("rejeu à la synchronisation", () => {
 
     const records = await offlineDb.outbox.orderBy("localSeq").toArray();
     expect(records.map((record) => record.status)).toEqual(["error", "synced"]);
-    expect(records[0].lastError).toBe("Code obligatoire");
+    expect(records[0].lastError).toBe("Code is required");
   });
 });

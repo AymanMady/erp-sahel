@@ -1,17 +1,16 @@
-//! Cache hors-ligne local du poste desktop (`offline.sqlite`).
+//! Local offline cache of the desktop workstation (`offline.sqlite`).
 //!
-//! Pourquoi une base native plutôt qu'IndexedDB : sur un poste de caisse, les données
-//! non synchronisées ne doivent **jamais** être évincées par le navigateur sous pression
-//! disque, ni disparaître avec un nettoyage du profil. Un fichier SQLite dans le dossier
-//! applicatif a cette durabilité.
+//! Why a native database rather than IndexedDB: on a POS workstation, unsynced data
+//! must **never** be evicted by the browser under disk pressure, nor disappear when the
+//! profile is cleaned. A SQLite file in the application folder has that durability.
 //!
-//! Deux tables, comme côté web :
-//!  - `kv_cache` : l'instantané de synchronisation et la dernière session ;
-//!  - `outbox`   : les opérations en attente, remontées vers `POST /api/sync/push`.
+//! Two tables, as on the web side:
+//!  - `kv_cache`: the sync snapshot and the last session;
+//!  - `outbox`  : pending operations, uploaded to `POST /api/sync/push`.
 //!
-//! La commande `offline_try_login` permet une **connexion à froid hors ligne** : les
-//! empreintes bcrypt des utilisateurs autorisés sont embarquées dans l'instantané (et
-//! seulement pour la plateforme desktop, cf. `server/domains/sync/snapshot.ts`).
+//! The `offline_try_login` command enables an **offline cold login**: the bcrypt hashes
+//! of authorized users are embedded in the snapshot (and only for the desktop platform,
+//! see `server/domains/sync/snapshot.ts`).
 
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
@@ -73,7 +72,7 @@ pub struct OutboxRow {
     pub label: String,
 }
 
-/// Écrit une valeur dans le cache clé/valeur (instantané, session, curseur).
+/// Writes a value to the key/value cache (snapshot, session, cursor).
 #[tauri::command]
 pub fn offline_cache_write(app: AppHandle, key: String, value: String) -> Result<(), String> {
     let connection = open_db(&app)?;
@@ -111,7 +110,7 @@ pub fn offline_cache_delete(app: AppHandle, key: String) -> Result<(), String> {
         .map_err(|error| error.to_string())
 }
 
-/// Ajoute une opération à la file locale. Idempotent sur `client_uuid`.
+/// Adds an operation to the local queue. Idempotent on `client_uuid`.
 #[tauri::command]
 pub fn offline_outbox_enqueue(
     app: AppHandle,
@@ -134,7 +133,7 @@ pub fn offline_outbox_enqueue(
         .map_err(|error| error.to_string())
 }
 
-/// Opérations restant à envoyer, dans l'ordre causal.
+/// Operations still to be sent, in causal order.
 #[tauri::command]
 pub fn offline_outbox_pending(app: AppHandle, limit: i64) -> Result<Vec<OutboxRow>, String> {
     let connection = open_db(&app)?;
@@ -168,7 +167,7 @@ pub fn offline_outbox_pending(app: AppHandle, limit: i64) -> Result<Vec<OutboxRo
         .map_err(|error| error.to_string())
 }
 
-/// Acquitte une opération après réponse du serveur.
+/// Acknowledges an operation after the server's response.
 #[tauri::command]
 pub fn offline_outbox_mark(
     app: AppHandle,
@@ -190,7 +189,7 @@ pub fn offline_outbox_mark(
         .map_err(|error| error.to_string())
 }
 
-/// Supprime les opérations acquittées de plus de `older_than_days` jours.
+/// Deletes acknowledged operations older than `older_than_days` days.
 #[tauri::command]
 pub fn offline_outbox_purge(app: AppHandle, older_than_days: i64) -> Result<usize, String> {
     let connection = open_db(&app)?;
@@ -216,10 +215,10 @@ struct SnapshotAuth {
     offline_auth_users: Option<Vec<OfflineAuthUser>>,
 }
 
-/// Indique si une connexion hors ligne à froid est possible sur ce poste.
+/// Tells whether an offline cold login is possible on this workstation.
 ///
-/// Sert à afficher un message honnête (« ce poste n'a jamais été synchronisé ») plutôt
-/// qu'un formulaire de connexion qui ne pourra pas aboutir.
+/// Used to show an honest message ("this workstation has never been synced") rather
+/// than a login form that cannot succeed.
 #[tauri::command]
 pub fn offline_login_available(app: AppHandle) -> Result<bool, String> {
     let raw = match offline_cache_read(app, "pos_sync_snapshot".to_string())? {
@@ -236,10 +235,10 @@ pub fn offline_login_available(app: AppHandle) -> Result<bool, String> {
         .unwrap_or(false))
 }
 
-/// Vérifie un mot de passe contre l'empreinte bcrypt du dernier instantané.
+/// Verifies a password against the bcrypt hash from the latest snapshot.
 ///
-/// Ne délivre **aucun jeton d'API** : le poste reste hors ligne tant que le réseau n'est
-/// pas revenu. Cette vérification ne sert qu'à déverrouiller l'interface locale.
+/// Issues **no API token**: the workstation stays offline until the network is back.
+/// This check only unlocks the local interface.
 #[tauri::command]
 pub fn offline_try_login(app: AppHandle, username: String, password: String) -> Result<bool, String> {
     let raw = match offline_cache_read(app, "pos_sync_snapshot".to_string())? {

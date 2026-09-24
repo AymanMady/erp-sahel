@@ -1,4 +1,4 @@
-/** Persistance du journal de synchronisation et du registre des postes. */
+/** Persistence of the sync journal and the device registry. */
 
 import { and, desc, eq, gt, inArray, ne, sql } from "drizzle-orm";
 
@@ -12,7 +12,7 @@ export class SyncRepository {
     return new SyncRepository(tx);
   }
 
-  /** Opération déjà ingérée, quel que soit son statut. */
+  /** Already-ingested operation, whatever its status. */
   async findByClientUuid(clientUuid: string): Promise<SyncOperation | null> {
     const [row] = await this.database
       .select()
@@ -22,7 +22,7 @@ export class SyncRepository {
     return row ?? null;
   }
 
-  /** Identifiants serveur des opérations réussies — résolution des références croisées. */
+  /** Server ids of successful operations — resolution of cross references. */
   async resolveServerIds(clientUuids: string[]): Promise<Map<string, string>> {
     if (clientUuids.length === 0) return new Map();
     const rows = await this.database
@@ -42,8 +42,8 @@ export class SyncRepository {
     const [row] = await this.database
       .insert(syncOperations)
       .values(values)
-      // Deux envois simultanés du même lot : le second ne crée pas de doublon et
-      // n'écrase pas le résultat du premier.
+      // Two simultaneous submissions of the same batch: the second creates no duplicate
+      // and does not overwrite the result of the first.
       .onConflictDoUpdate({
         target: syncOperations.clientUuid,
         set: { updatedAt: new Date() },
@@ -60,7 +60,7 @@ export class SyncRepository {
         and(
           eq(syncOperations.companyId, companyId),
           eq(syncOperations.status, "created"),
-          // Les écritures HTTP rejouées ne sont pas des entités synchronisables.
+          // Replayed HTTP writes are not synchronizable entities.
           ne(syncOperations.entity, "http.request"),
           gt(syncOperations.createdAt, since)
         )
@@ -69,7 +69,7 @@ export class SyncRepository {
       .limit(limit);
   }
 
-  /** Journal des dernières remontées, pour l'écran de supervision de la synchronisation. */
+  /** Journal of the latest uploads, for the sync supervision screen. */
   async listRecent(companyId: string, limit = 100): Promise<SyncOperation[]> {
     return this.database
       .select()
@@ -123,7 +123,7 @@ export class SyncRepository {
       .orderBy(desc(syncDevices.updatedAt));
   }
 
-  /** Compteurs pour l'indicateur d'état de synchronisation ([FR-SYNC-6]). */
+  /** Counters for the sync status indicator ([FR-SYNC-6]). */
   async stats(companyId: string) {
     const [row] = await this.database
       .select({

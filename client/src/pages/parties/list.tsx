@@ -1,8 +1,9 @@
-/** Liste des tiers (clients, fournisseurs, prospects) avec création rapide. */
+/** Parties list (customers, suppliers, prospects) with quick creation. */
 
 import { useState } from "react";
 import { IconPlus } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 
@@ -35,12 +36,8 @@ import { Input } from "@/shared/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { Textarea } from "@/shared/ui/textarea";
 
-const TYPE_FILTERS: { value: string; label: string }[] = [
-  { value: "ALL", label: "Tous les tiers" },
-  ...PARTY_TYPES.map((type) => ({ value: type, label: partyTypeLabel(type) })),
-];
-
 export default function PartiesPage() {
+  const { t } = useTranslation("parties");
   const [, navigate] = useLocation();
   const { can } = useSession();
   const [search, setSearch] = useState("");
@@ -63,29 +60,31 @@ export default function PartiesPage() {
   const columns: Column<Party>[] = [
     {
       id: "code",
-      header: "Code",
+      header: t("common:labels.code"),
       cell: (row) => <span className="tabular text-sm font-medium">{row.code}</span>,
     },
     {
       id: "name",
-      header: "Nom",
+      header: t("common:labels.name"),
       cell: (row) => (
         <div className="min-w-0">
           <p className="truncate font-medium">{row.name}</p>
           {row.vatNumber ? (
-            <p className="text-xs text-muted-foreground">NIF {row.vatNumber}</p>
+            <p className="text-xs text-muted-foreground">
+              {t("list.vatNumberShort", { number: row.vatNumber })}
+            </p>
           ) : null}
         </div>
       ),
     },
     {
       id: "type",
-      header: "Type",
+      header: t("common:labels.type"),
       cell: (row) => <Badge variant="outline">{partyTypeLabel(row.partyType)}</Badge>,
     },
     {
       id: "contact",
-      header: "Contact",
+      header: t("list.columns.contact"),
       hideOnMobile: true,
       cell: (row) => (
         <div className="text-sm">
@@ -97,37 +96,39 @@ export default function PartiesPage() {
     },
     {
       id: "credit",
-      header: "Encours autorisé",
+      header: t("fields.creditLimit"),
       align: "end",
       hideOnMobile: true,
       cell: (row) =>
         row.creditLimitCents > 0 ? (
           <Money cents={row.creditLimitCents} />
         ) : (
-          <span className="text-muted-foreground">illimité</span>
+          <span className="text-muted-foreground">{t("list.unlimited")}</span>
         ),
     },
     {
       id: "terms",
-      header: "Règlement",
+      header: t("list.columns.paymentTerms"),
       align: "end",
       hideOnMobile: true,
       cell: (row) =>
         row.paymentTermsDays > 0 ? (
-          <span className="tabular text-sm">{row.paymentTermsDays} j</span>
+          <span className="tabular text-sm">
+            {t("list.termsDays", { days: row.paymentTermsDays })}
+          </span>
         ) : (
-          <span className="text-sm text-muted-foreground">comptant</span>
+          <span className="text-sm text-muted-foreground">{t("list.cash")}</span>
         ),
     },
   ];
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Tiers" description="Clients, fournisseurs et prospects de la société.">
+      <PageHeader title={t("list.title")} description={t("list.description")}>
         {can("parties.write") ? (
           <Button onClick={() => setCreating(true)}>
             <IconPlus className="size-4" />
-            Nouveau tiers
+            {t("list.new")}
           </Button>
         ) : null}
       </PageHeader>
@@ -139,7 +140,7 @@ export default function PartiesPage() {
             setSearch(value);
             setPage((current) => ({ ...current, offset: 0 }));
           }}
-          placeholder="Nom, code, téléphone, NIF…"
+          placeholder={t("list.searchPlaceholder")}
           className="sm:max-w-sm"
         />
         <Select
@@ -153,9 +154,10 @@ export default function PartiesPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {TYPE_FILTERS.map((entry) => (
-              <SelectItem key={entry.value} value={entry.value}>
-                {entry.label}
+            <SelectItem value="ALL">{t("list.allTypes")}</SelectItem>
+            {PARTY_TYPES.map((type) => (
+              <SelectItem key={type} value={type}>
+                {partyTypeLabel(type)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -168,8 +170,8 @@ export default function PartiesPage() {
         rowKey={(row) => row.id}
         loading={isLoading}
         error={error ? errorMessage(error) : null}
-        emptyTitle="Aucun tiers"
-        emptyDescription="Créez votre premier client ou fournisseur pour commencer à facturer."
+        emptyTitle={t("list.empty.title")}
+        emptyDescription={t("list.empty.description")}
         onRowClick={(row) => navigate(`/parties/${row.id}`)}
         pagination={{
           total: data?.total ?? 0,
@@ -184,7 +186,7 @@ export default function PartiesPage() {
   );
 }
 
-/** Création d'un tiers. Le code est attribué automatiquement si laissé vide. */
+/** Party creation. The code is assigned automatically when left empty. */
 export function PartyDialog({
   open,
   onOpenChange,
@@ -196,6 +198,7 @@ export function PartyDialog({
   onCreated?: (party: Party) => void;
   defaultType?: PartyType;
 }) {
+  const { t } = useTranslation("parties");
   const queryClient = useQueryClient();
   const [form, setForm] = useState({
     name: "",
@@ -215,14 +218,14 @@ export function PartyDialog({
         () => queuePartyCreate(form)
       ),
     onSuccess: (outcome) => {
-      // Hors ligne, le tiers est utilisable aussitôt (devis, facture) sous son
-      // identifiant local ; son code définitif sera attribué à la synchronisation.
+      // Offline, the party is usable immediately (quote, invoice) under its local
+      // id; its final code will be assigned during synchronization.
       const party = outcome.result as Party;
       if (outcome.mode === "online") {
-        toast.success(`Tiers « ${party.name} » créé (${party.code}).`);
+        toast.success(t("create.created", { name: party.name, code: party.code }));
       } else {
-        toast.success(`Tiers « ${party.name} » enregistré hors ligne.`, {
-          description: "Il sera créé sur le serveur à la prochaine synchronisation.",
+        toast.success(t("create.savedOffline", { name: party.name }), {
+          description: t("create.savedOfflineDescription"),
         });
       }
       void queryClient.invalidateQueries({ queryKey: ["parties"] });
@@ -246,10 +249,8 @@ export function PartyDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Nouveau tiers</DialogTitle>
-          <DialogDescription>
-            Le code est généré automatiquement selon le type (CLI, FRN, PSP).
-          </DialogDescription>
+          <DialogTitle>{t("create.title")}</DialogTitle>
+          <DialogDescription>{t("create.description")}</DialogDescription>
         </DialogHeader>
 
         <form
@@ -259,7 +260,7 @@ export function PartyDialog({
             mutation.mutate();
           }}
         >
-          <Field label="Nom" htmlFor="party-name" required>
+          <Field label={t("common:labels.name")} htmlFor="party-name" required>
             <Input
               id="party-name"
               value={form.name}
@@ -270,7 +271,7 @@ export function PartyDialog({
           </Field>
 
           <FieldGrid>
-            <Field label="Type" htmlFor="party-type">
+            <Field label={t("common:labels.type")} htmlFor="party-type">
               <Select
                 value={form.partyType}
                 onValueChange={(value) => setForm({ ...form, partyType: value as PartyType })}
@@ -287,14 +288,15 @@ export function PartyDialog({
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Téléphone" htmlFor="party-phone">
+            <Field label={t("common:labels.phone")} htmlFor="party-phone">
               <Input
                 id="party-phone"
+                dir="ltr"
                 value={form.phone}
                 onChange={(event) => setForm({ ...form, phone: event.target.value })}
               />
             </Field>
-            <Field label="E-mail" htmlFor="party-email">
+            <Field label={t("common:labels.email")} htmlFor="party-email">
               <Input
                 id="party-email"
                 type="email"
@@ -302,21 +304,25 @@ export function PartyDialog({
                 onChange={(event) => setForm({ ...form, email: event.target.value })}
               />
             </Field>
-            <Field label="Identifiant fiscal" htmlFor="party-vat">
+            <Field label={t("fields.vatNumber")} htmlFor="party-vat">
               <Input
                 id="party-vat"
                 value={form.vatNumber}
                 onChange={(event) => setForm({ ...form, vatNumber: event.target.value })}
               />
             </Field>
-            <Field label="Encours autorisé" htmlFor="party-credit" hint="0 = aucun plafond">
+            <Field
+              label={t("fields.creditLimit")}
+              htmlFor="party-credit"
+              hint={t("fields.creditLimitHint")}
+            >
               <MoneyInput
                 id="party-credit"
                 valueCents={form.creditLimitCents}
                 onChange={(cents) => setForm({ ...form, creditLimitCents: cents })}
               />
             </Field>
-            <Field label="Délai de règlement (jours)" htmlFor="party-terms">
+            <Field label={t("fields.paymentTermsDays")} htmlFor="party-terms">
               <Input
                 id="party-terms"
                 type="number"
@@ -331,7 +337,7 @@ export function PartyDialog({
             </Field>
           </FieldGrid>
 
-          <Field label="Notes" htmlFor="party-notes">
+          <Field label={t("common:labels.notes")} htmlFor="party-notes">
             <Textarea
               id="party-notes"
               rows={3}
@@ -342,10 +348,10 @@ export function PartyDialog({
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
+              {t("common:actions.cancel")}
             </Button>
             <Button type="submit" disabled={mutation.isPending || !form.name.trim()}>
-              {mutation.isPending ? "Création…" : "Créer le tiers"}
+              {mutation.isPending ? t("create.creating") : t("create.submit")}
             </Button>
           </DialogFooter>
         </form>

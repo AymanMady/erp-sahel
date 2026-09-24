@@ -1,0 +1,102 @@
+{
+  "accountTypes": {
+    "ASSET": "Actif",
+    "LIABILITY": "Passif",
+    "EQUITY": "Capitaux propres",
+    "REVENUE": "Produits",
+    "EXPENSE": "Charges"
+  },
+  "journalTypes": {
+    "SALES": "Ventes",
+    "PURCHASES": "Achats",
+    "BANK": "Banque",
+    "CASH": "Caisse",
+    "MISC": "Opérations diverses"
+  },
+  "mappingKeys": {
+    "SALES_REVENUE": "Ventes de marchandises",
+    "SALES_DISCOUNT": "Remises accordées",
+    "VAT_COLLECTED": "TVA facturée (collectée)",
+    "VAT_DEDUCTIBLE": "TVA récupérable (déductible)",
+    "CUSTOMER_RECEIVABLE": "Créances clients",
+    "SUPPLIER_PAYABLE": "Dettes fournisseurs",
+    "PURCHASES": "Achats de marchandises",
+    "INVENTORY": "Stock de marchandises",
+    "INVENTORY_VARIATION": "Variation de stock",
+    "CASH": "Caisse",
+    "BANK": "Banque",
+    "MOBILE_MONEY": "Mobile money",
+    "ROUNDING_DIFFERENCE": "Écarts et arrondis",
+    "OPENING_BALANCE": "Bilan d'ouverture",
+    "RESULT_CARRY_FORWARD": "Report à nouveau"
+  },
+  "columns": {
+    "account": "Compte",
+    "accountNumber": "Numéro",
+    "accountName": "Intitulé",
+    "nature": "Nature",
+    "group": "Regroupement",
+    "entry": "Écriture",
+    "label": "Libellé",
+    "debit": "Débit",
+    "credit": "Crédit",
+    "balance": "Solde"
+  },
+  "filters": {
+    "fromDate": "Date de début",
+    "toDate": "Date de fin"
+  },
+  "balanced": "Équilibrée",
+  "unbalanced": "Déséquilibrée",
+  "accounts": {
+    "title": "Plan comptable",
+    "description": "Référentiel de la société et comptes utilisés par les écritures automatiques.",
+    "newAccount": "Nouveau compte",
+    "tabs": {
+      "accounts": "Comptes",
+      "mappings": "Automatismes"
+    },
+    "mappingUpdated": "Compte associé mis à jour.",
+    "created": "Compte créé.",
+    "emptyTitle": "Plan comptable vide",
+    "emptyDescription": "Le plan est installé automatiquement à la création de la société.",
+    "mappingsTitle": "Comptes des écritures automatiques",
+    "mappingsDescription": "Les factures et règlements désignent une clé logique ; c'est ici qu'elle est reliée à un compte du plan. Changer de référentiel comptable revient à modifier ces associations.",
+    "notConfigured": "Non configuré",
+    "dialog": {
+      "parentAccount": "Compte parent",
+      "isGroup": "Compte de regroupement (ne reçoit pas d'écriture)"
+    }
+  },
+  "balance": {
+    "title": "Balance",
+    "description": "Cumuls débit/crédit par compte. Le total des deux colonnes doit être égal.",
+    "emptyTitle": "Balance vide",
+    "emptyDescription": "Aucun compte mouvementé sur la période sélectionnée.",
+    "totals": "Totaux"
+  },
+  "entries": {
+    "title": "Journal comptable",
+    "description": "Toutes les écritures, générées automatiquement ou saisies à la main.",
+    "newEntry": "Saisir une écriture",
+    "allJournals": "Tous les journaux",
+    "empty": "Aucune écriture sur la période. Les factures et règlements en génèrent automatiquement.",
+    "saved": "Écriture enregistrée.",
+    "dialog": {
+      "title": "Saisie d'une écriture",
+      "description": "L'écriture doit être équilibrée : le total des débits doit égaler celui des crédits.",
+      "journal": "Journal",
+      "entryLabel": "Libellé de l'écriture",
+      "removeLine": "Supprimer la ligne",
+      "addLine": "Ajouter une ligne",
+      "submit": "Enregistrer l'écriture"
+    }
+  },
+  "ledger": {
+    "title": "Grand livre",
+    "description": "Détail des mouvements par compte. Sélectionnez un compte pour suivre son solde.",
+    "allAccounts": "Tous les comptes",
+    "emptyTitle": "Aucun mouvement",
+    "emptyDescription": "Aucune écriture ne correspond aux critères choisis."
+  }
+}

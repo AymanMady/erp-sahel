@@ -1,0 +1,47 @@
+{
+  "view": {
+    "currency": "Devise : {{currency}}",
+    "date": "Date : {{date}}",
+    "dueDate": "Échéance : {{date}}",
+    "recipient": "Destinataire",
+    "columns": {
+      "description": "Désignation",
+      "origin": "Origine",
+      "quantity": "Qté",
+      "unitPriceExclTax": "P.U. HT"
+    },
+    "alreadyPaid": "Déjà réglé",
+    "amountDue": "Reste à payer"
+  },
+  "vat": "TVA",
+  "vatRate": "TVA {{rate}} %",
+  "lineEditor": {
+    "columns": {
+      "description": "Désignation"
+    },
+    "empty": "Aucune ligne. Ajoutez un article ou une prestation.",
+    "descriptionPlaceholder": "Désignation de la ligne",
+    "removeLine": "Supprimer la ligne",
+    "addItem": "Ajouter un article",
+    "freeLine": "Ligne libre",
+    "globalDiscount": "Remise globale"
+  },
+  "productPicker": {
+    "title": "Ajouter une ligne",
+    "description": "Le prix et le taux de TVA sont repris du catalogue ; ils restent modifiables.",
+    "searchPlaceholder": "Article ou prestation…",
+    "service": "prestation",
+    "stock": "stock {{quantity}}"
+  },
+  "partyPicker": {
+    "selectCustomer": "Sélectionner un client",
+    "chooseCustomer": "Choisir un client",
+    "chooseSupplier": "Choisir un fournisseur",
+    "newParty": "Nouveau tiers",
+    "noResults": "Aucun tiers trouvé."
+  },
+  "units": {
+    "unit": "unité",
+    "service": "prestation"
+  }
+}

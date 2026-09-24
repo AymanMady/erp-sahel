@@ -1,13 +1,13 @@
 /**
- * Repository générique pour les **référentiels tenant-scoped** (produits, tiers,
- * magasins, comptes, prestations…).
+ * Generic repository for **tenant-scoped master data** (products, parties,
+ * warehouses, accounts, services…).
  *
- * Pourquoi une factory plutôt que quinze fichiers quasi identiques : la valeur d'un
- * repository est dans ses requêtes **spécifiques**. Le CRUD filtré par `company_id`,
- * lui, est un invariant d'architecture ([BR-13]) — le centraliser garantit qu'aucun
- * domaine ne peut l'oublier, et laisse chaque repository concret ne contenir que ce
- * qui lui est propre. Les domaines complexes (facturation, stock, comptabilité, POS,
- * synchronisation) gardent leur repository écrit à la main.
+ * Why a factory rather than fifteen nearly identical files: the value of a repository
+ * lies in its **specific** queries. CRUD filtered by `company_id`, on the other hand,
+ * is an architectural invariant ([BR-13]) — centralizing it guarantees that no domain
+ * can forget it, and lets each concrete repository contain only what is its own.
+ * Complex domains (invoicing, stock, accounting, POS, synchronization) keep their
+ * hand-written repository.
  */
 
 import { and, asc, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
@@ -16,7 +16,7 @@ import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
 import { db, type Database } from "../../db";
 import { NotFoundError } from "../errors/app-error";
 
-/** Contrat minimal qu'une table doit respecter pour être pilotée par ce repository. */
+/** Minimal contract a table must satisfy to be driven by this repository. */
 export interface TenantTableShape {
   id: PgColumn;
   companyId: PgColumn;
@@ -30,11 +30,11 @@ export type TenantTable = PgTable & TenantTableShape;
 export interface ListOptions {
   limit?: number;
   offset?: number;
-  /** Recherche plein-texte simple sur les colonnes déclarées à la construction. */
+  /** Simple full-text search over the columns declared at construction. */
   search?: string;
-  /** `true` : inclut les enregistrements archivés (soft-delete). */
+  /** `true`: includes archived records (soft delete). */
   includeArchived?: boolean;
-  /** Conditions additionnelles propres au domaine appelant. */
+  /** Additional conditions specific to the calling domain. */
   where?: (SQL | undefined)[];
   orderBy?: SQL[];
 }
@@ -57,12 +57,12 @@ export function clampLimit(limit: number | undefined): number {
 export class TenantRepository<TTable extends TenantTable> {
   constructor(
     protected readonly table: TTable,
-    /** Colonnes balayées par `options.search`. */
+    /** Columns scanned by `options.search`. */
     protected readonly searchColumns: PgColumn[] = [],
     protected readonly database: Database = db
   ) {}
 
-  /** Clone lié à une transaction, pour composer plusieurs repositories atomiquement. */
+  /** Clone bound to a transaction, to compose several repositories atomically. */
   withTransaction(tx: Database): this {
     const Constructor = this.constructor as new (
       table: TTable,
@@ -115,7 +115,7 @@ export class TenantRepository<TTable extends TenantTable> {
     };
   }
 
-  /** Liste complète sans pagination — réservée aux instantanés de synchronisation. */
+  /** Full list without pagination — reserved for synchronization snapshots. */
   async listAll(companyId: string, options: ListOptions = {}): Promise<TTable["$inferSelect"][]> {
     const rows = await this.database
       .select()
@@ -134,10 +134,10 @@ export class TenantRepository<TTable extends TenantTable> {
     return (row as TTable["$inferSelect"]) ?? null;
   }
 
-  /** Variante levant `NotFoundError` — évite un `if (!row) throw` dans chaque service. */
+  /** Variant throwing `NotFoundError` — avoids an `if (!row) throw` in every service. */
   async requireById(companyId: string, id: string): Promise<TTable["$inferSelect"]> {
     const row = await this.findById(companyId, id);
-    if (!row) throw new NotFoundError("Enregistrement introuvable.");
+    if (!row) throw new NotFoundError("Record not found.");
     return row;
   }
 
@@ -146,8 +146,8 @@ export class TenantRepository<TTable extends TenantTable> {
     values: Record<string, unknown>
   ): Promise<TTable["$inferSelect"]> {
     const [row] = await this.database
-      // `companyId` est imposé ici et non pris du payload : une requête ne peut pas
-      // écrire dans une autre société, même en forçant le corps JSON ([BR-13]).
+      // `companyId` is enforced here, not taken from the payload: a request cannot
+      // write into another company, even by forging the JSON body ([BR-13]).
       .insert(this.table as PgTable)
       .values({ ...values, companyId } as never)
       .returning();
@@ -168,7 +168,7 @@ export class TenantRepository<TTable extends TenantTable> {
     return (row as TTable["$inferSelect"]) ?? null;
   }
 
-  /** Archivage (soft-delete) : les référentiels ne sont jamais supprimés [NFR-DATA-2]. */
+  /** Archiving (soft delete): master data is never deleted [NFR-DATA-2]. */
   async archive(companyId: string, id: string): Promise<boolean> {
     const rows = await this.database
       .update(this.table as PgTable)

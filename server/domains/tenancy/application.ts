@@ -1,9 +1,10 @@
 /**
- * Cas d'usage société : création d'un tenant complet et accès à sa configuration.
+ * Company use cases: creating a complete tenant and accessing its configuration.
  *
- * Créer une société n'est pas un simple `INSERT` : sans plan comptable ni magasin ni
- * journaux, aucune facture ne peut être validée. L'amorçage fait donc partie du cas
- * d'usage, dans la même transaction.
+ * Creating a company is not a plain `INSERT`: without a chart of accounts, a warehouse
+ * and journals, no invoice can be validated. Bootstrapping is therefore part of the use
+ * case, in the same transaction. Default names (warehouse, cash account, register,
+ * accounts, journals) are written in the company's language, or the creator's.
  */
 
 import {
@@ -16,16 +17,23 @@ import {
 import { MODULE_PRESETS } from "@shared/modules-catalog";
 import { runInTransaction, type Database } from "../../db";
 import { NotFoundError } from "../../shared/errors/app-error";
+import { currentLocale, SUPPORTED_LOCALES, tr, type Locale } from "../../shared/i18n";
 import { accountingApplication } from "../accounting/application";
 import { moduleRegistry } from "../plugins/registry";
 import { companiesRepository } from "./repository";
 
 const SIMPLE_PRESET = MODULE_PRESETS.find((preset) => preset.code === "simple")!;
 
+/** `language` as a supported locale, or `null` when it is missing or unsupported. */
+function asLocale(language: string | null | undefined): Locale | null {
+  const base = language?.toLowerCase().split("-")[0];
+  return SUPPORTED_LOCALES.find((locale) => locale === base) ?? null;
+}
+
 class TenancyApplication {
   async requireCompany(companyId: string): Promise<Company> {
     const company = await companiesRepository.findById(companyId);
-    if (!company) throw new NotFoundError("Société introuvable.");
+    if (!company) throw new NotFoundError("Company not found.");
     return company;
   }
 
@@ -33,31 +41,38 @@ class TenancyApplication {
     return companiesRepository.findBySubdomain(subdomain);
   }
 
-  /** Crée la société et son socle minimal : plan comptable, journaux, magasin, caisse. */
+  /** Creates the company and its minimal foundation: chart of accounts, journals, warehouse, register. */
   async create(input: InsertCompany): Promise<Company> {
     return runInTransaction(async (tx) => {
       const company = await companiesRepository.create(input, tx);
-      await this.bootstrap(tx, company);
-      // Une nouvelle société démarre au niveau « Simple » (caisse, stock, achats) :
-      // un menu court dès le premier jour. Elle active le reste quand elle en a besoin.
+      // Default names follow the language chosen for the company, or the creator's
+      // language when none was given (the column has a database default).
+      await this.bootstrap(tx, company, asLocale(input.language) ?? currentLocale());
+      // A new company starts at the "Simple" level (POS, stock, purchasing): a short
+      // menu from day one. It enables the rest when it needs it.
       await moduleRegistry.applySelection(company.id, SIMPLE_PRESET.modules, tx);
       return company;
     });
   }
 
   /**
-   * Amorçage idempotent d'une société existante — rejouable après une mise à jour
-   * qui introduirait de nouveaux comptes ou journaux.
+   * Idempotent bootstrap of an existing company — can be replayed after an update
+   * that introduces new accounts or journals. Default names are written in `locale`
+   * (the company's language by default).
    */
-  async bootstrap(tx: Database, company: Company): Promise<void> {
-    await accountingApplication.installChartOfAccounts(tx, company);
+  async bootstrap(
+    tx: Database,
+    company: Company,
+    locale: Locale = asLocale(company.language) ?? currentLocale()
+  ): Promise<void> {
+    await accountingApplication.installChartOfAccounts(tx, company, locale);
 
     const [warehouse] = await tx
       .insert(warehouses)
       .values({
         companyId: company.id,
         code: "PRINCIPAL",
-        name: "Magasin principal",
+        name: tr("Main warehouse", undefined, locale),
         isDefault: true,
       })
       .onConflictDoNothing()
@@ -68,7 +83,7 @@ class TenancyApplication {
       .values({
         companyId: company.id,
         code: "CAISSE",
-        name: "Caisse principale",
+        name: tr("Main cash account", undefined, locale),
         accountType: "CASH",
         currency: company.currency,
         isDefault: true,
@@ -82,7 +97,7 @@ class TenancyApplication {
         .values({
           companyId: company.id,
           code: "CAISSE-1",
-          name: "Caisse 1",
+          name: tr("Register {number}", { number: 1 }, locale),
           warehouseId: warehouse.id,
           cashAccountId: cashAccount?.id ?? null,
         })
@@ -92,7 +107,7 @@ class TenancyApplication {
 
   async update(companyId: string, patch: Partial<InsertCompany>): Promise<Company> {
     const company = await companiesRepository.update(companyId, patch);
-    if (!company) throw new NotFoundError("Société introuvable.");
+    if (!company) throw new NotFoundError("Company not found.");
     return company;
   }
 }

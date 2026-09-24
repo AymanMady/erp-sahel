@@ -1,29 +1,31 @@
 /**
- * File d'attente **générique** des écritures hors ligne.
+ * **Generic** queue of offline writes.
  *
- * Les ventes, factures, devis, tiers, produits, règlements et mouvements de stock ont
- * leur opération de synchronisation dédiée (`offline-writes.ts`). Toutes les autres
- * écritures — catégories, magasins, commandes d'achat, trésorerie, comptabilité,
- * paramètres, rôles, utilisateurs, modules… — passent par ici : si le serveur
- * est injoignable, `http.ts` met la requête en file au lieu d'échouer, et le moteur de
- * synchronisation la rejoue telle quelle au retour du réseau.
+ * Sales, invoices, quotes, parties, products, payments and stock movements have their
+ * own dedicated synchronization operation (`offline-writes.ts`). Every other write —
+ * categories, warehouses, purchase orders, treasury, accounting, settings, roles,
+ * users, modules… — goes through here: if the server is unreachable, `http.ts` queues
+ * the request instead of failing, and the synchronization engine replays it as is when
+ * the network returns.
  *
- * Garanties :
- *  - **pas de doublon** : la requête porte dès le premier envoi une clé
- *    `Idempotency-Key`, réutilisée au rejeu ; le serveur renvoie la réponse déjà
- *    produite au lieu de réécrire (`server/middleware/idempotency.ts`) ;
- *  - **ordre causal** : rejeu dans l'ordre de saisie (`localSeq`), mêlé aux opérations
- *    dédiées ;
- *  - **références locales** : un élément créé hors ligne reçoit un identifiant
- *    provisoire (la clé de la requête) ; les écritures suivantes qui le citent sont
- *    réécrites avec l'identifiant serveur au moment du rejeu ;
- *  - **affichage immédiat** : l'écriture est reflétée dans le cache de lecture, pour
- *    que la liste ou la fiche montre aussitôt ce qui vient d'être saisi.
+ * Guarantees:
+ *  - **no duplicate**: the request carries an `Idempotency-Key` from the very first
+ *    send, reused on replay; the server returns the response it already produced
+ *    instead of writing again (`server/middleware/idempotency.ts`);
+ *  - **causal order**: replay in entry order (`localSeq`), interleaved with the
+ *    dedicated operations;
+ *  - **local references**: an item created offline gets a provisional identifier
+ *    (the request key); later writes that reference it are rewritten with the server
+ *    identifier at replay time;
+ *  - **immediate display**: the write is reflected in the read cache, so that the list
+ *    or the detail page shows right away what was just entered.
  */
 
 import { toast } from "sonner";
 
 import { computeDocumentTotals } from "@shared/pricing";
+
+import { i18n } from "@/shared/i18n";
 
 import { HTTP_REQUEST_ENTITY, type OutboxRecord } from "./db";
 import {
@@ -40,7 +42,7 @@ export type HttpWriteMethod = "POST" | "PATCH" | "PUT" | "DELETE";
 
 export interface HttpWritePayload {
   method: HttpWriteMethod;
-  /** Chemin et paramètres, tels qu'envoyés au premier essai. */
+  /** Path and parameters, as sent on the first attempt. */
   url: string;
   body?: unknown;
 }
@@ -49,11 +51,11 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 const UUID_GLOBAL = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 
 /**
- * Écritures **non** mises en file par ce module :
- *  - authentification et synchronisation — sans objet hors ligne ;
- *  - celles qui ont une opération de synchronisation dédiée, portée par leur écran
- *    (`onlineOrQueued`, caisse) : elles doivent recevoir l'erreur réseau pour basculer
- *    sur leur propre file (numéro provisoire, stock, comptabilité).
+ * Writes **not** queued by this module:
+ *  - authentication and synchronization — meaningless offline;
+ *  - those that have a dedicated synchronization operation, handled by their screen
+ *    (`onlineOrQueued`, POS): they must receive the network error to switch to their
+ *    own queue (provisional number, stock, accounting).
  */
 const NOT_QUEUED: { method: HttpWriteMethod | "*"; pattern: RegExp }[] = [
   { method: "*", pattern: /^\/api\/auth(\/|$)/ },
@@ -73,7 +75,7 @@ function pathOf(url: string): string {
   return url.split("?")[0];
 }
 
-/** Vrai si cette écriture doit être mise en file générique quand le réseau manque. */
+/** True if this write must go to the generic queue when the network is missing. */
 export function isQueueableWrite(method: string, url: string): boolean {
   const path = pathOf(url);
   if (!path.startsWith("/api/")) return false;
@@ -82,53 +84,64 @@ export function isQueueableWrite(method: string, url: string): boolean {
   );
 }
 
-// ─── Libellés ─────────────────────────────────────────────────────────────────
+// ─── Labels ───────────────────────────────────────────────────────────────────
 
-const RESOURCE_LABELS: [RegExp, string][] = [
-  [/^\/api\/users/, "Utilisateur"],
-  [/^\/api\/roles/, "Rôle"],
-  [/^\/api\/company\/settings/, "Paramètre"],
-  [/^\/api\/company/, "Société"],
-  [/^\/api\/platform\/modules/, "Module"],
-  [/^\/api\/catalog\/categories/, "Catégorie"],
-  [/^\/api\/catalog\/products/, "Produit"],
-  [/^\/api\/services/, "Prestation"],
-  [/^\/api\/parties/, "Tiers"],
-  [/^\/api\/warehouses/, "Magasin"],
-  [/^\/api\/inventory/, "Stock"],
-  [/^\/api\/quotes/, "Devis"],
-  [/^\/api\/sales-orders/, "Commande client"],
-  [/^\/api\/invoices/, "Facture"],
-  [/^\/api\/credit-notes/, "Avoir"],
-  [/^\/api\/payments/, "Règlement"],
-  [/^\/api\/purchase-orders/, "Commande fournisseur"],
-  [/^\/api\/goods-receipts/, "Réception"],
-  [/^\/api\/supplier-invoices/, "Facture fournisseur"],
-  [/^\/api\/banking/, "Trésorerie"],
-  [/^\/api\/pos/, "Caisse"],
-  [/^\/api\/accounting/, "Comptabilité"],
+/** Resource of a path → key in `offline:resources`. */
+const RESOURCE_LABEL_KEYS: [RegExp, string][] = [
+  [/^\/api\/users/, "user"],
+  [/^\/api\/roles/, "role"],
+  [/^\/api\/company\/settings/, "setting"],
+  [/^\/api\/company/, "company"],
+  [/^\/api\/platform\/modules/, "module"],
+  [/^\/api\/catalog\/categories/, "category"],
+  [/^\/api\/catalog\/products/, "product"],
+  [/^\/api\/services/, "service"],
+  [/^\/api\/parties/, "party"],
+  [/^\/api\/warehouses/, "warehouse"],
+  [/^\/api\/inventory/, "stock"],
+  [/^\/api\/quotes/, "quote"],
+  [/^\/api\/sales-orders/, "salesOrder"],
+  [/^\/api\/invoices/, "invoice"],
+  [/^\/api\/credit-notes/, "creditNote"],
+  [/^\/api\/payments/, "payment"],
+  [/^\/api\/purchase-orders/, "purchaseOrder"],
+  [/^\/api\/goods-receipts/, "goodsReceipt"],
+  [/^\/api\/supplier-invoices/, "supplierInvoice"],
+  [/^\/api\/banking/, "treasury"],
+  [/^\/api\/pos/, "pos"],
+  [/^\/api\/accounting/, "accounting"],
 ];
 
-const ACTION_LABELS: Record<HttpWriteMethod, string> = {
-  POST: "Création",
-  PATCH: "Modification",
-  PUT: "Modification",
-  DELETE: "Suppression",
+/** HTTP method → key in `offline:write.actions`. */
+const ACTION_LABEL_KEYS: Record<HttpWriteMethod, string> = {
+  POST: "create",
+  PATCH: "update",
+  PUT: "update",
+  DELETE: "delete",
 };
 
+/**
+ * Readable label of a queued write. Stored with the outbox record, so it is produced
+ * in the UI language at the time of the write.
+ */
 function describeWrite(method: HttpWriteMethod, path: string, body: unknown): string {
-  const resource = RESOURCE_LABELS.find(([pattern]) => pattern.test(path))?.[1] ?? "Écriture";
+  const resourceKey = RESOURCE_LABEL_KEYS.find(([pattern]) => pattern.test(path))?.[1];
+  const resource = i18n.t(`offline:resources.${resourceKey ?? "write"}`);
   const { itemId, action } = parsePath(path);
   const verb =
-    itemId && action && method === "POST" ? `Action « ${action} »` : ACTION_LABELS[method];
+    itemId && action && method === "POST"
+      ? i18n.t("offline:write.customAction", { action })
+      : i18n.t(`offline:write.actions.${ACTION_LABEL_KEYS[method]}`);
   const record = (body ?? {}) as Record<string, unknown>;
   const name = [record.name, record.label, record.username, record.code, record.reference].find(
     (value): value is string => typeof value === "string" && value.trim() !== ""
   );
-  return `${verb} — ${resource}${name ? ` « ${name} »` : ""}`;
+  return name
+    ? i18n.t("offline:write.labelNamed", { verb, resource, name })
+    : i18n.t("offline:write.label", { verb, resource });
 }
 
-// ─── Reflet local ─────────────────────────────────────────────────────────────
+// ─── Local reflection ─────────────────────────────────────────────────────────
 
 type Row = Record<string, unknown>;
 
@@ -161,7 +174,7 @@ function mapRows(body: unknown, map: (rows: unknown[]) => unknown[]): unknown {
   return body;
 }
 
-/** Collections servies par l'instantané plutôt que par le cache HTTP. */
+/** Collections served by the snapshot rather than by the HTTP cache. */
 function snapshotRows(
   snapshot: OfflineSnapshot,
   collection: string
@@ -195,7 +208,7 @@ async function reflectInSnapshot(collection: string, apply: (rows: Row[]) => Row
   await writeSnapshot(snapshot);
 }
 
-/** Élément actuellement affiché pour cet identifiant (fiche, liste ou instantané). */
+/** Item currently displayed for this identifier (detail, list or snapshot). */
 async function currentItem(collection: string, itemId: string): Promise<Row | null> {
   const detail = await readCachedResponse(`${collection}/${itemId}`);
   if (isRow(detail)) return detail;
@@ -206,12 +219,14 @@ async function currentItem(collection: string, itemId: string): Promise<Row | nu
   return target?.get()?.find((row) => row.id === itemId) ?? null;
 }
 
-/** Numéro affiché tant que le serveur n'a pas attribué le numéro légal. */
-const PENDING_NUMBER = "En attente";
+/** Number shown until the server assigns the legal number. */
+function pendingNumber(): string {
+  return i18n.t("offline:write.pendingNumber");
+}
 
 /**
- * Actions qui **créent** un document dans une autre collection : on y reflète un
- * document provisoire, pour que l'écran de destination s'ouvre hors ligne.
+ * Actions that **create** a document in another collection: a provisional document is
+ * reflected there, so that the destination screen opens offline.
  */
 const CREATING_ACTIONS: Record<string, string> = {
   "/api/quotes:convert": "/api/sales-orders",
@@ -219,9 +234,9 @@ const CREATING_ACTIONS: Record<string, string> = {
 };
 
 /**
- * Élément provisoire tel que l'afficheraient la liste et la fiche. Pour un document
- * (corps avec `lines`), on calcule aussi les totaux et on résout le nom du tiers, pour
- * que la fiche s'affiche comme celle d'un document serveur.
+ * Provisional item as the list and the detail page would display it. For a document
+ * (body with `lines`), totals are also computed and the party name is resolved, so
+ * that the detail page looks like that of a server document.
  */
 async function provisionalItem(body: Row, clientUuid: string, now: string): Promise<Row> {
   const item: Row = { isActive: true, createdAt: now, ...body, id: clientUuid, updatedAt: now };
@@ -239,7 +254,7 @@ async function provisionalItem(body: Row, clientUuid: string, now: string): Prom
     { globalDiscountBp: Number(body.globalDiscountBp ?? 0), vatEnabled: true }
   );
   Object.assign(item, {
-    number: body.number ?? PENDING_NUMBER,
+    number: body.number ?? pendingNumber(),
     status: body.status ?? "DRAFT",
     lines: lines.map((line, index) => ({
       receivedQuantity: "0",
@@ -277,16 +292,16 @@ async function reflectCreated(collection: string, created: Row, clientUuid: stri
 }
 
 /**
- * Reflète l'écriture dans les lectures locales et renvoie la réponse simulée remise à
- * l'écran appelant (l'élément créé ou modifié).
+ * Reflects the write in the local reads and returns the simulated response handed to
+ * the calling screen (the created or updated item).
  */
 async function reflectLocally(payload: HttpWritePayload, clientUuid: string): Promise<unknown> {
   const path = pathOf(payload.url);
   let { collection, itemId, action } = parsePath(path);
   const body = isRow(payload.body) ? payload.body : {};
 
-  // Identifiant non UUID (code, clé) : on ne le reconnaît que s'il figure bien dans la
-  // liste parente — `PUT /api/company/settings` ne vise pas un élément « settings ».
+  // Non-UUID identifier (code, key): only recognized if it is actually in the parent
+  // list — `PUT /api/company/settings` does not target a "settings" item.
   if (!itemId && payload.method !== "POST") {
     const cut = path.lastIndexOf("/");
     const parent = path.slice(0, cut);
@@ -298,7 +313,7 @@ async function reflectLocally(payload: HttpWritePayload, clientUuid: string): Pr
     }
   }
 
-  // Activation d'un module : la liste des modules reflète le nouvel état.
+  // Module activation: the module list reflects the new state.
   const moduleToggle = /^\/api\/platform\/modules\/([^/]+)\/(enable|disable)$/.exec(path);
   if (moduleToggle) {
     const [, code, verb] = moduleToggle;
@@ -314,14 +329,14 @@ async function reflectLocally(payload: HttpWritePayload, clientUuid: string): Pr
   }
   const now = new Date().toISOString();
 
-  // Création : POST sur une collection.
+  // Creation: POST on a collection.
   if (payload.method === "POST" && !itemId) {
     const created = await provisionalItem(body, clientUuid, now);
     await reflectCreated(collection, created, clientUuid);
     return created;
   }
 
-  // Transformation d'un document en un autre (devis → commande, commande → facture).
+  // Turning one document into another (quote → order, order → invoice).
   const target = itemId ? CREATING_ACTIONS[`${collection}:${action}`] : undefined;
   if (payload.method === "POST" && itemId && target) {
     const source = (await currentItem(collection, itemId)) ?? {};
@@ -335,7 +350,7 @@ async function reflectLocally(payload: HttpWritePayload, clientUuid: string): Pr
     return created;
   }
 
-  // Suppression.
+  // Deletion.
   if (payload.method === "DELETE" && itemId && !action) {
     const keep = (row: unknown) => !(isRow(row) && row.id === itemId);
     await updateCachedResponses(collection, (cached) =>
@@ -346,8 +361,8 @@ async function reflectLocally(payload: HttpWritePayload, clientUuid: string): Pr
     return undefined;
   }
 
-  // Modification d'un élément, ou action sur celui-ci (`/status`, `/close`…) : seuls
-  // les champs simples du corps sont reportés — une action n'a pas toujours de corps.
+  // Update of an item, or action on it (`/status`, `/close`…): only the simple fields
+  // of the body are carried over — an action does not always have a body.
   if (itemId) {
     const patch: Row = { updatedAt: now, pendingSync: true };
     for (const [key, value] of Object.entries(body)) {
@@ -364,8 +379,8 @@ async function reflectLocally(payload: HttpWritePayload, clientUuid: string): Pr
     return { ...(base ?? {}), ...patch, id: itemId };
   }
 
-  // Écriture sur une ressource sans identifiant (`PATCH /api/company`,
-  // `PUT /api/company/settings`) : fusion dans l'objet, ou mise à jour par clé.
+  // Write on a resource without identifier (`PATCH /api/company`,
+  // `PUT /api/company/settings`): merge into the object, or update by key.
   await updateCachedResponses(collection, (cached) => {
     if (Array.isArray(cached) && typeof body.key === "string") {
       const others = cached.filter((row) => !(isRow(row) && row.key === body.key));
@@ -377,12 +392,12 @@ async function reflectLocally(payload: HttpWritePayload, clientUuid: string): Pr
   return isRow(current) ? current : { success: true, ...body };
 }
 
-// ─── Mise en file ─────────────────────────────────────────────────────────────
+// ─── Queueing ─────────────────────────────────────────────────────────────────
 
 /**
- * Met une écriture en file et renvoie une réponse simulée. `idempotencyKey` est la clé
- * déjà envoyée au premier essai : si celui-ci a en fait atteint le serveur, le rejeu
- * ne créera rien de plus.
+ * Queues a write and returns a simulated response. `idempotencyKey` is the key already
+ * sent on the first attempt: if that attempt actually reached the server, the replay
+ * will not create anything more.
  */
 export async function queueHttpWrite(
   payload: HttpWritePayload,
@@ -401,23 +416,23 @@ export async function queueHttpWrite(
   try {
     result = await reflectLocally(payload, idempotencyKey);
   } catch {
-    // Le reflet est un confort d'affichage : l'écriture, elle, est bien en file.
+    // The reflection is a display convenience: the write itself is safely queued.
     result = isRow(payload.body) ? { ...payload.body, id: idempotencyKey } : undefined;
   }
 
   await refreshCounters();
-  toast.info("Enregistré hors ligne", {
+  toast.info(i18n.t("offline:write.savedOffline"), {
     id: "offline-write",
-    description: "La modification sera envoyée au serveur à la prochaine synchronisation.",
+    description: i18n.t("offline:write.savedOfflineDescription"),
   });
   return result;
 }
 
-// ─── Rejeu ────────────────────────────────────────────────────────────────────
+// ─── Replay ───────────────────────────────────────────────────────────────────
 
 /**
- * Remplace, dans une valeur quelconque, les identifiants provisoires par les
- * identifiants serveur connus.
+ * Replaces, in any value, the provisional identifiers with the known server
+ * identifiers.
  */
 export function substituteIds<T>(value: T, ids: Map<string, string>): T {
   if (ids.size === 0) return value;
@@ -433,7 +448,7 @@ export function substituteIds<T>(value: T, ids: Map<string, string>): T {
   return value;
 }
 
-/** Requête à rejouer pour un enregistrement de la file, identifiants résolus. */
+/** Request to replay for a queue record, with identifiers resolved. */
 export function replayRequest(
   record: OutboxRecord,
   ids: Map<string, string>

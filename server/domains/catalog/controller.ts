@@ -1,4 +1,4 @@
-/** Frontière HTTP du catalogue. */
+/** HTTP boundary of the catalog. */
 
 import type { Request, Response } from "express";
 

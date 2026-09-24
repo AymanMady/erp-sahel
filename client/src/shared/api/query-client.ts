@@ -1,11 +1,11 @@
 /**
- * Configuration de TanStack Query.
+ * TanStack Query configuration.
  *
- * Deux choix dictés par le mode hors ligne :
- *  - `staleTime` généreux et `gcTime` très long : les listes déjà chargées restent
- *    affichables quand le réseau tombe, au lieu de vider l'écran ;
- *  - aucun `retry` sur les erreurs réseau : réessayer trois fois ne ramène pas le
- *    réseau, cela ne fait que retarder l'affichage du mode hors ligne.
+ * Two choices driven by offline mode:
+ *  - generous `staleTime` and very long `gcTime`: lists already loaded stay
+ *    displayable when the network drops, instead of emptying the screen;
+ *  - no `retry` on network errors: retrying three times does not bring the
+ *    network back, it only delays showing offline mode.
  */
 
 import { QueryClient } from "@tanstack/react-query";
@@ -33,7 +33,7 @@ export const queryClient = new QueryClient({
   },
 });
 
-/** Clés de requête centralisées : évite les invalidations manquées ou trop larges. */
+/** Centralized query keys: avoids missed or overly broad invalidations. */
 export const queryKeys = {
   session: ["session"] as const,
   dashboard: (period?: unknown) => ["dashboard", period ?? null] as const,

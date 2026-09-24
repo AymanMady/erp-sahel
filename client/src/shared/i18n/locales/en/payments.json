@@ -1,0 +1,21 @@
+{
+  "title": "Payments",
+  "description": "Incoming and outgoing payments, with their impact on treasury.",
+  "columns": {
+    "party": "Party",
+    "invoice": "Invoice",
+    "method": "Method",
+    "account": "Account"
+  },
+  "filters": {
+    "allDirections": "All directions",
+    "incoming": "Incoming",
+    "outgoing": "Outgoing",
+    "allMethods": "All methods"
+  },
+  "empty": {
+    "title": "No payments",
+    "description": "Payments are recorded from an invoice or from the register."
+  },
+  "totalInOnPage": "Total received on this page:"
+}

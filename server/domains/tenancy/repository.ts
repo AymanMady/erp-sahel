@@ -1,4 +1,4 @@
-/** Persistance du domaine société (tenant). */
+/** Persistence of the company (tenant) domain. */
 
 import { asc, eq, sql } from "drizzle-orm";
 

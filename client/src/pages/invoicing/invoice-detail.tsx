@@ -1,6 +1,7 @@
-/** Fiche d'une facture : validation, règlement et émission d'avoir. */
+/** Invoice detail: validation, payment and credit note issuing. */
 
 import { useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import {
   IconArrowLeft,
   IconCheck,
@@ -46,6 +47,7 @@ import { Textarea } from "@/shared/ui/textarea";
 const DEFAULT_ACCOUNT = "DEFAULT";
 
 export default function InvoiceDetailPage() {
+  const { t } = useTranslation("invoicing");
   const params = useParams<{ id: string }>();
   const queryClient = useQueryClient();
   const { can } = useSession();
@@ -67,7 +69,7 @@ export default function InvoiceDetailPage() {
   const validate = useMutation({
     mutationFn: () => invoicingApi.validate(params.id),
     onSuccess: (invoice) => {
-      toast.success(`Facture ${invoice.number} validée.`);
+      toast.success(t("invoice.validated", { number: invoice.number }));
       void queryClient.invalidateQueries({ queryKey: queryKeys.invoice(params.id) });
       void queryClient.invalidateQueries({ queryKey: ["invoices"] });
     },
@@ -79,7 +81,7 @@ export default function InvoiceDetailPage() {
     return (
       <Card>
         <CardContent className="py-10 text-center text-sm text-muted-foreground">
-          {error ? errorMessage(error) : "Facture introuvable."}
+          {error ? errorMessage(error) : t("invoice.notFound")}
         </CardContent>
       </Card>
     );
@@ -91,49 +93,48 @@ export default function InvoiceDetailPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`Facture ${data.number}`}
+        title={t("invoice.pageTitle", { number: data.number })}
         description={data.partyName}
         className="print-hidden"
       >
         <Button variant="outline" asChild>
           <Link href="/invoices">
-            <IconArrowLeft className="size-4" />
-            Retour
+            <IconArrowLeft className="size-4 rtl:rotate-180" />
+            {t("common:actions.back")}
           </Link>
         </Button>
         <Button variant="outline" onClick={() => window.print()}>
           <IconPrinter className="size-4" />
-          Imprimer
+          {t("common:actions.print")}
         </Button>
         {isDraft && can("invoicing.write") ? (
           <Button onClick={() => validate.mutate()} disabled={validate.isPending}>
             <IconCheck className="size-4" />
-            Valider
+            {t("common:actions.validate")}
           </Button>
         ) : null}
         {!isDraft && remainingCents > 0 && can("payments.write") ? (
           <Button onClick={() => setPayOpen(true)}>
             <IconReceipt className="size-4" />
-            Encaisser
+            {t("invoice.collect")}
           </Button>
         ) : null}
         {!isDraft && data.status !== "CANCELLED" && can("invoicing.cancel") ? (
           <Button variant="outline" onClick={() => setCreditOpen(true)}>
             <IconReceiptRefund className="size-4" />
-            Émettre un avoir
+            {t("invoice.issueCreditNote")}
           </Button>
         ) : null}
       </PageHeader>
 
       {isDraft ? (
         <div className="rounded-md border border-dashed bg-muted/40 px-4 py-3 text-sm text-muted-foreground print-hidden">
-          Ce document est un <strong>brouillon</strong> : il ne porte pas encore de numéro légal,
-          n'a pas décrémenté le stock et n'est pas comptabilisé.
+          <Trans t={t} i18nKey="invoice.draftNotice" components={{ strong: <strong /> }} />
         </div>
       ) : null}
 
       <DocumentView
-        title="Facture"
+        title={t("invoice.documentTitle")}
         number={data.number}
         date={data.date}
         dueDate={data.dueDate}
@@ -161,7 +162,7 @@ export default function InvoiceDetailPage() {
       {(payments?.items.length ?? 0) > 0 ? (
         <Card className="print-hidden">
           <CardContent className="space-y-2 pt-6">
-            <p className="text-sm font-medium">Règlements</p>
+            <p className="text-sm font-medium">{t("invoice.payments")}</p>
             {payments?.items.map((payment) => (
               <div
                 key={payment.id}
@@ -222,6 +223,7 @@ function PaymentDialog({
   remainingCents: number;
   onDone: () => void;
 }) {
+  const { t } = useTranslation("invoicing");
   const [amountCents, setAmountCents] = useState(remainingCents);
   const [method, setMethod] = useState<PaymentMethod>("CASH");
   const [bankAccountId, setBankAccountId] = useState(DEFAULT_ACCOUNT);
@@ -252,11 +254,11 @@ function PaymentDialog({
     },
     onSuccess: (outcome) => {
       if (outcome.mode === "offline") {
-        toast.success("Règlement enregistré hors ligne.", {
-          description: "Il sera imputé à la facture à la prochaine synchronisation.",
+        toast.success(t("payment.savedOffline"), {
+          description: t("payment.savedOfflineDescription"),
         });
       } else {
-        toast.success("Règlement enregistré : trésorerie et comptabilité mises à jour.");
+        toast.success(t("payment.saved"));
       }
       onDone();
       onOpenChange(false);
@@ -268,24 +270,24 @@ function PaymentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Encaisser la facture</DialogTitle>
+          <DialogTitle>{t("payment.title")}</DialogTitle>
           <DialogDescription>
-            Reste à payer : <Money cents={remainingCents} />
+            {t("payment.remaining")} <Money cents={remainingCents} />
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <FieldGrid>
-            <Field label="Montant" required>
+            <Field label={t("common:labels.amount")} required>
               <MoneyInput valueCents={amountCents} onChange={setAmountCents} />
             </Field>
-            <Field label="Date">
+            <Field label={t("common:labels.date")}>
               <Input
                 type="date"
                 value={paymentDate}
                 onChange={(event) => setPaymentDate(event.target.value)}
               />
             </Field>
-            <Field label="Mode de règlement">
+            <Field label={t("payment.method")}>
               <Select value={method} onValueChange={(value) => setMethod(value as PaymentMethod)}>
                 <SelectTrigger>
                   <SelectValue />
@@ -299,13 +301,13 @@ function PaymentDialog({
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Compte de trésorerie">
+            <Field label={t("payment.account")}>
               <Select value={bankAccountId} onValueChange={setBankAccountId}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={DEFAULT_ACCOUNT}>Compte par défaut</SelectItem>
+                  <SelectItem value={DEFAULT_ACCOUNT}>{t("payment.defaultAccount")}</SelectItem>
                   {(accounts ?? []).map((account) => (
                     <SelectItem key={account.id} value={account.id}>
                       {account.name}
@@ -315,23 +317,23 @@ function PaymentDialog({
               </Select>
             </Field>
           </FieldGrid>
-          <Field label="Référence">
+          <Field label={t("common:labels.reference")}>
             <Input
               value={reference}
               onChange={(event) => setReference(event.target.value)}
-              placeholder="N° de chèque, référence de virement…"
+              placeholder={t("payment.referencePlaceholder")}
             />
           </Field>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
+            {t("common:actions.cancel")}
           </Button>
           <Button
             onClick={() => mutation.mutate()}
             disabled={mutation.isPending || amountCents <= 0 || amountCents > remainingCents}
           >
-            Enregistrer le règlement
+            {t("payment.submit")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -350,13 +352,14 @@ function CreditNoteDialog({
   invoiceId: string;
   onDone: () => void;
 }) {
+  const { t } = useTranslation("invoicing");
   const [reason, setReason] = useState("");
   const [restock, setRestock] = useState(true);
 
   const mutation = useMutation({
     mutationFn: () => invoicingApi.createCreditNote({ invoiceId, reason, restock }),
     onSuccess: () => {
-      toast.success("Avoir émis : écriture inverse passée.");
+      toast.success(t("creditNote.issued"));
       onDone();
       onOpenChange(false);
     },
@@ -367,19 +370,16 @@ function CreditNoteDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Émettre un avoir</DialogTitle>
-          <DialogDescription>
-            Une facture validée ne se modifie pas : la correction passe par un avoir, qui reprend
-            l'intégralité des lignes.
-          </DialogDescription>
+          <DialogTitle>{t("creditNote.title")}</DialogTitle>
+          <DialogDescription>{t("creditNote.description")}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <Field label="Motif">
+          <Field label={t("creditNote.reason")}>
             <Textarea
               rows={3}
               value={reason}
               onChange={(event) => setReason(event.target.value)}
-              placeholder="Retour marchandise, erreur de facturation…"
+              placeholder={t("creditNote.reasonPlaceholder")}
             />
           </Field>
           <label className="flex items-center gap-2 text-sm">
@@ -387,19 +387,19 @@ function CreditNoteDialog({
               checked={restock}
               onCheckedChange={(checked) => setRestock(checked === true)}
             />
-            Réintégrer les articles en stock
+            {t("creditNote.restock")}
           </label>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
+            {t("common:actions.cancel")}
           </Button>
           <Button
             variant="destructive"
             onClick={() => mutation.mutate()}
             disabled={mutation.isPending}
           >
-            Émettre l'avoir
+            {t("creditNote.submit")}
           </Button>
         </DialogFooter>
       </DialogContent>

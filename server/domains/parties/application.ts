@@ -1,8 +1,8 @@
 /**
- * Cas d'usage des tiers.
+ * Party use cases.
  *
- * Deux règles portées ici : l'attribution automatique du code ([FR-TIERS-1]) et le
- * cumul des rôles client/fournisseur sans duplication de fiche ([FR-TIERS-3]).
+ * Two rules live here: automatic code assignment ([FR-TIERS-1]) and combining the
+ * customer/supplier roles without duplicating the record ([FR-TIERS-3]).
  */
 
 import { eq } from "drizzle-orm";
@@ -10,9 +10,10 @@ import { eq } from "drizzle-orm";
 import { parties, type Party, type PartyType } from "@shared/schema";
 import { db, runInTransaction, type Database } from "../../db";
 import { NotFoundError } from "../../shared/errors/app-error";
+import { tr } from "../../shared/i18n";
 import { partiesExtraRepository, partiesRepository } from "./repository";
 
-/** Préfixe de code selon le rôle principal du tiers. */
+/** Code prefix according to the party's main role. */
 function codePrefix(partyType: PartyType): string {
   switch (partyType) {
     case "SUPPLIER":
@@ -71,7 +72,7 @@ class PartiesApplication {
 
   async getDetail(companyId: string, partyId: string) {
     const party = await partiesRepository.findById(companyId, partyId);
-    if (!party) throw new NotFoundError("Tiers introuvable.");
+    if (!party) throw new NotFoundError("Party not found.");
     const [contacts, addresses, history, outstandingCents] = await Promise.all([
       partiesExtraRepository.listContacts(companyId, partyId),
       partiesExtraRepository.listAddresses(companyId, partyId),
@@ -83,19 +84,19 @@ class PartiesApplication {
 
   async update(companyId: string, partyId: string, patch: Record<string, unknown>) {
     const party = await partiesRepository.update(companyId, partyId, patch);
-    if (!party) throw new NotFoundError("Tiers introuvable.");
+    if (!party) throw new NotFoundError("Party not found.");
     return party;
   }
 
   async archive(companyId: string, partyId: string) {
     const archived = await partiesRepository.archive(companyId, partyId);
-    if (!archived) throw new NotFoundError("Tiers introuvable.");
+    if (!archived) throw new NotFoundError("Party not found.");
   }
 
   /**
-   * Garantit qu'un tiers existe pour une vente comptoir : celui fourni, ou le client
-   * de passage de la société (créé au premier besoin). Sans cela, une vente POS
-   * anonyme n'aurait pas de contrepartie comptable ([BR-7]).
+   * Guarantees a party exists for a counter sale: the one provided, or the company's
+   * walk-in customer (created when first needed). Without it, an anonymous POS sale
+   * would have no accounting counterpart ([BR-7]).
    */
   async ensureWalkInCustomer(companyId: string, tx: Database): Promise<Party> {
     const repository = partiesRepository.withTransaction(tx);
@@ -105,9 +106,9 @@ class PartiesApplication {
     if (existing[0]) return existing[0] as Party;
     return repository.create(companyId, {
       code: "CLI-COMPTOIR",
-      name: "Client de passage",
+      name: tr("Walk-in customer"),
       partyType: "CUSTOMER",
-      notes: "Créé automatiquement pour les ventes comptoir sans client identifié.",
+      notes: tr("Created automatically for counter sales without an identified customer."),
     }) as Promise<Party>;
   }
 
@@ -126,22 +127,22 @@ class PartiesApplication {
   }
 
   /**
-   * Charge un tiers en exigeant son existence.
+   * Loads a party, requiring that it exists.
    *
-   * `database` doit être la **transaction en cours** quand l'appelant en a une : un
-   * tiers créé quelques lignes plus haut dans la même transaction (client de passage du
-   * POS, client créé hors-ligne) n'est pas encore visible depuis une autre connexion.
+   * `database` must be the **current transaction** when the caller has one: a party
+   * created a few lines earlier in the same transaction (POS walk-in customer, customer
+   * created offline) is not yet visible from another connection.
    */
   async requireParty(companyId: string, partyId: string, database: Database = db): Promise<Party> {
     const party = await partiesRepository.withTransaction(database).findById(companyId, partyId);
-    if (!party) throw new NotFoundError("Tiers introuvable.");
+    if (!party) throw new NotFoundError("Party not found.");
     return party as Party;
   }
 }
 
 export const partiesApplication = new PartiesApplication();
 
-/** Transaction helper : une transaction pour la création d'un tiers isolé. */
+/** Transaction helper: one transaction for creating a standalone party. */
 export async function createPartyStandalone(
   companyId: string,
   input: Parameters<PartiesApplication["create"]>[1]

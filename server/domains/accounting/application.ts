@@ -1,12 +1,17 @@
 /**
- * Moteur d'écritures : transforme des **clés logiques** en écriture équilibrée et
- * la persiste dans la transaction du document appelant ([FR-CPT-1], [BR-7]).
+ * Posting engine: turns **logical keys** into a balanced entry and persists it in the
+ * calling document's transaction ([FR-CPT-1], [BR-7]).
  *
- * Aucun numéro de compte n'est écrit en dur ici : la résolution passe par
- * `account_mappings`, ce qui rend le référentiel comptable interchangeable ([BR-21]).
+ * No account number is hard-coded here: resolution goes through `account_mappings`,
+ * which makes the accounting standard swappable ([BR-21]).
  */
 
-import { assertBalanced, chartTemplateFor, type PostingLine } from "@shared/accounting-rules";
+import {
+  assertBalanced,
+  chartTemplateFor,
+  type ChartTemplate,
+  type PostingLine,
+} from "@shared/accounting-rules";
 import {
   accounts as accountsTable,
   journals as journalsTable,
@@ -18,6 +23,7 @@ import {
 } from "@shared/schema";
 import type { Database } from "../../db";
 import { BusinessRuleError } from "../../shared/errors/app-error";
+import { tr, type Locale } from "../../shared/i18n";
 import { numberingApplication } from "../numbering/application";
 import { accountingRepository } from "./repository";
 
@@ -33,11 +39,34 @@ export interface PostEntryInput {
   clientUuid?: string | null;
 }
 
+/**
+ * Default chart of accounts of a standard, with account and journal names translated
+ * into `locale` (the request locale by default). Use it wherever default accounts or
+ * journals are written for a company, so a company created in French gets French names.
+ */
+export function localizedChartTemplate(
+  standard: Company["accountingStandard"],
+  locale?: Locale
+): ChartTemplate {
+  const template = chartTemplateFor(standard);
+  return {
+    ...template,
+    accounts: template.accounts.map((account) => ({
+      ...account,
+      name: tr(account.name, undefined, locale),
+    })),
+    journals: template.journals.map((journal) => ({
+      ...journal,
+      name: tr(journal.name, undefined, locale),
+    })),
+  };
+}
+
 class AccountingApplication {
   /**
-   * Résout une clé logique vers un compte. Une clé non mappée est une erreur de
-   * configuration, pas une donnée manquante : mieux vaut bloquer la validation que
-   * produire une écriture imputée au mauvais compte.
+   * Resolves a logical key to an account. An unmapped key is a configuration error,
+   * not missing data: better to block the validation than to post an entry to the
+   * wrong account.
    */
   private resolveAccountId(
     mappings: Map<AccountMappingKey, string>,
@@ -47,20 +76,26 @@ class AccountingApplication {
     if (line.accountId) return line.accountId;
     const accountId = mappings.get(line.mappingKey);
     if (accountId) return accountId;
-    const template = chartTemplateFor(standard);
+    const template = localizedChartTemplate(standard);
     const suggestion = template.accounts.find((a) => a.mappingKey === line.mappingKey);
     throw new BusinessRuleError(
-      `Comptabilité non configurée : aucun compte n'est associé à « ${line.mappingKey} »` +
-        (suggestion ? ` (attendu : ${suggestion.code} — ${suggestion.name}).` : "."),
+      suggestion
+        ? tr(
+            'Accounting not configured: no account is mapped to "{key}" (expected: {code} — {name}).',
+            { key: line.mappingKey, code: suggestion.code, name: suggestion.name }
+          )
+        : tr('Accounting not configured: no account is mapped to "{key}".', {
+            key: line.mappingKey,
+          }),
       "ACCOUNT_MAPPING_MISSING",
       { mappingKey: line.mappingKey }
     );
   }
 
   /**
-   * Crée l'écriture. Idempotent par origine : si une écriture existe déjà pour le
-   * couple (origine, identifiant), elle est renvoyée telle quelle — rejouer une
-   * ingestion de synchronisation ne peut donc pas comptabiliser deux fois ([BR-8]).
+   * Creates the entry. Idempotent per origin: if an entry already exists for the
+   * (origin, id) pair it is returned as is — replaying a sync ingestion therefore can
+   * never post twice ([BR-8]).
    */
   async postEntry(tx: Database, input: PostEntryInput): Promise<JournalEntry> {
     const repository = accountingRepository.withTransaction(tx);
@@ -78,25 +113,29 @@ class AccountingApplication {
       (line) => line.debitCents !== 0 || line.creditCents !== 0
     );
     if (relevantLines.length === 0) {
-      throw new BusinessRuleError("Une écriture doit comporter au moins une ligne mouvementée.");
+      throw new BusinessRuleError("An entry must have at least one non-zero line.");
     }
     const { totalDebitCents, totalCreditCents } = assertBalanced(relevantLines);
 
     const journal = await repository.findJournalByType(input.company.id, input.journalType);
     if (!journal) {
       throw new BusinessRuleError(
-        `Aucun journal de type « ${input.journalType} » n'est configuré pour cette société.`,
+        tr('No journal of type "{type}" is configured for this company.', {
+          type: input.journalType,
+        }),
         "JOURNAL_MISSING"
       );
     }
 
-    // Séquentiel : ces trois requêtes partagent la connexion de la transaction.
+    // Sequential: these queries share the transaction's connection.
     const mappings = await repository.loadMappings(input.company.id);
     const fiscalYear = await repository.findFiscalYearFor(input.company.id, input.date);
 
     if (fiscalYear?.isClosed) {
       throw new BusinessRuleError(
-        `L'exercice ${fiscalYear.name} est clôturé : aucune écriture ne peut y être ajoutée.`,
+        tr("Fiscal year {name} is closed: no entry can be added to it.", {
+          name: fiscalYear.name,
+        }),
         "FISCAL_YEAR_CLOSED"
       );
     }
@@ -140,16 +179,20 @@ class AccountingApplication {
     return entry;
   }
 
-  /** Installe le plan comptable et les journaux d'une société à sa création. */
+  /**
+   * Installs a company's chart of accounts and journals when it is created. Names are
+   * translated into `locale` (the request locale by default).
+   */
   async installChartOfAccounts(
     tx: Database,
-    company: Pick<Company, "id" | "accountingStandard">
+    company: Pick<Company, "id" | "accountingStandard">,
+    locale?: Locale
   ): Promise<void> {
-    const template = chartTemplateFor(company.accountingStandard);
+    const template = localizedChartTemplate(company.accountingStandard, locale);
     const repository = accountingRepository.withTransaction(tx);
 
-    // Les comptes parents doivent exister avant leurs enfants : on trie par longueur
-    // de code, ce qui reproduit la hiérarchie du plan (10 avant 101).
+    // Parent accounts must exist before their children: sorting by code length
+    // reproduces the chart hierarchy (10 before 101).
     const ordered = [...template.accounts].sort((a, b) => a.code.length - b.code.length);
     const byCode = new Map<string, string>();
 

@@ -1,0 +1,78 @@
+{
+  "allStatuses": "All statuses",
+  "searchPlaceholder": "Number or customer…",
+  "invoices": {
+    "title": "Customer invoices",
+    "description": "Validated sales documents and drafts.",
+    "new": "New invoice",
+    "posBadge": "POS",
+    "columns": {
+      "remaining": "Balance due"
+    },
+    "unpaidOnly": "Unpaid only",
+    "emptyTitle": "No invoices",
+    "emptyDescription": "Invoice an order or create a direct invoice."
+  },
+  "invoice": {
+    "documentTitle": "Invoice",
+    "pageTitle": "Invoice {{number}}",
+    "notFound": "Invoice not found.",
+    "validated": "Invoice {{number}} validated.",
+    "collect": "Record payment",
+    "issueCreditNote": "Issue a credit note",
+    "draftNotice": "This document is a <strong>draft</strong>: it has no legal number yet, has not reduced stock and is not posted to the accounts.",
+    "payments": "Payments"
+  },
+  "payment": {
+    "title": "Collect invoice payment",
+    "remaining": "Amount due:",
+    "method": "Payment method",
+    "account": "Cash/bank account",
+    "defaultAccount": "Default account",
+    "referencePlaceholder": "Cheque no., transfer reference…",
+    "submit": "Record payment",
+    "savedOffline": "Payment saved offline.",
+    "savedOfflineDescription": "It will be applied to the invoice at the next sync.",
+    "saved": "Payment recorded: cash and accounting updated."
+  },
+  "creditNote": {
+    "title": "Issue a credit note",
+    "description": "A validated invoice cannot be edited: corrections go through a credit note, which covers all the lines.",
+    "reason": "Reason",
+    "reasonPlaceholder": "Returned goods, billing error…",
+    "restock": "Return the items to stock",
+    "submit": "Issue credit note",
+    "issued": "Credit note issued: reversing entry posted."
+  },
+  "creditNotes": {
+    "title": "Credit notes",
+    "description": "Corrections of validated invoices: reversing entry and stock return.",
+    "columns": {
+      "restock": "Returned to stock",
+      "reason": "Reason"
+    },
+    "restocked": "Restocked",
+    "notRestocked": "no",
+    "emptyTitle": "No credit notes",
+    "emptyDescription": "Credit notes are issued from a validated invoice."
+  },
+  "invoiceForm": {
+    "title": "New invoice",
+    "description": "A draft has no effect; validation reduces stock and posts to the accounts.",
+    "saveDraft": "Save draft",
+    "processing": "Processing…",
+    "validate": "Validate invoice",
+    "header": "Header",
+    "lines": "Lines",
+    "date": "Invoice date",
+    "warehouse": "Shipping warehouse",
+    "warehouseHint": "Determines which warehouse the stock leaves from.",
+    "defaultWarehouse": "Default warehouse",
+    "draftSavedOffline": "Invoice draft saved offline.",
+    "draftSavedOfflineDescription": "It will be created on the server at the next sync.",
+    "savedOffline": "Invoice {{number}} saved offline.",
+    "savedOfflineDescription": "It will be validated (stock and accounting) at the next sync.",
+    "draftSaved": "Invoice draft saved.",
+    "validated": "Invoice {{number}} validated: stock and accounting updated."
+  }
+}

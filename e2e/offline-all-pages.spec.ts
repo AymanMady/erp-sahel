@@ -1,19 +1,33 @@
 /**
- * Toute l'application sans réseau.
+ * The whole application without network.
  *
- *   1. se connecter, laisser la synchronisation et le préchargement se faire ;
- *   2. **couper la connexion** ;
- *   3. ouvrir **chaque page** à froid (rechargement complet, coquille servie par le
- *      Service Worker) : aucune ne doit afficher d'erreur réseau ;
- *   4. créer un rôle et une commande fournisseur hors ligne : ils apparaissent aussitôt ;
- *   5. **rétablir la connexion** → rejeu automatique, sans doublon.
+ *   1. sign in, let synchronization and prefetching happen;
+ *   2. **cut the connection**;
+ *   3. open **every page** cold (full reload, shell served by the Service Worker): none
+ *      may display a network error;
+ *   4. create a role offline: it shows up right away;
+ *   5. **restore the connection** → automatic replay, without duplicate.
  */
 
 import { expect, test, type Page } from "@playwright/test";
 
 const ADMIN = { username: "admin", password: "Admin123!" };
 
-/** Toutes les routes sans paramètre du routeur applicatif. */
+/**
+ * Selectors use the English UI strings: force the UI language before any page script
+ * runs, whatever the language stored or detected in the browser.
+ */
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem("erp.language", "en");
+    } catch {
+      // Storage unavailable: the `locale` of the Playwright config still selects English.
+    }
+  });
+});
+
+/** Every parameterless route of the application router. */
 const ROUTES = [
   "/",
   "/parties",
@@ -53,17 +67,17 @@ const ROUTES = [
   "/profile",
 ];
 
-const NETWORK_ERRORS = /Serveur injoignable|pas disponible hors ligne|Failed to fetch/;
+const NETWORK_ERRORS = /Server unreachable|not available offline|Failed to fetch/;
 
 async function login(page: Page): Promise<void> {
   await page.goto("/login");
-  await page.getByLabel("Identifiant").fill(ADMIN.username);
-  await page.getByLabel("Mot de passe").fill(ADMIN.password);
-  await page.getByRole("button", { name: "Se connecter" }).click();
-  await expect(page.getByRole("heading", { name: /Bonjour/ })).toBeVisible();
+  await page.getByLabel("Username").fill(ADMIN.username);
+  await page.getByLabel("Password").fill(ADMIN.password);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page.getByRole("heading", { name: /Hello/ })).toBeVisible();
 }
 
-/** Lit une table IndexedDB de la base hors ligne. */
+/** Reads a table of the offline IndexedDB database. */
 function readStore(page: Page, store: "cache" | "meta" | "outbox") {
   return page.evaluate(
     (name) =>
@@ -86,22 +100,19 @@ async function cachedKeys(page: Page): Promise<string[]> {
   return (await readStore(page, "cache")).map((row) => String(row.key));
 }
 
-test.describe("application complète hors ligne", () => {
-  test("chaque page s'ouvre sans réseau et les saisies se synchronisent", async ({
-    page,
-    context,
-  }) => {
+test.describe("whole application offline", () => {
+  test("every page opens without network and entries synchronize", async ({ page, context }) => {
     test.setTimeout(240_000);
     await login(page);
 
-    // La coquille doit être contrôlée par le Service Worker avant la coupure.
+    // The shell must be controlled by the Service Worker before the outage.
     await page.evaluate(() => navigator.serviceWorker.ready);
     await page.reload();
     await expect
       .poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller)))
       .toBe(true);
 
-    // Préchargement terminé : administration et supervision comprises.
+    // Prefetch complete: administration and monitoring included.
     await expect
       .poll(
         async () => {
@@ -115,38 +126,39 @@ test.describe("application complète hors ligne", () => {
       .toBe(true);
     await page.waitForLoadState("networkidle");
 
-    // --- Coupure --------------------------------------------------------------
+    // --- Outage ---------------------------------------------------------------
     await context.setOffline(true);
 
     for (const route of ROUTES) {
-      await test.step(`ouvre ${route} hors ligne`, async () => {
+      await test.step(`opens ${route} offline`, async () => {
         await page.goto(route);
         await expect(page.getByRole("heading").first()).toBeVisible();
-        // Laisse aux requêtes le temps d'échouer et au repli local de répondre.
+        // Give requests time to fail and the local fallback time to answer.
         await page.waitForTimeout(400);
         await expect(page.locator("body")).not.toContainText(NETWORK_ERRORS);
       });
     }
 
-    // La caisse reprend la session ouverte sur le serveur (lue dans l'instantané) au
-    // lieu d'en proposer une seconde, qui serait refusée à la synchronisation.
-    await test.step("ouvre /pos hors ligne", async () => {
+    // The POS resumes the session opened on the server (read from the snapshot)
+    // instead of offering a second one, which would be rejected at synchronization.
+    await test.step("opens /pos offline", async () => {
       await page.goto("/pos");
-      await expect(page.getByPlaceholder(/Scanner un code-barres/)).toBeVisible();
+      await expect(page.getByPlaceholder(/Scan a barcode/)).toBeVisible();
     });
 
-    // Les données d'administration sont bien là (écran vide avant correction).
+    // Administration data is there (the screen used to be empty).
     await page.goto("/settings/roles");
-    await expect(page.getByText("Administrateur", { exact: true }).first()).toBeVisible();
+    // System role name as seeded (English since the i18n migration, French before).
+    await expect(page.getByText(/^Administrat(or|eur)$/).first()).toBeVisible();
     await page.goto("/settings/users");
     await expect(page.getByText("admin", { exact: true }).first()).toBeVisible();
 
-    // --- Saisie hors ligne ------------------------------------------------------
-    const roleName = `Magasinier hors ligne ${Date.now()}`;
+    // --- Offline entry -----------------------------------------------------------
+    const roleName = `Offline storekeeper ${Date.now()}`;
     await page.goto("/settings/roles");
-    await page.getByRole("button", { name: "Nouveau rôle" }).click();
+    await page.getByRole("button", { name: "New role" }).click();
     await page.getByRole("dialog").getByRole("textbox").first().fill(roleName);
-    await page.getByRole("dialog").getByRole("button", { name: "Enregistrer" }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Save" }).click();
     await expect(page.getByText(roleName)).toBeVisible();
 
     const pending = (await readStore(page, "outbox")).filter(
@@ -154,11 +166,11 @@ test.describe("application complète hors ligne", () => {
     );
     expect(pending).toHaveLength(1);
 
-    // Survit à la fermeture de l'onglet.
+    // Survives closing the tab.
     await page.reload();
     await expect(page.getByText(roleName)).toBeVisible();
 
-    // --- Retour du réseau -------------------------------------------------------
+    // --- Network back ------------------------------------------------------------
     await context.setOffline(false);
     await page.evaluate(() => window.dispatchEvent(new Event("online")));
     await expect
@@ -171,7 +183,7 @@ test.describe("application complète hors ligne", () => {
       )
       .toBe(true);
 
-    // Une seule fois côté serveur, malgré l'essai initial et le rejeu.
+    // Only once on the server, despite the initial attempt and the replay.
     await page.goto("/settings/roles");
     await expect(page.getByText(roleName)).toHaveCount(1);
   });

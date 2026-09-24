@@ -1,4 +1,4 @@
-/** Frontière applicative du catalogue : validation, normalisation, délégation. */
+/** Application boundary of the catalog: validation, normalization, delegation. */
 
 import { asc } from "drizzle-orm";
 
@@ -29,7 +29,7 @@ export class CatalogService {
 
   async findByBarcode(companyId: string, barcode: string) {
     const product = await catalogApplication.findByBarcode(companyId, barcode);
-    if (!product) throw new NotFoundError("Aucun produit ne correspond à ce code-barres.");
+    if (!product) throw new NotFoundError("No product matches this barcode.");
     return product;
   }
 
@@ -63,14 +63,14 @@ export class CatalogService {
       categoryId,
       updateCategorySchema.parse(body)
     );
-    if (!category) throw new NotFoundError("Catégorie introuvable.");
+    if (!category) throw new NotFoundError("Category not found.");
     return category;
   }
 
   async archiveCategory(companyId: string, id: unknown) {
     const { id: categoryId } = idParamSchema.parse({ id });
     const archived = await categoriesRepository.archive(companyId, categoryId);
-    if (!archived) throw new NotFoundError("Catégorie introuvable.");
+    if (!archived) throw new NotFoundError("Category not found.");
     return { success: true as const };
   }
 

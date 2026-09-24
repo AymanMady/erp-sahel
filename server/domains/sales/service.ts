@@ -1,4 +1,4 @@
-/** Frontière applicative des devis et commandes. */
+/** Application boundary of quotes and sales orders. */
 
 import { tenancyApplication } from "../tenancy/application";
 import { salesApplication } from "./application";

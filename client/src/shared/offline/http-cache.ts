@@ -1,14 +1,14 @@
 /**
- * Cache hors-ligne des réponses `GET` de l'API.
+ * Offline cache of API `GET` responses.
  *
- * L'instantané de synchronisation ne couvre que le référentiel. Pour que **toutes** les
- * pages restent consultables sans réseau (factures, commandes, comptabilité, rapports…),
- * chaque réponse `GET` réussie est conservée dans IndexedDB, indexée par son URL
- * normalisée ; hors ligne, `http.ts` la relit au lieu d'échouer. Le préchargement
- * (`offline-prefetch.ts`) remplit ce cache pour les pages jamais ouvertes.
+ * The synchronization snapshot only covers master data. So that **every** page stays
+ * viewable without network (invoices, orders, accounting, reports…), each successful
+ * `GET` response is kept in IndexedDB, keyed by its normalized URL; offline, `http.ts`
+ * reads it back instead of failing. Prefetching (`offline-prefetch.ts`) fills this
+ * cache for pages never opened.
  *
- * Le bandeau « Mode hors ligne » signale à l'utilisateur que les données affichées
- * sont celles de la dernière synchronisation.
+ * The "Offline mode" banner tells the user that the displayed data is from the last
+ * synchronization.
  */
 
 import { offlineDb } from "./db";
@@ -17,10 +17,10 @@ const PREFIX = "http:";
 const PAGINATION_PARAMS = new Set(["limit", "offset"]);
 
 /**
- * Endpoints jamais conservés : authentification (jetons), sonde de santé, et flux de
- * synchronisation déjà stockés ailleurs (instantané, delta). Tout le reste — y compris
- * utilisateurs, rôles et état de synchronisation — doit rester consultable hors ligne.
- * Aucun secret n'y figure : le serveur ne renvoie jamais d'empreinte de mot de passe.
+ * Endpoints never kept: authentication (tokens), health probe, and synchronization
+ * streams already stored elsewhere (snapshot, delta). Everything else — including
+ * users, roles and synchronization status — must stay viewable offline. No secret is
+ * stored: the server never returns a password hash.
  */
 const EXCLUDED_PREFIXES = [
   "/api/auth",
@@ -31,9 +31,9 @@ const EXCLUDED_PREFIXES = [
 ];
 
 /**
- * Listes servies par l'instantané de synchronisation (`offline-reads.ts`) : plus
- * fraîches (delta à chaque cycle), recherchables sans réseau, et complétées par les
- * créations hors ligne. On ne les sert donc pas depuis ce cache.
+ * Lists served by the synchronization snapshot (`offline-reads.ts`): fresher (delta on
+ * every cycle), searchable without network, and completed with offline creations. So
+ * they are not served from this cache.
  */
 const SNAPSHOT_BACKED_PATHS = new Set([
   "/api/catalog/products",
@@ -49,7 +49,7 @@ const SNAPSHOT_BACKED_PATHS = new Set([
 
 interface CachedResponse {
   path: string;
-  /** Paramètres hors pagination, normalisés : sert au repli par pagination. */
+  /** Non-pagination parameters, normalized: used for the pagination fallback. */
   filterKey: string;
   limit: number | null;
   offset: number;
@@ -96,7 +96,7 @@ export async function storeCachedResponse(url: string, body: unknown): Promise<v
       updatedAt: new Date().toISOString(),
     });
   } catch {
-    // Stockage indisponible : la page restera simplement indisponible hors ligne.
+    // Storage unavailable: the page will simply stay unavailable offline.
   }
 }
 
@@ -111,7 +111,7 @@ function isPaginated(body: unknown): body is PaginatedBody {
 
 type Row = Record<string, unknown>;
 
-/** Paramètres sans incidence sur le contenu d'une liste. */
+/** Parameters with no effect on the content of a list. */
 const NEUTRAL_PARAMS = new Set(["includeArchived", "sort", "order"]);
 const SEARCH_PARAMS = new Set(["search", "q", "term", "reference"]);
 const FROM_PARAMS = new Set(["fromDate", "from", "dateFrom", "startDate"]);
@@ -144,9 +144,9 @@ function matchesSearch(row: Row, term: string): boolean {
 }
 
 /**
- * Applique localement les filtres d'une requête à une liste en cache. Renvoie `null`
- * si un filtre ne peut pas être évalué sur les lignes : mieux vaut « indisponible hors
- * ligne » qu'une liste qui semble filtrée alors qu'elle ne l'est pas.
+ * Applies a request's filters locally to a cached list. Returns `null` if a filter
+ * cannot be evaluated on the rows: "unavailable offline" is better than a list that
+ * looks filtered when it is not.
  */
 function filterRows(rows: unknown[], filters: [string, string][]): unknown[] | null {
   let result = rows.filter((row): row is Row => typeof row === "object" && row !== null);
@@ -180,7 +180,7 @@ function filterRows(rows: unknown[], filters: [string, string][]): unknown[] | n
   return result;
 }
 
-/** Filtres d'une clé de cache, sous forme de paires. */
+/** Filters of a cache key, as pairs. */
 function filterPairs(filterKey: string): [string, string][] {
   return [...new URLSearchParams(filterKey).entries()];
 }
@@ -192,14 +192,14 @@ function paginate(body: unknown, items: unknown[], limit: number | null, offset:
 }
 
 /**
- * Réponse en cache pour cette URL, ou `undefined`.
+ * Cached response for this URL, or `undefined`.
  *
- * À défaut de correspondance exacte :
- *  1. une liste paginée est reconstituée à partir d'une réponse plus large portant les
- *     mêmes filtres (le préchargement demande 200 lignes : les pages 1 à 8 d'une liste
- *     de 25 sont ainsi disponibles) ;
- *  2. sinon, les filtres demandés (recherche, statut, dates…) sont appliqués localement
- *     à une liste en cache moins filtrée — chercher une facture hors ligne fonctionne.
+ * Without an exact match:
+ *  1. a paginated list is rebuilt from a wider response with the same filters
+ *     (prefetching asks for 200 rows: pages 1 to 8 of a 25-row list are thus
+ *     available);
+ *  2. otherwise, the requested filters (search, status, dates…) are applied locally
+ *     to a less filtered cached list — searching for an invoice offline works.
  */
 export async function readCachedResponse(url: string): Promise<unknown> {
   const info = describe(url);
@@ -219,7 +219,7 @@ export async function readCachedResponse(url: string): Promise<unknown> {
         const start = info.offset - cached.offset;
         const cachedCount = cached.body.items.length;
         const total = cached.body.total ?? cachedCount;
-        // La fenêtre demandée doit être entièrement couverte (ou atteindre la fin de liste).
+        // The requested window must be fully covered (or reach the end of the list).
         if (start < 0 || (start + limit > cachedCount && cached.offset + cachedCount < total)) {
           continue;
         }
@@ -232,8 +232,8 @@ export async function readCachedResponse(url: string): Promise<unknown> {
       }
     }
 
-    // Filtrage local : on part de la liste la plus large dont les filtres sont un
-    // sous-ensemble de ceux demandés.
+    // Local filtering: start from the widest list whose filters are a subset of
+    // the requested ones.
     const wanted = filterPairs(info.filterKey);
     const wantedSet = new Set(wanted.map(([key, value]) => `${key}=${value}`));
     const bases = candidates
@@ -251,7 +251,7 @@ export async function readCachedResponse(url: string): Promise<unknown> {
       return paginate(base.body, rows, info.limit, info.offset);
     }
   } catch {
-    // Lecture impossible : on laisse l'erreur réseau d'origine remonter.
+    // Read impossible: let the original network error propagate.
   }
   return undefined;
 }
@@ -261,11 +261,11 @@ function rowsOf(body: unknown): unknown[] {
   return isPaginated(body) ? body.items : [];
 }
 
-// ─── Reflet local des écritures hors ligne ───────────────────────────────────
+// ─── Local reflection of offline writes ──────────────────────────────────────
 
 /**
- * Applique `update` à chaque réponse en cache de ce chemin exact (toutes requêtes
- * confondues). `update` renvoie le nouveau corps, ou `undefined` pour le supprimer.
+ * Applies `update` to every cached response of this exact path (all queries
+ * combined). `update` returns the new body, or `undefined` to delete it.
  */
 export async function updateCachedResponses(
   path: string,
@@ -283,11 +283,11 @@ export async function updateCachedResponses(
       }
     }
   } catch {
-    // Reflet impossible : l'écriture reste en file, seul l'affichage est en retard.
+    // Reflection impossible: the write stays queued, only the display lags behind.
   }
 }
 
-/** Lignes (listes paginées ou tableaux) en cache pour ce chemin exact. */
+/** Cached rows (paginated lists or arrays) for this exact path. */
 export async function cachedRowsOf(path: string): Promise<unknown[]> {
   try {
     const rows = await offlineDb.cache.where("key").startsWith(`${PREFIX}${path}?`).toArray();
@@ -297,7 +297,7 @@ export async function cachedRowsOf(path: string): Promise<unknown[]> {
   }
 }
 
-/** Supprime les réponses en cache dont la clé mentionne l'un de ces identifiants. */
+/** Deletes cached responses whose key mentions one of these identifiers. */
 export async function forgetCachedResponsesMentioning(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
   try {
@@ -305,11 +305,11 @@ export async function forgetCachedResponsesMentioning(ids: string[]): Promise<vo
       .filter((row) => row.key.startsWith(PREFIX) && ids.some((id) => row.key.includes(id)))
       .delete();
   } catch {
-    // Entrées orphelines : elles seront écrasées au prochain préchargement.
+    // Orphan entries: they will be overwritten by the next prefetch.
   }
 }
 
-/** Date de mise à jour d'une fiche en cache (champ `updatedAt` de la réponse). */
+/** Update date of a cached record (the response's `updatedAt` field). */
 export async function cachedUpdatedAt(url: string): Promise<string | null> {
   try {
     const row = await offlineDb.cache.get(describe(url).key);

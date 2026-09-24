@@ -1,4 +1,4 @@
-/** Prestations facturables sans gestion de stock (main d'œuvre, forfaits) [FR-PROD-5]. */
+/** Billable services without stock management (labor, flat fees) [FR-PROD-5]. */
 
 import { pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
@@ -28,8 +28,8 @@ export const services = pgTable(
 );
 
 export const insertServiceSchema = createInsertSchema(services, {
-  code: (s) => s.min(1, "Le code est obligatoire"),
-  name: (s) => s.min(1, "Le libellé est obligatoire"),
+  code: (s) => s.min(1, "Code is required"),
+  name: (s) => s.min(1, "Label is required"),
 }).omit({ id: true, createdAt: true, updatedAt: true });
 
 export type InsertService = z.infer<typeof insertServiceSchema>;

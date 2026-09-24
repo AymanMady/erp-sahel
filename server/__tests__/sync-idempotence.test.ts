@@ -1,11 +1,10 @@
 /**
- * Test central du mode hors ligne : **une opération synchronisée l'est exactement une
- * fois** ([BR-8], [FR-SYNC-4], §16.3 et §17 du cahier des charges).
+ * Core test of offline mode: **a synchronized operation is applied exactly once**
+ * ([BR-8], [FR-SYNC-4], §16.3 and §17 of the specification).
  *
- * Le scénario reproduit la panne réelle : un poste encaisse hors ligne, le réseau
- * revient, le lot part — puis part **une seconde fois** parce que la réponse s'est
- * perdue. Aucun doublon ne doit apparaître, ni en facture, ni en stock, ni en
- * comptabilité.
+ * The scenario reproduces the real failure: a device takes payments offline, the
+ * network comes back, the batch is sent — then sent **a second time** because the
+ * response was lost. No duplicate may appear, in invoices, in stock or in accounting.
  */
 
 import { randomUUID } from "node:crypto";
@@ -35,9 +34,9 @@ import {
 let context: TestContext;
 let productId: string;
 /**
- * `clientUuid` de la session ouverte hors ligne, partagée par tous les lots du test.
- * Une caisse n'accepte qu'une session ouverte à la fois — c'est une règle du produit,
- * pas une limite du test : chaque lot réutilise donc la même.
+ * `clientUuid` of the session opened offline, shared by every batch of the test.
+ * A register accepts only one open session at a time — a product rule, not a test
+ * limitation: every batch therefore reuses the same one.
  */
 let sessionUuid: string;
 
@@ -61,7 +60,7 @@ beforeAll(async () => {
           registerId: context.registerId,
           openingBalanceCents: 500_000,
           openedAt: new Date().toISOString(),
-          notes: "Session hors ligne",
+          notes: "Offline session",
         },
       },
     ]
@@ -74,9 +73,9 @@ afterAll(async () => {
 });
 
 /**
- * Lot typique d'un poste hors ligne : un ticket et son règlement, rattachés à la
- * session ouverte au démarrage. Aucun client n'est saisi — cas le plus courant au
- * comptoir, et celui qui exige que le règlement reprenne le tiers de la facture.
+ * Typical batch of an offline device: a ticket and its payment, linked to the session
+ * opened at startup. No customer is entered — the most common case at the counter, and
+ * the one that requires the payment to take over the invoice's party.
  */
 function buildOfflineBatch(): {
   operations: SyncOperationInput[];
@@ -108,10 +107,10 @@ function buildOfflineBatch(): {
           lines: [
             {
               productId,
-              description: "Article de test",
+              description: "Test item",
               productSku: "ART",
               quantity: 3,
-              unit: "pièce",
+              unit: "piece",
               unitPriceCents: 10_000,
               discountBp: 0,
               vatRateBp: 1600,
@@ -141,8 +140,8 @@ function buildOfflineBatch(): {
   };
 }
 
-describe("ingestion d'un lot hors ligne", () => {
-  it("crée la chaîne complète et attribue un numéro légal", async () => {
+describe("offline batch ingestion", () => {
+  it("creates the full chain and assigns a legal number", async () => {
     const batch = buildOfflineBatch();
     const results = await syncApplication.push(
       { company: context.company, userId: context.userId, deviceId: "poste-test" },
@@ -152,7 +151,7 @@ describe("ingestion d'un lot hors ligne", () => {
     expect(results.map((result) => result.status)).toEqual(["created", "created"]);
 
     const invoiceResult = results.find((result) => result.entity === "invoicing.sales_invoice");
-    // Le numéro provisoire du poste est remplacé par un numéro légal séquentiel.
+    // The device's provisional number is replaced by a sequential legal number.
     expect(invoiceResult?.assignedNumber).toMatch(/^FAC-\d{4}-\d{4}$/);
 
     const [invoice] = await db
@@ -165,7 +164,7 @@ describe("ingestion d'un lot hors ligne", () => {
     expect(invoice.isLocked).toBe(true);
   });
 
-  it("ne duplique rien lorsque le même lot est rejoué", async () => {
+  it("duplicates nothing when the same batch is replayed", async () => {
     const batch = buildOfflineBatch();
     const identity = {
       company: context.company,
@@ -176,11 +175,11 @@ describe("ingestion d'un lot hors ligne", () => {
     const first = await syncApplication.push(identity, batch.operations);
     expect(first.every((result) => result.status === "created")).toBe(true);
 
-    // Rejeu intégral du même lot — exactement ce qui se produit après un timeout réseau.
+    // Full replay of the same batch — exactly what happens after a network timeout.
     const second = await syncApplication.push(identity, batch.operations);
     expect(second.every((result) => result.status === "duplicate")).toBe(true);
 
-    // Les identifiants renvoyés au rejeu sont ceux de la première ingestion.
+    // The ids returned on replay are those of the first ingestion.
     for (const [index, result] of second.entries()) {
       expect(result.serverId).toBe(first[index].serverId);
     }
@@ -197,7 +196,7 @@ describe("ingestion d'un lot hors ligne", () => {
       .where(eq(payments.clientUuid, batch.paymentUuid));
     expect(paymentRows).toHaveLength(1);
 
-    // La session ouverte hors ligne reste unique, malgré les rejeux.
+    // The session opened offline stays unique despite the replays.
     const sessions = await db
       .select()
       .from(posSessions)
@@ -205,7 +204,7 @@ describe("ingestion d'un lot hors ligne", () => {
     expect(sessions).toHaveLength(1);
   });
 
-  it("ne décrémente le stock qu'une seule fois", async () => {
+  it("decrements stock only once", async () => {
     const [before] = await db
       .select()
       .from(stockItems)
@@ -228,11 +227,11 @@ describe("ingestion d'un lot hors ligne", () => {
         and(eq(stockItems.companyId, context.company.id), eq(stockItems.productId, productId))
       );
 
-    // Trois envois du même lot, une seule sortie de 3 unités.
+    // Three sends of the same batch, a single outgoing movement of 3 units.
     expect(Number(after.quantity)).toBe(quantityBefore - 3);
   });
 
-  it("produit des écritures comptables équilibrées, sans doublon", async () => {
+  it("produces balanced journal entries, without duplicates", async () => {
     const batch = buildOfflineBatch();
     const identity = { company: context.company, userId: context.userId, deviceId: "poste-test" };
 
@@ -256,11 +255,10 @@ describe("ingestion d'un lot hors ligne", () => {
     const totalCredit = lines.reduce((sum, line) => sum + line.creditCents, 0);
     expect(totalDebit).toBe(totalCredit);
 
-    // Une facture ⇒ une écriture de vente ; un règlement ⇒ une écriture de caisse.
+    // One invoice ⇒ one sales entry; one payment ⇒ one cash entry.
     const salesEntries = entries.filter((entry) => entry.originType === "sales_invoice");
     const paymentEntries = entries.filter((entry) => entry.originType === "payment");
-    // Autant d'écritures de vente que de factures réellement créées — les rejeux
-    // n'en ajoutent aucune.
+    // As many sales entries as invoices actually created — replays add none.
     const invoiceCount = (
       await db.select().from(salesInvoices).where(eq(salesInvoices.companyId, context.company.id))
     ).length;
@@ -268,7 +266,7 @@ describe("ingestion d'un lot hors ligne", () => {
     expect(paymentEntries.length).toBe(salesEntries.length);
   });
 
-  it("reporte une opération dont la dépendance n'est pas encore ingérée", async () => {
+  it("defers an operation whose dependency is not ingested yet", async () => {
     const orphanInvoiceUuid = randomUUID();
     const missingPartyUuid = randomUUID();
 
@@ -280,7 +278,7 @@ describe("ingestion d'un lot hors ligne", () => {
           localSeq: 99,
           entity: "invoicing.sales_invoice",
           action: "create",
-          // Le client référencé n'a jamais été envoyé : la dépendance est introuvable.
+          // The referenced customer was never sent: the dependency cannot be found.
           dependsOn: [missingPartyUuid],
           createdAt: new Date().toISOString(),
           payload: {
@@ -295,7 +293,7 @@ describe("ingestion d'un lot hors ligne", () => {
                 productId,
                 description: "Article",
                 quantity: 1,
-                unit: "pièce",
+                unit: "piece",
                 unitPriceCents: 10_000,
                 discountBp: 0,
                 vatRateBp: 1600,
@@ -308,7 +306,7 @@ describe("ingestion d'un lot hors ligne", () => {
 
     expect(result.status).toBe("deferred");
 
-    // Un report ne doit rien écrire : l'opération doit rester rejouable telle quelle.
+    // A deferral must write nothing: the operation must stay replayable as is.
     const invoices = await db
       .select()
       .from(salesInvoices)
@@ -316,7 +314,7 @@ describe("ingestion d'un lot hors ligne", () => {
     expect(invoices).toHaveLength(0);
   });
 
-  it("résout une référence créée dans le même lot", async () => {
+  it("resolves a reference created in the same batch", async () => {
     const partyUuid = randomUUID();
     const invoiceUuid = randomUUID();
 
@@ -330,7 +328,7 @@ describe("ingestion d'un lot hors ligne", () => {
           action: "create",
           dependsOn: [],
           createdAt: new Date().toISOString(),
-          payload: { name: "Client créé hors ligne", partyType: "CUSTOMER" },
+          payload: { name: "Customer created offline", partyType: "CUSTOMER" },
         },
         {
           clientUuid: invoiceUuid,
@@ -351,7 +349,7 @@ describe("ingestion d'un lot hors ligne", () => {
                 productId,
                 description: "Article",
                 quantity: 1,
-                unit: "pièce",
+                unit: "piece",
                 unitPriceCents: 10_000,
                 discountBp: 0,
                 vatRateBp: 1600,

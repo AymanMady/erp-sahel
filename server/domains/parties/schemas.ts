@@ -1,4 +1,4 @@
-/** Contrats de validation des tiers. */
+/** Party validation contracts. */
 
 import { z } from "zod";
 
@@ -17,11 +17,11 @@ export const listPartiesQuerySchema = z.object({
 });
 
 export const createPartySchema = z.object({
-  /** Laissé vide, le code est attribué automatiquement (`CLI-0001`). */
+  /** When left empty, the code is assigned automatically (`CLI-0001`). */
   code: z.string().trim().max(64).optional(),
-  name: z.string().min(1, "Le nom est obligatoire").max(255),
+  name: z.string().min(1, "Name is required").max(255),
   partyType: z.enum(PARTY_TYPES).default("CUSTOMER"),
-  email: z.string().email("Adresse e-mail invalide").or(z.literal("")).default(""),
+  email: z.string().email("Invalid email address").or(z.literal("")).default(""),
   phone: z.string().max(64).default(""),
   vatNumber: z.string().max(64).default(""),
   creditLimitCents: z.number().int().min(0).default(0),
@@ -34,9 +34,9 @@ export const createPartySchema = z.object({
 export const updatePartySchema = createPartySchema.partial();
 
 export const contactSchema = z.object({
-  firstName: z.string().min(1, "Le prénom est obligatoire").max(100),
+  firstName: z.string().min(1, "First name is required").max(100),
   lastName: z.string().max(100).default(""),
-  email: z.string().email("Adresse e-mail invalide").or(z.literal("")).default(""),
+  email: z.string().email("Invalid email address").or(z.literal("")).default(""),
   phone: z.string().max(64).default(""),
   role: z.string().max(100).default(""),
 });
@@ -46,7 +46,8 @@ export const addressSchema = z.object({
   street: z.string().max(255).default(""),
   city: z.string().max(100).default(""),
   postalCode: z.string().max(32).default(""),
-  country: z.string().max(100).default("Mauritanie"),
+  /** Defaults to the translated "Mauritania" at creation time (see the service). */
+  country: z.string().max(100).optional(),
 });
 
-export const idParamSchema = z.object({ id: z.string().uuid("Identifiant invalide") });
+export const idParamSchema = z.object({ id: z.string().uuid("Invalid identifier") });

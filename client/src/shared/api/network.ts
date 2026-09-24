@@ -1,14 +1,14 @@
 /**
- * Détection de connectivité.
+ * Connectivity detection.
  *
- * `navigator.onLine` ne dit que « une interface réseau existe » : un poste connecté
- * au Wi-Fi d'un magasin dont la liaison Internet est coupée se croit en ligne. On
- * confirme donc par un **ping serveur** (`GET /api/health`), comme prescrit par
+ * `navigator.onLine` only says "a network interface exists": a device connected
+ * to a shop's Wi-Fi whose Internet link is down believes it is online. So we
+ * confirm with a **server ping** (`GET /api/health`), as prescribed by
  * `SYNC_STRATEGY.md` §8.
  */
 
 const HEALTH_TIMEOUT_MS = 4000;
-/** Durée de validité d'un résultat de ping : évite d'inonder le serveur. */
+/** Validity period of a ping result: avoids flooding the server. */
 const PROBE_TTL_MS = 10_000;
 
 let lastProbe: { at: number; reachable: boolean } | null = null;
@@ -18,7 +18,7 @@ export function isBrowserOnline(): boolean {
   return typeof navigator === "undefined" ? true : navigator.onLine;
 }
 
-/** Interroge `/api/health` avec un délai court. Ne lève jamais. */
+/** Queries `/api/health` with a short timeout. Never throws. */
 export async function probeServer(force = false): Promise<boolean> {
   if (!isBrowserOnline()) {
     updateProbe(false);
@@ -55,13 +55,13 @@ function updateProbe(reachable: boolean): void {
   }
 }
 
-/** Dernier état connu, sans déclencher de requête. */
+/** Last known state, without triggering a request. */
 export function lastKnownOnline(): boolean {
   if (!isBrowserOnline()) return false;
   return lastProbe?.reachable ?? true;
 }
 
-/** Invalide le cache de ping : appelé dès qu'une requête échoue ou réussit. */
+/** Invalidates the ping cache: called whenever a request fails or succeeds. */
 export function reportNetworkResult(reachable: boolean): void {
   updateProbe(reachable);
 }

@@ -1,4 +1,4 @@
-/** Paramétrage de la société courante. */
+/** Settings of the current company. */
 
 import type { Express } from "express";
 import { z } from "zod";
@@ -20,7 +20,7 @@ const updateCompanySchema = z.object({
   address: z.string().max(2000).optional(),
   city: z.string().max(100).optional(),
   country: z.string().max(100).optional(),
-  /** Data URI ou URL : sert d'enseigne, d'icône PWA et de favicon. */
+  /** Data URI or URL: used as the brand sign, PWA icon and favicon. */
   logo: z.string().max(2_000_000).nullish(),
   language: z.string().max(8).optional(),
   currency: z.string().length(3).optional(),

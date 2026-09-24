@@ -1,0 +1,58 @@
+{
+  "api": {
+    "requestFailed": "فشل الطلب.",
+    "serverUnreachable": "تعذّر الوصول إلى الخادم."
+  },
+  "sync": {
+    "failed": "فشلت المزامنة."
+  },
+  "errors": {
+    "productNotSynced": "لم تتم مزامنة هذا المنتج بعد: يمكن تعديل مخزونه بعد المزامنة."
+  },
+  "write": {
+    "label": "{{verb}} — {{resource}}",
+    "labelNamed": "{{verb}} — {{resource}} «{{name}}»",
+    "customAction": "إجراء «{{action}}»",
+    "pendingNumber": "قيد الانتظار",
+    "savedOffline": "حُفظ دون اتصال",
+    "savedOfflineDescription": "سيُرسل التعديل إلى الخادم عند المزامنة التالية.",
+    "actions": {
+      "create": "إنشاء",
+      "update": "تعديل",
+      "delete": "حذف"
+    }
+  },
+  "resources": {
+    "user": "مستخدم",
+    "role": "دور",
+    "setting": "إعداد",
+    "company": "شركة",
+    "module": "وحدة",
+    "category": "فئة",
+    "product": "منتج",
+    "service": "خدمة",
+    "party": "طرف",
+    "warehouse": "مستودع",
+    "stock": "مخزون",
+    "quote": "عرض سعر",
+    "salesOrder": "طلب عميل",
+    "invoice": "فاتورة",
+    "creditNote": "إشعار دائن",
+    "payment": "دفعة",
+    "purchaseOrder": "طلب شراء",
+    "goodsReceipt": "استلام بضائع",
+    "supplierInvoice": "فاتورة مورد",
+    "treasury": "الخزينة",
+    "pos": "نقطة البيع",
+    "accounting": "المحاسبة",
+    "write": "كتابة"
+  },
+  "outboxLabels": {
+    "party": "طرف «{{name}}»",
+    "product": "منتج {{sku}} «{{name}}»",
+    "quote": "عرض سعر {{number}}",
+    "invoice": "فاتورة {{number}}",
+    "payment": "دفعة {{reference}}",
+    "stockAdjustment": "تسوية مخزون ({{quantity}})"
+  }
+}

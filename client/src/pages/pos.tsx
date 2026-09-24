@@ -1,13 +1,13 @@
 /**
- * Point de vente (POS) — écran plein cadre, utilisable au comptoir.
+ * Point of sale (POS) — full-screen view, usable at the counter.
  *
- * Contraintes qui dictent la conception :
- *  - **fonctionne hors ligne** : la recherche produit lit l'instantané local dès que le
- *    serveur est injoignable, et l'encaissement bascule dans l'outbox ([FR-POS-3]) ;
- *  - **saisie au clavier et au scanner** : le champ de recherche garde le focus, et un
- *    code-barres complet valide directement l'ajout au panier ;
- *  - **aucune ambiguïté sur l'encaissement** : le total réglé doit égaler le TTC, la
- *    monnaie à rendre est affichée en permanence.
+ * Constraints that drive the design:
+ *  - **works offline**: product search reads the local snapshot as soon as the
+ *    server is unreachable, and checkout falls back to the outbox ([FR-POS-3]);
+ *  - **keyboard and scanner input**: the search field keeps focus, and a complete
+ *    barcode directly adds the item to the cart;
+ *  - **no ambiguity at checkout**: the amount paid must equal the total incl. tax, and
+ *    the change due is always displayed.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -24,6 +24,7 @@ import {
   IconUser,
 } from "@tabler/icons-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 import { toast } from "sonner";
 
@@ -86,6 +87,7 @@ interface LocalSession {
 }
 
 export default function PosPage() {
+  const { t } = useTranslation("pos");
   const online = useOnline();
   const queryClient = useQueryClient();
   const { company, can } = useSession();
@@ -106,11 +108,11 @@ export default function PosPage() {
   } | null>(null);
   const debouncedSearch = useDebounced(search, 200);
 
-  // --- Session de caisse ---------------------------------------------------
+  // --- Register session -----------------------------------------------------
   const { data: serverSession, isLoading: sessionLoading } = useQuery({
     queryKey: queryKeys.posCurrentSession,
-    // Hors ligne, la session ouverte sur le serveur est relue dans l'instantané : sans
-    // elle, la caisse proposerait d'en ouvrir une seconde, refusée à la synchronisation.
+    // Offline, the session opened on the server is read back from the snapshot: without
+    // it, the register would offer to open a second one, rejected at sync time.
     queryFn: () => posApi.currentSession(),
     refetchOnReconnect: true,
     retry: false,
@@ -123,8 +125,8 @@ export default function PosPage() {
     })();
   }, []);
 
-  // Une session ouverte côté serveur prime sur la session locale : c'est elle qui
-  // porte les tickets déjà synchronisés.
+  // A server-side open session takes precedence over the local one: it holds the
+  // tickets that have already been synced.
   const activeSession: LocalSession | null = serverSession
     ? {
         sessionId: serverSession.id,
@@ -139,14 +141,14 @@ export default function PosPage() {
     await writeMeta(SESSION_LOCAL_KEY, session ? JSON.stringify(session) : "");
   }, []);
 
-  // --- Instantané hors-ligne ----------------------------------------------
+  // --- Offline snapshot --------------------------------------------------
   const { data: snapshot } = useQuery({
     queryKey: ["pos-snapshot"],
     queryFn: async () => (await readSnapshot()) ?? (online ? await pullSnapshot() : null),
     staleTime: 5 * 60_000,
   });
 
-  // --- Recherche produit ---------------------------------------------------
+  // --- Product search ------------------------------------------------------
   const { data: onlineResults, isFetching } = useQuery({
     queryKey: ["pos-products", debouncedSearch],
     queryFn: () =>
@@ -196,7 +198,7 @@ export default function PosPage() {
     searchRef.current?.focus();
   }, []);
 
-  /** Un scanner « tape » le code puis envoie Entrée : on résout alors le code-barres. */
+  /** A scanner "types" the code then sends Enter: the barcode is resolved at that point. */
   const handleSearchSubmit = useCallback(async () => {
     const term = search.trim();
     if (!term) return;
@@ -214,10 +216,10 @@ export default function PosPage() {
         addToCart(product);
         return;
       } catch {
-        // Pas un code-barres : on laisse la liste filtrée à l'écran.
+        // Not a barcode: keep the filtered list on screen.
       }
     }
-    // Un seul résultat affiché : l'ajouter est le geste attendu.
+    // A single result is shown: adding it is the expected action.
     if (products.length === 1) addToCart(products[0]);
   }, [search, snapshot, online, products, addToCart]);
 
@@ -244,14 +246,12 @@ export default function PosPage() {
       <div className="flex flex-1 items-center justify-center p-8">
         <Card className="max-w-md">
           <CardHeader>
-            <CardTitle>Accès refusé</CardTitle>
-            <CardDescription>
-              Votre profil ne dispose pas de la permission d'utiliser la caisse.
-            </CardDescription>
+            <CardTitle>{t("accessDenied.title")}</CardTitle>
+            <CardDescription>{t("accessDenied.description")}</CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild variant="outline">
-              <Link href="/">Retour au tableau de bord</Link>
+              <Link href="/">{t("accessDenied.backToDashboard")}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -274,12 +274,12 @@ export default function PosPage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-      {/* ----- Catalogue ----- */}
+      {/* ----- Catalog ----- */}
       <section className="flex min-h-0 flex-1 flex-col border-e">
         <div className="flex items-center gap-2 border-b p-3">
-          <Button variant="ghost" size="icon" asChild aria-label="Quitter la caisse">
+          <Button variant="ghost" size="icon" asChild aria-label={t("exit")}>
             <Link href="/">
-              <IconArrowLeft className="size-5" />
+              <IconArrowLeft className="size-5 rtl:rotate-180" />
             </Link>
           </Button>
           <div className="relative flex-1">
@@ -294,7 +294,7 @@ export default function PosPage() {
                   void handleSearchSubmit();
                 }
               }}
-              placeholder="Scanner un code-barres ou rechercher un article…"
+              placeholder={t("search.placeholder")}
               className="h-11 ps-9 text-base"
               autoFocus
             />
@@ -302,7 +302,7 @@ export default function PosPage() {
           {!online ? (
             <Badge variant="outline" className="gap-1 border-status-pending text-status-pending">
               <IconCloudOff className="size-3.5" />
-              Hors ligne
+              {t("offline")}
             </Badge>
           ) : null}
         </div>
@@ -312,12 +312,12 @@ export default function PosPage() {
             {products.length === 0 ? (
               <p className="col-span-full py-16 text-center text-sm text-muted-foreground">
                 {isFetching
-                  ? "Recherche…"
+                  ? t("search.searching")
                   : search
-                    ? "Aucun article ne correspond."
+                    ? t("search.noMatch")
                     : snapshot || online
-                      ? "Commencez à taper pour rechercher un article."
-                      : "Aucun instantané local : connectez-vous une première fois au serveur."}
+                      ? t("search.startTyping")
+                      : t("search.noSnapshot")}
               </p>
             ) : (
               products.map((product) => (
@@ -351,7 +351,7 @@ export default function PosPage() {
         </ScrollArea>
       </section>
 
-      {/* ----- Panier ----- */}
+      {/* ----- Cart ----- */}
       <aside className="flex min-h-0 w-full flex-col bg-card lg:w-[26rem]">
         <div className="flex items-center justify-between gap-2 border-b p-3">
           <Button
@@ -361,11 +361,11 @@ export default function PosPage() {
             onClick={() => setCustomerOpen(true)}
           >
             <IconUser className="size-4 shrink-0" />
-            <span className="truncate">{customer ? customer.name : "Client de passage"}</span>
+            <span className="truncate">{customer ? customer.name : t("customer.walkIn")}</span>
           </Button>
           <Button variant="ghost" size="sm" onClick={() => setCloseOpen(true)}>
             <IconLock className="size-4" />
-            Clôturer
+            {t("cart.closeRegister")}
           </Button>
         </div>
 
@@ -373,7 +373,7 @@ export default function PosPage() {
           {cart.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 p-12 text-center">
               <IconShoppingCartOff className="size-8 text-muted-foreground/60" />
-              <p className="text-sm text-muted-foreground">Le panier est vide.</p>
+              <p className="text-sm text-muted-foreground">{t("cart.empty")}</p>
             </div>
           ) : (
             <ul className="divide-y">
@@ -390,7 +390,7 @@ export default function PosPage() {
                       size="icon"
                       variant="ghost"
                       className="size-7 shrink-0"
-                      aria-label="Retirer"
+                      aria-label={t("common:actions.remove")}
                       onClick={() => setQuantity(line.productId, 0)}
                     >
                       <IconTrash className="size-4" />
@@ -402,7 +402,7 @@ export default function PosPage() {
                         size="icon"
                         variant="outline"
                         className="size-8"
-                        aria-label="Diminuer"
+                        aria-label={t("cart.decrease")}
                         onClick={() => updateQuantity(line.productId, -1)}
                       >
                         <IconMinus className="size-3.5" />
@@ -422,7 +422,7 @@ export default function PosPage() {
                         size="icon"
                         variant="outline"
                         className="size-8"
-                        aria-label="Augmenter"
+                        aria-label={t("cart.increase")}
                         onClick={() => updateQuantity(line.productId, 1)}
                       >
                         <IconPlus className="size-3.5" />
@@ -441,19 +441,23 @@ export default function PosPage() {
 
         <div className="space-y-3 border-t p-3">
           <div className="space-y-1 text-sm">
-            <Row label="Total HT" value={<Money cents={totals.totalHtCents} />} />
-            <Row label="TVA" value={<Money cents={totals.totalVatCents} />} />
+            <Row
+              label={t("common:labels.totalExclTax")}
+              value={<Money cents={totals.totalHtCents} />}
+            />
+            <Row label={t("cart.vat")} value={<Money cents={totals.totalVatCents} />} />
             <Separator className="my-2" />
             <div className="flex items-center justify-between text-lg font-semibold">
-              <span>Total TTC</span>
+              <span>{t("common:labels.totalInclTax")}</span>
               <Money cents={totals.totalTtcCents} />
             </div>
           </div>
 
           {lastTicket ? (
             <p className="rounded-md bg-status-success-bg px-3 py-2 text-xs text-status-success">
-              Ticket {lastTicket.number} encaissé
-              {lastTicket.mode === "offline" ? " (hors ligne, en attente de synchronisation)" : ""}.
+              {lastTicket.mode === "offline"
+                ? t("cart.lastTicketOffline", { number: lastTicket.number })
+                : t("cart.lastTicket", { number: lastTicket.number })}
             </p>
           ) : null}
 
@@ -464,7 +468,7 @@ export default function PosPage() {
             onClick={() => setPayOpen(true)}
           >
             <IconCash className="size-5" />
-            Encaisser {formatMoney(totals.totalTtcCents, currency)}
+            {t("cart.checkout", { amount: formatMoney(totals.totalTtcCents, currency) })}
           </Button>
         </div>
       </aside>
@@ -511,8 +515,8 @@ export default function PosPage() {
             void queryClient.invalidateQueries({ queryKey: queryKeys.posCurrentSession });
             toast.success(
               result.mode === "online"
-                ? `Ticket ${result.number} encaissé.`
-                : `Ticket ${result.number} enregistré hors ligne.`
+                ? t("toasts.ticketPaid", { number: result.number })
+                : t("toasts.ticketSavedOffline", { number: result.number })
             );
             searchRef.current?.focus();
           } catch (error) {
@@ -545,7 +549,7 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-/** Écran d'ouverture de caisse : fond de caisse et choix du poste. */
+/** Register opening screen: opening float and register selection. */
 function OpenSessionScreen({
   online,
   loading,
@@ -555,6 +559,7 @@ function OpenSessionScreen({
   loading: boolean;
   onOpened: (session: LocalSession) => Promise<void>;
 }) {
+  const { t } = useTranslation("pos");
   const [registerId, setRegisterId] = useState("");
   const [openingBalanceCents, setOpeningBalanceCents] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -566,7 +571,7 @@ function OpenSessionScreen({
     retry: false,
   });
 
-  // Hors ligne, les caisses proviennent de l'instantané local.
+  // Offline, registers come from the local snapshot.
   const { data: snapshot } = useQuery({ queryKey: ["pos-snapshot"], queryFn: readSnapshot });
   const availableRegisters = online && registers ? registers : (snapshot?.registers ?? []);
 
@@ -578,26 +583,24 @@ function OpenSessionScreen({
     <div className="flex flex-1 items-center justify-center p-6">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Ouvrir la caisse</CardTitle>
-          <CardDescription>
-            Déclarez le fond de caisse présent dans le tiroir avant la première vente.
-          </CardDescription>
+          <CardTitle>{t("openSession.title")}</CardTitle>
+          <CardDescription>{t("openSession.description")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {loading ? (
-            <p className="text-sm text-muted-foreground">Vérification d'une session en cours…</p>
+            <p className="text-sm text-muted-foreground">{t("openSession.checking")}</p>
           ) : null}
 
           {!online ? (
             <p className="rounded-md bg-status-pending-bg px-3 py-2 text-xs text-status-pending">
-              Serveur injoignable : la session sera créée localement puis synchronisée.
+              {t("openSession.offlineNotice")}
             </p>
           ) : null}
 
-          <Field label="Caisse">
+          <Field label={t("openSession.register")}>
             <Select value={registerId} onValueChange={setRegisterId}>
               <SelectTrigger>
-                <SelectValue placeholder="Sélectionner une caisse" />
+                <SelectValue placeholder={t("openSession.selectRegister")} />
               </SelectTrigger>
               <SelectContent>
                 {availableRegisters.map((register) => (
@@ -609,13 +612,13 @@ function OpenSessionScreen({
             </Select>
           </Field>
 
-          <Field label="Fond de caisse">
+          <Field label={t("openingBalance")}>
             <MoneyInput valueCents={openingBalanceCents} onChange={setOpeningBalanceCents} />
           </Field>
 
           <div className="flex gap-2">
             <Button variant="outline" asChild className="flex-1">
-              <Link href="/">Retour</Link>
+              <Link href="/">{t("common:actions.back")}</Link>
             </Button>
             <Button
               className="flex-1"
@@ -632,8 +635,8 @@ function OpenSessionScreen({
                   });
                   toast.success(
                     result.mode === "online"
-                      ? "Caisse ouverte."
-                      : "Caisse ouverte hors ligne, synchronisation au retour du réseau."
+                      ? t("toasts.sessionOpened")
+                      : t("toasts.sessionOpenedOffline")
                   );
                 } catch (error) {
                   toast.error(errorMessage(error));
@@ -642,7 +645,7 @@ function OpenSessionScreen({
                 }
               }}
             >
-              {submitting ? "Ouverture…" : "Ouvrir la caisse"}
+              {submitting ? t("openSession.opening") : t("openSession.submit")}
             </Button>
           </div>
         </CardContent>
@@ -662,6 +665,7 @@ function CustomerDialog({
   online: boolean;
   onSelect: (party: Party | null) => void;
 }) {
+  const { t } = useTranslation("pos");
   const [search, setSearch] = useState("");
   const debounced = useDebounced(search, 200);
 
@@ -684,15 +688,13 @@ function CustomerDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Client du ticket</DialogTitle>
-          <DialogDescription>
-            Sans sélection, la vente est rattachée au client de passage.
-          </DialogDescription>
+          <DialogTitle>{t("customer.title")}</DialogTitle>
+          <DialogDescription>{t("customer.description")}</DialogDescription>
         </DialogHeader>
         <Input
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Nom, code, téléphone…"
+          placeholder={t("customer.searchPlaceholder")}
           autoFocus
         />
         <ScrollArea className="max-h-72">
@@ -702,7 +704,7 @@ function CustomerDialog({
               className="w-full rounded-md px-3 py-2 text-start text-sm transition-colors hover:bg-muted"
               onClick={() => onSelect(null)}
             >
-              Client de passage
+              {t("customer.walkIn")}
             </button>
             {parties.map((party) => (
               <button
@@ -738,6 +740,7 @@ function PaymentDialog({
   online: boolean;
   onConfirm: (payments: TicketPayment[]) => Promise<void>;
 }) {
+  const { t } = useTranslation("pos");
   const currency = useCurrency();
   const [method, setMethod] = useState<PaymentMethod>("CASH");
   const [receivedCents, setReceivedCents] = useState(0);
@@ -753,14 +756,14 @@ function PaymentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Encaissement</DialogTitle>
+          <DialogTitle>{t("payment.title")}</DialogTitle>
           <DialogDescription>
-            Total à régler : <strong>{formatMoney(totalTtcCents, currency)}</strong>
+            {t("payment.amountDue")} <strong>{formatMoney(totalTtcCents, currency)}</strong>
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          <Field label="Mode de règlement">
+          <Field label={t("payment.method")}>
             <div className="grid grid-cols-2 gap-2">
               {PAYMENT_METHODS.map((entry) => (
                 <Button
@@ -775,43 +778,42 @@ function PaymentDialog({
             </div>
           </Field>
 
-          <Field label="Montant reçu">
+          <Field label={t("payment.received")}>
             <MoneyInput valueCents={receivedCents} onChange={setReceivedCents} />
           </Field>
 
           {method === "CASH" ? (
             <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2">
-              <span className="text-sm text-muted-foreground">Monnaie à rendre</span>
+              <span className="text-sm text-muted-foreground">{t("payment.change")}</span>
               <Money cents={changeCents} className="text-base font-semibold" />
             </div>
           ) : null}
 
           {!online ? (
             <p className="rounded-md bg-status-pending-bg px-3 py-2 text-xs text-status-pending">
-              Hors ligne : le ticket recevra un numéro provisoire, remplacé par le numéro légal lors
-              de la synchronisation.
+              {t("payment.offlineNotice")}
             </p>
           ) : null}
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
+            {t("common:actions.cancel")}
           </Button>
           <Button
             disabled={submitting || receivedCents < totalTtcCents || totalTtcCents <= 0}
             onClick={async () => {
               setSubmitting(true);
               try {
-                // Le serveur exige l'égalité stricte : on n'encaisse jamais la monnaie
-                // rendue, seulement le montant dû.
+                // The server requires strict equality: the change given back is never
+                // recorded, only the amount due.
                 await onConfirm([{ method, amountCents: totalTtcCents }]);
               } finally {
                 setSubmitting(false);
               }
             }}
           >
-            {submitting ? "Encaissement…" : "Valider"}
+            {submitting ? t("payment.processing") : t("common:actions.validate")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -832,6 +834,7 @@ function CloseSessionDialog({
   online: boolean;
   onClosed: () => Promise<void>;
 }) {
+  const { t } = useTranslation("pos");
   const [countedCents, setCountedCents] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
@@ -849,30 +852,36 @@ function CloseSessionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Clôture de caisse</DialogTitle>
-          <DialogDescription>Comptez le tiroir et saisissez le montant constaté.</DialogDescription>
+          <DialogTitle>{t("closeSession.title")}</DialogTitle>
+          <DialogDescription>{t("closeSession.description")}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-1 rounded-md border p-3 text-sm">
-            <Row label="Fond de caisse" value={<Money cents={session.openingBalanceCents} />} />
+            <Row
+              label={t("openingBalance")}
+              value={<Money cents={session.openingBalanceCents} />}
+            />
             {summary ? (
               <>
                 <Row
-                  label="Encaissements espèces"
+                  label={t("closeSession.cashReceipts")}
                   value={<Money cents={summary.totals.cashCents} />}
                 />
-                <Row label="Total des ventes" value={<Money cents={summary.totals.totalCents} />} />
+                <Row
+                  label={t("closeSession.totalSales")}
+                  value={<Money cents={summary.totals.totalCents} />}
+                />
               </>
             ) : null}
             <Separator className="my-2" />
             <div className="flex items-center justify-between font-medium">
-              <span>Attendu en caisse</span>
+              <span>{t("closeSession.expected")}</span>
               <Money cents={expectedCents} />
             </div>
           </div>
 
-          <Field label="Montant compté">
+          <Field label={t("closeSession.counted")}>
             <MoneyInput valueCents={countedCents} onChange={setCountedCents} />
           </Field>
 
@@ -885,22 +894,21 @@ function CloseSessionDialog({
                   : "bg-status-danger-bg text-status-danger"
               )}
             >
-              <span>Écart de caisse</span>
+              <span>{t("closeSession.difference")}</span>
               <Money cents={differenceCents} />
             </div>
           ) : null}
 
           {!online || session.clientUuid ? (
             <p className="rounded-md bg-status-pending-bg px-3 py-2 text-xs text-status-pending">
-              La clôture sera transmise avec les ventes en attente ; l'écart définitif sera
-              recalculé par le serveur.
+              {t("closeSession.pendingNotice")}
             </p>
           ) : null}
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
+            {t("common:actions.cancel")}
           </Button>
           <Button
             disabled={submitting}
@@ -919,10 +927,10 @@ function CloseSessionDialog({
                 onOpenChange(false);
                 toast.success(
                   result.differenceCents === null
-                    ? "Clôture enregistrée, en attente de synchronisation."
+                    ? t("toasts.closePending")
                     : result.differenceCents === 0
-                      ? "Caisse clôturée sans écart."
-                      : "Caisse clôturée avec écart."
+                      ? t("toasts.closedBalanced")
+                      : t("toasts.closedWithDifference")
                 );
               } catch (error) {
                 toast.error(errorMessage(error));
@@ -931,7 +939,7 @@ function CloseSessionDialog({
               }
             }}
           >
-            {submitting ? "Clôture…" : "Clôturer la caisse"}
+            {submitting ? t("closeSession.closing") : t("closeSession.submit")}
           </Button>
         </DialogFooter>
       </DialogContent>

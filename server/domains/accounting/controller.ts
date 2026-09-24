@@ -1,4 +1,4 @@
-/** Frontière HTTP de la comptabilité. */
+/** HTTP boundary of accounting. */
 
 import type { Request, Response } from "express";
 

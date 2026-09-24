@@ -1,4 +1,4 @@
-/** Société (tenant) — racine de l'isolation multi-société [BR-13], [FR-PLAT-5]. */
+/** Company (tenant) — root of multi-company isolation [BR-13], [FR-PLAT-5]. */
 
 import { boolean, integer, pgTable, text, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
@@ -12,7 +12,7 @@ export type AccountingStandard = (typeof ACCOUNTING_STANDARDS)[number];
 export const companies = pgTable("companies", {
   ...baseColumns,
   name: text("name").notNull(),
-  /** Résolution du tenant par sous-domaine [FR-PLAT-7]. */
+  /** Tenant resolution by subdomain [FR-PLAT-7]. */
   subdomain: text("subdomain").notNull().unique(),
   legalName: text("legal_name").default("").notNull(),
   taxId: text("tax_id").default("").notNull(),
@@ -22,41 +22,41 @@ export const companies = pgTable("companies", {
   address: text("address").default("").notNull(),
   city: text("city").default("").notNull(),
   country: text("country").default("Mauritanie").notNull(),
-  /** Logo unique (data URI ou URL) : enseigne, icône PWA et favicon. */
+  /** Single logo (data URI or URL): brand, PWA icon and favicon. */
   logo: text("logo"),
   language: text("language").default("fr").notNull(),
-  /** Devise par société, MRU par défaut [BR-22]. */
+  /** Per-company currency, MRU by default [BR-22]. */
   currency: text("currency").default("MRU").notNull(),
   accountingStandard: text("accounting_standard")
     .$type<AccountingStandard>()
     .default("OHADA")
     .notNull(),
-  /** Assujettissement TVA : quand `false`, toutes les lignes sont calculées à 0 %. */
+  /** VAT liability: when `false`, every line is computed at 0 %. */
   vatEnabled: boolean("vat_enabled").default(true).notNull(),
-  /** Taux de TVA par défaut proposé à la saisie, en points de base. */
+  /** Default VAT rate suggested on entry, in basis points. */
   defaultVatRateBp: integer("default_vat_rate_bp").default(1600).notNull(),
-  /** Mois de début d'exercice (1 = janvier) — sert aux séquences annuelles et à la balance. */
+  /** Fiscal year start month (1 = January) — used by yearly sequences and the trial balance. */
   fiscalYearStartMonth: integer("fiscal_year_start_month").default(1).notNull(),
-  /** Domaine d'affichage par défaut (thème/UX). NON normatif : l'activation passe par `company_plugins`. */
+  /** Default display domain (theme/UX). NOT normative: activation goes through `company_plugins`. */
   primaryModule: text("primary_module").default("").notNull(),
 });
 
 export const insertCompanySchema = createInsertSchema(companies, {
-  name: (s) => s.min(1, "Le nom de la société est obligatoire"),
+  name: (s) => s.min(1, "Company name is required"),
   subdomain: (s) =>
     s
       .min(2)
       .max(63)
-      .regex(/^[a-z0-9-]+$/, "Sous-domaine : minuscules, chiffres et tirets uniquement"),
-  // `drizzle-zod` élargit les colonnes `text().$type<Union>()` en `string` : on
-  // restaure l'union pour que le type inféré reste assignable à la colonne.
+      .regex(/^[a-z0-9-]+$/, "Subdomain: lowercase letters, digits and hyphens only"),
+  // `drizzle-zod` widens `text().$type<Union>()` columns to `string`: we restore
+  // the union so the inferred type stays assignable to the column.
   accountingStandard: () => z.enum(ACCOUNTING_STANDARDS),
 }).omit({ id: true, createdAt: true, updatedAt: true });
 
 export type InsertCompany = z.infer<typeof insertCompanySchema>;
 export type Company = typeof companies.$inferSelect;
 
-/** Magasins / points de vente d'une société (multi-magasin inclus au multi-tenant). */
+/** Stores / points of sale of a company (multi-store included in multi-tenant). */
 export const companySettings = pgTable("company_settings", {
   ...baseColumns,
   companyId: uuid("company_id")

@@ -1,0 +1,53 @@
+{
+  "allStatuses": "Tous les statuts",
+  "searchPlaceholder": "Numéro ou client…",
+  "statusUpdated": "Statut mis à jour.",
+  "quotes": {
+    "title": "Devis",
+    "description": "Propositions commerciales en cours et archivées.",
+    "new": "Nouveau devis",
+    "columns": {
+      "expiry": "Validité"
+    },
+    "emptyTitle": "Aucun devis",
+    "emptyDescription": "Créez un devis pour formaliser une proposition avant la commande."
+  },
+  "quote": {
+    "documentTitle": "Devis",
+    "pageTitle": "Devis {{number}}",
+    "notFound": "Devis introuvable.",
+    "convert": "Convertir en commande",
+    "converted": "Commande {{number}} créée à partir du devis.",
+    "footerNote": "Ce devis ne constitue pas une facture. Aucun mouvement de stock ni écriture comptable n'est généré."
+  },
+  "quoteForm": {
+    "title": "Nouveau devis",
+    "description": "Proposition commerciale, sans effet sur le stock.",
+    "creating": "Création…",
+    "submit": "Créer le devis",
+    "header": "En-tête",
+    "lines": "Lignes",
+    "date": "Date du devis",
+    "expiryDate": "Valable jusqu'au",
+    "notesPlaceholder": "Conditions particulières, délais, mentions…",
+    "created": "Devis {{number}} créé.",
+    "savedOffline": "Devis {{number}} enregistré hors ligne.",
+    "savedOfflineDescription": "Il recevra son numéro définitif à la prochaine synchronisation."
+  },
+  "orders": {
+    "title": "Commandes de vente",
+    "description": "Engagements clients, à facturer une fois livrés.",
+    "columns": {
+      "delivery": "Livraison"
+    },
+    "emptyTitle": "Aucune commande",
+    "emptyDescription": "Les commandes naissent de la conversion d'un devis accepté."
+  },
+  "order": {
+    "documentTitle": "Commande",
+    "pageTitle": "Commande {{number}}",
+    "notFound": "Commande introuvable.",
+    "invoice": "Facturer",
+    "invoiced": "Facture créée en brouillon depuis la commande."
+  }
+}

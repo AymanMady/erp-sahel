@@ -1,4 +1,4 @@
-/** Frontière applicative de la comptabilité. */
+/** Application boundary of accounting. */
 
 import { asc } from "drizzle-orm";
 
@@ -44,7 +44,7 @@ export class AccountingService {
       accountId,
       updateAccountSchema.parse(body)
     );
-    if (!account) throw new NotFoundError("Compte introuvable.");
+    if (!account) throw new NotFoundError("Account not found.");
     return account;
   }
 
@@ -53,12 +53,12 @@ export class AccountingService {
     const balance = await accountingRepository.accountBalance(companyId, accountId);
     if (balance.debitCents !== 0 || balance.creditCents !== 0) {
       throw new BusinessRuleError(
-        "Ce compte porte des écritures : il ne peut pas être archivé.",
+        "This account has entries: it cannot be archived.",
         "ACCOUNT_HAS_ENTRIES"
       );
     }
     const archived = await accountsRepository.archive(companyId, accountId);
-    if (!archived) throw new NotFoundError("Compte introuvable.");
+    if (!archived) throw new NotFoundError("Account not found.");
     return { success: true as const };
   }
 
@@ -77,7 +77,7 @@ export class AccountingService {
       journalId,
       updateJournalSchema.parse(body)
     );
-    if (!journal) throw new NotFoundError("Journal introuvable.");
+    if (!journal) throw new NotFoundError("Journal not found.");
     return journal;
   }
 
@@ -123,7 +123,7 @@ export class AccountingService {
     return accountingRepository.ledger(companyId, ledgerQuerySchema.parse(query ?? {}));
   }
 
-  /** Balance générale, enrichie du solde signé selon le sens naturel du compte. */
+  /** Trial balance, enriched with the signed balance on the account's natural side. */
   async balance(companyId: string, query: unknown) {
     const parsed = periodQuerySchema.parse(query ?? {});
     const rows = await accountingRepository.balance(companyId, parsed);
@@ -140,16 +140,14 @@ export class AccountingService {
     };
   }
 
-  /** Saisie manuelle d'une écriture — l'équilibre est vérifié avant insertion. */
+  /** Manual entry — the balance is checked before insertion. */
   async createManualEntry(companyId: string, body: unknown) {
     const data = manualEntrySchema.parse(body);
     const company = await tenancyApplication.requireCompany(companyId);
 
     for (const line of data.lines) {
       if (line.debitCents > 0 && line.creditCents > 0) {
-        throw new BusinessRuleError(
-          "Une ligne ne peut pas être simultanément au débit et au crédit."
-        );
+        throw new BusinessRuleError("A line cannot be both a debit and a credit.");
       }
       await accountsRepository.requireById(companyId, line.accountId);
     }
@@ -163,8 +161,8 @@ export class AccountingService {
         reference: data.reference,
         originType: "manual",
         lines: data.lines.map((line) => ({
-          // Une saisie manuelle désigne un compte explicite : la clé logique
-          // n'est jamais consultée dans ce cas.
+          // A manual entry names an explicit account: the logical key is never
+          // looked up in that case.
           mappingKey: "ROUNDING_DIFFERENCE",
           accountId: line.accountId,
           debitCents: line.debitCents,
@@ -183,7 +181,7 @@ export class AccountingService {
   async createFiscalYear(companyId: string, body: unknown) {
     const data = createFiscalYearSchema.parse(body);
     if (data.endDate <= data.startDate) {
-      throw new BusinessRuleError("La date de fin doit être postérieure à la date de début.");
+      throw new BusinessRuleError("The end date must be after the start date.");
     }
     return fiscalYearsRepository.create(companyId, data);
   }
@@ -191,7 +189,7 @@ export class AccountingService {
   async closeFiscalYear(companyId: string, id: unknown) {
     const { id: fiscalYearId } = idParamSchema.parse({ id });
     const year = await fiscalYearsRepository.update(companyId, fiscalYearId, { isClosed: true });
-    if (!year) throw new NotFoundError("Exercice introuvable.");
+    if (!year) throw new NotFoundError("Fiscal year not found.");
     return year;
   }
 }

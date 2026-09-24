@@ -1,13 +1,13 @@
-/** Frontière HTTP de la synchronisation. */
+/** HTTP boundary of synchronization. */
 
 import type { Request, Response } from "express";
 
 import { authOf } from "../auth/guards";
 import { syncService } from "./service";
 
-/** Identifiant de poste : en-tête dédié, avec repli lisible pour le diagnostic. */
+/** Device id: dedicated header, with a readable fallback for diagnostics. */
 function deviceId(req: Request): string {
-  return String(req.headers["x-device-id"] ?? "").slice(0, 128) || "inconnu";
+  return String(req.headers["x-device-id"] ?? "").slice(0, 128) || "unknown";
 }
 
 export class SyncController {

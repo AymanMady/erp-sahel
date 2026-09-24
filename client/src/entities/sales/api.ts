@@ -1,4 +1,4 @@
-/** Accès API des devis et commandes de vente. */
+/** API access for quotes and sales orders. */
 
 import { api } from "@/shared/api/http";
 import type {

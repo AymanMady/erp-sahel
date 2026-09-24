@@ -1,9 +1,9 @@
 /**
- * Règlements clients et fournisseurs [FR-PAY-1].
+ * Customer and supplier payments [FR-PAY-1].
  *
- * Un règlement confirmé produit toujours : l'imputation sur la facture, le mouvement
- * de trésorerie et l'écriture comptable ([FR-PAY-2], [BR-7]) — les trois dans la même
- * transaction, ou aucun des trois.
+ * A confirmed payment always produces: the allocation to the invoice, the cash
+ * transaction and the journal entry ([FR-PAY-2], [BR-7]) — all three in the same
+ * transaction, or none of them.
  */
 
 import { date, index, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
@@ -22,7 +22,7 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 export const PAYMENT_STATUSES = ["PENDING", "CONFIRMED", "REJECTED"] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
-/** Sens du flux : encaissement client (`IN`) ou décaissement fournisseur (`OUT`). */
+/** Flow direction: customer receipt (`IN`) or supplier disbursement (`OUT`). */
 export const PAYMENT_DIRECTIONS = ["IN", "OUT"] as const;
 export type PaymentDirection = (typeof PAYMENT_DIRECTIONS)[number];
 

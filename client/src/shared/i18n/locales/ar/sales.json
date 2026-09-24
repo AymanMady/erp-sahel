@@ -1,0 +1,53 @@
+{
+  "allStatuses": "كل الحالات",
+  "searchPlaceholder": "الرقم أو العميل…",
+  "statusUpdated": "تم تحديث الحالة.",
+  "quotes": {
+    "title": "عروض الأسعار",
+    "description": "العروض التجارية الجارية والمؤرشفة.",
+    "new": "عرض سعر جديد",
+    "columns": {
+      "expiry": "صالح حتى"
+    },
+    "emptyTitle": "لا توجد عروض أسعار",
+    "emptyDescription": "أنشئ عرض سعر لتوثيق المقترح قبل الطلبية."
+  },
+  "quote": {
+    "documentTitle": "عرض سعر",
+    "pageTitle": "عرض السعر {{number}}",
+    "notFound": "عرض السعر غير موجود.",
+    "convert": "تحويل إلى طلبية",
+    "converted": "تم إنشاء الطلبية {{number}} انطلاقًا من عرض السعر.",
+    "footerNote": "عرض السعر هذا ليس فاتورة. لا تنتج عنه أي حركة مخزون أو قيد محاسبي."
+  },
+  "quoteForm": {
+    "title": "عرض سعر جديد",
+    "description": "عرض تجاري دون أي أثر على المخزون.",
+    "creating": "جارٍ الإنشاء…",
+    "submit": "إنشاء عرض السعر",
+    "header": "الترويسة",
+    "lines": "الأسطر",
+    "date": "تاريخ عرض السعر",
+    "expiryDate": "صالح حتى",
+    "notesPlaceholder": "شروط خاصة، آجال، ملاحظات…",
+    "created": "تم إنشاء عرض السعر {{number}}.",
+    "savedOffline": "تم حفظ عرض السعر {{number}} دون اتصال.",
+    "savedOfflineDescription": "سيحصل على رقمه النهائي عند المزامنة القادمة."
+  },
+  "orders": {
+    "title": "طلبيات البيع",
+    "description": "التزامات العملاء، تُفوتر بعد التسليم.",
+    "columns": {
+      "delivery": "التسليم"
+    },
+    "emptyTitle": "لا توجد طلبيات",
+    "emptyDescription": "تنشأ الطلبيات من تحويل عرض سعر مقبول."
+  },
+  "order": {
+    "documentTitle": "طلبية",
+    "pageTitle": "الطلبية {{number}}",
+    "notFound": "الطلبية غير موجودة.",
+    "invoice": "فوترة",
+    "invoiced": "تم إنشاء فاتورة مسودة من الطلبية."
+  }
+}

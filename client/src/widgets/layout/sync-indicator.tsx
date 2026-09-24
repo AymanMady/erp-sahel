@@ -1,12 +1,13 @@
 /**
- * Indicateur d'état de synchronisation ([FR-SYNC-6]).
+ * Sync status indicator ([FR-SYNC-6]).
  *
- * C'est le seul retour visuel dont dispose un vendeur pour savoir si ses ventes sont
- * remontées. Il doit donc être **explicite** : nombre d'opérations en attente, erreurs,
- * date de dernière synchronisation, et une action manuelle de relance.
+ * It is the only visual feedback a salesperson has to know whether their sales were
+ * uploaded. It must therefore be **explicit**: number of pending operations, errors,
+ * last sync date, and a manual retry action.
  */
 
 import { IconAlertTriangle, IconCloudCheck, IconCloudOff, IconRefresh } from "@tabler/icons-react";
+import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 
 import { formatDateTime } from "@shared/format";
@@ -27,6 +28,7 @@ import {
 
 export function SyncIndicator({ status }: { status: SyncStatus }) {
   const online = useOnline();
+  const { t } = useTranslation("layout");
   const pending = status.pending;
   const failed = status.failed;
 
@@ -42,14 +44,14 @@ export function SyncIndicator({ status }: { status: SyncStatus }) {
 
   const label =
     tone === "offline"
-      ? "Hors ligne"
+      ? t("sync.offline")
       : tone === "error"
-        ? `${failed} erreur${failed > 1 ? "s" : ""}`
+        ? t("sync.errors", { count: failed })
         : tone === "syncing"
-          ? "Synchronisation…"
+          ? t("sync.syncing")
           : pending > 0
-            ? `${pending} en attente`
-            : "À jour";
+            ? t("sync.pendingCount", { count: pending })
+            : t("sync.upToDate");
 
   const Icon =
     tone === "offline"
@@ -72,7 +74,7 @@ export function SyncIndicator({ status }: { status: SyncStatus }) {
             tone === "error" && "text-status-danger",
             tone === "idle" && "text-muted-foreground"
           )}
-          aria-label={`État de synchronisation : ${label}`}
+          aria-label={t("sync.statusAria", { status: label })}
         >
           <Icon className={cn("size-4", tone === "syncing" && "animate-spin")} />
           <span className="hidden sm:inline">{label}</span>
@@ -86,21 +88,23 @@ export function SyncIndicator({ status }: { status: SyncStatus }) {
       <DropdownMenuContent align="end" className="w-72">
         <DropdownMenuLabel className="font-normal">
           <p className="text-sm font-medium">
-            {online ? "Connecté au serveur" : "Mode hors ligne"}
+            {online ? t("sync.connected") : t("sync.offlineMode")}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {online
-              ? "Les ventes sont remontées automatiquement."
-              : "Les ventes sont enregistrées localement et remonteront au retour du réseau."}
+            {online ? t("sync.onlineHint") : t("sync.offlineHint")}
           </p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <div className="space-y-1 px-2 py-1.5 text-xs">
-          <Row label="En attente" value={String(pending)} />
-          <Row label="En erreur" value={String(failed)} tone={failed > 0 ? "danger" : undefined} />
+          <Row label={t("sync.pending")} value={String(pending)} />
           <Row
-            label="Dernière synchro."
-            value={status.lastSyncAt ? formatDateTime(status.lastSyncAt) : "jamais"}
+            label={t("sync.failed")}
+            value={String(failed)}
+            tone={failed > 0 ? "danger" : undefined}
+          />
+          <Row
+            label={t("sync.lastSync")}
+            value={status.lastSyncAt ? formatDateTime(status.lastSyncAt) : t("sync.never")}
           />
         </div>
         {status.lastError ? (
@@ -115,10 +119,10 @@ export function SyncIndicator({ status }: { status: SyncStatus }) {
           disabled={!online || status.state === "syncing"}
         >
           <IconRefresh className="size-4" />
-          Synchroniser maintenant
+          {t("sync.syncNow")}
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/sync">Voir la file d'attente</Link>
+          <Link href="/sync">{t("sync.viewQueue")}</Link>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -136,9 +140,10 @@ function Row({ label, value, tone }: { label: string; value: string; tone?: "dan
   );
 }
 
-/** Bandeau permanent affiché tant que le poste travaille sans réseau. */
+/** Permanent banner shown while the device works without network. */
 export function OfflineBanner() {
   const online = useOnline();
+  const { t } = useTranslation("layout");
   if (online) return null;
   return (
     <div
@@ -146,8 +151,7 @@ export function OfflineBanner() {
       className="flex items-center justify-center gap-2 bg-offline px-4 py-1.5 text-center text-xs font-medium text-offline-foreground print-hidden"
     >
       <IconCloudOff className="size-3.5" />
-      Mode hors ligne — vos saisies sont enregistrées sur ce poste et seront synchronisées
-      automatiquement.
+      {t("offlineBanner")}
     </div>
   );
 }

@@ -1,0 +1,62 @@
+{
+  "orders": {
+    "title": "Commandes fournisseurs",
+    "description": "Approvisionnement : la réception fait entrer la marchandise en stock.",
+    "expectedDelivery": "Livraison prévue",
+    "new": "Nouvelle commande",
+    "searchPlaceholder": "Numéro ou fournisseur…",
+    "allStatuses": "Tous les statuts",
+    "emptyTitle": "Aucune commande d'achat",
+    "emptyDescription": "Créez une commande pour suivre vos approvisionnements."
+  },
+  "orderForm": {
+    "title": "Nouvelle commande fournisseur",
+    "description": "La commande n'affecte pas le stock : c'est la réception qui le fait.",
+    "created": "Commande {{number}} créée.",
+    "creating": "Création…",
+    "submit": "Créer la commande",
+    "header": "En-tête",
+    "selectSupplier": "Sélectionner un fournisseur",
+    "receivingWarehouse": "Magasin de réception",
+    "defaultWarehouse": "Magasin par défaut",
+    "lines": "Lignes"
+  },
+  "orderDetail": {
+    "title": "Commande {{number}}",
+    "invoiceCreated": "Facture fournisseur enregistrée et comptabilisée.",
+    "notFound": "Commande introuvable.",
+    "receive": "Réceptionner",
+    "supplierInvoice": "Facture fournisseur",
+    "documentTitle": "Commande d'achat",
+    "receiptProgress": "Avancement des réceptions",
+    "item": "Article",
+    "ordered": "Commandé",
+    "received": "Reçu",
+    "remaining": "Reste",
+    "receipts": "Bons de réception"
+  },
+  "receiveDialog": {
+    "title": "Réception de marchandise",
+    "description": "Les quantités saisies entrent en stock au coût indiqué et alimentent le coût moyen pondéré.",
+    "validated": "Réception validée : stock mis à jour.",
+    "receiptDate": "Date de réception",
+    "unitCost": "Coût unitaire",
+    "lot": "Lot",
+    "optional": "optionnel",
+    "receivedValue": "Valeur réceptionnée",
+    "submit": "Valider la réception"
+  },
+  "receipts": {
+    "title": "Réceptions",
+    "description": "Chaque réception validée crée les mouvements d'entrée en stock.",
+    "emptyTitle": "Aucune réception",
+    "emptyDescription": "Les réceptions se saisissent depuis une commande fournisseur."
+  },
+  "supplierInvoices": {
+    "title": "Factures fournisseurs",
+    "description": "Dettes enregistrées et TVA déductible associée.",
+    "supplierReference": "Réf. fournisseur",
+    "emptyTitle": "Aucune facture fournisseur",
+    "emptyDescription": "Elles se créent depuis une commande d'achat réceptionnée."
+  }
+}

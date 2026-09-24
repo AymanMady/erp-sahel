@@ -1,9 +1,9 @@
 /**
- * Tableau de bord — premier écran après connexion.
+ * Dashboard — the first screen after signing in.
  *
- * Choix d'affichage : les indicateurs répondent aux questions qu'un gérant se pose en
- * ouvrant l'ERP le matin — combien ai-je vendu, combien me doit-on, que reste-t-il en
- * caisse, quelles ruptures arrivent ([FR-RPT-3]).
+ * Design choice: the indicators answer the questions a manager asks when opening the
+ * ERP in the morning — how much did I sell, how much am I owed, what is left in the
+ * till, which stock-outs are coming ([FR-RPT-3]).
  */
 
 import { useMemo, useState } from "react";
@@ -22,6 +22,7 @@ import {
   type Icon,
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 import {
   Area,
@@ -37,6 +38,8 @@ import { addDays, formatDate, todayInput } from "@shared/format";
 import { centsToMajor } from "@shared/money";
 import { reportsApi } from "@/entities/reports/api";
 import { queryKeys } from "@/shared/api/query-client";
+import { currentIntlLocale } from "@/shared/i18n";
+import { useDirection } from "@/shared/i18n/direction-provider";
 import type { PermissionCode } from "@shared/rbac";
 import type { ModuleCode } from "@shared/schema";
 import { useSession } from "@/shared/auth/session";
@@ -50,49 +53,64 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/shared/ui/skeleton";
 
 /**
- * Actions du quotidien, en gros boutons : un commerçant retrouve ce qu'il fait tous
- * les jours sans parcourir le menu. Seules celles des modules actifs s'affichent.
+ * Everyday actions as large buttons: a shopkeeper finds what they do every day
+ * without browsing the menu. Only those of active modules are shown.
  */
 const QUICK_ACTIONS: {
-  label: string;
+  labelKey: string;
   href: string;
   icon: Icon;
   module?: ModuleCode;
   permission: PermissionCode;
 }[] = [
-  { label: "Vendre", href: "/pos", icon: IconCashRegister, module: "pos", permission: "pos.use" },
   {
-    label: "Nouvelle facture",
+    labelKey: "quickActions.sell",
+    href: "/pos",
+    icon: IconCashRegister,
+    module: "pos",
+    permission: "pos.use",
+  },
+  {
+    labelKey: "quickActions.newInvoice",
     href: "/invoices/new",
     icon: IconFileInvoice,
     module: "invoicing",
     permission: "invoicing.write",
   },
   {
-    label: "Acheter",
+    labelKey: "quickActions.buy",
     href: "/purchase-orders/new",
     icon: IconTruckDelivery,
     module: "purchasing",
     permission: "purchasing.write",
   },
-  { label: "Nouveau produit", href: "/products/new", icon: IconPlus, permission: "catalog.write" },
   {
-    label: "Voir le stock",
+    labelKey: "quickActions.newProduct",
+    href: "/products/new",
+    icon: IconPlus,
+    permission: "catalog.write",
+  },
+  {
+    labelKey: "quickActions.viewStock",
     href: "/inventory",
     icon: IconPackages,
     module: "inventory",
     permission: "inventory.read",
   },
-  { label: "Nouveau client", href: "/parties", icon: IconUserPlus, permission: "parties.write" },
+  {
+    labelKey: "quickActions.newCustomer",
+    href: "/parties",
+    icon: IconUserPlus,
+    permission: "parties.write",
+  },
 ];
 
-const PERIODS = [
-  { value: "7", label: "7 derniers jours" },
-  { value: "30", label: "30 derniers jours" },
-  { value: "90", label: "90 derniers jours" },
-];
+/** Selectable periods, in days. */
+const PERIODS = ["7", "30", "90"];
 
 export default function DashboardPage() {
+  const { t, i18n } = useTranslation("dashboard");
+  const rtl = useDirection() === "rtl";
   const { user, can, hasModule } = useSession();
   const quickActions = QUICK_ACTIONS.filter(
     (action) => (!action.module || hasModule(action.module)) && can(action.permission)
@@ -115,24 +133,27 @@ export default function DashboardPage() {
       (data?.dailyRevenue ?? []).map((row) => ({
         date: row.date,
         label: formatDate(row.date),
-        ca: centsToMajor(row.totalHtCents),
+        revenue: centsToMajor(row.totalHtCents),
       })),
-    [data]
+    // The language is a dependency: date labels follow the UI locale.
+    [data, i18n.language]
   );
 
-  const greeting = user?.firstName ? `Bonjour ${user.firstName}` : "Bonjour";
+  const greeting = user?.firstName
+    ? t("greetingWithName", { name: user.firstName })
+    : t("greeting");
 
   return (
     <div className="space-y-6">
-      <PageHeader title={greeting} description="Vue d'ensemble de l'activité de la société.">
+      <PageHeader title={greeting} description={t("description")}>
         <Select value={days} onValueChange={setDays}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px]" aria-label={t("periodLabel")}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {PERIODS.map((entry) => (
-              <SelectItem key={entry.value} value={entry.value}>
-                {entry.label}
+            {PERIODS.map((value) => (
+              <SelectItem key={value} value={value}>
+                {t("lastDays", { count: Number(value) })}
               </SelectItem>
             ))}
           </SelectContent>
@@ -141,7 +162,7 @@ export default function DashboardPage() {
           <Button asChild>
             <Link href="/pos">
               <IconCashRegister className="size-4" />
-              Ouvrir la caisse
+              {t("openRegister")}
             </Link>
           </Button>
         ) : null}
@@ -158,7 +179,7 @@ export default function DashboardPage() {
               <span className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <action.icon className="size-6" />
               </span>
-              {action.label}
+              {t(action.labelKey)}
             </Link>
           ))}
         </div>
@@ -166,42 +187,40 @@ export default function DashboardPage() {
 
       {error && !data ? (
         <Card>
-          <CardContent className="py-6 text-sm text-muted-foreground">
-            Les indicateurs ne sont pas disponibles hors ligne. Ils réapparaîtront dès le retour du
-            réseau.
-          </CardContent>
+          <CardContent className="py-6 text-sm text-muted-foreground">{t("offline")}</CardContent>
         </Card>
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Chiffre d'affaires HT"
+          label={t("stats.revenue")}
           value={formatMoneyValue(data?.sales.totalHtCents ?? 0)}
-          hint={`${data?.sales.invoiceCount ?? 0} facture(s) sur la période`}
+          hint={t("stats.invoicesHint", { count: data?.sales.invoiceCount ?? 0 })}
           icon={<IconTrendingUp className="size-4" />}
           loading={isLoading}
         />
         <StatCard
-          label="Restant à encaisser"
+          label={t("stats.outstanding")}
           value={formatMoneyValue(data?.sales.outstandingCents ?? 0)}
-          hint="Factures validées non soldées"
+          hint={t("stats.outstandingHint")}
           icon={<IconReceipt2 className="size-4" />}
           loading={isLoading}
           invertTrend
         />
         <StatCard
-          label="Trésorerie"
+          label={t("stats.treasury")}
           value={formatMoneyValue(data?.treasury.totalCents ?? 0)}
-          hint={`Caisse ${formatMoneyValue(data?.treasury.cashCents ?? 0)} · Banque ${formatMoneyValue(
-            data?.treasury.bankCents ?? 0
-          )}`}
+          hint={t("stats.treasuryHint", {
+            cash: formatMoneyValue(data?.treasury.cashCents ?? 0),
+            bank: formatMoneyValue(data?.treasury.bankCents ?? 0),
+          })}
           icon={<IconBuildingBank className="size-4" />}
           loading={isLoading}
         />
         <StatCard
-          label="Valeur du stock"
+          label={t("stats.stockValue")}
           value={formatMoneyValue(data?.stock.totalValueCents ?? 0)}
-          hint={`${data?.stock.skuCount ?? 0} référence(s) en stock`}
+          hint={t("stats.skusHint", { count: data?.stock.skuCount ?? 0 })}
           icon={<IconPackages className="size-4" />}
           loading={isLoading}
         />
@@ -210,10 +229,12 @@ export default function DashboardPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Évolution du chiffre d'affaires</CardTitle>
+            <CardTitle>{t("revenueChart.title")}</CardTitle>
             <CardDescription>
-              Montants hors taxes des factures validées, du {formatDate(period.fromDate)} au{" "}
-              {formatDate(period.toDate)}.
+              {t("revenueChart.description", {
+                from: formatDate(period.fromDate),
+                to: formatDate(period.toDate),
+              })}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -221,14 +242,14 @@ export default function DashboardPage() {
               <Skeleton className="h-64 w-full" />
             ) : chartData.length === 0 ? (
               <p className="py-16 text-center text-sm text-muted-foreground">
-                Aucune vente enregistrée sur la période.
+                {t("revenueChart.empty")}
               </p>
             ) : (
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData} margin={{ left: 4, right: 4, top: 8, bottom: 0 }}>
                     <defs>
-                      <linearGradient id="ca-gradient" x1="0" y1="0" x2="0" y2="1">
+                      <linearGradient id="revenue-gradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.35} />
                         <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0} />
                       </linearGradient>
@@ -236,6 +257,7 @@ export default function DashboardPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                     <XAxis
                       dataKey="label"
+                      reversed={rtl}
                       tickLine={false}
                       axisLine={false}
                       fontSize={12}
@@ -247,9 +269,12 @@ export default function DashboardPage() {
                       axisLine={false}
                       fontSize={12}
                       width={70}
+                      orientation={rtl ? "right" : "left"}
                       stroke="var(--muted-foreground)"
                       tickFormatter={(value: number) =>
-                        new Intl.NumberFormat("fr-FR", { notation: "compact" }).format(value)
+                        new Intl.NumberFormat(currentIntlLocale(), { notation: "compact" }).format(
+                          value
+                        )
                       }
                     />
                     <RechartsTooltip
@@ -261,15 +286,15 @@ export default function DashboardPage() {
                       }}
                       formatter={(value) => [
                         formatMoneyValue(Math.round(Number(value ?? 0) * 100)),
-                        "CA HT",
+                        t("revenueChart.series"),
                       ]}
                     />
                     <Area
                       type="monotone"
-                      dataKey="ca"
+                      dataKey="revenue"
                       stroke="var(--chart-1)"
                       strokeWidth={2}
-                      fill="url(#ca-gradient)"
+                      fill="url(#revenue-gradient)"
                     />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -280,8 +305,8 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Meilleures ventes</CardTitle>
-            <CardDescription>Top 5 des articles sur la période.</CardDescription>
+            <CardTitle>{t("topSales.title")}</CardTitle>
+            <CardDescription>{t("topSales.description")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {isLoading ? (
@@ -290,7 +315,7 @@ export default function DashboardPage() {
               ))
             ) : (data?.topProducts.length ?? 0) === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">
-                Aucune vente sur la période.
+                {t("topSales.empty")}
               </p>
             ) : (
               data?.topProducts.map((product) => (
@@ -301,7 +326,8 @@ export default function DashboardPage() {
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{product.description}</p>
                     <p className="text-xs text-muted-foreground">
-                      {product.productSku || "—"} · {Number(product.quantity)} vendu(s)
+                      {product.productSku || "—"} ·{" "}
+                      {t("topSales.sold", { count: Number(product.quantity) })}
                     </p>
                   </div>
                   <Money cents={product.revenueCents} className="text-sm font-medium" />
@@ -318,13 +344,13 @@ export default function DashboardPage() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <IconAlertTriangle className="size-4 text-status-pending" />
-                Alertes de réapprovisionnement
+                {t("restock.title")}
               </CardTitle>
-              <CardDescription>Articles au seuil ou en dessous.</CardDescription>
+              <CardDescription>{t("restock.description")}</CardDescription>
             </div>
             {hasModule("inventory") ? (
               <Button variant="outline" size="sm" asChild>
-                <Link href="/inventory">Voir le stock</Link>
+                <Link href="/inventory">{t("restock.viewStock")}</Link>
               </Button>
             ) : null}
           </CardHeader>
@@ -334,9 +360,7 @@ export default function DashboardPage() {
                 <Skeleton key={index} className="h-9 w-full" />
               ))
             ) : (data?.lowStock.length ?? 0) === 0 ? (
-              <p className="py-6 text-center text-sm text-muted-foreground">
-                Aucun article sous son seuil d'alerte.
-              </p>
+              <p className="py-6 text-center text-sm text-muted-foreground">{t("restock.empty")}</p>
             ) : (
               data?.lowStock.map((row) => (
                 <div
@@ -358,27 +382,27 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Référentiels</CardTitle>
-            <CardDescription>Volumétrie de la société.</CardDescription>
+            <CardTitle>{t("counts.title")}</CardTitle>
+            <CardDescription>{t("counts.description")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <CountRow
               icon={<IconUsers className="size-4" />}
-              label="Clients"
+              label={t("counts.customers")}
               value={data?.counts.customers}
               href="/parties"
               loading={isLoading}
             />
             <CountRow
               icon={<IconUsers className="size-4" />}
-              label="Fournisseurs"
+              label={t("counts.suppliers")}
               value={data?.counts.suppliers}
               href="/parties"
               loading={isLoading}
             />
             <CountRow
               icon={<IconPackages className="size-4" />}
-              label="Produits"
+              label={t("counts.products")}
               value={data?.counts.products}
               href="/products"
               loading={isLoading}
@@ -386,7 +410,7 @@ export default function DashboardPage() {
             {hasModule("services") ? (
               <CountRow
                 icon={<IconReceipt2 className="size-4" />}
-                label="Prestations"
+                label={t("counts.services")}
                 value={data?.counts.services}
                 href="/services"
                 loading={isLoading}

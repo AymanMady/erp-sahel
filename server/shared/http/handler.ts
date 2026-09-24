@@ -1,11 +1,11 @@
-/** Utilitaires de la frontière HTTP. */
+/** HTTP boundary utilities. */
 
 import type { NextFunction, Request, RequestHandler, Response } from "express";
 
 /**
- * Enveloppe un handler asynchrone pour router les rejets vers `errorHandler`.
- * Express 5 le fait nativement, mais l'enveloppe reste explicite — elle documente
- * l'intention et protège si le projet est rétroporté sur Express 4.
+ * Wraps an async handler to route rejections to `errorHandler`.
+ * Express 5 does it natively, but the wrapper stays explicit — it documents the
+ * intent and protects the code if the project is ever backported to Express 4.
  */
 export function asyncHandler(
   handler: (req: Request, res: Response, next: NextFunction) => Promise<unknown>
@@ -15,7 +15,7 @@ export function asyncHandler(
   };
 }
 
-/** Pagination normalisée pour toutes les listes de l'API. */
+/** Normalized pagination for every API list. */
 export interface Paginated<T> {
   items: T[];
   total: number;

@@ -1,0 +1,25 @@
+{
+  "title": "My profile",
+  "description": "Account information and security.",
+  "identity": {
+    "title": "Identity",
+    "activeModules": "Active modules",
+    "noModules": "No module enabled.",
+    "permissions": "Permissions ({{count}})"
+  },
+  "preferences": {
+    "title": "Preferences",
+    "description": "Stored on this device.",
+    "language": "Language"
+  },
+  "password": {
+    "title": "Password",
+    "description": "Changing it signs out all your sessions, including on other devices.",
+    "current": "Current password",
+    "new": "New password",
+    "hint": "At least 8 characters, with at least one letter and one digit.",
+    "confirm": "Confirmation",
+    "submit": "Change password",
+    "changed": "Password changed. Please sign in again."
+  }
+}

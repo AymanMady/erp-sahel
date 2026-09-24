@@ -1,0 +1,79 @@
+{
+  "exit": "Quitter la caisse",
+  "offline": "Hors ligne",
+  "openingBalance": "Fond de caisse",
+  "accessDenied": {
+    "title": "Accès refusé",
+    "description": "Votre profil ne dispose pas de la permission d'utiliser la caisse.",
+    "backToDashboard": "Retour au tableau de bord"
+  },
+  "search": {
+    "placeholder": "Scanner un code-barres ou rechercher un article…",
+    "searching": "Recherche…",
+    "noMatch": "Aucun article ne correspond.",
+    "startTyping": "Commencez à taper pour rechercher un article.",
+    "noSnapshot": "Aucun instantané local : connectez-vous une première fois au serveur."
+  },
+  "cart": {
+    "closeRegister": "Clôturer",
+    "empty": "Le panier est vide.",
+    "decrease": "Diminuer",
+    "increase": "Augmenter",
+    "vat": "TVA",
+    "lastTicket": "Ticket {{number}} encaissé.",
+    "lastTicketOffline": "Ticket {{number}} encaissé (hors ligne, en attente de synchronisation).",
+    "checkout": "Encaisser {{amount}}"
+  },
+  "customer": {
+    "walkIn": "Client de passage",
+    "title": "Client du ticket",
+    "description": "Sans sélection, la vente est rattachée au client de passage.",
+    "searchPlaceholder": "Nom, code, téléphone…"
+  },
+  "openSession": {
+    "title": "Ouvrir la caisse",
+    "description": "Déclarez le fond de caisse présent dans le tiroir avant la première vente.",
+    "checking": "Vérification d'une session en cours…",
+    "offlineNotice": "Serveur injoignable : la session sera créée localement puis synchronisée.",
+    "register": "Caisse",
+    "selectRegister": "Sélectionner une caisse",
+    "opening": "Ouverture…",
+    "submit": "Ouvrir la caisse"
+  },
+  "payment": {
+    "title": "Encaissement",
+    "amountDue": "Total à régler :",
+    "method": "Mode de règlement",
+    "received": "Montant reçu",
+    "change": "Monnaie à rendre",
+    "offlineNotice": "Hors ligne : le ticket recevra un numéro provisoire, remplacé par le numéro légal lors de la synchronisation.",
+    "processing": "Encaissement…"
+  },
+  "closeSession": {
+    "title": "Clôture de caisse",
+    "description": "Comptez le tiroir et saisissez le montant constaté.",
+    "cashReceipts": "Encaissements espèces",
+    "totalSales": "Total des ventes",
+    "expected": "Attendu en caisse",
+    "counted": "Montant compté",
+    "difference": "Écart de caisse",
+    "pendingNotice": "La clôture sera transmise avec les ventes en attente ; l'écart définitif sera recalculé par le serveur.",
+    "closing": "Clôture…",
+    "submit": "Clôturer la caisse"
+  },
+  "toasts": {
+    "ticketPaid": "Ticket {{number}} encaissé.",
+    "ticketSavedOffline": "Ticket {{number}} enregistré hors ligne.",
+    "sessionOpened": "Caisse ouverte.",
+    "sessionOpenedOffline": "Caisse ouverte hors ligne, synchronisation au retour du réseau.",
+    "closePending": "Clôture enregistrée, en attente de synchronisation.",
+    "closedBalanced": "Caisse clôturée sans écart.",
+    "closedWithDifference": "Caisse clôturée avec écart."
+  },
+  "outbox": {
+    "ticket": "Ticket {{number}}",
+    "payment": "Règlement {{number}}",
+    "sessionOpen": "Ouverture de caisse",
+    "sessionClose": "Clôture de caisse"
+  }
+}

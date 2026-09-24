@@ -3,10 +3,13 @@
 import * as React from "react";
 import { IconMoon, IconSun } from "@tabler/icons-react";
 import { useTheme } from "next-themes";
+import { useTranslation } from "react-i18next";
+
 import { Button } from "@/shared/ui/button";
 
 export function ThemeToggle() {
   const { setTheme, resolvedTheme } = useTheme();
+  const { t } = useTranslation("layout");
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
 
@@ -16,7 +19,7 @@ export function ThemeToggle() {
       size="icon"
       className="rounded-full"
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-      aria-label="Toggle theme"
+      aria-label={t("theme.toggle")}
     >
       {mounted && resolvedTheme === "dark" ? (
         <IconSun className="size-5" />

@@ -1,30 +1,29 @@
 /**
- * Service Worker d'ERP Sahel.
+ * ERP Sahel Service Worker.
  *
- * Rôle unique et assumé : **rendre la coquille de l'application disponible hors ligne**
- * ([FR-SYNC-1]). Il ne met jamais en cache les réponses de l'API — la donnée métier
- * hors-ligne vit dans IndexedDB, pilotée par le moteur de synchronisation, seul à
- * savoir ce qui est encore valide et ce qui doit être remonté.
+ * Single, deliberate role: **make the application shell available offline**
+ * ([FR-SYNC-1]). It never caches API responses — offline business data lives in
+ * IndexedDB, driven by the synchronization engine, the only one that knows what is
+ * still valid and what must be uploaded.
  *
- * Stratégies :
- *  - navigations : réseau d'abord, repli sur la coquille en cache (« app shell ») ;
- *  - ressources statiques hachées : cache d'abord, elles sont immuables ;
- *  - API : jamais interceptée.
+ * Strategies:
+ *  - navigations: network first, fall back to the cached shell ("app shell");
+ *  - hashed static assets: cache first, they are immutable;
+ *  - API: never intercepted.
  */
 
 const CACHE_VERSION = "erp-sahel-v1";
 const SHELL_URL = "/index.html";
 
-/** Ressources minimales pour un démarrage hors ligne. */
+/** Minimal assets for an offline start. */
 const BASE_PRECACHE = ["/", SHELL_URL, "/manifest.webmanifest", "/favicon.svg"];
 
 /**
- * Liste des fragments produits par le build, injectée par `scripts/build.ts`.
+ * List of the chunks produced by the build, injected by `scripts/build.ts`.
  *
- * Sans elle, seules les pages **déjà visitées** seraient disponibles hors ligne : les
- * routes sont chargées à la demande, et un fragment jamais téléchargé n'est pas en cache.
- * Un caissier qui ouvre l'écran de synchronisation pour la première fois sans réseau
- * tomberait sur une page blanche.
+ * Without it, only pages **already visited** would be available offline: routes are
+ * loaded on demand, and a chunk never downloaded is not cached. A cashier opening the
+ * synchronization screen for the first time without network would get a blank page.
  */
 function precacheList() {
   const generated = Array.isArray(self.__ERP_PRECACHE) ? self.__ERP_PRECACHE : [];
@@ -32,25 +31,25 @@ function precacheList() {
 }
 
 try {
-  // Absent en développement : le Service Worker n'y est de toute façon pas enregistré.
+  // Missing in development: the Service Worker is not registered there anyway.
   self.importScripts("/precache-manifest.js");
 } catch {
-  // Pas de manifeste : on se rabat sur la mise en cache à la volée.
+  // No manifest: fall back to on-the-fly caching.
 }
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(CACHE_VERSION);
-      // Chaque ressource est mise en cache indépendamment : un seul fichier manquant
-      // ne doit pas faire échouer l'installation entière (`addAll` est tout ou rien).
+      // Each asset is cached independently: a single missing file must not fail the
+      // whole installation (`addAll` is all or nothing).
       await Promise.all(
         precacheList().map(async (url) => {
           try {
             const response = await fetch(new Request(url, { cache: "reload" }));
             if (response.ok) await cache.put(url, response);
           } catch {
-            // Ressource indisponible à l'installation : elle sera cachée au premier accès.
+            // Asset unavailable at install time: it will be cached on first access.
           }
         })
       );
@@ -73,15 +72,15 @@ self.addEventListener("message", (event) => {
   if (event.data?.type === "erp-skip-waiting") void self.skipWaiting();
 });
 
-/** Demande aux onglets ouverts de relancer une synchronisation. */
+/** Asks open tabs to start a synchronization. */
 async function wakeClients() {
   const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
   for (const client of clients) client.postMessage({ type: "erp-sync-request" });
 }
 
-// Background Sync quand le navigateur le supporte : le poste peut ainsi être réveillé
-// au retour du réseau même si l'onglet a perdu le focus. Le Service Worker ne rejoue
-// pas les opérations lui-même (il n'a pas le jeton d'accès) : il réveille les onglets.
+// Background Sync when the browser supports it: the device can thus be woken up when
+// the network returns even if the tab lost focus. The Service Worker does not replay
+// operations itself (it has no access token): it wakes the tabs up.
 self.addEventListener("sync", (event) => {
   if (event.tag === "erp-outbox") event.waitUntil(wakeClients());
 });
@@ -94,8 +93,8 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
-  // L'API n'est jamais servie depuis le cache : une facture périmée affichée comme
-  // fraîche serait pire qu'une erreur réseau explicite.
+  // The API is never served from the cache: a stale invoice displayed as fresh would
+  // be worse than an explicit network error.
   if (url.pathname.startsWith("/api/")) return;
 
   if (request.mode === "navigate") {
@@ -108,7 +107,7 @@ self.addEventListener("fetch", (event) => {
           return response;
         } catch {
           const cached = await caches.match(SHELL_URL);
-          return cached ?? new Response("Hors ligne", { status: 503, statusText: "Hors ligne" });
+          return cached ?? new Response("Offline", { status: 503, statusText: "Offline" });
         }
       })()
     );

@@ -1,10 +1,11 @@
 /**
- * Chaîne métier de bout en bout (§16.2 et §17 du cahier des charges) :
+ * End-to-end business chain (§16.2 and §17 of the specification):
  *
- *   produit → facture → décrément de stock → règlement → écriture au journal
- *   → grand livre → balance
+ *   product → invoice → stock decrement → payment → journal entry
+ *   → general ledger → trial balance
  *
- * Chaque étape vérifie l'invariant qui lui est propre ([BR-6], [BR-7], [BR-10]).
+ * Each step checks its own invariant ([BR-6], [BR-7], [BR-10]). Failures are asserted
+ * on error `code`s, never on message text (messages are translated).
  */
 
 import { and, eq } from "drizzle-orm";
@@ -40,7 +41,7 @@ beforeAll(async () => {
 
   const customer = await partiesApplication.create(
     context.company.id,
-    { name: "Client intégration", partyType: "CUSTOMER" },
+    { name: "Integration customer", partyType: "CUSTOMER" },
     database
   );
   customerId = customer.id;
@@ -59,8 +60,8 @@ async function stockOf(): Promise<number> {
   return Number(row.quantity);
 }
 
-describe("facture de vente", () => {
-  it("laisse le stock intact tant qu'elle est en brouillon", async () => {
+describe("sales invoice", () => {
+  it("leaves stock untouched while it is a draft", async () => {
     const before = await stockOf();
     const invoice = await invoicingApplication.create(
       context.company,
@@ -76,11 +77,11 @@ describe("facture de vente", () => {
     expect(invoice.isLocked).toBe(false);
     expect(await stockOf()).toBe(before);
 
-    // Un brouillon ne consomme pas de numéro légal.
+    // A draft does not consume a legal number.
     expect(invoice.number.startsWith("BR-")).toBe(true);
   });
 
-  it("décrémente le stock et comptabilise à la validation", async () => {
+  it("decrements stock and posts the entry on validation", async () => {
     const before = await stockOf();
     const draft = await invoicingApplication.create(
       context.company,
@@ -102,7 +103,7 @@ describe("facture de vente", () => {
     expect(validated.number).toMatch(/^FAC-\d{4}-\d{4}$/);
     expect(await stockOf()).toBe(before - 4);
 
-    // Un mouvement de sortie est tracé, rattaché à la facture.
+    // An outgoing movement is recorded, linked to the invoice.
     const movements = await db
       .select()
       .from(stockMovements)
@@ -116,7 +117,7 @@ describe("facture de vente", () => {
     expect(movements[0].direction).toBe("OUT");
     expect(Number(movements[0].quantity)).toBe(4);
 
-    // L'écriture de vente est équilibrée.
+    // The sales entry is balanced.
     const entry = await accountingRepository.findEntryByOrigin(
       context.company.id,
       "sales_invoice",
@@ -127,7 +128,7 @@ describe("facture de vente", () => {
     expect(entry?.totalDebitCents).toBe(validated.totalTtcCents);
   });
 
-  it("refuse toute modification après validation", async () => {
+  it("rejects any change after validation", async () => {
     const draft = await invoicingApplication.create(
       context.company,
       { partyId: customerId, lines: [{ productId, quantity: 1, description: "Article" }] },
@@ -141,10 +142,10 @@ describe("facture de vente", () => {
 
     await expect(
       invoicingApplication.update(context.company, validated.id, { notes: "modification" })
-    ).rejects.toThrow(/inaltérable/i);
+    ).rejects.toMatchObject({ code: "INVOICE_LOCKED" });
   });
 
-  it("refuse de vendre plus que le stock disponible", async () => {
+  it("refuses to sell more than the available stock", async () => {
     await expect(
       invoicingApplication.create(
         context.company,
@@ -155,12 +156,12 @@ describe("facture de vente", () => {
         },
         context.userId
       )
-    ).rejects.toThrow(/stock insuffisant/i);
+    ).rejects.toMatchObject({ code: "INSUFFICIENT_STOCK" });
   });
 });
 
-describe("règlement", () => {
-  it("solde la facture, alimente la trésorerie et passe l'écriture", async () => {
+describe("payment", () => {
+  it("settles the invoice, credits cash and posts the entry", async () => {
     const draft = await invoicingApplication.create(
       context.company,
       { partyId: customerId, lines: [{ productId, quantity: 2, description: "Article" }] },
@@ -191,7 +192,7 @@ describe("règlement", () => {
     expect(entry?.totalDebitCents).toBe(invoice.totalTtcCents);
   });
 
-  it("refuse un règlement supérieur au reste à payer", async () => {
+  it("rejects a payment greater than the amount due", async () => {
     const draft = await invoicingApplication.create(
       context.company,
       { partyId: customerId, lines: [{ productId, quantity: 1, description: "Article" }] },
@@ -210,10 +211,10 @@ describe("règlement", () => {
         },
         context.userId
       )
-    ).rejects.toThrow(/dépasse le reste à payer/i);
+    ).rejects.toMatchObject({ code: "OVERPAYMENT" });
   });
 
-  it("marque la facture partiellement payée sur un acompte", async () => {
+  it("marks the invoice partially paid on a deposit", async () => {
     const draft = await invoicingApplication.create(
       context.company,
       { partyId: customerId, lines: [{ productId, quantity: 2, description: "Article" }] },
@@ -237,8 +238,8 @@ describe("règlement", () => {
   });
 });
 
-describe("avoir", () => {
-  it("réintègre le stock et passe l'écriture inverse", async () => {
+describe("credit note", () => {
+  it("restocks and posts the reversing entry", async () => {
     const draft = await invoicingApplication.create(
       context.company,
       { partyId: customerId, lines: [{ productId, quantity: 3, description: "Article" }] },
@@ -249,7 +250,7 @@ describe("avoir", () => {
 
     const creditNote = await invoicingApplication.createCreditNote(
       context.company,
-      { invoiceId: invoice.id, reason: "Retour client", restock: true },
+      { invoiceId: invoice.id, reason: "Customer return", restock: true },
       context.userId
     );
 
@@ -265,7 +266,7 @@ describe("avoir", () => {
     expect(entry?.totalDebitCents).toBe(invoice.totalTtcCents);
   });
 
-  it("refuse un avoir sur un brouillon", async () => {
+  it("rejects a credit note on a draft", async () => {
     const draft = await invoicingApplication.create(
       context.company,
       { partyId: customerId, lines: [{ productId, quantity: 1, description: "Article" }] },
@@ -277,12 +278,12 @@ describe("avoir", () => {
         { invoiceId: draft.id },
         context.userId
       )
-    ).rejects.toThrow(/validée/i);
+    ).rejects.toMatchObject({ code: "INVOICE_NOT_VALIDATED" });
   });
 });
 
-describe("chaîne devis → commande → facture", () => {
-  it("convertit sans perte de montant", async () => {
+describe("quote → order → invoice chain", () => {
+  it("converts without losing any amount", async () => {
     const quote = await salesApplication.createQuote(
       context.company,
       {
@@ -302,14 +303,14 @@ describe("chaîne devis → commande → facture", () => {
 
     const invoice = await salesApplication.invoiceOrder(context.company, order.id, context.userId);
     expect(invoice.totalTtcCents).toBe(quote.totalTtcCents);
-    // La facture issue d'une commande naît en brouillon : elle doit être validée.
+    // An invoice created from an order starts as a draft: it must be validated.
     expect(invoice.status).toBe("DRAFT");
 
     const refreshedQuote = await salesApplication.getQuote(context.company.id, quote.id);
     expect(refreshedQuote.status).toBe("CONVERTED");
   });
 
-  it("refuse de convertir deux fois le même devis", async () => {
+  it("refuses to convert the same quote twice", async () => {
     const quote = await salesApplication.createQuote(
       context.company,
       { partyId: customerId, lines: [{ productId, quantity: 1, description: "Article" }] },
@@ -318,15 +319,15 @@ describe("chaîne devis → commande → facture", () => {
     await salesApplication.convertQuoteToOrder(context.company, quote.id, context.userId);
     await expect(
       salesApplication.convertQuoteToOrder(context.company, quote.id, context.userId)
-    ).rejects.toThrow(/déjà été converti/i);
+    ).rejects.toMatchObject({ code: "QUOTE_ALREADY_CONVERTED" });
   });
 });
 
-describe("achat : commande → réception", () => {
-  it("fait entrer la marchandise en stock au coût indiqué", async () => {
+describe("purchasing: order → receipt", () => {
+  it("brings the goods into stock at the given cost", async () => {
     const supplier = await partiesApplication.create(
       context.company.id,
-      { name: "Fournisseur intégration", partyType: "SUPPLIER" },
+      { name: "Integration supplier", partyType: "SUPPLIER" },
       database
     );
 
@@ -358,8 +359,8 @@ describe("achat : commande → réception", () => {
   });
 });
 
-describe("caisse", () => {
-  it("encaisse un ticket complet et met à jour la session", async () => {
+describe("point of sale", () => {
+  it("collects a full ticket and updates the session", async () => {
     const session = await posApplication.openSession(context.company, context.userId, {
       registerId: context.registerId,
       openingBalanceCents: 100_000,
@@ -389,11 +390,11 @@ describe("caisse", () => {
       sessionId: session.id,
       closingBalanceCents: 100_000 + totals.totalTtcCents,
     });
-    // Compté = fond de caisse + encaissements espèces ⇒ aucun écart.
+    // Counted = opening float + cash collections ⇒ no difference.
     expect(closed.differenceCents).toBe(0);
   });
 
-  it("refuse un encaissement qui ne couvre pas le total du ticket", async () => {
+  it("rejects a payment that does not cover the ticket total", async () => {
     const session = await posApplication.openSession(context.company, context.userId, {
       registerId: context.registerId,
       openingBalanceCents: 0,
@@ -405,7 +406,7 @@ describe("caisse", () => {
         lines: [{ productId, quantity: 1, description: "Article", unitPriceCents: 10_000 }],
         payments: [{ method: "CASH", amountCents: 1 }],
       })
-    ).rejects.toThrow(/doit être égal/i);
+    ).rejects.toMatchObject({ code: "POS_PAYMENT_MISMATCH" });
 
     await posApplication.closeSession(context.company, {
       sessionId: session.id,
@@ -414,8 +415,8 @@ describe("caisse", () => {
   });
 });
 
-describe("cohérence comptable globale", () => {
-  it("laisse le journal, le grand livre et la balance en accord", async () => {
+describe("overall accounting consistency", () => {
+  it("keeps the journal, general ledger and trial balance in agreement", async () => {
     const entries = await db
       .select()
       .from(journalEntries)
@@ -425,17 +426,17 @@ describe("cohérence comptable globale", () => {
       .from(journalLines)
       .where(eq(journalLines.companyId, context.company.id));
 
-    // Chaque écriture est équilibrée…
+    // Each entry is balanced…
     for (const entry of entries) {
       expect(entry.totalDebitCents).toBe(entry.totalCreditCents);
     }
 
-    // …et le cumul des lignes l'est aussi.
+    // …and so is the sum of all lines.
     const totalDebit = lines.reduce((sum, line) => sum + line.debitCents, 0);
     const totalCredit = lines.reduce((sum, line) => sum + line.creditCents, 0);
     expect(totalDebit).toBe(totalCredit);
 
-    // La balance renvoyée par l'API reproduit exactement ces totaux.
+    // The trial balance returned by the API reproduces these totals exactly.
     const balance = await accountingRepository.balance(context.company.id, {
       toDate: todayInput(),
     });

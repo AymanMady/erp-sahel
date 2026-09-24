@@ -1,11 +1,13 @@
-/** Rapport de stock : valorisation et ruptures. */
+/** Stock report: valuation and stock-outs. */
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import { errorMessage } from "@/shared/api/api-error";
 import { inventoryApi } from "@/entities/inventory/api";
 import { reportsApi } from "@/entities/reports/api";
+import { currentIntlLocale } from "@/shared/i18n";
 import { queryKeys } from "@/shared/api/query-client";
 import { Quantity, useMoneyFormatter } from "@/shared/components/money";
 import { PageHeader } from "@/shared/components/page-header";
@@ -24,6 +26,7 @@ interface LowStockRow {
 }
 
 export default function StockReportPage() {
+  const { t } = useTranslation("reports");
   const formatMoneyValue = useMoneyFormatter();
   const [warehouseId, setWarehouseId] = useState(ALL);
 
@@ -40,13 +43,13 @@ export default function StockReportPage() {
   const columns: Column<LowStockRow>[] = [
     {
       id: "sku",
-      header: "Référence",
+      header: t("common:labels.reference"),
       cell: (row) => <span className="tabular font-medium">{row.sku}</span>,
     },
-    { id: "name", header: "Article", cell: (row) => row.name },
+    { id: "name", header: t("stock.columns.item"), cell: (row) => row.name },
     {
       id: "quantity",
-      header: "Stock actuel",
+      header: t("stock.columns.currentStock"),
       align: "end",
       cell: (row) => (
         <span className="text-status-pending">
@@ -56,7 +59,7 @@ export default function StockReportPage() {
     },
     {
       id: "min",
-      header: "Seuil d'alerte",
+      header: t("stock.columns.alertThreshold"),
       align: "end",
       cell: (row) => <Quantity value={row.minStock} />,
     },
@@ -64,16 +67,13 @@ export default function StockReportPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Rapport de stock"
-        description="Valorisation au coût moyen et alertes de rupture."
-      >
+      <PageHeader title={t("stock.title")} description={t("stock.description")}>
         <Select value={warehouseId} onValueChange={setWarehouseId}>
           <SelectTrigger className="w-[220px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>Tous les magasins</SelectItem>
+            <SelectItem value={ALL}>{t("stock.allWarehouses")}</SelectItem>
             {(warehouses ?? []).map((warehouse) => (
               <SelectItem key={warehouse.id} value={warehouse.id}>
                 {warehouse.name}
@@ -85,28 +85,34 @@ export default function StockReportPage() {
 
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard
-          label="Valeur du stock"
+          label={t("stock.stockValue")}
           value={formatMoneyValue(data?.valuation.totalValueCents ?? 0)}
           loading={isLoading}
         />
-        <StatCard label="Références" value={data?.valuation.skuCount ?? 0} loading={isLoading} />
         <StatCard
-          label="Quantité totale"
-          value={new Intl.NumberFormat("fr-FR").format(data?.valuation.totalQuantity ?? 0)}
+          label={t("stock.skus")}
+          value={data?.valuation.skuCount ?? 0}
+          loading={isLoading}
+        />
+        <StatCard
+          label={t("stock.totalQuantity")}
+          value={new Intl.NumberFormat(currentIntlLocale()).format(
+            data?.valuation.totalQuantity ?? 0
+          )}
           loading={isLoading}
         />
       </div>
 
       <div>
-        <h2 className="mb-3 text-lg font-semibold">Articles sous le seuil d'alerte</h2>
+        <h2 className="mb-3 text-lg font-semibold">{t("stock.belowThreshold")}</h2>
         <ResourceTable
           columns={columns}
           rows={data?.lowStock ?? []}
           rowKey={(row) => row.productId}
           loading={isLoading}
           error={error ? errorMessage(error) : null}
-          emptyTitle="Aucune alerte"
-          emptyDescription="Tous les articles suivis sont au-dessus de leur seuil de réapprovisionnement."
+          emptyTitle={t("stock.emptyTitle")}
+          emptyDescription={t("stock.emptyDescription")}
         />
       </div>
     </div>

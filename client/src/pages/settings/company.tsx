@@ -1,8 +1,9 @@
-/** Paramétrage de la société : identité, fiscalité, comptabilité. */
+/** Company settings: identity, taxation, accounting. */
 
 import { useEffect, useState } from "react";
 import { IconDeviceFloppy, IconUpload } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { ACCOUNTING_STANDARDS } from "@shared/schema";
@@ -10,6 +11,7 @@ import { errorMessage } from "@/shared/api/api-error";
 import { settingsApi } from "@/entities/settings/api";
 import { queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
+import { currentIntlLocale } from "@/shared/i18n";
 import { Field, FieldGrid } from "@/shared/components/field";
 import { PageHeader } from "@/shared/components/page-header";
 import { RateInput } from "@/shared/components/money-input";
@@ -21,27 +23,22 @@ import { Skeleton } from "@/shared/ui/skeleton";
 import { Switch } from "@/shared/ui/switch";
 import { Textarea } from "@/shared/ui/textarea";
 
-const MONTHS = [
-  "Janvier",
-  "Février",
-  "Mars",
-  "Avril",
-  "Mai",
-  "Juin",
-  "Juillet",
-  "Août",
-  "Septembre",
-  "Octobre",
-  "Novembre",
-  "Décembre",
-];
+/** Month names of the UI language (January first), for the fiscal-year start. */
+function monthNames(): string[] {
+  const format = new Intl.DateTimeFormat(currentIntlLocale(), { month: "long" });
+  return Array.from({ length: 12 }, (_, index) => {
+    const name = format.format(new Date(2024, index, 1));
+    return name.charAt(0).toLocaleUpperCase(currentIntlLocale()) + name.slice(1);
+  });
+}
 
-/** Limite du logo embarqué en data URI : au-delà, chaque chargement de page en pâtit. */
+/** Size limit of the logo embedded as a data URI: beyond it, every page load suffers. */
 const MAX_LOGO_BYTES = 400 * 1024;
 
 export default function CompanySettingsPage() {
   const queryClient = useQueryClient();
   const { can, refresh } = useSession();
+  const { t } = useTranslation("settings");
   const [form, setForm] = useState({
     name: "",
     legalName: "",
@@ -89,7 +86,7 @@ export default function CompanySettingsPage() {
   const mutation = useMutation({
     mutationFn: () => settingsApi.updateCompany(form),
     onSuccess: () => {
-      toast.success("Paramètres enregistrés.");
+      toast.success(t("company.saved"));
       void queryClient.invalidateQueries({ queryKey: queryKeys.company });
       void refresh();
     },
@@ -99,7 +96,7 @@ export default function CompanySettingsPage() {
   const handleLogo = (file: File | undefined) => {
     if (!file) return;
     if (file.size > MAX_LOGO_BYTES) {
-      toast.error("Logo trop volumineux (400 Ko maximum).");
+      toast.error(t("company.logo.tooLarge"));
       return;
     }
     const reader = new FileReader();
@@ -113,11 +110,11 @@ export default function CompanySettingsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Société" description="Identité, fiscalité et référentiel comptable.">
+      <PageHeader title={t("company.title")} description={t("company.description")}>
         {!readOnly ? (
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
             <IconDeviceFloppy className="size-4" />
-            Enregistrer
+            {t("common:actions.save")}
           </Button>
         ) : null}
       </PageHeader>
@@ -126,39 +123,39 @@ export default function CompanySettingsPage() {
         <div className="space-y-6 lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Identité</CardTitle>
+              <CardTitle>{t("company.identity")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <FieldGrid>
-                <Field label="Nom commercial" required>
+                <Field label={t("company.fields.name")} required>
                   <Input
                     value={form.name}
                     onChange={(event) => setForm({ ...form, name: event.target.value })}
                     disabled={readOnly}
                   />
                 </Field>
-                <Field label="Raison sociale">
+                <Field label={t("company.fields.legalName")}>
                   <Input
                     value={form.legalName}
                     onChange={(event) => setForm({ ...form, legalName: event.target.value })}
                     disabled={readOnly}
                   />
                 </Field>
-                <Field label="Identifiant fiscal">
+                <Field label={t("company.fields.taxId")}>
                   <Input
                     value={form.taxId}
                     onChange={(event) => setForm({ ...form, taxId: event.target.value })}
                     disabled={readOnly}
                   />
                 </Field>
-                <Field label="Téléphone">
+                <Field label={t("common:labels.phone")}>
                   <Input
                     value={form.phone}
                     onChange={(event) => setForm({ ...form, phone: event.target.value })}
                     disabled={readOnly}
                   />
                 </Field>
-                <Field label="E-mail">
+                <Field label={t("common:labels.email")}>
                   <Input
                     type="email"
                     value={form.email}
@@ -166,7 +163,7 @@ export default function CompanySettingsPage() {
                     disabled={readOnly}
                   />
                 </Field>
-                <Field label="Site web">
+                <Field label={t("company.fields.website")}>
                   <Input
                     value={form.website}
                     onChange={(event) => setForm({ ...form, website: event.target.value })}
@@ -174,7 +171,7 @@ export default function CompanySettingsPage() {
                   />
                 </Field>
               </FieldGrid>
-              <Field label="Adresse">
+              <Field label={t("common:labels.address")}>
                 <Textarea
                   rows={2}
                   value={form.address}
@@ -183,14 +180,14 @@ export default function CompanySettingsPage() {
                 />
               </Field>
               <FieldGrid>
-                <Field label="Ville">
+                <Field label={t("company.fields.city")}>
                   <Input
                     value={form.city}
                     onChange={(event) => setForm({ ...form, city: event.target.value })}
                     disabled={readOnly}
                   />
                 </Field>
-                <Field label="Pays">
+                <Field label={t("company.fields.country")}>
                   <Input
                     value={form.country}
                     onChange={(event) => setForm({ ...form, country: event.target.value })}
@@ -203,15 +200,12 @@ export default function CompanySettingsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Fiscalité et comptabilité</CardTitle>
-              <CardDescription>
-                Le référentiel comptable détermine le plan installé ; les comptes utilisés par les
-                automatismes restent modifiables dans le plan comptable.
-              </CardDescription>
+              <CardTitle>{t("company.taxAccounting")}</CardTitle>
+              <CardDescription>{t("company.taxAccountingDescription")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <FieldGrid>
-                <Field label="Devise" hint="Code ISO à trois lettres.">
+                <Field label={t("common:labels.currency")} hint={t("company.fields.currencyHint")}>
                   <Input
                     value={form.currency}
                     onChange={(event) =>
@@ -221,7 +215,7 @@ export default function CompanySettingsPage() {
                     className="tabular"
                   />
                 </Field>
-                <Field label="Référentiel comptable">
+                <Field label={t("company.fields.accountingStandard")}>
                   <Select
                     value={form.accountingStandard}
                     onValueChange={(value) =>
@@ -244,14 +238,14 @@ export default function CompanySettingsPage() {
                     </SelectContent>
                   </Select>
                 </Field>
-                <Field label="Taux de TVA par défaut">
+                <Field label={t("company.fields.defaultVatRate")}>
                   <RateInput
                     valueBp={form.defaultVatRateBp}
                     onChange={(bp) => setForm({ ...form, defaultVatRateBp: bp })}
                     disabled={readOnly}
                   />
                 </Field>
-                <Field label="Début d'exercice">
+                <Field label={t("company.fields.fiscalYearStart")}>
                   <Select
                     value={String(form.fiscalYearStartMonth)}
                     onValueChange={(value) =>
@@ -263,7 +257,7 @@ export default function CompanySettingsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {MONTHS.map((month, index) => (
+                      {monthNames().map((month, index) => (
                         <SelectItem key={month} value={String(index + 1)}>
                           {month}
                         </SelectItem>
@@ -280,7 +274,7 @@ export default function CompanySettingsPage() {
                   disabled={readOnly}
                 />
                 <label htmlFor="vat" className="text-sm">
-                  Société assujettie à la TVA
+                  {t("company.vatEnabled")}
                 </label>
               </div>
             </CardContent>
@@ -289,28 +283,26 @@ export default function CompanySettingsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Logo</CardTitle>
-            <CardDescription>
-              Affiché dans la barre latérale et sur les documents imprimés.
-            </CardDescription>
+            <CardTitle>{t("company.logo.title")}</CardTitle>
+            <CardDescription>{t("company.logo.description")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex aspect-square items-center justify-center overflow-hidden rounded-lg border bg-muted">
               {form.logo ? (
                 <img
                   src={form.logo}
-                  alt="Logo de la société"
+                  alt={t("company.logo.alt")}
                   className="size-full object-contain"
                 />
               ) : (
-                <p className="text-sm text-muted-foreground">Aucun logo</p>
+                <p className="text-sm text-muted-foreground">{t("company.logo.none")}</p>
               )}
             </div>
             {!readOnly ? (
               <div className="space-y-2">
                 <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed px-3 py-2 text-sm transition-colors hover:bg-muted">
                   <IconUpload className="size-4" />
-                  Choisir une image
+                  {t("company.logo.choose")}
                   <input
                     type="file"
                     accept="image/*"
@@ -325,7 +317,7 @@ export default function CompanySettingsPage() {
                     className="w-full"
                     onClick={() => setForm({ ...form, logo: null })}
                   >
-                    Retirer le logo
+                    {t("company.logo.remove")}
                   </Button>
                 ) : null}
               </div>

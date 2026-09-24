@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 
 /**
- * Valeur retardée — utilisée par tous les champs de recherche.
- * Sans elle, chaque frappe déclencherait une requête serveur et, sur une liaison
- * lente, l'affichage sauterait au rythme des réponses qui arrivent dans le désordre.
+ * Debounced value — used by every search field.
+ * Without it, each keystroke would trigger a server request and, on a slow link,
+ * the display would jump around as responses arrive out of order.
  */
 export function useDebounced<T>(value: T, delayMs = 300): T {
   const [debounced, setDebounced] = useState(value);

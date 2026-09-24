@@ -1,21 +1,24 @@
 /**
- * Écritures **hors ligne** des formulaires de gestion (tiers, produits, devis,
- * factures, règlements, mouvements de stock).
+ * **Offline** writes of the management forms (parties, products, quotes, invoices,
+ * payments, stock movements).
  *
- * Même principe que l'encaissement de caisse (`features/pos/checkout.ts`) : le
- * formulaire tente l'appel API ; si le serveur est injoignable, l'intention part dans
- * l'outbox et sera rejouée à la synchronisation ([FR-SYNC-2]). Une erreur **métier**
- * n'est jamais mise en file : elle serait rejetée de la même façon à l'ingestion.
+ * Same principle as the POS checkout (`features/pos/checkout.ts`): the form tries the
+ * API call; if the server is unreachable, the intent goes to the outbox and will be
+ * replayed at synchronization ([FR-SYNC-2]). A **business** error is never queued: it
+ * would be rejected the same way at ingestion.
  *
- * Un tiers ou un produit créé hors ligne peut être utilisé aussitôt dans un devis ou
- * une facture : son `clientUuid` tient lieu d'identifiant, et l'opération dépendante le
- * transmet en `xxxClientUuid` + `dependsOn` pour que le serveur le résolve.
+ * A party or product created offline can be used right away in a quote or invoice: its
+ * `clientUuid` acts as the identifier, and the dependent operation passes it as
+ * `xxxClientUuid` + `dependsOn` so that the server resolves it.
+ *
+ * Unit values such as `"unité"` are the database default, not UI text.
  */
 
 import type { Party, Product } from "@shared/schema";
 import { formatProvisionalNumber } from "@shared/numbering-helpers";
 import { computeDocumentTotals } from "@shared/pricing";
 import { ApiError } from "@/shared/api/api-error";
+import { i18n } from "@/shared/i18n";
 import { offlineDb, type OutboxRecord } from "./db";
 import { enqueue, newUuid } from "./outbox";
 import { readMeta, writeMeta } from "./storage";
@@ -23,14 +26,14 @@ import { refreshCounters } from "./sync-engine";
 
 const DOC_SEQ_KEY = "offline.localDocSeq";
 
-/** Vrai si l'erreur signifie « serveur injoignable » (et non un refus métier). */
+/** True if the error means "server unreachable" (and not a business rejection). */
 export function isNetworkError(error: unknown): boolean {
   return error instanceof ApiError && error.isNetworkError;
 }
 
 /**
- * Exécute l'appel en ligne ; s'il échoue faute de réseau, exécute la mise en file.
- * `mode` permet au formulaire d'adapter son message et sa navigation.
+ * Runs the online call; if it fails for lack of network, runs the queueing instead.
+ * `mode` lets the form adapt its message and navigation.
  */
 export async function onlineOrQueued<TOnline, TQueued>(
   online: () => Promise<TOnline>,
@@ -53,7 +56,7 @@ async function nextProvisionalNumber(prefix: string): Promise<string> {
   return formatProvisionalNumber(prefix, next);
 }
 
-/** Opérations d'une entité encore en attente de synchronisation. */
+/** Operations of an entity still waiting for synchronization. */
 export async function pendingRecords(entity: OutboxRecord["entity"]): Promise<OutboxRecord[]> {
   try {
     const rows = await offlineDb.outbox.where("entity").equals(entity).toArray();
@@ -64,8 +67,8 @@ export async function pendingRecords(entity: OutboxRecord["entity"]): Promise<Ou
 }
 
 /**
- * Traduit un identifiant affiché en référence de protocole : identifiant serveur, ou
- * `clientUuid` d'une création hors ligne pas encore synchronisée.
+ * Turns a displayed identifier into a protocol reference: server identifier, or
+ * `clientUuid` of an offline creation not yet synchronized.
  */
 async function resolveRef(id: string | null | undefined): Promise<{
   id: string | null;
@@ -86,11 +89,14 @@ function dependencies(...refs: { clientUuid: string | null }[]): string[] {
   return [...new Set(refs.map((ref) => ref.clientUuid).filter((id): id is string => !!id))];
 }
 
-// ─── Affichage des créations en attente ───────────────────────────────────────
+// ─── Display of pending creations ─────────────────────────────────────────────
 
-const PENDING_CODE = "En attente";
+/** Code shown for a record the server has not numbered yet. */
+function pendingCode(): string {
+  return i18n.t("offline:write.pendingNumber");
+}
 
-/** Tiers créés hors ligne, sous la forme d'un `Party` affichable et sélectionnable. */
+/** Parties created offline, as a displayable and selectable `Party`. */
 export async function pendingParties(): Promise<Party[]> {
   const records = await pendingRecords("core.party");
   return records.map((record) => {
@@ -98,7 +104,7 @@ export async function pendingParties(): Promise<Party[]> {
     return {
       id: record.clientUuid,
       companyId: "",
-      code: PENDING_CODE,
+      code: pendingCode(),
       name: String(payload.name ?? ""),
       partyType: payload.partyType ?? "CUSTOMER",
       email: payload.email ?? "",
@@ -114,7 +120,7 @@ export async function pendingParties(): Promise<Party[]> {
   });
 }
 
-/** Produits créés hors ligne, sous la forme d'un `Product` affichable. */
+/** Products created offline, as a displayable `Product`. */
 export async function pendingProducts(): Promise<Product[]> {
   const records = await pendingRecords("catalog.product");
   return records.map(
@@ -132,7 +138,7 @@ export async function pendingProducts(): Promise<Product[]> {
   );
 }
 
-// ─── Mises en file ────────────────────────────────────────────────────────────
+// ─── Queueing ─────────────────────────────────────────────────────────────────
 
 export async function queuePartyCreate(input: {
   name: string;
@@ -146,7 +152,7 @@ export async function queuePartyCreate(input: {
 }): Promise<{ id: string; name: string; code: string }> {
   const record = await enqueue({
     entity: "core.party",
-    label: `Tiers « ${input.name} »`,
+    label: i18n.t("offline:outboxLabels.party", { name: input.name }),
     payload: {
       name: input.name,
       partyType: input.partyType,
@@ -158,7 +164,7 @@ export async function queuePartyCreate(input: {
       notes: input.notes ?? "",
     },
   });
-  return { id: record.clientUuid, name: input.name, code: PENDING_CODE };
+  return { id: record.clientUuid, name: input.name, code: pendingCode() };
 }
 
 export async function queueProductCreate(input: {
@@ -179,7 +185,7 @@ export async function queueProductCreate(input: {
 }): Promise<{ id: string; name: string }> {
   const record = await enqueue({
     entity: "catalog.product",
-    label: `Produit ${input.sku} « ${input.name} »`,
+    label: i18n.t("offline:outboxLabels.product", { sku: input.sku, name: input.name }),
     payload: {
       sku: input.sku,
       name: input.name,
@@ -259,7 +265,7 @@ export async function queueQuoteCreate(input: {
   const provisionalNumber = await nextProvisionalNumber("DEV");
   await enqueue({
     entity: "sales.quote",
-    label: `Devis ${provisionalNumber}`,
+    label: i18n.t("offline:outboxLabels.quote", { number: provisionalNumber }),
     amountCents: totalOf(input.lines, input.globalDiscountBp),
     provisionalNumber,
     payload: {
@@ -277,7 +283,7 @@ export async function queueQuoteCreate(input: {
   return { provisionalNumber };
 }
 
-/** Facture hors ligne : toujours **validée** à l'ingestion (stock et comptabilité). */
+/** Offline invoice: always **validated** at ingestion (stock and accounting). */
 export async function queueInvoiceCreate(input: {
   partyId: string;
   date: string;
@@ -292,7 +298,7 @@ export async function queueInvoiceCreate(input: {
   const provisionalNumber = await nextProvisionalNumber("FAC");
   await enqueue({
     entity: "invoicing.sales_invoice",
-    label: `Facture ${provisionalNumber}`,
+    label: i18n.t("offline:outboxLabels.invoice", { number: provisionalNumber }),
     amountCents: totalOf(input.lines, input.globalDiscountBp),
     provisionalNumber,
     payload: {
@@ -326,7 +332,9 @@ export async function queuePaymentCreate(input: {
   const invoice = await resolveRef(input.invoiceId);
   await enqueue({
     entity: "payments.payment",
-    label: `Règlement ${input.reference || input.paymentDate}`,
+    label: i18n.t("offline:outboxLabels.payment", {
+      reference: input.reference || input.paymentDate,
+    }),
     amountCents: input.amountCents,
     payload: {
       partyId: party.id,
@@ -354,13 +362,13 @@ export async function queueStockMovement(input: {
 }): Promise<void> {
   const product = await resolveRef(input.productId);
   if (!product.id) {
-    throw new Error(
-      "Ce produit n'est pas encore synchronisé : son stock pourra être ajusté après la synchronisation."
-    );
+    throw new Error(i18n.t("offline:errors.productNotSynced"));
   }
   await enqueue({
     entity: "inventory.stock_movement",
-    label: `Ajustement de stock (${input.direction === "IN" ? "+" : "−"}${input.quantity})`,
+    label: i18n.t("offline:outboxLabels.stockAdjustment", {
+      quantity: `${input.direction === "IN" ? "+" : "−"}${input.quantity}`,
+    }),
     payload: {
       productId: product.id,
       warehouseId: input.warehouseId,

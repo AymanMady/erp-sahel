@@ -1,13 +1,16 @@
 /**
- * Navigation de l'application.
+ * Application navigation.
  *
- * Chaque entrée porte sa **permission** et, le cas échéant, son **module** (caisse,
- * achats, stock…) : la barre latérale est filtrée à l'affichage, de sorte qu'un
- * caissier ne voie pas la comptabilité et qu'une boutique qui n'utilise que la caisse
- * et le stock n'ait qu'un menu de quelques lignes.
+ * Each entry carries its **permission** and, when relevant, its **module** (POS,
+ * purchasing, inventory…): the sidebar is filtered at render time, so a cashier does
+ * not see accounting and a shop that only uses the POS and inventory gets a menu of
+ * just a few lines.
  *
- * Ce filtrage est **ergonomique**, pas sécuritaire : l'autorisation réelle est
- * vérifiée côté serveur sur chaque endpoint.
+ * This filtering is **ergonomic**, not a security measure: the real authorization is
+ * checked server-side on every endpoint.
+ *
+ * Labels are i18n keys of the `nav` namespace (`titleKey`/`labelKey`), translated at
+ * render time so that switching the language updates the menu immediately.
  */
 
 import {
@@ -37,118 +40,126 @@ import type { PermissionCode } from "@shared/rbac";
 import type { ModuleCode } from "@shared/schema";
 
 export interface NavChild {
-  title: string;
+  /** i18n key in the `nav` namespace. */
+  titleKey: string;
   url: string;
   permission?: PermissionCode;
   module?: ModuleCode;
 }
 
 export interface NavItem {
-  title: string;
+  /** i18n key in the `nav` namespace. */
+  titleKey: string;
   url?: string;
   icon?: Icon;
   badge?: string;
   permission?: PermissionCode;
-  /** Entrée conditionnée à l'activation d'un module. */
+  /** Entry shown only when this module is enabled. */
   module?: ModuleCode;
   items?: NavChild[];
 }
 
 export interface NavGroup {
-  label: string;
+  /** i18n key in the `nav` namespace. */
+  labelKey: string;
   items: NavItem[];
 }
 
 export const navGroups: NavGroup[] = [
   {
-    label: "Accueil",
-    items: [{ title: "Tableau de bord", url: "/", icon: IconLayoutDashboard }],
+    labelKey: "groups.home",
+    items: [{ titleKey: "items.dashboard", url: "/", icon: IconLayoutDashboard }],
   },
   {
-    label: "Vendre",
+    labelKey: "groups.sell",
     items: [
       {
-        title: "Caisse",
+        titleKey: "items.pos",
         url: "/pos",
         icon: IconCashRegister,
         module: "pos",
         permission: "pos.use",
       },
       {
-        title: "Devis",
+        titleKey: "items.quotes",
         url: "/quotes",
         icon: IconClipboardList,
         module: "sales",
         permission: "sales.read",
       },
       {
-        title: "Commandes clients",
+        titleKey: "items.salesOrders",
         url: "/sales-orders",
         icon: IconShoppingCart,
         module: "sales",
         permission: "sales.read",
       },
       {
-        title: "Factures",
+        titleKey: "items.invoices",
         icon: IconFileInvoice,
         module: "invoicing",
         permission: "invoicing.read",
         items: [
-          { title: "Factures clients", url: "/invoices" },
-          { title: "Avoirs (retours)", url: "/credit-notes" },
+          { titleKey: "items.customerInvoices", url: "/invoices" },
+          { titleKey: "items.creditNotes", url: "/credit-notes" },
         ],
       },
-      { title: "Paiements", url: "/payments", icon: IconReceipt, permission: "payments.read" },
+      {
+        titleKey: "items.payments",
+        url: "/payments",
+        icon: IconReceipt,
+        permission: "payments.read",
+      },
     ],
   },
   {
-    label: "Acheter et stocker",
+    labelKey: "groups.buyAndStock",
     items: [
       {
-        title: "Achats",
+        titleKey: "items.purchasing",
         icon: IconTruckDelivery,
         module: "purchasing",
         permission: "purchasing.read",
         items: [
-          { title: "Commandes fournisseurs", url: "/purchase-orders" },
-          { title: "Réceptions", url: "/goods-receipts" },
-          { title: "Factures fournisseurs", url: "/supplier-invoices" },
+          { titleKey: "items.purchaseOrders", url: "/purchase-orders" },
+          { titleKey: "items.goodsReceipts", url: "/goods-receipts" },
+          { titleKey: "items.supplierInvoices", url: "/supplier-invoices" },
         ],
       },
       {
-        title: "Stock",
+        titleKey: "items.inventory",
         icon: IconPackages,
         module: "inventory",
         permission: "inventory.read",
         items: [
-          { title: "Ce qui reste", url: "/inventory" },
-          { title: "Entrées et sorties", url: "/inventory/movements" },
-          { title: "Magasins", url: "/warehouses" },
+          { titleKey: "items.stockOnHand", url: "/inventory" },
+          { titleKey: "items.stockMovements", url: "/inventory/movements" },
+          { titleKey: "items.warehouses", url: "/warehouses" },
         ],
       },
     ],
   },
   {
-    label: "Produits et clients",
+    labelKey: "groups.productsAndCustomers",
     items: [
       {
-        title: "Produits",
+        titleKey: "items.products",
         icon: IconBox,
         permission: "catalog.read",
         items: [
-          { title: "Liste des produits", url: "/products" },
-          { title: "Catégories", url: "/categories" },
+          { titleKey: "items.productList", url: "/products" },
+          { titleKey: "items.categories", url: "/categories" },
         ],
       },
       {
-        title: "Prestations",
+        titleKey: "items.services",
         url: "/services",
         icon: IconTool,
         module: "services",
         permission: "services.read",
       },
       {
-        title: "Clients et fournisseurs",
+        titleKey: "items.parties",
         url: "/parties",
         icon: IconAddressBook,
         permission: "parties.read",
@@ -156,76 +167,76 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: "Argent",
+    labelKey: "groups.money",
     items: [
       {
-        title: "Caisse et banque",
+        titleKey: "items.banking",
         url: "/banking",
         icon: IconBuildingBank,
         module: "banking",
         permission: "banking.read",
       },
       {
-        title: "Rapports",
+        titleKey: "items.reports",
         icon: IconChartBar,
         module: "reports",
         permission: "reports.read",
         items: [
-          { title: "Ventes", url: "/reports/sales" },
-          { title: "Stock", url: "/reports/stock" },
-          { title: "Achats", url: "/reports/purchases" },
+          { titleKey: "items.salesReport", url: "/reports/sales" },
+          { titleKey: "items.stockReport", url: "/reports/stock" },
+          { titleKey: "items.purchasesReport", url: "/reports/purchases" },
         ],
       },
       {
-        title: "Comptabilité",
+        titleKey: "items.accounting",
         icon: IconCalculator,
         module: "accounting",
         permission: "accounting.read",
         items: [
-          { title: "Journal", url: "/accounting/entries" },
-          { title: "Grand livre", url: "/accounting/ledger" },
-          { title: "Balance", url: "/accounting/balance" },
-          { title: "Plan comptable", url: "/accounting/accounts" },
+          { titleKey: "items.journal", url: "/accounting/entries" },
+          { titleKey: "items.ledger", url: "/accounting/ledger" },
+          { titleKey: "items.trialBalance", url: "/accounting/balance" },
+          { titleKey: "items.chartOfAccounts", url: "/accounting/accounts" },
         ],
       },
     ],
   },
   {
-    label: "Réglages",
+    labelKey: "groups.settings",
     items: [
       {
-        title: "Modules",
+        titleKey: "items.modules",
         url: "/settings/modules",
         icon: IconPuzzle,
         permission: "settings.read",
       },
       {
-        title: "Paramètres",
+        titleKey: "items.settings",
         icon: IconSettings,
         permission: "settings.read",
         items: [
-          { title: "Ma société", url: "/settings/company" },
-          { title: "Numérotation", url: "/settings/numbering" },
-          { title: "Caisses", url: "/settings/registers", module: "pos" },
+          { titleKey: "items.company", url: "/settings/company" },
+          { titleKey: "items.numbering", url: "/settings/numbering" },
+          { titleKey: "items.registers", url: "/settings/registers", module: "pos" },
         ],
       },
       {
-        title: "Utilisateurs",
+        titleKey: "items.users",
         icon: IconUsers,
         permission: "users.read",
         items: [
-          { title: "Comptes", url: "/settings/users" },
-          { title: "Rôles et droits", url: "/settings/roles" },
+          { titleKey: "items.accounts", url: "/settings/users" },
+          { titleKey: "items.roles", url: "/settings/roles" },
         ],
       },
-      { title: "Synchronisation", url: "/sync", icon: IconRefresh },
+      { titleKey: "items.sync", url: "/sync", icon: IconRefresh },
     ],
   },
 ];
 
 /**
- * Module requis par une adresse de l'application, déduit du menu : un écran d'un
- * module désactivé affiche une invitation à l'activer plutôt qu'une erreur.
+ * Module required by an application path, derived from the menu: a screen of a
+ * disabled module shows an invitation to enable it rather than an error.
  */
 export function moduleForPath(pathname: string): ModuleCode | undefined {
   let best: { module: ModuleCode; length: number } | undefined;
@@ -243,13 +254,13 @@ export function moduleForPath(pathname: string): ModuleCode | undefined {
   return best?.module;
 }
 
-/** Icône de l'enseigne affichée dans l'en-tête de la barre latérale. */
+/** Brand icon shown in the sidebar header. */
 export const brandIcon = IconBuildingStore;
 
 /**
- * Filtre la navigation selon les permissions et les modules activés.
- * Un groupe dont toutes les entrées sont masquées disparaît entièrement, pour ne
- * pas laisser d'intitulé de section orphelin.
+ * Filters the navigation by permissions and enabled modules.
+ * A group whose entries are all hidden disappears entirely, so that no orphan
+ * section heading is left behind.
  */
 export function visibleNavGroups(
   can: (permission: PermissionCode) => boolean,
@@ -280,17 +291,25 @@ export function visibleNavGroups(
     .filter((group) => group.items.length > 0);
 }
 
-/** Toutes les entrées « feuille », pour la palette de commandes (⌘K). */
-export function flattenNav(groups: NavGroup[]): { title: string; url: string; group: string }[] {
+/** Translates a key of the `nav` namespace (pass `t` from `useTranslation("nav")`). */
+export type NavTranslate = (key: string) => string;
+
+/** Every "leaf" entry, translated, for the command palette (⌘K). */
+export function flattenNav(
+  groups: NavGroup[],
+  t: NavTranslate
+): { title: string; url: string; group: string }[] {
   const result: { title: string; url: string; group: string }[] = [];
   for (const group of groups) {
+    const groupLabel = t(group.labelKey);
     for (const item of group.items) {
-      if (item.url) result.push({ title: item.title, url: item.url, group: group.label });
+      const itemTitle = t(item.titleKey);
+      if (item.url) result.push({ title: itemTitle, url: item.url, group: groupLabel });
       for (const child of item.items ?? []) {
         result.push({
-          title: `${item.title} › ${child.title}`,
+          title: `${itemTitle} › ${t(child.titleKey)}`,
           url: child.url,
-          group: group.label,
+          group: groupLabel,
         });
       }
     }

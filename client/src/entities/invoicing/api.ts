@@ -1,4 +1,4 @@
-/** Accès API de la facturation client. */
+/** API access for customer invoicing. */
 
 import { api } from "@/shared/api/http";
 import type {

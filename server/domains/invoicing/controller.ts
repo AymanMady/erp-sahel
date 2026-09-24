@@ -1,4 +1,4 @@
-/** Frontière HTTP de la facturation. */
+/** HTTP boundary of invoicing. */
 
 import type { Request, Response } from "express";
 

@@ -1,5 +1,5 @@
 /**
- * Achats : commande fournisseur → réception (entrée en stock) → facture fournisseur
+ * Purchasing: purchase order → goods receipt (stock entry) → supplier invoice
  * ([FR-ACH-2], [FR-ACH-3], [FR-ACH-4]).
  */
 
@@ -67,7 +67,7 @@ export const purchaseOrderLines = pgTable(
       .references(() => purchaseOrders.id, { onDelete: "cascade" }),
     productId: uuid("product_id").references(() => products.id, { onDelete: "set null" }),
     variantId: uuid("variant_id"),
-    /** Quantité déjà réceptionnée — pilote le passage en `PARTIALLY_RECEIVED`/`RECEIVED`. */
+    /** Quantity already received — drives the transition to `PARTIALLY_RECEIVED`/`RECEIVED`. */
     receivedQuantity: quantity("received_quantity").default("0").notNull(),
     ...documentLineColumns,
   },
@@ -79,7 +79,7 @@ export type PurchaseOrderLine = typeof purchaseOrderLines.$inferSelect;
 export const GOODS_RECEIPT_STATUSES = ["DRAFT", "VALIDATED", "CANCELLED"] as const;
 export type GoodsReceiptStatus = (typeof GOODS_RECEIPT_STATUSES)[number];
 
-/** Bon de réception : sa validation crée les mouvements d'entrée en stock [FR-ACH-3]. */
+/** Goods receipt: validating it creates the stock-in movements [FR-ACH-3]. */
 export const goodsReceipts = pgTable(
   "goods_receipts",
   {
@@ -154,7 +154,7 @@ export const supplierInvoices = pgTable(
       .notNull()
       .references(() => companies.id, { onDelete: "cascade" }),
     number: text("number").notNull(),
-    /** Référence du document émis par le fournisseur (peut différer du numéro interne). */
+    /** Reference of the document issued by the supplier (may differ from the internal number). */
     supplierReference: text("supplier_reference").default("").notNull(),
     supplierId: uuid("supplier_id")
       .notNull()

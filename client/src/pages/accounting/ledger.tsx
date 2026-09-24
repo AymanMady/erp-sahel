@@ -1,7 +1,8 @@
-/** Grand livre : écritures d'un compte sur une période, avec solde progressif. */
+/** General ledger: an account's entries over a period, with a running balance. */
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import { formatDate } from "@shared/format";
 import { errorMessage } from "@/shared/api/api-error";
@@ -17,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 const ALL = "ALL";
 
 export default function LedgerPage() {
+  const { t } = useTranslation("accounting");
   const [accountId, setAccountId] = useState(ALL);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -40,8 +42,8 @@ export default function LedgerPage() {
   });
 
   /**
-   * Solde progressif : calculé côté client sur la page affichée. Il n'a de sens que
-   * lorsqu'un compte unique est sélectionné — sinon on mélangerait des comptes.
+   * Running balance: computed client-side over the displayed page. It only makes sense
+   * when a single account is selected — otherwise accounts would be mixed together.
    */
   const rowsWithBalance = useMemo(() => {
     const items = data?.items ?? [];
@@ -54,15 +56,15 @@ export default function LedgerPage() {
   }, [data, accountId]);
 
   const columns: Column<LedgerRow & { balanceCents: number | null }>[] = [
-    { id: "date", header: "Date", cell: (row) => formatDate(row.date) },
+    { id: "date", header: t("common:labels.date"), cell: (row) => formatDate(row.date) },
     {
       id: "entry",
-      header: "Écriture",
+      header: t("columns.entry"),
       cell: (row) => <span className="tabular text-sm">{row.entryNumber}</span>,
     },
     {
       id: "account",
-      header: "Compte",
+      header: t("columns.account"),
       hideOnMobile: true,
       cell: (row) => (
         <span>
@@ -73,7 +75,7 @@ export default function LedgerPage() {
     },
     {
       id: "label",
-      header: "Libellé",
+      header: t("columns.label"),
       cell: (row) => (
         <div className="min-w-0">
           <p className="truncate">{row.label}</p>
@@ -83,19 +85,19 @@ export default function LedgerPage() {
     },
     {
       id: "debit",
-      header: "Débit",
+      header: t("columns.debit"),
       align: "end",
       cell: (row) => (row.debitCents ? <Money cents={row.debitCents} withSymbol={false} /> : "—"),
     },
     {
       id: "credit",
-      header: "Crédit",
+      header: t("columns.credit"),
       align: "end",
       cell: (row) => (row.creditCents ? <Money cents={row.creditCents} withSymbol={false} /> : "—"),
     },
     {
       id: "balance",
-      header: "Solde",
+      header: t("columns.balance"),
       align: "end",
       cell: (row) =>
         row.balanceCents === null ? (
@@ -108,10 +110,7 @@ export default function LedgerPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Grand livre"
-        description="Détail des mouvements par compte. Sélectionnez un compte pour suivre son solde."
-      />
+      <PageHeader title={t("ledger.title")} description={t("ledger.description")} />
 
       <div className="grid gap-2 sm:grid-cols-3">
         <Select
@@ -125,7 +124,7 @@ export default function LedgerPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>Tous les comptes</SelectItem>
+            <SelectItem value={ALL}>{t("ledger.allAccounts")}</SelectItem>
             {(accounts ?? [])
               .filter((account) => !account.isGroup)
               .map((account) => (
@@ -135,8 +134,18 @@ export default function LedgerPage() {
               ))}
           </SelectContent>
         </Select>
-        <Input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
-        <Input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
+        <Input
+          type="date"
+          aria-label={t("filters.fromDate")}
+          value={fromDate}
+          onChange={(event) => setFromDate(event.target.value)}
+        />
+        <Input
+          type="date"
+          aria-label={t("filters.toDate")}
+          value={toDate}
+          onChange={(event) => setToDate(event.target.value)}
+        />
       </div>
 
       <ResourceTable
@@ -145,8 +154,8 @@ export default function LedgerPage() {
         rowKey={(row) => row.lineId}
         loading={isLoading}
         error={error ? errorMessage(error) : null}
-        emptyTitle="Aucun mouvement"
-        emptyDescription="Aucune écriture ne correspond aux critères choisis."
+        emptyTitle={t("ledger.emptyTitle")}
+        emptyDescription={t("ledger.emptyDescription")}
         pagination={{
           total: data?.total ?? 0,
           limit: page.limit,

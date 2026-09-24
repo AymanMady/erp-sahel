@@ -1,11 +1,11 @@
 /**
- * Allocation des numéros légaux de documents ([FR-VNT-7], `SYNC_STRATEGY.md` §6).
+ * Allocation of legal document numbers ([FR-VNT-7], `SYNC_STRATEGY.md` §6).
  *
- * L'allocation se fait **dans la transaction du document** par un `INSERT … ON CONFLICT
- * DO UPDATE … RETURNING` : la ligne de séquence est verrouillée le temps de l'incrément,
- * donc deux requêtes concurrentes — y compris deux lots de synchronisation venant de
- * deux postes — ne peuvent pas obtenir le même numéro. C'est précisément ce qui rend
- * sûre l'attribution du numéro définitif au moment de l'ingestion hors-ligne.
+ * Allocation happens **inside the document transaction** via an `INSERT … ON CONFLICT
+ * DO UPDATE … RETURNING`: the sequence row is locked for the duration of the increment,
+ * so two concurrent requests — including two sync batches coming from two terminals —
+ * cannot obtain the same number. This is precisely what makes it safe to assign the
+ * final number when offline operations are ingested.
  */
 
 import { sql } from "drizzle-orm";
@@ -20,9 +20,9 @@ import {
 import { db, type Database } from "../../db";
 
 /**
- * Exercice d'une date selon le mois de début d'exercice de la société.
- * Exercice décalé (ex. démarrant en juillet) : une facture de mars 2026 appartient
- * à l'exercice 2025, ce qui doit se refléter dans le numéro.
+ * Fiscal year of a date according to the company's fiscal year start month.
+ * With an offset fiscal year (e.g. starting in July), an invoice from March 2026
+ * belongs to fiscal year 2025, which must be reflected in the number.
  */
 export function fiscalYearOf(date: Date, fiscalYearStartMonth: number): number {
   const month = date.getMonth() + 1;
@@ -31,16 +31,15 @@ export function fiscalYearOf(date: Date, fiscalYearStartMonth: number): number {
 
 class NumberingApplication {
   /**
-   * Alloue le prochain numéro pour un type de document.
-   * `tx` doit être la transaction du document : si celle-ci échoue, le numéro
-   * n'est pas consommé.
+   * Allocates the next number for a document type.
+   * `tx` must be the document transaction: if it fails, the number is not consumed.
    */
   async allocate(
     tx: Database,
     input: {
       companyId: string;
       documentType: DocumentType;
-      /** Date du document ; détermine l'exercice de la séquence. */
+      /** Document date; determines the fiscal year of the sequence. */
       date?: Date | string;
       fiscalYearStartMonth?: number;
       prefix?: string;
@@ -83,7 +82,7 @@ class NumberingApplication {
     return formatDocumentNumber(prefix, year, row.lastNumber);
   }
 
-  /** Raccourci quand la société est déjà chargée (cas le plus fréquent). */
+  /** Shortcut when the company is already loaded (the most common case). */
   async allocateForCompany(
     tx: Database,
     company: Pick<Company, "id" | "fiscalYearStartMonth">,
@@ -98,7 +97,7 @@ class NumberingApplication {
     });
   }
 
-  /** État des séquences, pour l'écran de paramétrage. */
+  /** State of the sequences, for the settings screen. */
   async listSequences(companyId: string, database: Database = db) {
     return database
       .select()

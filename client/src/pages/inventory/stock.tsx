@@ -1,12 +1,14 @@
-/** État du stock par article et magasin, avec ajustement manuel. */
+/** Stock status by item and warehouse, with manual adjustment. */
 
 import { useState } from "react";
 import { IconAdjustments, IconArrowsExchange } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 import { MOVEMENT_DIRECTIONS } from "@shared/schema";
 import { errorMessage } from "@/shared/api/api-error";
+import { currentIntlLocale } from "@/shared/i18n";
 import { catalogApi } from "@/entities/catalog/api";
 import { inventoryApi, type StockFilters } from "@/entities/inventory/api";
 import { onlineOrQueued, queueStockMovement } from "@/shared/offline/offline-writes";
@@ -39,6 +41,7 @@ import { useMoneyFormatter } from "@/shared/components/money";
 const ALL = "ALL";
 
 export default function InventoryPage() {
+  const { t } = useTranslation("inventory");
   const { can } = useSession();
   const formatMoneyValue = useMoneyFormatter();
   const [search, setSearch] = useState("");
@@ -74,24 +77,29 @@ export default function InventoryPage() {
   const columns: Column<StockRow>[] = [
     {
       id: "sku",
-      header: "Référence",
+      header: t("common:labels.reference"),
       cell: (row) => <span className="tabular font-medium">{row.productSku}</span>,
     },
     {
       id: "name",
-      header: "Article",
+      header: t("movements.item"),
       cell: (row) => <span className="font-medium">{row.productName}</span>,
     },
-    { id: "warehouse", header: "Magasin", hideOnMobile: true, cell: (row) => row.warehouseName },
+    {
+      id: "warehouse",
+      header: t("common:labels.warehouse"),
+      hideOnMobile: true,
+      cell: (row) => row.warehouseName,
+    },
     {
       id: "lot",
-      header: "Lot",
+      header: t("stock.lot"),
       hideOnMobile: true,
       cell: (row) => row.lotNumber || <span className="text-muted-foreground">—</span>,
     },
     {
       id: "quantity",
-      header: "Quantité",
+      header: t("common:labels.quantity"),
       align: "end",
       cell: (row) => (
         <span
@@ -107,14 +115,14 @@ export default function InventoryPage() {
     },
     {
       id: "cost",
-      header: "Coût moyen",
+      header: t("stock.averageCost"),
       align: "end",
       hideOnMobile: true,
       cell: (row) => <Money cents={row.averageCostCents} />,
     },
     {
       id: "value",
-      header: "Valeur",
+      header: t("stock.value"),
       align: "end",
       cell: (row) => <Money cents={Math.round(Number(row.quantity) * row.averageCostCents)} />,
     },
@@ -122,16 +130,16 @@ export default function InventoryPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Stock" description="Soldes par article, magasin et lot.">
+      <PageHeader title={t("stock.title")} description={t("stock.description")}>
         {can("inventory.write") ? (
           <>
             <Button variant="outline" onClick={() => setTransferOpen(true)}>
               <IconArrowsExchange className="size-4" />
-              Transfert
+              {t("stock.transfer")}
             </Button>
             <Button onClick={() => setAdjustOpen(true)}>
               <IconAdjustments className="size-4" />
-              Mouvement manuel
+              {t("stock.manualMovement")}
             </Button>
           </>
         ) : null}
@@ -139,14 +147,14 @@ export default function InventoryPage() {
 
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard
-          label="Valeur du stock"
+          label={t("stock.stockValue")}
           value={formatMoneyValue(valuation?.totalValueCents ?? 0)}
-          hint="Au coût moyen pondéré"
+          hint={t("stock.stockValueHint")}
         />
-        <StatCard label="Références en stock" value={valuation?.skuCount ?? 0} />
+        <StatCard label={t("stock.skuCount")} value={valuation?.skuCount ?? 0} />
         <StatCard
-          label="Quantité totale"
-          value={new Intl.NumberFormat("fr-FR").format(valuation?.totalQuantity ?? 0)}
+          label={t("stock.totalQuantity")}
+          value={new Intl.NumberFormat(currentIntlLocale()).format(valuation?.totalQuantity ?? 0)}
         />
       </div>
 
@@ -157,7 +165,7 @@ export default function InventoryPage() {
             setSearch(value);
             setPage((current) => ({ ...current, offset: 0 }));
           }}
-          placeholder="Article, référence, code-barres…"
+          placeholder={t("stock.searchPlaceholder")}
           className="sm:max-w-sm"
         />
         <Select value={warehouseId} onValueChange={setWarehouseId}>
@@ -165,7 +173,7 @@ export default function InventoryPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>Tous les magasins</SelectItem>
+            <SelectItem value={ALL}>{t("allWarehouses")}</SelectItem>
             {(warehouses ?? []).map((warehouse) => (
               <SelectItem key={warehouse.id} value={warehouse.id}>
                 {warehouse.name}
@@ -176,7 +184,7 @@ export default function InventoryPage() {
         <div className="flex items-center gap-2">
           <Switch id="low-stock" checked={lowStockOnly} onCheckedChange={setLowStockOnly} />
           <Label htmlFor="low-stock" className="text-sm font-normal">
-            Sous le seuil d'alerte
+            {t("stock.lowStockOnly")}
           </Label>
         </div>
       </div>
@@ -187,8 +195,8 @@ export default function InventoryPage() {
         rowKey={(row) => row.id}
         loading={isLoading}
         error={error ? errorMessage(error) : null}
-        emptyTitle="Aucun stock"
-        emptyDescription="Le stock se crée par une réception d'achat ou un mouvement manuel."
+        emptyTitle={t("stock.emptyTitle")}
+        emptyDescription={t("stock.emptyDescription")}
         pagination={{
           total: data?.total ?? 0,
           limit: page.limit,
@@ -204,7 +212,7 @@ export default function InventoryPage() {
   );
 }
 
-/** Mouvement manuel : entrée, sortie ou ajustement d'inventaire. */
+/** Manual movement: stock in, stock out or inventory adjustment. */
 function MovementDialog({
   open,
   onOpenChange,
@@ -212,6 +220,7 @@ function MovementDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useTranslation("inventory");
   const queryClient = useQueryClient();
   const [productSearch, setProductSearch] = useState("");
   const [productId, setProductId] = useState("");
@@ -252,11 +261,11 @@ function MovementDialog({
       ),
     onSuccess: (outcome) => {
       if (outcome.mode === "offline") {
-        toast.success("Mouvement enregistré hors ligne.", {
-          description: "Le stock sera mis à jour à la prochaine synchronisation.",
+        toast.success(t("stock.movementDialog.savedOffline"), {
+          description: t("stock.movementDialog.savedOfflineDescription"),
         });
       } else {
-        toast.success("Mouvement enregistré.");
+        toast.success(t("stock.movementDialog.saved"));
       }
       void queryClient.invalidateQueries({ queryKey: ["stock"] });
       void queryClient.invalidateQueries({ queryKey: ["movements"] });
@@ -269,21 +278,19 @@ function MovementDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Mouvement de stock</DialogTitle>
-          <DialogDescription>
-            Tout mouvement est journalisé avec son motif : le solde reste auditable.
-          </DialogDescription>
+          <DialogTitle>{t("stock.movementDialog.title")}</DialogTitle>
+          <DialogDescription>{t("stock.movementDialog.description")}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <Field label="Article" required>
+          <Field label={t("movements.item")} required>
             <SearchInput
               value={productSearch}
               onChange={setProductSearch}
-              placeholder="Rechercher…"
+              placeholder={t("common:actions.searchEllipsis")}
             />
             <Select value={productId} onValueChange={setProductId}>
               <SelectTrigger className="mt-2">
-                <SelectValue placeholder="Sélectionner un article" />
+                <SelectValue placeholder={t("stock.selectItem")} />
               </SelectTrigger>
               <SelectContent>
                 {(products?.items ?? []).map((product) => (
@@ -295,10 +302,10 @@ function MovementDialog({
             </Select>
           </Field>
           <FieldGrid>
-            <Field label="Magasin" required>
+            <Field label={t("common:labels.warehouse")} required>
               <Select value={warehouseId} onValueChange={setWarehouseId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner" />
+                  <SelectValue placeholder={t("common:actions.select")} />
                 </SelectTrigger>
                 <SelectContent>
                   {(warehouses ?? []).map((warehouse) => (
@@ -309,7 +316,7 @@ function MovementDialog({
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Sens">
+            <Field label={t("stock.movementDialog.direction")}>
               <Select
                 value={direction}
                 onValueChange={(value) =>
@@ -320,35 +327,35 @@ function MovementDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="IN">Entrée (+)</SelectItem>
-                  <SelectItem value="OUT">Sortie (−)</SelectItem>
+                  <SelectItem value="IN">{t("stock.movementDialog.in")}</SelectItem>
+                  <SelectItem value="OUT">{t("stock.movementDialog.out")}</SelectItem>
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Quantité" required>
+            <Field label={t("common:labels.quantity")} required>
               <QuantityInput value={quantity} onChange={setQuantity} />
             </Field>
-            <Field label="Coût unitaire" hint="Utilisé pour la valorisation des entrées.">
+            <Field label={t("movements.unitCost")} hint={t("stock.movementDialog.unitCostHint")}>
               <MoneyInput valueCents={unitCostCents} onChange={setUnitCostCents} />
             </Field>
           </FieldGrid>
-          <Field label="Motif" required>
+          <Field label={t("stock.movementDialog.reason")} required>
             <Input
               value={reason}
               onChange={(event) => setReason(event.target.value)}
-              placeholder="Inventaire, casse, correction de saisie…"
+              placeholder={t("stock.movementDialog.reasonPlaceholder")}
             />
           </Field>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
+            {t("common:actions.cancel")}
           </Button>
           <Button
             onClick={() => mutation.mutate()}
             disabled={mutation.isPending || !productId || !warehouseId || !reason.trim()}
           >
-            Enregistrer
+            {t("common:actions.save")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -363,6 +370,7 @@ function TransferDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useTranslation("inventory");
   const queryClient = useQueryClient();
   const [productSearch, setProductSearch] = useState("");
   const [productId, setProductId] = useState("");
@@ -387,7 +395,7 @@ function TransferDialog({
     mutationFn: () =>
       inventoryApi.transfer({ productId, fromWarehouseId, toWarehouseId, quantity }),
     onSuccess: () => {
-      toast.success("Transfert effectué.");
+      toast.success(t("stock.transferDialog.done"));
       void queryClient.invalidateQueries({ queryKey: ["stock"] });
       void queryClient.invalidateQueries({ queryKey: ["movements"] });
       onOpenChange(false);
@@ -399,22 +407,19 @@ function TransferDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Transfert entre magasins</DialogTitle>
-          <DialogDescription>
-            La sortie et l'entrée sont enregistrées ensemble : la marchandise ne peut pas
-            disparaître entre les deux.
-          </DialogDescription>
+          <DialogTitle>{t("stock.transferDialog.title")}</DialogTitle>
+          <DialogDescription>{t("stock.transferDialog.description")}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <Field label="Article" required>
+          <Field label={t("movements.item")} required>
             <SearchInput
               value={productSearch}
               onChange={setProductSearch}
-              placeholder="Rechercher…"
+              placeholder={t("common:actions.searchEllipsis")}
             />
             <Select value={productId} onValueChange={setProductId}>
               <SelectTrigger className="mt-2">
-                <SelectValue placeholder="Sélectionner un article" />
+                <SelectValue placeholder={t("stock.selectItem")} />
               </SelectTrigger>
               <SelectContent>
                 {(products?.items ?? []).map((product) => (
@@ -426,10 +431,10 @@ function TransferDialog({
             </Select>
           </Field>
           <FieldGrid>
-            <Field label="Magasin source" required>
+            <Field label={t("stock.transferDialog.from")} required>
               <Select value={fromWarehouseId} onValueChange={setFromWarehouseId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner" />
+                  <SelectValue placeholder={t("common:actions.select")} />
                 </SelectTrigger>
                 <SelectContent>
                   {(warehouses ?? []).map((warehouse) => (
@@ -440,10 +445,10 @@ function TransferDialog({
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Magasin destination" required>
+            <Field label={t("stock.transferDialog.to")} required>
               <Select value={toWarehouseId} onValueChange={setToWarehouseId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner" />
+                  <SelectValue placeholder={t("common:actions.select")} />
                 </SelectTrigger>
                 <SelectContent>
                   {(warehouses ?? [])
@@ -457,19 +462,19 @@ function TransferDialog({
               </Select>
             </Field>
           </FieldGrid>
-          <Field label="Quantité" required>
+          <Field label={t("common:labels.quantity")} required>
             <QuantityInput value={quantity} onChange={setQuantity} />
           </Field>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
+            {t("common:actions.cancel")}
           </Button>
           <Button
             onClick={() => mutation.mutate()}
             disabled={mutation.isPending || !productId || !fromWarehouseId || !toWarehouseId}
           >
-            Transférer
+            {t("stock.transferDialog.submit")}
           </Button>
         </DialogFooter>
       </DialogContent>

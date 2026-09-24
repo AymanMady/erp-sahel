@@ -1,9 +1,9 @@
 /**
- * Orchestration des devis et commandes.
+ * Orchestration of quotes and sales orders.
  *
- * Ni le devis ni la commande ne touchent au stock ou à la comptabilité : ce sont des
- * **engagements**, pas des faits. Les effets n'apparaissent qu'à la facturation
- * ([FR-VNT-1] → [FR-VNT-3]) — d'où la conversion explicite devis → commande → facture.
+ * Neither quotes nor orders touch stock or accounting: they are **commitments**, not
+ * facts. Effects only appear at invoicing ([FR-VNT-1] → [FR-VNT-3]) — hence the
+ * explicit quote → order → invoice conversion.
  */
 
 import { addDays, todayInput } from "@shared/format";
@@ -31,7 +31,7 @@ export interface SalesOrderInput extends Omit<QuoteInput, "expiryDate"> {
   quoteId?: string | null;
 }
 
-/** Statuts à partir desquels un document ne peut plus être modifié. */
+/** Statuses from which a document can no longer be modified. */
 const FROZEN_QUOTE_STATUSES: Quote["status"][] = ["ACCEPTED", "CONVERTED"];
 
 class SalesApplication {
@@ -66,7 +66,7 @@ class SalesApplication {
         number,
         partyId: party.id,
         date,
-        // Validité par défaut : 30 jours, usage courant dans le négoce.
+        // Default validity: 30 days, common practice in trade.
         expiryDate: input.expiryDate ?? addDays(date, 30),
         status: "DRAFT",
         globalDiscountBp: input.globalDiscountBp ?? 0,
@@ -92,10 +92,10 @@ class SalesApplication {
     return runInTransaction(async (tx) => {
       const repository = salesRepository.withTransaction(tx);
       const quote = await repository.findQuote(company.id, quoteId);
-      if (!quote) throw new NotFoundError("Devis introuvable.");
+      if (!quote) throw new NotFoundError("Quote not found.");
       if (FROZEN_QUOTE_STATUSES.includes(quote.status)) {
         throw new BusinessRuleError(
-          "Un devis accepté ou converti ne peut plus être modifié.",
+          "An accepted or converted quote can no longer be modified.",
           "QUOTE_FROZEN"
         );
       }
@@ -129,7 +129,7 @@ class SalesApplication {
     status: Quote["status"]
   ): Promise<Quote> {
     const quote = await salesRepository.updateQuote(companyId, quoteId, { status });
-    if (!quote) throw new NotFoundError("Devis introuvable.");
+    if (!quote) throw new NotFoundError("Quote not found.");
     return quote;
   }
 
@@ -176,7 +176,7 @@ class SalesApplication {
     return tx ? run(tx) : runInTransaction(run);
   }
 
-  /** Conversion devis → commande : reprend les lignes telles quelles et fige le devis. */
+  /** Quote → order conversion: copies the lines as-is and freezes the quote. */
   async convertQuoteToOrder(
     company: Company,
     quoteId: string,
@@ -185,13 +185,16 @@ class SalesApplication {
     return runInTransaction(async (tx) => {
       const repository = salesRepository.withTransaction(tx);
       const quote = await repository.findQuote(company.id, quoteId);
-      if (!quote) throw new NotFoundError("Devis introuvable.");
+      if (!quote) throw new NotFoundError("Quote not found.");
       if (quote.status === "CONVERTED") {
-        throw new BusinessRuleError("Ce devis a déjà été converti.", "QUOTE_ALREADY_CONVERTED");
+        throw new BusinessRuleError(
+          "This quote has already been converted.",
+          "QUOTE_ALREADY_CONVERTED"
+        );
       }
       if (quote.status === "REJECTED" || quote.status === "EXPIRED") {
         throw new BusinessRuleError(
-          "Un devis refusé ou expiré ne peut pas être converti.",
+          "A rejected or expired quote cannot be converted.",
           "QUOTE_NOT_CONVERTIBLE"
         );
       }
@@ -225,17 +228,20 @@ class SalesApplication {
     });
   }
 
-  /** Conversion commande → facture ; la commande passe en `INVOICED`. */
+  /** Order → invoice conversion; the order moves to `INVOICED`. */
   async invoiceOrder(company: Company, orderId: string, userId?: string | null) {
     return runInTransaction(async (tx) => {
       const repository = salesRepository.withTransaction(tx);
       const order = await repository.findOrder(company.id, orderId);
-      if (!order) throw new NotFoundError("Commande introuvable.");
+      if (!order) throw new NotFoundError("Order not found.");
       if (order.status === "INVOICED") {
-        throw new BusinessRuleError("Cette commande est déjà facturée.", "ORDER_ALREADY_INVOICED");
+        throw new BusinessRuleError(
+          "This order has already been invoiced.",
+          "ORDER_ALREADY_INVOICED"
+        );
       }
       if (order.status === "CANCELLED") {
-        throw new BusinessRuleError("Une commande annulée ne peut pas être facturée.");
+        throw new BusinessRuleError("A cancelled order cannot be invoiced.");
       }
 
       const invoice = await invoicingApplication.createInTx(
@@ -275,19 +281,19 @@ class SalesApplication {
     status: SalesOrder["status"]
   ): Promise<SalesOrder> {
     const order = await salesRepository.updateOrder(companyId, orderId, { status });
-    if (!order) throw new NotFoundError("Commande introuvable.");
+    if (!order) throw new NotFoundError("Order not found.");
     return order;
   }
 
   async getQuote(companyId: string, quoteId: string): Promise<QuoteWithLines> {
     const quote = await salesRepository.findQuote(companyId, quoteId);
-    if (!quote) throw new NotFoundError("Devis introuvable.");
+    if (!quote) throw new NotFoundError("Quote not found.");
     return quote;
   }
 
   async getOrder(companyId: string, orderId: string): Promise<SalesOrderWithLines> {
     const order = await salesRepository.findOrder(companyId, orderId);
-    if (!order) throw new NotFoundError("Commande introuvable.");
+    if (!order) throw new NotFoundError("Order not found.");
     return order;
   }
 }

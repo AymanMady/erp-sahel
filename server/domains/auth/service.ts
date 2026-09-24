@@ -1,6 +1,6 @@
 /**
- * Frontière applicative du domaine authentification : valide les entrées, normalise
- * les erreurs et délègue les cas d'usage à `authApplication`.
+ * Application boundary of the authentication domain: validates input, normalizes
+ * errors and delegates use cases to `authApplication`.
  */
 
 import { ALL_PERMISSION_CODES } from "@shared/rbac";
@@ -75,7 +75,7 @@ export class AuthService {
     return {
       user: context.user,
       company: context.company,
-      // Un superuser voit toutes les sociétés, pas seulement celles où il est membre.
+      // A superuser sees every company, not only those they are a member of.
       companies: context.user.isSuperuser
         ? (await companiesRepository.listAll()).map((c) => ({
             id: c.id,
@@ -95,7 +95,7 @@ export class AuthService {
   }): Promise<SessionResponseDto> {
     const data = switchCompanySchema.parse(input.body);
     const company = await companiesRepository.findById(data.companyId);
-    if (!company) throw new NotFoundError("Société introuvable.");
+    if (!company) throw new NotFoundError("Company not found.");
     const session = await this.application.switchCompany({
       userId: input.userId,
       companyId: data.companyId,
@@ -115,15 +115,15 @@ export class AuthService {
   async changePassword(input: ChangePasswordRequestDto): Promise<{ success: true }> {
     const data = changePasswordSchema.parse(input.body);
     const user = await this.repository.findUserById(input.userId);
-    if (!user) throw new NotFoundError("Utilisateur introuvable.");
+    if (!user) throw new NotFoundError("User not found.");
     if (!(await verifyPassword(data.currentPassword, user.passwordHash))) {
-      throw new UnauthorizedError("Mot de passe actuel incorrect.");
+      throw new UnauthorizedError("Current password is incorrect.");
     }
     if (await verifyPassword(data.newPassword, user.passwordHash)) {
-      throw new ValidationError("Le nouveau mot de passe doit différer de l'actuel.");
+      throw new ValidationError("The new password must differ from the current one.");
     }
     await this.repository.updatePassword(input.userId, await hashPassword(data.newPassword));
-    // Changer de mot de passe invalide toutes les sessions ouvertes ailleurs.
+    // Changing the password invalidates every session opened elsewhere.
     await this.application.logoutEverywhere(input.userId);
     return { success: true };
   }

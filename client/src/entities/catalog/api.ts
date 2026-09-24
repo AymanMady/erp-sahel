@@ -1,6 +1,7 @@
-/** Accès API du catalogue (produits, catégories, fournisseurs référencés). */
+/** Catalog API access (products, categories, referenced suppliers). */
 
 import { api } from "@/shared/api/http";
+import { i18n } from "@/shared/i18n";
 import { productDetailOffline, withOfflineFallback } from "@/shared/offline/offline-reads";
 import { offlineNotFound } from "@/shared/api/api-error";
 import { pendingProducts } from "@/shared/offline/offline-writes";
@@ -42,7 +43,7 @@ export const catalogApi = {
       () => api.get<ProductDetail>(`/api/catalog/products/${id}`),
       async (snapshot) => {
         const detail = productDetailOffline(snapshot, id, await pendingProducts());
-        if (!detail) throw offlineNotFound("Ce produit n'est pas disponible hors ligne.");
+        if (!detail) throw offlineNotFound(i18n.t("catalog:products.offlineUnavailable"));
         return detail as unknown as ProductDetail;
       }
     ),

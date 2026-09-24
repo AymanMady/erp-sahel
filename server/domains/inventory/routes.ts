@@ -1,4 +1,4 @@
-/** Routes du stock. */
+/** Inventory routes. */
 
 import type { Express } from "express";
 

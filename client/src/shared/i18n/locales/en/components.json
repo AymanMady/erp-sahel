@@ -1,0 +1,33 @@
+{
+  "ui": {
+    "breadcrumb": "Breadcrumb",
+    "more": "More",
+    "commandPalette": "Command palette",
+    "commandPaletteDescription": "Search for a command to run…",
+    "sidebar": "Navigation",
+    "sidebarDescription": "Displays the mobile navigation menu.",
+    "toggleSidebar": "Show or hide the sidebar"
+  },
+  "searchInput": {
+    "clear": "Clear search"
+  },
+  "deleteDialog": {
+    "defaultName": "this item",
+    "title": "Delete {{name}}?",
+    "description": "This will permanently remove {{name}}. This action cannot be undone.",
+    "deleted": "{{name}} deleted",
+    "deletedDescription": "The record has been removed."
+  },
+  "resourceTable": {
+    "emptyTitle": "No results",
+    "emptyDescription": "No item matches your search.",
+    "itemCount_one": "{{count}} item",
+    "itemCount_other": "{{count}} items",
+    "perPage": "Per page",
+    "pageOf": "Page {{page}} / {{pageCount}}",
+    "firstPage": "First page",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "lastPage": "Last page"
+  }
+}

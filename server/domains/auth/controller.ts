@@ -1,4 +1,4 @@
-/** Frontière HTTP du domaine authentification. */
+/** HTTP boundary of the authentication domain. */
 
 import type { Request, Response } from "express";
 

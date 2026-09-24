@@ -1,4 +1,4 @@
-/** Contrats de validation du point de vente. */
+/** Point-of-sale validation contracts. */
 
 import { z } from "zod";
 
@@ -6,9 +6,9 @@ import { PAYMENT_METHODS, POS_SESSION_STATUSES } from "@shared/schema";
 import { documentLineSchema } from "../invoicing/schemas";
 
 export const createRegisterSchema = z.object({
-  code: z.string().min(1, "Le code est obligatoire").max(64),
-  name: z.string().min(1, "Le nom est obligatoire").max(255),
-  warehouseId: z.string().uuid("Sélectionnez un magasin"),
+  code: z.string().min(1, "Code is required").max(64),
+  name: z.string().min(1, "Name is required").max(255),
+  warehouseId: z.string().uuid("Select a warehouse"),
   cashAccountId: z.string().uuid().nullish(),
   isOpenAllowed: z.boolean().default(true),
 });
@@ -16,7 +16,7 @@ export const createRegisterSchema = z.object({
 export const updateRegisterSchema = createRegisterSchema.partial();
 
 export const openSessionSchema = z.object({
-  registerId: z.string().uuid("Sélectionnez une caisse"),
+  registerId: z.string().uuid("Select a register"),
   openingBalanceCents: z.number().int().min(0).default(0),
   openedAt: z.string().datetime().optional(),
   notes: z.string().max(2000).default(""),
@@ -41,8 +41,8 @@ export const createTicketSchema = z.object({
   date: z.string().date().optional(),
   globalDiscountBp: z.number().int().min(0).max(10_000).default(0),
   notes: z.string().max(2000).default(""),
-  lines: z.array(documentLineSchema).min(1, "Le panier est vide"),
-  payments: z.array(ticketPaymentSchema).min(1, "Indiquez au moins un règlement"),
+  lines: z.array(documentLineSchema).min(1, "The cart is empty"),
+  payments: z.array(ticketPaymentSchema).min(1, "Specify at least one payment"),
 });
 
 export const listSessionsQuerySchema = z.object({
@@ -52,4 +52,4 @@ export const listSessionsQuerySchema = z.object({
   offset: z.coerce.number().int().min(0).optional(),
 });
 
-export const idParamSchema = z.object({ id: z.string().uuid("Identifiant invalide") });
+export const idParamSchema = z.object({ id: z.string().uuid("Invalid identifier") });

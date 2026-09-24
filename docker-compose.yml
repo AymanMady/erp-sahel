@@ -27,7 +27,7 @@ services:
       NODE_ENV: production
       PORT: 5000
       DATABASE_URL: postgresql://erp:erp@db:5432/erp_sahel
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET est obligatoire}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
     ports:
       - "5000:5000"
 

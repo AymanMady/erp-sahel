@@ -1,4 +1,4 @@
-/** Persistance du domaine authentification : utilisateurs, rôles, sessions. */
+/** Persistence of the authentication domain: users, roles, sessions. */
 
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
@@ -38,7 +38,7 @@ export class AuthRepository {
       .where(eq(users.id, userId));
   }
 
-  /** Sociétés auxquelles l'utilisateur est rattaché, société par défaut en tête. */
+  /** Companies the user belongs to, default company first. */
   async listMemberships(userId: string) {
     return this.database
       .select({
@@ -58,7 +58,7 @@ export class AuthRepository {
     return Boolean(row);
   }
 
-  /** Permissions effectives de l'utilisateur **dans une société** ([FR-AUTH-2]). */
+  /** Effective permissions of the user **within a company** ([FR-AUTH-2]). */
   async listEffectivePermissions(userId: string, companyId: string): Promise<string[]> {
     const rows = await this.database
       .selectDistinct({ code: permissionsTable.code })
@@ -70,7 +70,7 @@ export class AuthRepository {
         and(
           eq(userRoles.userId, userId),
           eq(userRoles.companyId, companyId),
-          // Un rôle est soit système (companyId nul), soit propre à cette société.
+          // A role is either a system role (null companyId) or specific to this company.
           or(isNull(roles.companyId), eq(roles.companyId, companyId))
         )
       );
@@ -98,7 +98,7 @@ export class AuthRepository {
       .where(eq(users.id, userId));
   }
 
-  /** Sociétés de l'utilisateur, avec leur identité — alimente le sélecteur de société. */
+  /** The user's companies with their identity — feeds the company switcher. */
   async listUserCompanies(userId: string) {
     return this.database
       .select({
@@ -146,7 +146,7 @@ export class AuthRepository {
       .where(and(eq(refreshTokens.userId, userId), isNull(refreshTokens.revokedAt)));
   }
 
-  /** Purge des sessions expirées — appelée au démarrage, sans worker dédié. */
+  /** Purges expired sessions — called at startup, without a dedicated worker. */
   async purgeExpiredTokens(): Promise<number> {
     const deleted = await this.database
       .delete(refreshTokens)

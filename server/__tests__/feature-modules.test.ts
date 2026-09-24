@@ -1,9 +1,9 @@
 /**
- * Modules activables (caisse, achats, stock…) et préréglages.
+ * Toggleable modules (POS, purchasing, stock…) and presets.
  *
- * Garanties vérifiées : une société existante garde tout son périmètre (actif par
- * défaut), un préréglage active exactement ses modules et leurs dépendances, et une
- * fonctionnalité désactivée ferme ses routes API.
+ * Guarantees checked: an existing company keeps its whole scope (enabled by default),
+ * a preset enables exactly its modules and their dependencies, and a disabled feature
+ * closes its API routes.
  */
 
 import type { NextFunction, Request, Response } from "express";
@@ -31,43 +31,45 @@ afterAll(async () => {
   await closeDatabase();
 });
 
-describe("état par défaut", () => {
-  it("active tous les modules tant que rien n'est choisi", async () => {
+describe("default state", () => {
+  it("enables every module as long as nothing is chosen", async () => {
     await db.delete(companyPlugins).where(eq(companyPlugins.companyId, context.company.id));
     const enabled = await moduleRegistry.enabledCodes(context.company.id);
     expect(enabled.sort()).toEqual(FEATURE_MODULES.map((feature) => feature.code).sort());
   });
 
-  it("permet de désactiver un module qui n'a encore aucune ligne en base", async () => {
+  it("allows disabling a module that has no database row yet", async () => {
     await db.delete(companyPlugins).where(eq(companyPlugins.companyId, context.company.id));
     await moduleRegistry.disableForCompany(context.company.id, "accounting");
     expect(await moduleRegistry.isEnabled(context.company.id, "accounting")).toBe(false);
   });
 });
 
-describe("préréglages", () => {
-  it("active exactement les modules du préréglage « Simple »", async () => {
+describe("presets", () => {
+  it('enables exactly the modules of the "Simple" preset', async () => {
     const simple = MODULE_PRESETS.find((preset) => preset.code === "simple")!;
     await moduleRegistry.applySelection(context.company.id, simple.modules);
     const enabled = await moduleRegistry.enabledCodes(context.company.id);
     expect(enabled.sort()).toEqual([...simple.modules].sort());
   });
 
-  it("ajoute les dépendances d'un module choisi", async () => {
+  it("adds the dependencies of a chosen module", async () => {
     await moduleRegistry.applySelection(context.company.id, ["sales"]);
     const enabled = await moduleRegistry.enabledCodes(context.company.id);
     expect(enabled.sort()).toEqual(["invoicing", "sales"]);
   });
 
-  it("refuse de retirer un module dont un autre dépend", async () => {
+  it("refuses to remove a module another one depends on", async () => {
     await moduleRegistry.applySelection(context.company.id, ["purchasing"]);
-    await expect(moduleRegistry.disableForCompany(context.company.id, "inventory")).rejects.toThrow(
-      /Désactivez d'abord/
-    );
+    await expect(
+      moduleRegistry.disableForCompany(context.company.id, "inventory")
+    ).rejects.toMatchObject({
+      code: "MODULE_DEPENDENT_ENABLED",
+    });
   });
 });
 
-describe("garde des routes", () => {
+describe("route guard", () => {
   function run(path: string, token: string, method = "POST"): unknown {
     let received: unknown = "not-called";
     const req = {
@@ -97,25 +99,25 @@ describe("garde des routes", () => {
     });
   }
 
-  it("refuse la caisse quand elle est désactivée", () => {
+  it("rejects the POS when it is disabled", () => {
     expect(run("/api/pos/tickets", token(["inventory"]))).toBeInstanceOf(ModuleDisabledError);
   });
 
-  it("laisse passer la caisse quand elle est active", () => {
+  it("lets the POS through when it is enabled", () => {
     expect(run("/api/pos/tickets", token(["pos"]))).toBeUndefined();
   });
 
-  it("garde ouvertes les lectures partagées avec d'autres écrans", () => {
+  it("keeps reads shared with other screens open", () => {
     expect(run("/api/banking/accounts", token([]), "GET")).toBeUndefined();
     expect(run("/api/banking/transactions", token([]), "GET")).toBeInstanceOf(ModuleDisabledError);
   });
 
-  it("ne touche pas aux routes du noyau", () => {
+  it("leaves core routes alone", () => {
     expect(run("/api/catalog/products", token([]), "GET")).toBeUndefined();
     expect(run("/api/warehouses", token([]), "GET")).toBeUndefined();
   });
 
-  it("accepte les jetons émis avant l'arrivée des modules activables", () => {
+  it("accepts tokens issued before toggleable modules existed", () => {
     expect(run("/api/pos/tickets", token([], false))).toBeUndefined();
   });
 });

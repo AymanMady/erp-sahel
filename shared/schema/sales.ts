@@ -1,4 +1,4 @@
-/** Devis et commandes de vente [FR-VNT-1], [FR-VNT-2]. */
+/** Quotes and sales orders [FR-VNT-1], [FR-VNT-2]. */
 
 import { date, index, integer, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
@@ -53,13 +53,13 @@ export const quotes = pgTable(
 export type Quote = typeof quotes.$inferSelect;
 
 /**
- * Colonnes communes à toutes les lignes de document commercial.
- * Les montants sont **recalculés serveur** par `computeDocumentTotals` : ce que la ligne
- * persiste est le résultat, jamais une saisie libre.
+ * Columns shared by every commercial document line.
+ * Amounts are **recomputed server-side** by `computeDocumentTotals`: what the line
+ * persists is the result, never free user input.
  */
 const documentLineColumns = {
   description: text("description").notNull(),
-  /** Référence produit figée : le document reste lisible si l'article est archivé. */
+  /** Frozen product reference: the document stays readable if the item is archived. */
   productSku: text("product_sku").default("").notNull(),
   quantity: quantity("quantity").default("1").notNull(),
   unit: text("unit").default("unité").notNull(),
@@ -70,7 +70,7 @@ const documentLineColumns = {
   totalVatCents: moneyCents("total_vat_cents").default(0).notNull(),
   totalTtcCents: moneyCents("total_ttc_cents").default(0).notNull(),
   position: integer("position").default(0).notNull(),
-  /** Pays d'origine figé au moment du document — doit apparaître sur devis et facture [FR-VNT-5]. */
+  /** Country of origin frozen at document time — must appear on quotes and invoices [FR-VNT-5]. */
   originCountry: text("origin_country").default("").notNull(),
 };
 

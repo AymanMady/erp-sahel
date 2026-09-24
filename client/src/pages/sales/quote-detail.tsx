@@ -1,6 +1,7 @@
-/** Fiche d'un devis : consultation, changement de statut et conversion en commande. */
+/** Quote detail: view, status change and conversion into an order. */
 
 import { IconArrowLeft, IconPrinter, IconTransform } from "@tabler/icons-react";
+import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useParams } from "wouter";
 import { toast } from "sonner";
@@ -19,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/shared/ui/skeleton";
 
 export default function QuoteDetailPage() {
+  const { t } = useTranslation("sales");
   const params = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
@@ -33,7 +35,7 @@ export default function QuoteDetailPage() {
   const setStatus = useMutation({
     mutationFn: (status: string) => salesApi.setQuoteStatus(params.id, status),
     onSuccess: () => {
-      toast.success("Statut mis à jour.");
+      toast.success(t("statusUpdated"));
       void queryClient.invalidateQueries({ queryKey: queryKeys.quote(params.id) });
       void queryClient.invalidateQueries({ queryKey: ["quotes"] });
     },
@@ -43,7 +45,7 @@ export default function QuoteDetailPage() {
   const convert = useMutation({
     mutationFn: () => salesApi.convertQuote(params.id),
     onSuccess: (order) => {
-      toast.success(`Commande ${order.number} créée à partir du devis.`);
+      toast.success(t("quote.converted", { number: order.number }));
       void queryClient.invalidateQueries({ queryKey: ["sales-orders"] });
       navigate(`/sales-orders/${order.id}`);
     },
@@ -55,7 +57,7 @@ export default function QuoteDetailPage() {
     return (
       <Card>
         <CardContent className="py-10 text-center text-sm text-muted-foreground">
-          {error ? errorMessage(error) : "Devis introuvable."}
+          {error ? errorMessage(error) : t("quote.notFound")}
         </CardContent>
       </Card>
     );
@@ -66,19 +68,19 @@ export default function QuoteDetailPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`Devis ${data.number}`}
+        title={t("quote.pageTitle", { number: data.number })}
         description={data.partyName}
         className="print-hidden"
       >
         <Button variant="outline" asChild>
           <Link href="/quotes">
-            <IconArrowLeft className="size-4" />
-            Retour
+            <IconArrowLeft className="size-4 rtl:rotate-180" />
+            {t("common:actions.back")}
           </Link>
         </Button>
         <Button variant="outline" onClick={() => window.print()}>
           <IconPrinter className="size-4" />
-          Imprimer
+          {t("common:actions.print")}
         </Button>
         {can("sales.write") ? (
           <>
@@ -103,14 +105,14 @@ export default function QuoteDetailPage() {
               disabled={frozen || convert.isPending || data.status === "REJECTED"}
             >
               <IconTransform className="size-4" />
-              Convertir en commande
+              {t("quote.convert")}
             </Button>
           </>
         ) : null}
       </PageHeader>
 
       <DocumentView
-        title="Devis"
+        title={t("quote.documentTitle")}
         number={data.number}
         date={data.date}
         dueDate={data.expiryDate}
@@ -132,7 +134,7 @@ export default function QuoteDetailPage() {
         totalVatCents={data.totalVatCents}
         totalTtcCents={data.totalTtcCents}
         notes={data.notes}
-        footerNote="Ce devis ne constitue pas une facture. Aucun mouvement de stock ni écriture comptable n'est généré."
+        footerNote={t("quote.footerNote")}
       />
     </div>
   );

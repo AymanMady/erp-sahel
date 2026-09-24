@@ -1,9 +1,9 @@
 /**
- * Point d'entrée de la fonction serverless Vercel (API uniquement).
+ * Entry point of the Vercel serverless function (API only).
  *
- * Le client statique est servi directement par le CDN de Vercel ; seules les requêtes
- * `/api/*` arrivent ici. L'initialisation (modules, purge des sessions) est faite une
- * fois par instance, puis réutilisée par les requêtes suivantes.
+ * The static client is served directly by Vercel's CDN; only `/api/*` requests reach
+ * this function. Initialization (modules, session purge) is done once per instance,
+ * then reused by subsequent requests.
  */
 
 import type { IncomingMessage, ServerResponse } from "node:http";
@@ -17,7 +17,7 @@ let appPromise: Promise<Express> | undefined;
 
 function getApp(): Promise<Express> {
   appPromise ??= createApp().catch((error: unknown) => {
-    // On retente à la requête suivante plutôt que de garder une instance en échec.
+    // Retry on the next request rather than keeping a failed instance.
     appPromise = undefined;
     throw error;
   });
@@ -29,7 +29,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const app = await getApp();
     app(req, res);
   } catch (error) {
-    logger.error("Échec de l'initialisation de l'API", {
+    logger.error("API initialization failed", {
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });

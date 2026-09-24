@@ -1,10 +1,11 @@
-/** Création d'une commande fournisseur. */
+/** Purchase order creation. */
 
 import { useState } from "react";
 import { IconArrowLeft, IconDeviceFloppy } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 import { todayInput } from "@shared/format";
 import { errorMessage } from "@/shared/api/api-error";
@@ -31,6 +32,7 @@ import { Textarea } from "@/shared/ui/textarea";
 const DEFAULT_WAREHOUSE = "DEFAULT";
 
 export default function PurchaseOrderFormPage() {
+  const { t } = useTranslation("purchasing");
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const { company } = useSession();
@@ -58,7 +60,7 @@ export default function PurchaseOrderFormPage() {
         lines: toApiLines(lines),
       }),
     onSuccess: (order) => {
-      toast.success(`Commande ${order.number} créée.`);
+      toast.success(t("orderForm.created", { number: order.number }));
       void queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
       navigate(`/purchase-orders/${order.id}`);
     },
@@ -69,29 +71,26 @@ export default function PurchaseOrderFormPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Nouvelle commande fournisseur"
-        description="La commande n'affecte pas le stock : c'est la réception qui le fait."
-      >
+      <PageHeader title={t("orderForm.title")} description={t("orderForm.description")}>
         <Button variant="outline" asChild>
           <Link href="/purchase-orders">
-            <IconArrowLeft className="size-4" />
-            Retour
+            <IconArrowLeft className="size-4 rtl:rotate-180" />
+            {t("common:actions.back")}
           </Link>
         </Button>
         <Button onClick={() => mutation.mutate()} disabled={!canSubmit || mutation.isPending}>
           <IconDeviceFloppy className="size-4" />
-          {mutation.isPending ? "Création…" : "Créer la commande"}
+          {mutation.isPending ? t("orderForm.creating") : t("orderForm.submit")}
         </Button>
       </PageHeader>
 
       <Card>
         <CardHeader>
-          <CardTitle>En-tête</CardTitle>
+          <CardTitle>{t("orderForm.header")}</CardTitle>
         </CardHeader>
         <CardContent>
           <FieldGrid columns={3}>
-            <Field label="Fournisseur" required>
+            <Field label={t("common:labels.supplier")} required>
               <PartyPicker
                 value={supplier}
                 onChange={(party) => {
@@ -103,26 +102,28 @@ export default function PurchaseOrderFormPage() {
                   }
                 }}
                 role="SUPPLIER"
-                placeholder="Sélectionner un fournisseur"
+                placeholder={t("orderForm.selectSupplier")}
               />
             </Field>
-            <Field label="Date">
+            <Field label={t("common:labels.date")}>
               <Input type="date" value={date} onChange={(event) => setDate(event.target.value)} />
             </Field>
-            <Field label="Livraison prévue">
+            <Field label={t("orders.expectedDelivery")}>
               <Input
                 type="date"
                 value={expectedDate}
                 onChange={(event) => setExpectedDate(event.target.value)}
               />
             </Field>
-            <Field label="Magasin de réception">
+            <Field label={t("orderForm.receivingWarehouse")}>
               <Select value={warehouseId} onValueChange={setWarehouseId}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={DEFAULT_WAREHOUSE}>Magasin par défaut</SelectItem>
+                  <SelectItem value={DEFAULT_WAREHOUSE}>
+                    {t("orderForm.defaultWarehouse")}
+                  </SelectItem>
                   {(warehouses ?? []).map((warehouse) => (
                     <SelectItem key={warehouse.id} value={warehouse.id}>
                       {warehouse.name}
@@ -137,11 +138,11 @@ export default function PurchaseOrderFormPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Lignes</CardTitle>
+          <CardTitle>{t("orderForm.lines")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <LineEditor lines={lines} onChange={setLines} usePurchasePrice />
-          <Field label="Notes">
+          <Field label={t("common:labels.notes")}>
             <Textarea rows={3} value={notes} onChange={(event) => setNotes(event.target.value)} />
           </Field>
         </CardContent>

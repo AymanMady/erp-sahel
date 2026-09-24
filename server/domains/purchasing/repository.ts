@@ -1,4 +1,4 @@
-/** Persistance des achats : commandes, réceptions, factures fournisseur. */
+/** Purchasing persistence: orders, goods receipts, supplier invoices. */
 
 import { and, asc, desc, eq, gte, lte, sql } from "drizzle-orm";
 
@@ -130,7 +130,7 @@ export class PurchasingRepository {
     return row ?? null;
   }
 
-  /** Ajoute la quantité reçue à une ligne de commande, en base pour rester exact. */
+  /** Adds the received quantity to an order line, in the database to stay exact. */
   async addReceivedQuantity(companyId: string, lineId: string, quantity: string): Promise<void> {
     await this.database
       .update(purchaseOrderLines)
@@ -239,7 +239,7 @@ export class PurchasingRepository {
     await this.database.insert(supplierInvoiceLines).values(values);
   }
 
-  /** Total acheté sur une période — rapport achats [FR-RPT-1]. */
+  /** Total purchased over a period — purchasing report [FR-RPT-1]. */
   async purchaseSummary(companyId: string, fromDate: string, toDate: string) {
     const [row] = await this.database
       .select({

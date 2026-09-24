@@ -1,12 +1,12 @@
-/** Contrats de validation de la trésorerie. */
+/** Treasury validation contracts. */
 
 import { z } from "zod";
 
 import { BANK_ACCOUNT_TYPES, BANK_TRANSACTION_TYPES } from "@shared/schema";
 
 export const createBankAccountSchema = z.object({
-  code: z.string().min(1, "Le code est obligatoire").max(64),
-  name: z.string().min(1, "Le libellé est obligatoire").max(255),
+  code: z.string().min(1, "Code is required").max(64),
+  name: z.string().min(1, "Label is required").max(255),
   accountType: z.enum(BANK_ACCOUNT_TYPES).default("BANK"),
   accountNumber: z.string().max(64).default(""),
   iban: z.string().max(64).default(""),
@@ -33,9 +33,9 @@ export const listTransactionsQuerySchema = z.object({
 export const createTransactionSchema = z.object({
   bankAccountId: z.string().uuid(),
   date: z.string().date(),
-  description: z.string().min(1, "La description est obligatoire").max(255),
+  description: z.string().min(1, "Description is required").max(255),
   transactionType: z.enum(BANK_TRANSACTION_TYPES),
-  amountCents: z.number().int().positive("Le montant doit être supérieur à zéro"),
+  amountCents: z.number().int().positive("Amount must be greater than zero"),
   reference: z.string().max(100).default(""),
 });
 
@@ -50,4 +50,4 @@ export const transferSchema = z.object({
 
 export const reconcileSchema = z.object({ reconciled: z.boolean() });
 
-export const idParamSchema = z.object({ id: z.string().uuid("Identifiant invalide") });
+export const idParamSchema = z.object({ id: z.string().uuid("Invalid identifier") });

@@ -3,7 +3,7 @@ import { defineConfig } from "drizzle-kit";
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
-    "DATABASE_URL est absent. Copiez .env.example vers .env puis renseignez la chaîne PostgreSQL."
+    "DATABASE_URL is missing. Copy .env.example to .env and fill in the PostgreSQL connection string."
   );
 }
 

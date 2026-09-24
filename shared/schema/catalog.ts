@@ -1,9 +1,9 @@
 /**
- * Catalogue **générique** : un même modèle de produit sert tout type de commerce.
+ * **Generic** catalog: a single product model serves every kind of business.
  *
- * Ce qui distingue les articles (taille, couleur, référence constructeur…) passe par
- * les **variantes** et leurs attributs libres. Le code-barres est un attribut
- * **indexé, jamais la clé** ([BR-1]).
+ * What distinguishes items (size, color, manufacturer part number…) goes through
+ * **variants** and their free-form attributes. The barcode is an **indexed attribute,
+ * never the key** ([BR-1]).
  */
 
 import { boolean, index, jsonb, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
@@ -28,7 +28,7 @@ export const categories = pgTable(
 );
 
 export const insertCategorySchema = createInsertSchema(categories, {
-  name: (s) => s.min(1, "Le nom de la catégorie est obligatoire"),
+  name: (s) => s.min(1, "Category name is required"),
 }).omit({ id: true, createdAt: true, updatedAt: true });
 
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
@@ -41,26 +41,26 @@ export const products = pgTable(
     companyId: uuid("company_id")
       .notNull()
       .references(() => companies.id, { onDelete: "cascade" }),
-    /** Domaine du profil 1–1 attaché ; `GENERIC` = aucun module. */
-    /** Colonne historique (anciens modules métier) : toujours « GENERIC », non lue. */
+    /** Domain of the attached 1–1 profile; `GENERIC` = no module. */
+    /** Legacy column (former business modules): always "GENERIC", never read. */
     profileType: text("profile_type").default("GENERIC").notNull(),
     sku: text("sku").notNull(),
     name: text("name").notNull(),
     description: text("description").default("").notNull(),
     categoryId: uuid("category_id").references(() => categories.id, { onDelete: "set null" }),
     unit: text("unit").default("unité").notNull(),
-    /** Code-barres principal (EAN) — critère de recherche [FR-SRCH-1]. */
+    /** Main barcode (EAN) — search criterion [FR-SRCH-1]. */
     barcode: text("barcode").default("").notNull(),
     purchasePriceCents: moneyCents("purchase_price_cents").default(0).notNull(),
     salePriceCents: moneyCents("sale_price_cents").default(0).notNull(),
     vatRateBp: rateBp("vat_rate_bp").default(0).notNull(),
-    /** Article non stocké (main d'œuvre, prestation) [FR-PROD-5]. */
+    /** Non-stock item (labor, service) [FR-PROD-5]. */
     isService: boolean("is_service").default(false).notNull(),
-    /** Photo principale, affichée en priorité en recherche [FR-PROD-6]. */
+    /** Main photo, shown first in search results [FR-PROD-6]. */
     imageUrl: text("image_url"),
-    /** Photos secondaires. */
+    /** Secondary photos. */
     imageUrls: jsonb("image_urls").$type<string[]>().default([]).notNull(),
-    /** Seuil d'alerte de réapprovisionnement [FR-STK-5]. */
+    /** Reorder alert threshold [FR-STK-5]. */
     minStock: quantity("min_stock").default("0").notNull(),
     clientUuid: clientUuid(),
   },
@@ -74,16 +74,16 @@ export const products = pgTable(
 );
 
 export const insertProductSchema = createInsertSchema(products, {
-  sku: (s) => s.min(1, "La référence interne est obligatoire"),
-  name: (s) => s.min(1, "La désignation est obligatoire"),
+  sku: (s) => s.min(1, "Internal reference (SKU) is required"),
+  name: (s) => s.min(1, "Product name is required"),
 }).omit({ id: true, createdAt: true, updatedAt: true });
 
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type Product = typeof products.$inferSelect;
 
 /**
- * Déclinaison vendable et stockable.
- * Ex. : taille × couleur pour un vêtement, conditionnement pour un produit alimentaire.
+ * Sellable and stockable variant.
+ * E.g. size × color for clothing, pack size for a food product.
  */
 export const productVariants = pgTable(
   "product_variants",
@@ -97,9 +97,9 @@ export const productVariants = pgTable(
       .references(() => products.id, { onDelete: "cascade" }),
     sku: text("sku").notNull(),
     barcode: text("barcode").default("").notNull(),
-    /** Attributs libres du domaine (`{ size: "M", color: "Rouge" }`). */
+    /** Free-form domain attributes (`{ size: "M", color: "Red" }`). */
     attributes: jsonb("attributes").$type<Record<string, string>>().default({}).notNull(),
-    /** Surcharge de prix ; `null` ⇒ prix du produit. */
+    /** Price override; `null` ⇒ product price. */
     salePriceCents: moneyCents("sale_price_cents"),
     isDefault: boolean("is_default").default(false).notNull(),
   },
@@ -111,7 +111,7 @@ export const productVariants = pgTable(
 
 export type ProductVariant = typeof productVariants.$inferSelect;
 
-/** Définition d'attribut typé déclarée par un module (EAV léger) [FR-PLUG-1]. */
+/** Typed attribute definition declared by a module (lightweight EAV) [FR-PLUG-1]. */
 export const attributeDefinitions = pgTable(
   "attribute_definitions",
   {
@@ -136,8 +136,8 @@ export const attributeDefinitions = pgTable(
 export type AttributeDefinition = typeof attributeDefinitions.$inferSelect;
 
 /**
- * Association produit ↔ fournisseur avec prix d'achat, délai et pays de provenance
- * (le pays peut différer du pays d'origine de la pièce) [FR-ACH-1].
+ * Product ↔ supplier link with purchase price, lead time and country of shipment
+ * (which may differ from the part's country of origin) [FR-ACH-1].
  */
 export const productSuppliers = pgTable(
   "product_suppliers",
@@ -153,7 +153,7 @@ export const productSuppliers = pgTable(
     supplierRef: text("supplier_ref").default("").notNull(),
     purchasePriceCents: moneyCents("purchase_price_cents").default(0).notNull(),
     leadTimeDays: moneyCents("lead_time_days").default(0).notNull(),
-    /** Code ISO 2 du pays de provenance chez ce fournisseur. */
+    /** ISO alpha-2 code of the country this supplier ships from. */
     originCountryCode: text("origin_country_code").default("").notNull(),
     isPreferred: boolean("is_preferred").default(false).notNull(),
   },

@@ -1,4 +1,4 @@
-/** Enregistrement des routes d'authentification. */
+/** Registers the authentication routes. */
 
 import type { Express } from "express";
 

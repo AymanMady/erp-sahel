@@ -1,4 +1,4 @@
-/** Persistance des devis et commandes de vente. */
+/** Persistence of quotes and sales orders. */
 
 import { and, asc, desc, eq, gte, lte, sql } from "drizzle-orm";
 

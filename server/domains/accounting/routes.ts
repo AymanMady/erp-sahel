@@ -1,4 +1,4 @@
-/** Routes de la comptabilité. */
+/** Accounting routes. */
 
 import type { Express } from "express";
 

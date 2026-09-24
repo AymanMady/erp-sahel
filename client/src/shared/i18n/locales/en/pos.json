@@ -1,0 +1,79 @@
+{
+  "exit": "Exit the register",
+  "offline": "Offline",
+  "openingBalance": "Opening float",
+  "accessDenied": {
+    "title": "Access denied",
+    "description": "Your profile does not have permission to use the register.",
+    "backToDashboard": "Back to dashboard"
+  },
+  "search": {
+    "placeholder": "Scan a barcode or search for an item…",
+    "searching": "Searching…",
+    "noMatch": "No matching item.",
+    "startTyping": "Start typing to search for an item.",
+    "noSnapshot": "No local snapshot: connect to the server at least once."
+  },
+  "cart": {
+    "closeRegister": "Close",
+    "empty": "The cart is empty.",
+    "decrease": "Decrease",
+    "increase": "Increase",
+    "vat": "VAT",
+    "lastTicket": "Ticket {{number}} paid.",
+    "lastTicketOffline": "Ticket {{number}} paid (offline, awaiting synchronization).",
+    "checkout": "Charge {{amount}}"
+  },
+  "customer": {
+    "walkIn": "Walk-in customer",
+    "title": "Ticket customer",
+    "description": "Without a selection, the sale is assigned to the walk-in customer.",
+    "searchPlaceholder": "Name, code, phone…"
+  },
+  "openSession": {
+    "title": "Open the register",
+    "description": "Declare the opening float in the drawer before the first sale.",
+    "checking": "Checking for an open session…",
+    "offlineNotice": "Server unreachable: the session will be created locally and then synchronized.",
+    "register": "Register",
+    "selectRegister": "Select a register",
+    "opening": "Opening…",
+    "submit": "Open the register"
+  },
+  "payment": {
+    "title": "Payment",
+    "amountDue": "Amount due:",
+    "method": "Payment method",
+    "received": "Amount received",
+    "change": "Change due",
+    "offlineNotice": "Offline: the ticket will get a provisional number, replaced by the legal number during synchronization.",
+    "processing": "Processing…"
+  },
+  "closeSession": {
+    "title": "Close the register",
+    "description": "Count the drawer and enter the amount found.",
+    "cashReceipts": "Cash receipts",
+    "totalSales": "Total sales",
+    "expected": "Expected in drawer",
+    "counted": "Counted amount",
+    "difference": "Cash difference",
+    "pendingNotice": "The closing will be sent with the pending sales; the final difference will be recalculated by the server.",
+    "closing": "Closing…",
+    "submit": "Close the register"
+  },
+  "toasts": {
+    "ticketPaid": "Ticket {{number}} paid.",
+    "ticketSavedOffline": "Ticket {{number}} saved offline.",
+    "sessionOpened": "Register opened.",
+    "sessionOpenedOffline": "Register opened offline; it will sync when the network is back.",
+    "closePending": "Closing saved, awaiting synchronization.",
+    "closedBalanced": "Register closed with no difference.",
+    "closedWithDifference": "Register closed with a difference."
+  },
+  "outbox": {
+    "ticket": "Ticket {{number}}",
+    "payment": "Payment {{number}}",
+    "sessionOpen": "Register opening",
+    "sessionClose": "Register closing"
+  }
+}

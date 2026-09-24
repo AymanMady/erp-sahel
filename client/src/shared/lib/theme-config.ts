@@ -26,7 +26,8 @@ export const defaultConfig: ThemeConfig = {
 
 export type Accent = {
   key: string;
-  label: string;
+  /** i18n key in the `layout` namespace. */
+  labelKey: string;
   swatch: string;
   primary: string | null; // null = use the theme default (mode-aware neutral)
   fg: string;
@@ -35,56 +36,56 @@ export type Accent = {
 export const accents: Accent[] = [
   {
     key: "neutral",
-    label: "Neutral",
+    labelKey: "customizer.accents.neutral",
     swatch: "oklch(0.45 0 0)",
     primary: null,
     fg: "oklch(0.985 0 0)",
   },
   {
     key: "blue",
-    label: "Blue",
+    labelKey: "customizer.accents.blue",
     swatch: "oklch(0.6 0.2 264)",
     primary: "oklch(0.58 0.22 264)",
     fg: "oklch(0.985 0 0)",
   },
   {
     key: "violet",
-    label: "Violet",
+    labelKey: "customizer.accents.violet",
     swatch: "oklch(0.61 0.22 292)",
     primary: "oklch(0.61 0.22 292)",
     fg: "oklch(0.985 0 0)",
   },
   {
     key: "green",
-    label: "Green",
+    labelKey: "customizer.accents.green",
     swatch: "oklch(0.62 0.17 152)",
     primary: "oklch(0.58 0.16 152)",
     fg: "oklch(0.985 0 0)",
   },
   {
     key: "teal",
-    label: "Teal",
+    labelKey: "customizer.accents.teal",
     swatch: "oklch(0.64 0.12 195)",
     primary: "oklch(0.58 0.11 195)",
     fg: "oklch(0.985 0 0)",
   },
   {
     key: "amber",
-    label: "Amber",
+    labelKey: "customizer.accents.amber",
     swatch: "oklch(0.77 0.16 70)",
     primary: "oklch(0.77 0.15 70)",
     fg: "oklch(0.245 0.03 70)",
   },
   {
     key: "orange",
-    label: "Orange",
+    labelKey: "customizer.accents.orange",
     swatch: "oklch(0.67 0.2 42)",
     primary: "oklch(0.64 0.2 42)",
     fg: "oklch(0.985 0 0)",
   },
   {
     key: "rose",
-    label: "Rose",
+    labelKey: "customizer.accents.rose",
     swatch: "oklch(0.64 0.24 16)",
     primary: "oklch(0.62 0.24 16)",
     fg: "oklch(0.985 0 0)",
@@ -100,42 +101,44 @@ export const radii = [
   { label: "1.0", value: 1 },
 ];
 
-export type FontOption = { key: string; label: string; stack: string | null };
+/** `labelKey` is an i18n key in the `layout` namespace. */
+export type FontOption = { key: string; labelKey: string; stack: string | null };
 
 export const fonts: FontOption[] = [
-  { key: "geist", label: "Geist", stack: null },
+  { key: "geist", labelKey: "customizer.fonts.geist", stack: null },
   {
     key: "system",
-    label: "System",
+    labelKey: "customizer.fonts.system",
     stack:
       "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
   },
   {
     key: "serif",
-    label: "Serif",
+    labelKey: "customizer.fonts.serif",
     stack: "ui-serif, Georgia, Cambria, 'Times New Roman', serif",
   },
   {
     key: "mono",
-    label: "Mono",
+    labelKey: "customizer.fonts.mono",
     stack: "var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace",
   },
 ];
 
-export const sidebarVariants: { key: SidebarVariant; label: string }[] = [
-  { key: "inset", label: "Inset" },
-  { key: "sidebar", label: "Sidebar" },
-  { key: "floating", label: "Floating" },
+/** Option lists below carry i18n keys of the `layout` namespace. */
+export const sidebarVariants: { key: SidebarVariant; labelKey: string }[] = [
+  { key: "inset", labelKey: "customizer.sidebarVariants.inset" },
+  { key: "sidebar", labelKey: "customizer.sidebarVariants.sidebar" },
+  { key: "floating", labelKey: "customizer.sidebarVariants.floating" },
 ];
 
-export const collapsibleModes: { key: SidebarCollapsible; label: string }[] = [
-  { key: "icon", label: "Icon" },
-  { key: "offcanvas", label: "Off-canvas" },
+export const collapsibleModes: { key: SidebarCollapsible; labelKey: string }[] = [
+  { key: "icon", labelKey: "customizer.collapsible.icon" },
+  { key: "offcanvas", labelKey: "customizer.collapsible.offcanvas" },
 ];
 
-export const contentLayouts: { key: ContentLayout; label: string }[] = [
-  { key: "full", label: "Full width" },
-  { key: "centered", label: "Centered" },
+export const contentLayouts: { key: ContentLayout; labelKey: string }[] = [
+  { key: "full", labelKey: "customizer.contentLayouts.full" },
+  { key: "centered", labelKey: "customizer.contentLayouts.centered" },
 ];
 
 /** Build a copy-pasteable CSS + notes snippet for the current config. */

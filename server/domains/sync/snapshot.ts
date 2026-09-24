@@ -1,13 +1,13 @@
 /**
- * Construction de l'instantané hors-ligne.
+ * Building the offline snapshot.
  *
- * C'est le **jeu de données minimal** qui permet à un poste de continuer à vendre sans
- * réseau : catalogue avec stock, tiers actifs, prestations, caisses, session en cours,
- * modes de règlement, et les modules activés ([FR-SYNC-1], [FR-SYNC-2]).
+ * This is the **minimal dataset** that lets a device keep selling without network:
+ * catalog with stock, active parties, services, registers, current session, payment
+ * methods, and the enabled modules ([FR-SYNC-1], [FR-SYNC-2]).
  *
- * Périmètre volontairement borné ([NFR-SEC-5]) : ni comptabilité, ni historique de
- * factures, ni données d'autres sociétés. Ce qui n'est pas nécessaire à la vente au
- * comptoir ne descend pas sur le poste.
+ * Deliberately bounded scope ([NFR-SEC-5]): no accounting, no invoice history, no data
+ * from other companies. Whatever is not needed for counter sales does not go down to
+ * the device.
  */
 
 import { asc, eq, sql } from "drizzle-orm";
@@ -31,7 +31,7 @@ import { moduleRegistry } from "../plugins/registry";
 import { posApplication } from "../pos/application";
 import { syncDispatcher } from "./dispatcher";
 
-/** Bornes du cache local : au-delà, le poste devient lent et la mémoire souffre. */
+/** Local cache bounds: beyond these, the device gets slow and memory suffers. */
 const SNAPSHOT_LIMITS = {
   products: 5000,
   parties: 2000,
@@ -41,7 +41,7 @@ const SNAPSHOT_LIMITS = {
 export interface SnapshotOptions {
   companyId: string;
   userId: string;
-  /** `desktop` (Tauri) ou `web` (PWA) — conditionne l'envoi des empreintes de mot de passe. */
+  /** `desktop` (Tauri) or `web` (PWA) — determines whether password hashes are sent. */
   platform: string;
 }
 
@@ -124,7 +124,7 @@ export async function buildSyncSnapshot(options: SnapshotOptions) {
 
   return {
     generatedAt: new Date().toISOString(),
-    /** Curseur à repasser à `pull` pour ne récupérer que les changements ultérieurs. */
+    /** Cursor to pass back to `pull` to fetch only subsequent changes. */
     cursor: new Date().toISOString(),
     company: company
       ? {
@@ -155,20 +155,19 @@ export async function buildSyncSnapshot(options: SnapshotOptions) {
     modules: enabledModules
       .filter((entry) => entry.isEnabled)
       .map((entry) => ({ code: entry.code, name: entry.name })),
-    /** Entités que ce serveur accepte en écriture hors-ligne. */
+    /** Entities this server accepts for offline writes. */
     syncEntities: syncDispatcher.entities(),
     offlineAuthUsers: await buildOfflineAuthUsers(companyId, platform),
   };
 }
 
 /**
- * Empreintes bcrypt permettant une **connexion hors-ligne à froid** sur un poste déjà
- * synchronisé.
+ * Bcrypt hashes enabling a **cold offline login** on an already-synchronized device.
  *
- * Réservé à la coquille desktop : là, l'instantané vit dans un SQLite applicatif, pas
- * dans le stockage du navigateur. En PWA web, l'ouverture hors-ligne s'appuie sur la
- * session déjà établie (jeton de rafraîchissement en cours de validité) — descendre des
- * empreintes dans IndexedDB apporterait un risque sans bénéfice ([NFR-SEC-5], Q4).
+ * Reserved to the desktop shell: there, the snapshot lives in an application SQLite
+ * database, not in browser storage. In the web PWA, opening offline relies on the
+ * already-established session (still-valid refresh token) — pushing hashes down into
+ * IndexedDB would add risk without benefit ([NFR-SEC-5], Q4).
  */
 async function buildOfflineAuthUsers(companyId: string, platform: string) {
   if (platform !== "desktop") return [];

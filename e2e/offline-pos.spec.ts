@@ -1,106 +1,124 @@
 /**
- * Scénario end-to-end du cahier des charges (§16.3 et §17) :
+ * End-to-end scenario from the specification (§16.3 and §17):
  *
- *   1. se connecter et ouvrir la caisse ;
- *   2. **couper la connexion** ;
- *   3. encaisser une vente hors ligne ;
- *   4. fermer puis rouvrir l'application → la vente est toujours là ;
- *   5. **rétablir la connexion** → synchronisation automatique, sans duplication.
+ *   1. sign in and open the register;
+ *   2. **cut the connection**;
+ *   3. ring up a sale offline;
+ *   4. close then reopen the application → the sale is still there;
+ *   5. **restore the connection** → automatic synchronization, without duplication.
  *
- * Le réseau est coupé au niveau du contexte navigateur (`setOffline`), ce qui reproduit
- * fidèlement une coupure : les requêtes échouent, `navigator.onLine` bascule, et le
- * Service Worker sert la coquille depuis son cache.
+ * The network is cut at the browser context level (`setOffline`), which faithfully
+ * reproduces an outage: requests fail, `navigator.onLine` flips, and the Service Worker
+ * serves the shell from its cache.
  */
 
 import { expect, test, type Page } from "@playwright/test";
 
 const ADMIN = { username: "admin", password: "Admin123!" };
 
+/**
+ * Selectors use the English UI strings: force the UI language before any page script
+ * runs, whatever the language stored or detected in the browser.
+ */
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem("erp.language", "en");
+    } catch {
+      // Storage unavailable: the `locale` of the Playwright config still selects English.
+    }
+  });
+});
+
 async function login(page: Page): Promise<void> {
   await page.goto("/login");
-  await page.getByLabel("Identifiant").fill(ADMIN.username);
-  await page.getByLabel("Mot de passe").fill(ADMIN.password);
-  await page.getByRole("button", { name: "Se connecter" }).click();
-  await expect(page.getByRole("heading", { name: /Bonjour/ })).toBeVisible();
+  await page.getByLabel("Username").fill(ADMIN.username);
+  await page.getByLabel("Password").fill(ADMIN.password);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page.getByRole("heading", { name: /Hello/ })).toBeVisible();
 }
 
-test.describe("vente hors ligne au comptoir", () => {
-  test("encaisse sans réseau, persiste, puis se synchronise sans doublon", async ({
+test.describe("offline sale at the counter", () => {
+  test("charges without network, persists, then synchronizes without duplicate", async ({
     page,
     context,
   }) => {
     await login(page);
 
-    // --- 1. Ouverture de la caisse, en ligne -------------------------------
+    // --- 1. Opening the register, online ------------------------------------
     await page.goto("/pos");
-    const openButton = page.getByRole("button", { name: "Ouvrir la caisse" });
+    const openButton = page.getByRole("button", { name: "Open the register" });
     if (await openButton.isVisible().catch(() => false)) {
       await openButton.click();
     }
-    await expect(page.getByPlaceholder(/Scanner un code-barres/)).toBeVisible();
+    await expect(page.getByPlaceholder(/Scan a barcode/)).toBeVisible();
 
-    // L'instantané doit être en place avant la coupure : sans lui, aucune recherche
-    // produit ne serait possible hors ligne.
+    // The snapshot must be in place before the outage: without it, no product search
+    // would be possible offline.
     await page.waitForTimeout(1500);
 
-    // --- 2. Coupure réseau -------------------------------------------------
+    // --- 2. Network outage --------------------------------------------------
     await context.setOffline(true);
-    await expect(page.getByText(/Mode hors ligne/)).toBeVisible();
+    await expect(page.getByText(/Offline mode/)).toBeVisible();
 
-    // --- 3. Vente hors ligne ----------------------------------------------
-    await page.getByPlaceholder(/Scanner un code-barres/).fill("FH");
+    // --- 3. Offline sale ----------------------------------------------------
+    await page.getByPlaceholder(/Scan a barcode/).fill("FH");
     await page.waitForTimeout(600);
-    await page.locator("button", { hasText: "Filtre à huile" }).first().click();
+    // Demo product name, as seeded (data, not UI text).
+    await page
+      .locator("button", { hasText: /Filtre à huile|Oil filter/ })
+      .first()
+      .click();
 
-    await page.getByRole("button", { name: /Encaisser/ }).click();
-    await page.getByRole("button", { name: "Valider" }).click();
+    await page.getByRole("button", { name: /Charge/ }).click();
+    await page.getByRole("button", { name: "Validate" }).click();
 
-    // Le ticket reçoit un numéro provisoire, pas un numéro légal. Le sélecteur cible
-    // la confirmation du panier, pas la notification éphémère qui affiche le même texte.
-    await expect(page.getByText(/Ticket OFFLINE-TKT-\d+ encaissé/)).toBeVisible();
+    // The ticket gets a provisional number, not a legal one. The selector targets the
+    // cart confirmation, not the transient toast that shows similar text.
+    await expect(page.getByText(/Ticket OFFLINE-TKT-\d+ paid \(offline/)).toBeVisible();
 
-    // --- 4. Fermeture / réouverture ---------------------------------------
+    // --- 4. Close / reopen ----------------------------------------------------
     await page.reload();
-    await expect(page.getByText(/Mode hors ligne/)).toBeVisible();
+    await expect(page.getByText(/Offline mode/)).toBeVisible();
 
     await page.goto("/sync");
-    // La file locale contient au moins la facture et son règlement.
-    await expect(page.getByRole("tab", { name: "File locale" })).toBeVisible();
+    // The local queue holds at least the invoice and its payment.
+    await expect(page.getByRole("tab", { name: "Local queue" })).toBeVisible();
     await expect(page.getByText(/OFFLINE-TKT-\d+/).first()).toBeVisible();
 
-    // --- 5. Retour du réseau ----------------------------------------------
+    // --- 5. Network back ---------------------------------------------------
     await context.setOffline(false);
-    await page.getByRole("button", { name: "Synchroniser" }).click();
+    await page.getByRole("button", { name: "Synchronize" }).click();
 
-    // La file se vide et le numéro légal remplace le provisoire.
+    // The queue empties and the legal number replaces the provisional one.
     await expect(page.getByText(/FAC-\d{4}-\d{4}/).first()).toBeVisible({ timeout: 20_000 });
 
-    // --- Vérification anti-doublon ----------------------------------------
+    // --- Duplicate check -------------------------------------------------------
     await page.goto("/invoices");
-    const ticketRows = page.getByRole("row").filter({ hasText: "Caisse" });
+    const ticketRows = page.getByRole("row").filter({ hasText: "POS" });
     const countBefore = await ticketRows.count();
 
-    // Relancer une synchronisation ne doit rien recréer ([BR-8]).
+    // Running another synchronization must not recreate anything ([BR-8]).
     await page.goto("/sync");
-    await page.getByRole("button", { name: "Synchroniser" }).click();
+    await page.getByRole("button", { name: "Synchronize" }).click();
     await page.waitForTimeout(2000);
 
     await page.goto("/invoices");
-    await expect(page.getByRole("row").filter({ hasText: "Caisse" })).toHaveCount(countBefore);
+    await expect(page.getByRole("row").filter({ hasText: "POS" })).toHaveCount(countBefore);
   });
 });
 
-test.describe("coquille hors ligne", () => {
-  test("l'application s'ouvre sans réseau une fois mise en cache", async ({ page, context }) => {
+test.describe("offline shell", () => {
+  test("the application opens without network once cached", async ({ page, context }) => {
     await login(page);
-    // Laisse le Service Worker mettre la coquille en cache.
+    // Let the Service Worker cache the shell.
     await page.waitForTimeout(2000);
 
     await context.setOffline(true);
     await page.goto("/");
 
-    // L'interface reste rendue : c'est l'exigence [FR-SYNC-1].
-    await expect(page.getByText(/Mode hors ligne/)).toBeVisible();
+    // The interface stays rendered: this is requirement [FR-SYNC-1].
+    await expect(page.getByText(/Offline mode/)).toBeVisible();
     await expect(page.locator("#root")).not.toBeEmpty();
   });
 });

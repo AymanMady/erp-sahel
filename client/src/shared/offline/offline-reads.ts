@@ -1,10 +1,10 @@
 /**
- * Lectures de repli **hors ligne** à partir de l'instantané local.
+ * **Offline** fallback reads from the local snapshot.
  *
- * Chaque fonction reproduit la forme de réponse de l'endpoint serveur correspondant,
- * pour que les écrans de liste restent utilisables quand le serveur est injoignable
- * ([FR-SYNC-1]). Seules les données présentes dans l'instantané sont couvertes ; les
- * documents (factures, commandes…) relèvent du cache HTTP (`http-cache.ts`).
+ * Each function reproduces the response shape of the matching server endpoint, so that
+ * list screens stay usable when the server is unreachable ([FR-SYNC-1]). Only the data
+ * present in the snapshot is covered; documents (invoices, orders…) are handled by the
+ * HTTP cache (`http-cache.ts`).
  */
 
 import type { Party, Product, Service } from "@shared/schema";
@@ -12,8 +12,8 @@ import { ApiError } from "@/shared/api/api-error";
 import { readSnapshot, stockQuantityOf, type OfflineSnapshot } from "./snapshot";
 
 /**
- * Exécute la requête serveur ; si le réseau est coupé, relit l'instantané local.
- * Toute autre erreur (droits, validation) est propagée telle quelle.
+ * Runs the server request; if the network is down, reads the local snapshot instead.
+ * Any other error (permissions, validation) is propagated as is.
  */
 export async function withOfflineFallback<T>(
   request: () => Promise<T>,
@@ -50,7 +50,7 @@ export function listPartiesOffline(
   } = {}
 ) {
   const term = filters.search?.trim().toLowerCase() ?? "";
-  // Les tiers créés hors ligne s'affichent en tête, pour être aussitôt utilisables.
+  // Parties created offline are shown first, so they are immediately usable.
   const rows = [...pending, ...snapshot.parties]
     .filter((party: Party) => {
       if (!filters.includeArchived && !party.isActive) return false;
@@ -82,8 +82,8 @@ export function listServicesOffline(
 }
 
 /**
- * Soldes de stock hors ligne. L'instantané ne porte que produit × magasin × quantité :
- * les colonnes absentes (lot, coût moyen…) prennent leur valeur par défaut.
+ * Offline stock balances. The snapshot only holds product × warehouse × quantity:
+ * missing columns (lot, average cost…) take their default value.
  */
 export function listStockOffline(
   snapshot: OfflineSnapshot,
@@ -143,7 +143,7 @@ export function listStockOffline(
   return { items, total };
 }
 
-/** Articles sous le seuil minimal, tous magasins confondus. */
+/** Items below the minimum threshold, across all warehouses. */
 export function lowStockOffline(snapshot: OfflineSnapshot) {
   const totals = new Map<string, number>();
   for (const row of snapshot.stock) {
@@ -165,8 +165,8 @@ export function lowStockOffline(snapshot: OfflineSnapshot) {
 }
 
 /**
- * Fiche produit hors ligne : produit, variantes et stock de l'instantané. Les
- * fournisseurs référencés n'y figurent pas.
+ * Offline product detail: product, variants and stock from the snapshot. Linked
+ * suppliers are not included.
  */
 export function productDetailOffline(snapshot: OfflineSnapshot, id: string, pending: Product[]) {
   const product =
@@ -189,7 +189,7 @@ export function productDetailOffline(snapshot: OfflineSnapshot, id: string, pend
   };
 }
 
-/** Fiche tiers hors ligne : sans contacts ni historique (absents de l'instantané). */
+/** Offline party detail: without contacts or history (missing from the snapshot). */
 export function partyDetailOffline(snapshot: OfflineSnapshot, id: string, pending: Party[]) {
   const party =
     pending.find((row) => row.id === id) ?? snapshot.parties.find((row) => row.id === id);

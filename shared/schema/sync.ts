@@ -1,9 +1,9 @@
 /**
- * Journal d'ingestion des opérations hors-ligne — garant de l'idempotence [BR-8].
+ * Ingestion log of offline operations — the guarantor of idempotency [BR-8].
  *
- * Chaque opération de l'outbox client porte un `client_uuid` généré sur le poste.
- * L'unicité de cette colonne est ce qui rend « rejouer le même lot » sans effet :
- * la deuxième ingestion renvoie `duplicate` + l'`server_id` déjà attribué, sans écrire.
+ * Each operation of the client outbox carries a `client_uuid` generated on the workstation.
+ * The uniqueness of this column is what makes "replaying the same batch" a no-op:
+ * the second ingestion returns `duplicate` + the already assigned `server_id`, without writing.
  */
 
 import {
@@ -28,21 +28,21 @@ export const syncOperations = pgTable(
   "sync_operations",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    /** Clé d'idempotence fournie par le client. */
+    /** Idempotency key provided by the client. */
     clientUuid: uuid("client_uuid").notNull(),
     companyId: uuid("company_id")
       .notNull()
       .references(() => companies.id, { onDelete: "cascade" }),
     userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
-    /** Entité ciblée, préfixée par domaine (`invoicing.sales_invoice`). */
+    /** Target entity, prefixed by domain (`invoicing.sales_invoice`). */
     entity: text("entity").notNull(),
     action: text("action").default("create").notNull(),
     status: text("status").$type<SyncStatus>().notNull(),
-    /** Identifiant serveur créé — sert à résoudre les références croisées d'un lot. */
+    /** Created server identifier — used to resolve cross-references within a batch. */
     serverId: text("server_id").default("").notNull(),
-    /** Numéro définitif attribué, renvoyé au client pour remplacer le provisoire. */
+    /** Final number assigned, returned to the client to replace the provisional one. */
     assignedNumber: text("assigned_number").default("").notNull(),
-    /** Ordre causal dans l'outbox du poste (`SYNC_STRATEGY.md` §4). */
+    /** Causal order in the workstation's outbox (`SYNC_STRATEGY.md` §4). */
     localSeq: integer("local_seq").default(0).notNull(),
     deviceId: text("device_id").default("").notNull(),
     detail: text("detail").default("").notNull(),
@@ -59,8 +59,8 @@ export const syncOperations = pgTable(
 export type SyncOperation = typeof syncOperations.$inferSelect;
 
 /**
- * Trace des postes synchronisés : dernier instantané servi, dernière remontée.
- * Sert au diagnostic terrain (« ce poste n'a pas synchronisé depuis 3 jours »).
+ * Tracking of synced workstations: last snapshot served, last upload.
+ * Used for field diagnostics ("this workstation has not synced for 3 days").
  */
 export const syncDevices = pgTable(
   "sync_devices",

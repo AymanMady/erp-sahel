@@ -1,4 +1,4 @@
-/** Routes des tiers. */
+/** Party routes. */
 
 import type { Express } from "express";
 

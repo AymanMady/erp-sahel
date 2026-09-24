@@ -1,10 +1,9 @@
 /**
- * Racine de composition des routes HTTP.
+ * Composition root of the HTTP routes.
  *
- * Ordre volontaire : sécurité → limitation de débit → santé → domaines du noyau →
- * modules → 404 API → gestionnaire d'erreurs. Le gestionnaire d'erreurs doit rester
- * **le dernier** middleware monté, sinon les exceptions des routes suivantes lui
- * échapperaient.
+ * Deliberate order: security → rate limiting → health → core domains → modules →
+ * API 404 → error handler. The error handler must remain **the last** mounted
+ * middleware, otherwise exceptions from later routes would escape it.
  */
 
 import type { Express } from "express";
@@ -37,13 +36,13 @@ export function registerRoutes(app: Express): void {
   app.use(corsMiddleware);
   app.use(securityHeaders);
   app.use("/api", apiRateLimit);
-  // Écritures rejouées par la file hors ligne : une même clé ne s'exécute qu'une fois.
+  // Writes replayed by the offline queue: a given key is executed only once.
   app.use("/api", idempotency);
 
   /**
-   * Sonde de disponibilité. Le client s'en sert aussi pour distinguer « le navigateur
-   * se croit en ligne » de « le serveur répond » (`SYNC_STRATEGY.md` §8) : elle doit
-   * donc rester légère, non authentifiée et sans accès base par défaut.
+   * Availability probe. The client also uses it to tell "the browser thinks it is
+   * online" from "the server answers" (`SYNC_STRATEGY.md` §8): it must therefore stay
+   * lightweight, unauthenticated and without database access by default.
    */
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok", time: new Date().toISOString() });
@@ -58,10 +57,10 @@ export function registerRoutes(app: Express): void {
     }
   });
 
-  // Fonctionnalités désactivées pour la société (caisse, achats…) : 403 d'emblée.
+  // Features disabled for the company (POS, purchasing…): 403 straight away.
   app.use("/api", featureGate);
 
-  // --- Noyau ---------------------------------------------------------------
+  // --- Core ----------------------------------------------------------------
   registerAuthRoutes(app);
   registerTenancyRoutes(app);
   registerUsersRoutes(app);

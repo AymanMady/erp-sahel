@@ -1,4 +1,4 @@
-/** Service des fichiers statiques du client en production. */
+/** Serves the client's static files in production. */
 
 import fs from "node:fs";
 import path from "node:path";
@@ -9,20 +9,20 @@ import express, { type Express } from "express";
 const here = path.dirname(fileURLToPath(import.meta.url));
 
 export function clientDistPath(): string {
-  // En production, `dist/index.cjs` et `dist/public/` sont frères.
+  // In production, `dist/index.cjs` and `dist/public/` are siblings.
   return path.resolve(here, "public");
 }
 
 /**
- * Sert la SPA : assets avec cache long (ils portent un hash), `index.html` et le
- * service worker **sans cache** — sinon un poste garderait indéfiniment une ancienne
- * version de la coquille hors-ligne après une mise à jour.
+ * Serves the SPA: assets with a long cache (they carry a hash), `index.html` and the
+ * service worker **without cache** — otherwise a device would keep an old version of
+ * the offline shell forever after an update.
  */
 export function serveStatic(app: Express): void {
   const distPath = clientDistPath();
   if (!fs.existsSync(distPath)) {
     throw new Error(
-      `Build client introuvable dans ${distPath}. Lancez « npm run build » avant « npm start ».`
+      `Client build not found in ${distPath}. Run "npm run build" before "npm start".`
     );
   }
 
@@ -31,8 +31,8 @@ export function serveStatic(app: Express): void {
       index: false,
       setHeaders(res, filePath) {
         const name = path.basename(filePath);
-        // Le Service Worker et son manifeste doivent être revalidés à chaque
-        // chargement : un poste garderait sinon indéfiniment une ancienne coquille.
+        // The Service Worker and its manifest must be revalidated on every load:
+        // otherwise a device would keep an old shell forever.
         if (
           name === "sw.js" ||
           name === "precache-manifest.js" ||
@@ -49,7 +49,7 @@ export function serveStatic(app: Express): void {
     })
   );
 
-  // Toute route non-API rend la SPA (routage côté client).
+  // Every non-API route renders the SPA (client-side routing).
   app.get(/^(?!\/api\/).*/, (_req, res) => {
     res.sendFile(path.join(distPath, "index.html"));
   });

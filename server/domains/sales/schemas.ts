@@ -1,4 +1,4 @@
-/** Contrats de validation des devis et commandes. */
+/** Validation contracts for quotes and sales orders. */
 
 import { z } from "zod";
 
@@ -23,12 +23,12 @@ export const listOrdersQuerySchema = listSalesQuerySchema.extend({
 });
 
 export const createQuoteSchema = z.object({
-  partyId: z.string().uuid("Sélectionnez un client"),
+  partyId: z.string().uuid("Select a customer"),
   date: z.string().date().optional(),
   expiryDate: z.string().date().nullish(),
   globalDiscountBp: z.number().int().min(0).max(10_000).default(0),
   notes: z.string().max(4000).default(""),
-  lines: z.array(documentLineSchema).min(1, "Ajoutez au moins une ligne"),
+  lines: z.array(documentLineSchema).min(1, "Add at least one line"),
 });
 
 export const updateQuoteSchema = createQuoteSchema.partial();
@@ -40,4 +40,4 @@ export const createOrderSchema = createQuoteSchema
 export const quoteStatusSchema = z.object({ status: z.enum(QUOTE_STATUSES) });
 export const orderStatusSchema = z.object({ status: z.enum(SALES_ORDER_STATUSES) });
 
-export const idParamSchema = z.object({ id: z.string().uuid("Identifiant invalide") });
+export const idParamSchema = z.object({ id: z.string().uuid("Invalid identifier") });

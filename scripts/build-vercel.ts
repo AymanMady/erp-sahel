@@ -1,13 +1,13 @@
 /**
- * Build Vercel : produit `.vercel/output/` au format Build Output API v3.
+ * Vercel build: produces `.vercel/output/` in the Build Output API v3 format.
  *
- * - `static/`          : le client Vite, servi par le CDN de Vercel ;
- * - `functions/api.func`: l'API Express en une fonction serverless Node ;
- * - `config.json`      : routage (fichiers statiques, puis `/api/*`, puis la SPA).
+ * - `static/`           : the Vite client, served by Vercel's CDN;
+ * - `functions/api.func`: the Express API as a Node serverless function;
+ * - `config.json`       : routing (static files, then `/api/*`, then the SPA).
  *
- * On empaquette nous-mêmes le serveur (esbuild résout les alias `@shared`), puis
- * `@vercel/nft` trace les dépendances réellement chargées — y compris les fichiers
- * lus à l'exécution, comme les polices AFM de pdfkit — pour les copier dans la fonction.
+ * We bundle the server ourselves (esbuild resolves the `@shared` aliases), then
+ * `@vercel/nft` traces the dependencies actually loaded — including files read at
+ * runtime, such as pdfkit's AFM fonts — to copy them into the function.
  */
 
 import { execFileSync } from "node:child_process";
@@ -32,7 +32,7 @@ function run(command: string, args: string[]): void {
 }
 
 async function buildClient(): Promise<void> {
-  console.log("→ Build du client (Vite)…");
+  console.log("→ Building client (Vite)…");
   run("npx", ["vite", "build"]);
 
   const publicDir = path.join(rootDir, "dist", "public");
@@ -41,7 +41,7 @@ async function buildClient(): Promise<void> {
 }
 
 async function buildFunction(): Promise<void> {
-  console.log("→ Build de la fonction API (esbuild)…");
+  console.log("→ Building API function (esbuild)…");
   await build({
     entryPoints: [path.join(rootDir, "server/vercel.ts")],
     outfile: bundlePath,
@@ -50,7 +50,7 @@ async function buildFunction(): Promise<void> {
     format: "cjs",
     bundle: true,
     minify: true,
-    // Voir scripts/build.ts : `pg` et consorts restent externes.
+    // See scripts/build.ts: `pg` and friends stay external.
     packages: "external",
     banner: {
       js: 'const __import_meta_url = require("node:url").pathToFileURL(__filename).href;',
@@ -63,7 +63,7 @@ async function buildFunction(): Promise<void> {
     logLevel: "info",
   });
 
-  console.log("→ Traçage des dépendances (@vercel/nft)…");
+  console.log("→ Tracing dependencies (@vercel/nft)…");
   const { fileList } = await nodeFileTrace([bundlePath], { base: rootDir });
   for (const file of fileList) {
     const source = path.join(rootDir, file);
@@ -72,7 +72,7 @@ async function buildFunction(): Promise<void> {
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.copyFileSync(source, target);
   }
-  console.log(`  ${fileList.size} fichiers copiés dans la fonction.`);
+  console.log(`  ${fileList.size} files copied into the function.`);
 
   fs.writeFileSync(
     path.join(functionDir, ".vc-config.json"),
@@ -94,7 +94,7 @@ function writeConfig(): void {
   const config = {
     version: 3,
     routes: [
-      // Assets hashés : cache long. Coquille hors-ligne : toujours revalidée.
+      // Hashed assets: long cache. Offline shell: always revalidated.
       {
         src: "^/assets/(.*)$",
         headers: { "cache-control": "public, max-age=31536000, immutable" },
@@ -107,7 +107,7 @@ function writeConfig(): void {
       },
       { handle: "filesystem" },
       { src: "^/api(/.*)?$", dest: "/api" },
-      // Toute autre route rend la SPA (routage côté client).
+      // Any other route serves the SPA (client-side routing).
       { src: "^/(.*)$", dest: "/index.html", headers: NO_CACHE },
     ],
   };
@@ -122,10 +122,10 @@ async function main(): Promise<void> {
   await buildFunction();
   writeConfig();
 
-  console.log("\n✔ Build Vercel terminé : .vercel/output/");
+  console.log("\n✔ Vercel build complete: .vercel/output/");
 }
 
 main().catch((error) => {
-  console.error("Échec du build Vercel :", error);
+  console.error("Vercel build failed:", error);
   process.exit(1);
 });

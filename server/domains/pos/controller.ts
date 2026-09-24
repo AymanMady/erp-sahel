@@ -1,4 +1,4 @@
-/** Frontière HTTP du point de vente. */
+/** HTTP boundary of the point of sale. */
 
 import type { Request, Response } from "express";
 

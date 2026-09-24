@@ -1,0 +1,25 @@
+{
+  "title": "Mon profil",
+  "description": "Informations du compte et sécurité.",
+  "identity": {
+    "title": "Identité",
+    "activeModules": "Modules actifs",
+    "noModules": "Aucun module activé.",
+    "permissions": "Permissions ({{count}})"
+  },
+  "preferences": {
+    "title": "Préférences",
+    "description": "Enregistrées sur ce poste.",
+    "language": "Langue"
+  },
+  "password": {
+    "title": "Mot de passe",
+    "description": "Le changer déconnecte toutes vos sessions, y compris sur les autres postes.",
+    "current": "Mot de passe actuel",
+    "new": "Nouveau mot de passe",
+    "hint": "8 caractères minimum, au moins une lettre et un chiffre.",
+    "confirm": "Confirmation",
+    "submit": "Modifier le mot de passe",
+    "changed": "Mot de passe modifié. Reconnectez-vous."
+  }
+}

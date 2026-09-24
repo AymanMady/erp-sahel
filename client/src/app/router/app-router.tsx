@@ -1,17 +1,18 @@
 /**
- * Routage de l'application (wouter).
+ * Application routing (wouter).
  *
- * Trois zones distinctes :
- *  - **publique** : connexion ;
- *  - **plein écran** : point de vente, qui occupe tout l'écran d'une caisse ;
- *  - **applicative** : tous les autres écrans, dans la coquille avec barre latérale.
+ * Three distinct areas:
+ *  - **public**: sign-in;
+ *  - **full screen**: point of sale, which takes the whole screen of a till;
+ *  - **application**: every other screen, inside the shell with the sidebar.
  *
- * Les pages sont chargées à la demande : le bundle initial reste léger, ce qui compte
- * sur une connexion lente — et la coquille reste disponible hors ligne une fois mise
- * en cache par le Service Worker.
+ * Pages are loaded on demand: the initial bundle stays light, which matters on a slow
+ * connection — and the shell stays available offline once cached by the Service
+ * Worker.
  */
 
 import { Suspense, lazy, type ComponentType } from "react";
+import { useTranslation } from "react-i18next";
 import { Redirect, Route, Switch, useLocation } from "wouter";
 
 import { useSession } from "@/shared/auth/session";
@@ -74,19 +75,20 @@ function PageFallback() {
   );
 }
 
-/** Écran d'attente du démarrage, avant de savoir si une session existe. */
+/** Startup waiting screen, shown before knowing whether a session exists. */
 function BootScreen() {
+  const { t } = useTranslation("layout");
   return (
     <div className="flex min-h-dvh items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-3">
         <div className="size-10 animate-spin rounded-full border-2 border-muted border-t-primary" />
-        <p className="text-sm text-muted-foreground">Chargement de l'ERP…</p>
+        <p className="text-sm text-muted-foreground">{t("boot.loading")}</p>
       </div>
     </div>
   );
 }
 
-/** Routes de l'application, montées dans la coquille standard. */
+/** Application routes, mounted inside the standard shell. */
 function AppRoutes() {
   return (
     <Suspense fallback={<PageFallback />}>
@@ -163,8 +165,8 @@ export function AppRouter() {
         <Switch>
           <Route path="/login" component={LoginPage as ComponentType} />
           <Route>
-            {/* Toute autre adresse renvoie vers la connexion, en gardant la
-                destination pour y revenir une fois authentifié. */}
+            {/* Any other path redirects to sign-in, keeping the destination to
+                come back to once authenticated. */}
             <Redirect
               to={`/login${location !== "/" ? `?next=${encodeURIComponent(location)}` : ""}`}
             />
@@ -174,7 +176,7 @@ export function AppRouter() {
     );
   }
 
-  // Le point de vente sort de la coquille standard : plein écran, sans barre latérale.
+  // The point of sale leaves the standard shell: full screen, without sidebar.
   if (location.startsWith("/pos")) {
     return (
       <FullscreenLayout>

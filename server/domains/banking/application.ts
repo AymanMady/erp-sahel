@@ -1,17 +1,18 @@
 /**
- * Orchestration de la trésorerie.
+ * Treasury orchestration.
  *
- * Toute variation de solde passe par `recordMovement` : le solde affiché est alors
- * toujours la somme des mouvements, et le rapprochement bancaire devient possible
+ * Every balance change goes through `recordMovement`: the displayed balance is then
+ * always the sum of the movements, which makes bank reconciliation possible
  * ([FR-PAY-3]).
  */
 
 import type { BankAccount, BankTransaction, PaymentMethod } from "@shared/schema";
 import { runInTransaction, type Database } from "../../db";
 import { BusinessRuleError, NotFoundError } from "../../shared/errors/app-error";
+import { tr } from "../../shared/i18n";
 import { bankAccountsRepository, bankingRepository } from "./repository";
 
-/** Type de compte correspondant à un mode de règlement. */
+/** Account type matching a payment method. */
 function accountTypeFor(method: PaymentMethod): BankAccount["accountType"] {
   if (method === "CASH") return "CASH";
   if (method === "MOBILE_MONEY") return "MOBILE_MONEY";
@@ -20,9 +21,9 @@ function accountTypeFor(method: PaymentMethod): BankAccount["accountType"] {
 
 class BankingApplication {
   /**
-   * Compte de trésorerie à mouvementer : celui demandé, sinon le compte par défaut du
-   * type correspondant au mode de règlement. Sans compte disponible, on refuse plutôt
-   * que d'enregistrer un encaissement « hors trésorerie ».
+   * Treasury account to move: the requested one, otherwise the default account of the
+   * type matching the payment method. Without an available account the operation is
+   * refused rather than recording a receipt "outside treasury".
    */
   async resolveAccount(
     companyId: string,
@@ -34,22 +35,21 @@ class BankingApplication {
         ? bankAccountsRepository.withTransaction(database)
         : bankAccountsRepository;
       const account = await repository.findById(companyId, input.bankAccountId);
-      if (!account) throw new NotFoundError("Compte de trésorerie introuvable.");
+      if (!account) throw new NotFoundError("Cash/bank account not found.");
       return account as BankAccount;
     }
     const repository = database ? bankingRepository.withTransaction(database) : bankingRepository;
     const fallback = await repository.findDefaultFor(companyId, accountTypeFor(input.method));
     if (!fallback) {
       throw new BusinessRuleError(
-        "Aucun compte de trésorerie n'est configuré pour ce mode de règlement. " +
-          "Créez-en un dans Trésorerie › Comptes.",
+        "No cash/bank account is configured for this payment method. Create one in Treasury › Accounts.",
         "NO_TREASURY_ACCOUNT"
       );
     }
     return fallback;
   }
 
-  /** Enregistre un mouvement et ajuste le solde dans la même transaction. */
+  /** Records a movement and adjusts the balance in the same transaction. */
   async recordMovement(
     tx: Database,
     input: {
@@ -66,7 +66,7 @@ class BankingApplication {
     }
   ): Promise<BankTransaction> {
     if (input.amountCents <= 0) {
-      throw new BusinessRuleError("Le montant d'un mouvement doit être strictement positif.");
+      throw new BusinessRuleError("A movement amount must be strictly positive.");
     }
     const repository = bankingRepository.withTransaction(tx);
     const transaction = await repository.insertTransaction({
@@ -86,7 +86,7 @@ class BankingApplication {
     return transaction;
   }
 
-  /** Virement interne : un retrait et un dépôt liés, dans une seule transaction. */
+  /** Internal transfer: a linked withdrawal and deposit, in a single transaction. */
   async transfer(input: {
     companyId: string;
     fromAccountId: string;
@@ -97,10 +97,10 @@ class BankingApplication {
     reference?: string;
   }): Promise<{ from: BankTransaction; to: BankTransaction }> {
     if (input.fromAccountId === input.toAccountId) {
-      throw new BusinessRuleError("Les comptes source et destination doivent différer.");
+      throw new BusinessRuleError("The source and destination accounts must differ.");
     }
     return runInTransaction(async (tx) => {
-      const description = input.description ?? "Virement interne";
+      const description = input.description ?? tr("Internal transfer");
       const from = await this.recordMovement(tx, {
         companyId: input.companyId,
         bankAccountId: input.fromAccountId,

@@ -1,4 +1,4 @@
-// Empêche l'ouverture d'une console Windows en plus de la fenêtre applicative.
+// Prevents an extra Windows console from opening alongside the application window.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {

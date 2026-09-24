@@ -1,11 +1,11 @@
 /**
- * Stock multi-critères : magasin → emplacement → lot, pour un produit/variante donné
- * ([FR-STK-1], [BR-9]). Deux articles de même référence mais de fournisseurs différents
- * sont deux produits distincts, donc deux stocks distincts ([BR-2], [FR-STK-2]).
+ * Multi-axis stock: store → location → lot, for a given product/variant
+ * ([FR-STK-1], [BR-9]). Two items with the same reference but from different suppliers
+ * are two distinct products, hence two distinct stocks ([BR-2], [FR-STK-2]).
  *
- * **Le domaine `inventory` est le seul propriétaire de l'état de stock** : aucune autre
- * couche n'écrit `stock_items` ni `stock_movements` (règle d'architecture, cf.
- * `server/ARCHITECTURE.md`). Les ventes, achats et POS délèguent à `inventoryApplication`.
+ * **The `inventory` domain is the sole owner of stock state**: no other layer writes
+ * `stock_items` or `stock_movements` (architecture rule, see `server/ARCHITECTURE.md`).
+ * Sales, purchasing and POS delegate to `inventoryApplication`.
  */
 
 import { boolean, index, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
@@ -40,7 +40,7 @@ export const insertWarehouseSchema = createInsertSchema(warehouses, {
 export type InsertWarehouse = z.infer<typeof insertWarehouseSchema>;
 export type Warehouse = typeof warehouses.$inferSelect;
 
-/** Rayon / zone / emplacement précis à l'intérieur d'un magasin [FR-STK-1]. */
+/** Aisle / zone / precise location inside a store [FR-STK-1]. */
 export const stockLocations = pgTable(
   "stock_locations",
   {
@@ -61,9 +61,9 @@ export const stockLocations = pgTable(
 export type StockLocation = typeof stockLocations.$inferSelect;
 
 /**
- * Solde de stock pour une combinaison d'axes.
- * `quantity` est **dérivé** des mouvements : il est recalculé dans la même transaction
- * que l'insertion du mouvement, jamais écrit à l'aveugle ([FR-STK-4]).
+ * Stock balance for a combination of axes.
+ * `quantity` is **derived** from movements: it is recomputed in the same transaction
+ * as the movement insertion, never written blindly ([FR-STK-4]).
  */
 export const stockItems = pgTable(
   "stock_items",
@@ -80,11 +80,11 @@ export const stockItems = pgTable(
       .notNull()
       .references(() => warehouses.id, { onDelete: "cascade" }),
     locationId: uuid("location_id").references(() => stockLocations.id, { onDelete: "set null" }),
-    /** Lot optionnel (Q5). */
+    /** Optional lot (Q5). */
     lotNumber: text("lot_number").default("").notNull(),
     quantity: quantity("quantity").default("0").notNull(),
     reservedQuantity: quantity("reserved_quantity").default("0").notNull(),
-    /** Coût unitaire moyen pondéré, pour la valorisation du stock [FR-RPT-1]. */
+    /** Weighted average unit cost, for stock valuation [FR-RPT-1]. */
     averageCostCents: moneyCents("average_cost_cents").default(0).notNull(),
   },
   (table) => [
@@ -105,16 +105,16 @@ export const MOVEMENT_TYPES = ["IN", "OUT", "TRANSFER", "ADJUSTMENT", "RETURN"] 
 export type MovementType = (typeof MOVEMENT_TYPES)[number];
 
 /**
- * Sens du mouvement, séparé de son type.
- * `quantity` reste toujours positive : c'est `direction` qui dit si le solde monte ou
- * descend. Sans cette colonne, un ajustement d'inventaire (qui peut aller dans les deux
- * sens) obligerait à stocker des quantités négatives, et le cumul des mouvements ne
- * serait plus lisible tel quel.
+ * Movement direction, kept separate from its type.
+ * `quantity` always stays positive: `direction` tells whether the balance goes up or
+ * down. Without this column, an inventory adjustment (which can go either way) would
+ * require storing negative quantities, and the running total of movements would no
+ * longer be readable as is.
  */
 export const MOVEMENT_DIRECTIONS = ["IN", "OUT"] as const;
 export type MovementDirection = (typeof MOVEMENT_DIRECTIONS)[number];
 
-/** Sens naturel d'un type de mouvement ; `ADJUSTMENT` et `TRANSFER` l'expriment explicitement. */
+/** Natural direction of a movement type; `ADJUSTMENT` and `TRANSFER` state it explicitly. */
 export function defaultDirection(movementType: MovementType): MovementDirection {
   return movementType === "IN" || movementType === "RETURN" ? "IN" : "OUT";
 }
@@ -130,7 +130,7 @@ export const MOVEMENT_ORIGINS = [
 ] as const;
 export type MovementOrigin = (typeof MOVEMENT_ORIGINS)[number];
 
-/** Journal des mouvements : la seule source de vérité auditable du stock [FR-STK-3]. */
+/** Movement log: the only auditable source of truth for stock [FR-STK-3]. */
 export const stockMovements = pgTable(
   "stock_movements",
   {
@@ -149,9 +149,9 @@ export const stockMovements = pgTable(
       .references(() => warehouses.id, { onDelete: "cascade" }),
     movementType: text("movement_type").$type<MovementType>().notNull(),
     direction: text("direction").$type<MovementDirection>().notNull(),
-    /** Toujours positive : le sens est porté par `direction`. */
+    /** Always positive: the direction is carried by `direction`. */
     quantity: quantity("quantity").notNull(),
-    /** Solde de l'axe après application du mouvement (piste d'audit). */
+    /** Balance of the axis after applying the movement (audit trail). */
     balanceAfter: quantity("balance_after").default("0").notNull(),
     unitCostCents: moneyCents("unit_cost_cents").default(0).notNull(),
     originType: text("origin_type").$type<MovementOrigin>().default("manual").notNull(),
@@ -174,7 +174,7 @@ export type StockMovement = typeof stockMovements.$inferSelect;
 export const INVENTORY_COUNT_STATUSES = ["DRAFT", "COUNTING", "VALIDATED", "CANCELLED"] as const;
 export type InventoryCountStatus = (typeof INVENTORY_COUNT_STATUSES)[number];
 
-/** Inventaire physique : comptage puis écritures d'ajustement [FR-STK-6]. */
+/** Physical inventory: count, then adjustment postings [FR-STK-6]. */
 export const inventoryCounts = pgTable("inventory_counts", {
   ...baseColumns,
   companyId: uuid("company_id")

@@ -1,9 +1,10 @@
-/** Catégories du catalogue — arborescence simple à un niveau de parenté. */
+/** Catalog categories — simple tree with a single parent level. */
 
 import { useState } from "react";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 import { errorMessage } from "@/shared/api/api-error";
 import { catalogApi } from "@/entities/catalog/api";
@@ -22,6 +23,7 @@ import { Textarea } from "@/shared/ui/textarea";
 const NONE = "NONE";
 
 export default function CategoriesPage() {
+  const { t } = useTranslation("catalog");
   const queryClient = useQueryClient();
   const { can } = useSession();
   const [open, setOpen] = useState(false);
@@ -35,7 +37,7 @@ export default function CategoriesPage() {
   const archive = useMutation({
     mutationFn: (id: string) => catalogApi.archiveCategory(id),
     onSuccess: () => {
-      toast.success("Catégorie archivée.");
+      toast.success(t("categories.archived"));
       void queryClient.invalidateQueries({ queryKey: queryKeys.categories });
     },
     onError: (mutationError) => toast.error(errorMessage(mutationError)),
@@ -44,20 +46,24 @@ export default function CategoriesPage() {
   const nameById = new Map((data ?? []).map((category) => [category.id, category.name]));
 
   const columns: Column<Category>[] = [
-    { id: "name", header: "Nom", cell: (row) => <span className="font-medium">{row.name}</span> },
+    {
+      id: "name",
+      header: t("common:labels.name"),
+      cell: (row) => <span className="font-medium">{row.name}</span>,
+    },
     {
       id: "parent",
-      header: "Catégorie parente",
+      header: t("categories.parent"),
       cell: (row) =>
         row.parentId ? (
           (nameById.get(row.parentId) ?? "—")
         ) : (
-          <span className="text-muted-foreground">racine</span>
+          <span className="text-muted-foreground">{t("categories.root")}</span>
         ),
     },
     {
       id: "description",
-      header: "Description",
+      header: t("common:labels.description"),
       hideOnMobile: true,
       cell: (row) => (
         <span className="text-sm text-muted-foreground">{row.description || "—"}</span>
@@ -71,12 +77,12 @@ export default function CategoriesPage() {
         can("catalog.write") ? (
           <div className="flex justify-end gap-1">
             <Button size="sm" variant="ghost" onClick={() => setEditing(row)}>
-              Modifier
+              {t("common:actions.edit")}
             </Button>
             <Button
               size="icon"
               variant="ghost"
-              aria-label="Archiver"
+              aria-label={t("common:actions.archive")}
               onClick={() => archive.mutate(row.id)}
             >
               <IconTrash className="size-4" />
@@ -88,11 +94,11 @@ export default function CategoriesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Catégories" description="Classement des produits du catalogue.">
+      <PageHeader title={t("categories.title")} description={t("categories.description")}>
         {can("catalog.write") ? (
           <Button onClick={() => setOpen(true)}>
             <IconPlus className="size-4" />
-            Nouvelle catégorie
+            {t("categories.new")}
           </Button>
         ) : null}
       </PageHeader>
@@ -103,8 +109,8 @@ export default function CategoriesPage() {
         rowKey={(row) => row.id}
         loading={isLoading}
         error={error ? errorMessage(error) : null}
-        emptyTitle="Aucune catégorie"
-        emptyDescription="Les catégories facilitent la recherche et les rapports par famille de produits."
+        emptyTitle={t("categories.emptyTitle")}
+        emptyDescription={t("categories.emptyDescription")}
       />
 
       <CategoryDialog
@@ -133,10 +139,11 @@ function CategoryDialog({
   category: Category | null;
   categories: Category[];
 }) {
+  const { t } = useTranslation("catalog");
   const queryClient = useQueryClient();
   const [form, setForm] = useState({ name: "", parentId: NONE, description: "" });
 
-  // Réinitialise le formulaire à chaque ouverture (création ou édition).
+  // Reset the form on every opening (creation or edit).
   const key = category?.id ?? "new";
   const [lastKey, setLastKey] = useState(key);
   if (lastKey !== key) {
@@ -160,7 +167,7 @@ function CategoryDialog({
         : catalogApi.createCategory(payload);
     },
     onSuccess: () => {
-      toast.success(category ? "Catégorie mise à jour." : "Catégorie créée.");
+      toast.success(category ? t("categories.updated") : t("categories.created"));
       void queryClient.invalidateQueries({ queryKey: queryKeys.categories });
       onOpenChange(false);
       setForm({ name: "", parentId: NONE, description: "" });
@@ -172,7 +179,7 @@ function CategoryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{category ? "Modifier la catégorie" : "Nouvelle catégorie"}</DialogTitle>
+          <DialogTitle>{category ? t("categories.editTitle") : t("categories.new")}</DialogTitle>
         </DialogHeader>
         <form
           className="space-y-4"
@@ -181,7 +188,7 @@ function CategoryDialog({
             mutation.mutate();
           }}
         >
-          <Field label="Nom" required>
+          <Field label={t("common:labels.name")} required>
             <Input
               value={form.name}
               onChange={(event) => setForm({ ...form, name: event.target.value })}
@@ -189,7 +196,7 @@ function CategoryDialog({
               autoFocus
             />
           </Field>
-          <Field label="Catégorie parente">
+          <Field label={t("categories.parent")}>
             <Select
               value={form.parentId}
               onValueChange={(value) => setForm({ ...form, parentId: value })}
@@ -198,7 +205,7 @@ function CategoryDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={NONE}>Aucune (racine)</SelectItem>
+                <SelectItem value={NONE}>{t("categories.noneRoot")}</SelectItem>
                 {categories
                   .filter((entry) => entry.id !== category?.id)
                   .map((entry) => (
@@ -209,7 +216,7 @@ function CategoryDialog({
               </SelectContent>
             </Select>
           </Field>
-          <Field label="Description">
+          <Field label={t("common:labels.description")}>
             <Textarea
               rows={3}
               value={form.description}
@@ -218,10 +225,10 @@ function CategoryDialog({
           </Field>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
+              {t("common:actions.cancel")}
             </Button>
             <Button type="submit" disabled={mutation.isPending || !form.name.trim()}>
-              Enregistrer
+              {t("common:actions.save")}
             </Button>
           </DialogFooter>
         </form>

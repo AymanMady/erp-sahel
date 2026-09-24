@@ -1,9 +1,9 @@
 /**
- * Modules activables par société (caisse, achats, stock…).
+ * Modules that can be enabled per company (POS, purchasing, stock…).
  *
- * L'ERP est générique : un seul catalogue, un seul stock, pour tout type de commerce.
- * Chaque société n'active que les fonctionnalités dont elle se sert, pour garder un
- * menu court. Un écran ou un endpoint de module inactif est inaccessible.
+ * The ERP is generic: a single catalog, a single stock, for any kind of business.
+ * Each company only enables the features it uses, to keep the menu short. A screen or
+ * endpoint of a disabled module is inaccessible.
  */
 
 import { boolean, jsonb, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
@@ -26,7 +26,7 @@ export const MODULE_CODES = [
 export type ModuleCode = (typeof MODULE_CODES)[number];
 export const moduleCodeSchema = z.enum(MODULE_CODES);
 
-/** État d'un module pour une société. Sans ligne, le module est actif (état par défaut). */
+/** State of a module for a company. Without a row, the module is enabled (default state). */
 export const companyPlugins = pgTable(
   "company_plugins",
   {

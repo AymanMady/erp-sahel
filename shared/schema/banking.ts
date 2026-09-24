@@ -1,4 +1,4 @@
-/** Comptes de trésorerie (banque, caisse, mobile money) et mouvements [FR-PAY-3]. */
+/** Cash accounts (bank, cash register, mobile money) and transactions [FR-PAY-3]. */
 
 import { boolean, date, index, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
@@ -22,9 +22,9 @@ export const bankAccounts = pgTable(
     iban: text("iban").default("").notNull(),
     swift: text("swift").default("").notNull(),
     currency: text("currency").default("MRU").notNull(),
-    /** Solde dérivé des mouvements, recalculé dans la même transaction qu'eux. */
+    /** Balance derived from transactions, recomputed in the same DB transaction as they are. */
     balanceCents: moneyCents("balance_cents").default(0).notNull(),
-    /** Compte du plan comptable adossé (512x / 531x en OHADA). */
+    /** Linked chart-of-accounts account (512x / 531x in OHADA). */
     glAccountId: uuid("gl_account_id"),
     isDefault: boolean("is_default").default(false).notNull(),
   },
@@ -46,7 +46,7 @@ export const bankTransactions = pgTable(
     bankAccountId: uuid("bank_account_id")
       .notNull()
       .references(() => bankAccounts.id, { onDelete: "cascade" }),
-    /** Compte destinataire pour un virement interne. */
+    /** Destination account for an internal transfer. */
     counterpartAccountId: uuid("counterpart_account_id").references(() => bankAccounts.id, {
       onDelete: "set null",
     }),
@@ -55,7 +55,7 @@ export const bankTransactions = pgTable(
     transactionType: text("transaction_type").$type<BankTransactionType>().notNull(),
     amountCents: moneyCents("amount_cents").notNull(),
     reference: text("reference").default("").notNull(),
-    /** Lettrage : rapproché avec un règlement ou un relevé [FR-PAY-3]. */
+    /** Reconciliation: matched with a payment or a statement [FR-PAY-3]. */
     reconciled: boolean("reconciled").default(false).notNull(),
     paymentId: uuid("payment_id"),
   },

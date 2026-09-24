@@ -1,9 +1,9 @@
 /**
- * Orchestration du stock — **point d'entrée unique** pour tout effet de stock.
+ * Stock orchestration — the **single entry point** for any stock effect.
  *
- * Ventes, achats, POS, avoirs et inventaires passent obligatoirement par
- * `applyMovement` : c'est ce qui rend le solde auditable (somme des mouvements) et
- * empêche qu'un domaine « corrige » un stock sans laisser de trace ([FR-STK-3],
+ * Sales, purchases, POS, credit notes and stock counts must all go through
+ * `applyMovement`: this is what makes the balance auditable (sum of movements) and
+ * prevents a domain from "fixing" a stock level without leaving a trace ([FR-STK-3],
  * [FR-STK-4], [BR-6]).
  */
 
@@ -17,6 +17,7 @@ import {
 } from "@shared/schema";
 import { db, runInTransaction, type Database } from "../../db";
 import { BusinessRuleError, NotFoundError } from "../../shared/errors/app-error";
+import { tr } from "../../shared/i18n";
 import { inventoryRepository, warehousesRepository } from "./repository";
 
 export interface MovementInput {
@@ -27,9 +28,9 @@ export interface MovementInput {
   locationId?: string | null;
   lotNumber?: string;
   movementType: MovementType;
-  /** Sens explicite ; déduit du type quand il est omis. */
+  /** Explicit direction; inferred from the type when omitted. */
   direction?: MovementDirection;
-  /** Toujours positive. */
+  /** Always positive. */
   quantity: number | string;
   unitCostCents?: number;
   originType?: MovementOrigin;
@@ -39,21 +40,21 @@ export interface MovementInput {
   userId?: string | null;
   clientUuid?: string | null;
   /**
-   * Autorise un solde négatif. Refusé par défaut : une vente ne doit pas faire
-   * passer le stock sous zéro sans décision explicite ([FR-STK-4]).
+   * Allows a negative balance. Refused by default: a sale must not take stock below
+   * zero without an explicit decision ([FR-STK-4]).
    */
   allowNegative?: boolean;
 }
 
 class InventoryApplication {
-  /** Magasin par défaut de la société — utilisé quand l'appelant n'en précise pas. */
+  /** Default warehouse of the company — used when the caller does not specify one. */
   async defaultWarehouseId(companyId: string, database: Database = db): Promise<string> {
     const repository = warehousesRepository.withTransaction(database);
     const all = await repository.listAll(companyId);
     const preferred = all.find((warehouse) => warehouse.isDefault) ?? all[0];
     if (!preferred) {
       throw new BusinessRuleError(
-        "Aucun magasin n'est configuré. Créez-en un dans Paramètres › Magasins.",
+        "No warehouse is configured. Create one in Settings › Warehouses.",
         "NO_WAREHOUSE"
       );
     }
@@ -61,13 +62,13 @@ class InventoryApplication {
   }
 
   /**
-   * Applique un mouvement et met à jour le solde dans la **même transaction**.
-   * Renvoie le mouvement inséré, solde après application inclus.
+   * Applies a movement and updates the balance in the **same transaction**.
+   * Returns the inserted movement, including the resulting balance.
    */
   async applyMovement(tx: Database, input: MovementInput): Promise<StockMovement> {
     const quantity = normalizeQuantity(input.quantity);
     if (quantity <= 0) {
-      throw new BusinessRuleError("La quantité d'un mouvement doit être strictement positive.");
+      throw new BusinessRuleError("A movement quantity must be strictly positive.");
     }
     const direction = input.direction ?? defaultDirection(input.movementType);
     const repository = inventoryRepository.withTransaction(tx);
@@ -87,13 +88,16 @@ class InventoryApplication {
 
     if (nextQuantity < 0 && !input.allowNegative) {
       throw new BusinessRuleError(
-        `Stock insuffisant : ${currentQuantity} disponible, ${quantity} demandé.`,
+        tr("Insufficient stock: {available} available, {requested} requested.", {
+          available: currentQuantity,
+          requested: quantity,
+        }),
         "INSUFFICIENT_STOCK",
         { available: currentQuantity, requested: quantity }
       );
     }
 
-    // Coût moyen pondéré : seules les entrées valorisées le déplacent.
+    // Weighted average cost: only valued incoming movements change it.
     let averageCostCents: number | null = null;
     if (direction === "IN" && (input.unitCostCents ?? 0) > 0) {
       const previousValue = currentQuantity * stockItem.averageCostCents;
@@ -130,15 +134,15 @@ class InventoryApplication {
     });
   }
 
-  /** Mouvement isolé (ajustement manuel) : ouvre sa propre transaction. */
+  /** Standalone movement (manual adjustment): opens its own transaction. */
   async applyStandaloneMovement(input: MovementInput): Promise<StockMovement> {
     return runInTransaction((tx) => this.applyMovement(tx, input));
   }
 
   /**
-   * Transfert entre magasins : une sortie et une entrée liées par la même référence,
-   * dans une seule transaction — il n'existe jamais d'état où la marchandise a quitté
-   * un magasin sans être arrivée dans l'autre.
+   * Transfer between warehouses: one outgoing and one incoming movement linked by the
+   * same reference, in a single transaction — there is never a state where goods have
+   * left one warehouse without arriving in the other.
    */
   async transfer(input: {
     companyId: string;
@@ -151,8 +155,9 @@ class InventoryApplication {
     userId?: string | null;
   }): Promise<{ out: StockMovement; in: StockMovement }> {
     if (input.fromWarehouseId === input.toWarehouseId) {
-      throw new BusinessRuleError("Les magasins source et destination doivent différer.");
+      throw new BusinessRuleError("Source and destination warehouses must differ.");
     }
+    const reason = input.reason ?? tr("Inter-warehouse transfer");
     return runInTransaction(async (tx) => {
       const reference = `TRF-${Date.now().toString(36).toUpperCase()}`;
       const out = await this.applyMovement(tx, {
@@ -165,7 +170,7 @@ class InventoryApplication {
         quantity: input.quantity,
         originType: "transfer",
         reference,
-        reason: input.reason ?? "Transfert inter-magasins",
+        reason,
         userId: input.userId,
       });
       const incoming = await this.applyMovement(tx, {
@@ -180,7 +185,7 @@ class InventoryApplication {
         originType: "transfer",
         originId: out.id,
         reference,
-        reason: input.reason ?? "Transfert inter-magasins",
+        reason,
         userId: input.userId,
       });
       return { out, in: incoming };
@@ -188,9 +193,9 @@ class InventoryApplication {
   }
 
   /**
-   * Décrémente le stock pour les lignes d'un document de vente ([FR-VNT-3]).
-   * Les lignes de service et les lignes sans produit sont ignorées silencieusement :
-   * une prestation n'a pas de stock.
+   * Decrements stock for the lines of a sales document ([FR-VNT-3]).
+   * Service lines and lines without a product are silently skipped: a service has no
+   * stock.
    */
   async consumeForDocument(
     tx: Database,
@@ -227,7 +232,7 @@ class InventoryApplication {
     return movements;
   }
 
-  /** Réintègre le stock (avoir, retour) — écriture miroir de `consumeForDocument` [FR-VNT-6]. */
+  /** Puts stock back (credit note, return) — mirror of `consumeForDocument` [FR-VNT-6]. */
   async restockForDocument(
     tx: Database,
     input: {
@@ -261,7 +266,7 @@ class InventoryApplication {
     return movements;
   }
 
-  /** Entrée en stock d'un bon de réception ([FR-ACH-3]). */
+  /** Stock receipt for a goods receipt note ([FR-ACH-3]). */
   async receiveForDocument(
     tx: Database,
     input: {
@@ -300,9 +305,9 @@ class InventoryApplication {
   }
 
   /**
-   * Soldes par produit — exposé aux autres domaines (catalogue, POS, rapports).
-   * Passer par l'application plutôt que par le repository maintient la règle
-   * « aucun domaine ne lit directement le repository d'un autre ».
+   * Balances per product — exposed to other domains (catalog, POS, reports).
+   * Going through the application layer rather than the repository upholds the rule
+   * "no domain reads another domain's repository directly".
    */
   async quantitiesByProduct(companyId: string, productIds: string[]): Promise<Map<string, number>> {
     return inventoryRepository.quantitiesByProduct(companyId, productIds);
@@ -326,7 +331,7 @@ class InventoryApplication {
 
   async requireWarehouse(companyId: string, warehouseId: string): Promise<void> {
     const warehouse = await warehousesRepository.findById(companyId, warehouseId);
-    if (!warehouse) throw new NotFoundError("Magasin introuvable.");
+    if (!warehouse) throw new NotFoundError("Warehouse not found.");
   }
 }
 

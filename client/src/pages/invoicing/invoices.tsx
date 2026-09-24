@@ -1,6 +1,7 @@
-/** Liste des factures clients. */
+/** Customer invoice list. */
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { IconPlus } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
@@ -27,6 +28,7 @@ import { Label } from "@/shared/ui/label";
 const ALL = "ALL";
 
 export default function InvoicesPage() {
+  const { t } = useTranslation("invoicing");
   const [, navigate] = useLocation();
   const { can } = useSession();
   const [search, setSearch] = useState("");
@@ -50,41 +52,45 @@ export default function InvoicesPage() {
   const columns: Column<InvoiceListItem>[] = [
     {
       id: "number",
-      header: "Numéro",
+      header: t("common:labels.number"),
       cell: (row) => (
         <div>
           <span className="tabular font-medium">{row.number}</span>
           {row.source === "POS" ? (
             <Badge variant="outline" className="ms-2 text-[10px]">
-              Caisse
+              {t("invoices.posBadge")}
             </Badge>
           ) : null}
         </div>
       ),
     },
-    { id: "date", header: "Date", cell: (row) => formatDate(row.date) },
+    { id: "date", header: t("common:labels.date"), cell: (row) => formatDate(row.date) },
     {
       id: "party",
-      header: "Client",
+      header: t("common:labels.customer"),
       cell: (row) => <span className="font-medium">{row.partyName}</span>,
     },
     {
       id: "due",
-      header: "Échéance",
+      header: t("common:labels.dueDate"),
       hideOnMobile: true,
       cell: (row) => (row.dueDate ? formatDate(row.dueDate) : "—"),
     },
-    { id: "status", header: "Statut", cell: (row) => <StatusBadge status={row.status} /> },
+    {
+      id: "status",
+      header: t("common:labels.status"),
+      cell: (row) => <StatusBadge status={row.status} />,
+    },
     {
       id: "remaining",
-      header: "Reste dû",
+      header: t("invoices.columns.remaining"),
       align: "end",
       hideOnMobile: true,
       cell: (row) => <Money cents={Math.max(0, row.totalTtcCents - row.paidAmountCents)} />,
     },
     {
       id: "total",
-      header: "Total TTC",
+      header: t("common:labels.totalInclTax"),
       align: "end",
       cell: (row) => <Money cents={row.totalTtcCents} />,
     },
@@ -92,12 +98,12 @@ export default function InvoicesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Factures clients" description="Documents de vente validés et brouillons.">
+      <PageHeader title={t("invoices.title")} description={t("invoices.description")}>
         {can("invoicing.write") ? (
           <Button asChild>
             <Link href="/invoices/new">
               <IconPlus className="size-4" />
-              Nouvelle facture
+              {t("invoices.new")}
             </Link>
           </Button>
         ) : null}
@@ -110,7 +116,7 @@ export default function InvoicesPage() {
             setSearch(value);
             setPage((current) => ({ ...current, offset: 0 }));
           }}
-          placeholder="Numéro ou client…"
+          placeholder={t("searchPlaceholder")}
           className="sm:max-w-sm"
         />
         <Select
@@ -124,7 +130,7 @@ export default function InvoicesPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>Tous les statuts</SelectItem>
+            <SelectItem value={ALL}>{t("allStatuses")}</SelectItem>
             {INVOICE_STATUSES.map((entry) => (
               <SelectItem key={entry} value={entry}>
                 {statusLabel(entry)}
@@ -135,7 +141,7 @@ export default function InvoicesPage() {
         <div className="flex items-center gap-2">
           <Switch id="unpaid" checked={unpaidOnly} onCheckedChange={setUnpaidOnly} />
           <Label htmlFor="unpaid" className="text-sm font-normal">
-            Impayées uniquement
+            {t("invoices.unpaidOnly")}
           </Label>
         </div>
       </div>
@@ -146,8 +152,8 @@ export default function InvoicesPage() {
         rowKey={(row) => row.id}
         loading={isLoading}
         error={error ? errorMessage(error) : null}
-        emptyTitle="Aucune facture"
-        emptyDescription="Facturez une commande ou créez une facture directe."
+        emptyTitle={t("invoices.emptyTitle")}
+        emptyDescription={t("invoices.emptyDescription")}
         onRowClick={(row) => navigate(`/invoices/${row.id}`)}
         pagination={{
           total: data?.total ?? 0,

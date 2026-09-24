@@ -1,4 +1,4 @@
-/** Frontière applicative du stock. */
+/** Application boundary of inventory. */
 
 import { asc } from "drizzle-orm";
 
@@ -69,14 +69,14 @@ export class InventoryService {
       warehouseId,
       updateWarehouseSchema.parse(body)
     );
-    if (!warehouse) throw new NotFoundError("Magasin introuvable.");
+    if (!warehouse) throw new NotFoundError("Warehouse not found.");
     return warehouse;
   }
 
   async archiveWarehouse(companyId: string, id: unknown) {
     const { id: warehouseId } = idParamSchema.parse({ id });
     const archived = await warehousesRepository.archive(companyId, warehouseId);
-    if (!archived) throw new NotFoundError("Magasin introuvable.");
+    if (!archived) throw new NotFoundError("Warehouse not found.");
     return { success: true as const };
   }
 }

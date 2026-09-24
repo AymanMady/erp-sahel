@@ -1,13 +1,14 @@
 /**
- * Rôles et permissions.
+ * Roles and permissions.
  *
- * Les rôles système sont en lecture seule : les modifier au fil de l'eau ferait dériver
- * la sécurité d'une société à l'autre. Pour les adapter, on en crée un nouveau.
+ * System roles are read-only: editing them over time would make security drift from
+ * one company to another. To adapt one, create a new role.
  */
 
 import { useState } from "react";
 import { IconLock, IconPlus, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { PERMISSIONS, type PermissionCode } from "@shared/rbac";
@@ -18,6 +19,7 @@ import { queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
 import { Field } from "@/shared/components/field";
 import { PageHeader } from "@/shared/components/page-header";
+import { permissionLabel, roleDescription, roleName } from "@/shared/lib/i18n-labels";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
@@ -28,20 +30,21 @@ import { ScrollArea } from "@/shared/ui/scroll-area";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { Textarea } from "@/shared/ui/textarea";
 
-/** Regroupement des permissions par domaine, pour une liste lisible. */
-const PERMISSION_GROUPS: { label: string; prefixes: string[] }[] = [
-  { label: "Référentiels", prefixes: ["parties", "catalog", "services"] },
+/** Permissions grouped by domain, for a readable list (`labelKey` in `roles:groups`). */
+const PERMISSION_GROUPS: { labelKey: string; prefixes: string[] }[] = [
+  { labelKey: "masterData", prefixes: ["parties", "catalog", "services"] },
   {
-    label: "Opérations",
+    labelKey: "operations",
     prefixes: ["inventory", "purchasing", "sales", "invoicing", "payments", "banking", "pos"],
   },
-  { label: "Comptabilité & pilotage", prefixes: ["accounting", "reports"] },
-  { label: "Administration", prefixes: ["settings", "users", "modules", "audit"] },
+  { labelKey: "accountingReporting", prefixes: ["accounting", "reports"] },
+  { labelKey: "administration", prefixes: ["settings", "users", "modules", "audit"] },
 ];
 
 export default function RolesSettingsPage() {
   const queryClient = useQueryClient();
   const { can } = useSession();
+  const { t } = useTranslation("settings");
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<RoleWithPermissions | null>(null);
 
@@ -53,7 +56,7 @@ export default function RolesSettingsPage() {
   const remove = useMutation({
     mutationFn: (id: string) => settingsApi.deleteRole(id),
     onSuccess: () => {
-      toast.success("Rôle supprimé.");
+      toast.success(t("roles.deleted"));
       void queryClient.invalidateQueries({ queryKey: queryKeys.roles });
     },
     onError: (error) => toast.error(errorMessage(error)),
@@ -63,14 +66,11 @@ export default function RolesSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Rôles & permissions"
-        description="Le masquage côté interface est un confort ; l'autorisation est vérifiée à chaque appel serveur."
-      >
+      <PageHeader title={t("roles.title")} description={t("roles.description")}>
         {can("users.write") ? (
           <Button onClick={() => setCreating(true)}>
             <IconPlus className="size-4" />
-            Nouveau rôle
+            {t("roles.new")}
           </Button>
         ) : null}
       </PageHeader>
@@ -82,23 +82,25 @@ export default function RolesSettingsPage() {
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <CardTitle className="flex items-center gap-2 text-base">
-                    {role.name}
+                    {roleName(role)}
                     {role.isSystem ? <IconLock className="size-3.5 text-muted-foreground" /> : null}
                   </CardTitle>
-                  <CardDescription>{role.description}</CardDescription>
+                  <CardDescription>{roleDescription(role)}</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                <span className="tabular font-medium text-foreground">
-                  {role.permissions.length}
-                </span>{" "}
-                permission(s)
+                {t("roles.permissionCount", { count: role.permissions.length })}
               </p>
               <div className="flex flex-wrap gap-1">
                 {role.permissions.slice(0, 6).map((permission) => (
-                  <Badge key={permission} variant="outline" className="text-[10px]">
+                  <Badge
+                    key={permission}
+                    variant="outline"
+                    className="text-[10px]"
+                    title={permissionLabel(permission)}
+                  >
                     {permission}
                   </Badge>
                 ))}
@@ -111,13 +113,13 @@ export default function RolesSettingsPage() {
               {can("users.write") ? (
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" onClick={() => setEditing(role)}>
-                    {role.isSystem ? "Consulter" : "Modifier"}
+                    {role.isSystem ? t("common:actions.view") : t("common:actions.edit")}
                   </Button>
                   {!role.isSystem ? (
                     <Button
                       size="icon"
                       variant="ghost"
-                      aria-label="Supprimer"
+                      aria-label={t("common:actions.delete")}
                       onClick={() => remove.mutate(role.id)}
                     >
                       <IconTrash className="size-4" />
@@ -154,6 +156,7 @@ function RoleDialog({
   role: RoleWithPermissions | null;
 }) {
   const queryClient = useQueryClient();
+  const { t } = useTranslation("settings");
   const [form, setForm] = useState({ name: "", description: "", permissions: [] as string[] });
 
   const key = role?.id ?? "new";
@@ -161,8 +164,8 @@ function RoleDialog({
   if (lastKey !== key) {
     setLastKey(key);
     setForm({
-      name: role?.name ?? "",
-      description: role?.description ?? "",
+      name: role ? roleName(role) : "",
+      description: role ? roleDescription(role) : "",
       permissions: role?.permissions ?? [],
     });
   }
@@ -172,7 +175,7 @@ function RoleDialog({
   const mutation = useMutation({
     mutationFn: () => (role ? settingsApi.updateRole(role.id, form) : settingsApi.createRole(form)),
     onSuccess: () => {
-      toast.success(role ? "Rôle mis à jour." : "Rôle créé.");
+      toast.success(role ? t("roles.updated") : t("roles.created"));
       void queryClient.invalidateQueries({ queryKey: queryKeys.roles });
       onOpenChange(false);
     },
@@ -192,19 +195,23 @@ function RoleDialog({
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            {readOnly ? `Rôle système — ${role?.name}` : role ? "Modifier le rôle" : "Nouveau rôle"}
+            {readOnly
+              ? t("roles.dialog.systemTitle", { name: role ? roleName(role) : "" })
+              : role
+                ? t("roles.dialog.editTitle")
+                : t("roles.new")}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-          <Field label="Nom" required>
+          <Field label={t("common:labels.name")} required>
             <Input
               value={form.name}
               onChange={(event) => setForm({ ...form, name: event.target.value })}
               disabled={readOnly}
             />
           </Field>
-          <Field label="Description">
+          <Field label={t("common:labels.description")}>
             <Textarea
               rows={2}
               value={form.description}
@@ -221,9 +228,9 @@ function RoleDialog({
                 );
                 if (codes.length === 0) return null;
                 return (
-                  <div key={group.label} className="space-y-2">
+                  <div key={group.labelKey} className="space-y-2">
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      {group.label}
+                      {t(`roles:groups.${group.labelKey}`)}
                     </p>
                     <div className="grid gap-2 sm:grid-cols-2">
                       {codes.map((code) => (
@@ -235,7 +242,7 @@ function RoleDialog({
                             className="mt-0.5"
                           />
                           <span>
-                            {PERMISSIONS[code]}
+                            {permissionLabel(code)}
                             <span className="tabular block text-xs text-muted-foreground">
                               {code}
                             </span>
@@ -252,14 +259,14 @@ function RoleDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {readOnly ? "Fermer" : "Annuler"}
+            {readOnly ? t("common:actions.close") : t("common:actions.cancel")}
           </Button>
           {!readOnly ? (
             <Button
               onClick={() => mutation.mutate()}
               disabled={mutation.isPending || !form.name.trim()}
             >
-              Enregistrer
+              {t("common:actions.save")}
             </Button>
           ) : null}
         </DialogFooter>

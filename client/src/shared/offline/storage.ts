@@ -1,22 +1,22 @@
 /**
- * Choix du support de persistance hors-ligne.
+ * Choice of the offline persistence backend.
  *
- * Deux implémentations du **même contrat**, sélectionnées à l'exécution :
- *  - **IndexedDB** (Dexie) dans un navigateur : disponible partout, mais le système
- *    peut l'évincer sous pression disque ;
- *  - **SQLite** dans la coquille Tauri : un fichier du dossier applicatif, que rien
- *    n'évince — c'est ce qu'on veut sur un poste de caisse qui peut accumuler une
- *    journée de ventes non synchronisées.
+ * Two implementations of the **same contract**, selected at runtime:
+ *  - **IndexedDB** (Dexie) in a browser: available everywhere, but the system may evict
+ *    it under disk pressure;
+ *  - **SQLite** in the Tauri shell: a file in the application folder that nothing
+ *    evicts — which is what we want on a POS terminal that may accumulate a whole day
+ *    of unsynchronized sales.
  *
- * Le reste du code ignore lequel est actif : `outbox.ts` et `snapshot.ts` parlent à ce
- * module, jamais directement à Dexie ni à Tauri.
+ * The rest of the code does not know which one is active: `outbox.ts` and `snapshot.ts`
+ * talk to this module, never directly to Dexie or Tauri.
  */
 
 import { isTauriDesktop, tauriInvoke } from "@/shared/desktop/desktop";
 import { getCache, getMeta, offlineDb, setCache, setMeta, type OutboxRecord } from "./db";
 
 export interface OutboxStorage {
-  /** Nom du support, affiché dans l'écran de synchronisation. */
+  /** Backend name, shown on the synchronization screen. */
   readonly kind: "indexeddb" | "sqlite";
   put(record: OutboxRecord): Promise<void>;
   pending(limit: number): Promise<OutboxRecord[]>;
@@ -51,7 +51,7 @@ const indexedDbStorage: OutboxStorage = {
   },
 };
 
-/** Ligne renvoyée par la commande Rust `offline_outbox_pending`. */
+/** Row returned by the Rust command `offline_outbox_pending`. */
 interface SqliteOutboxRow {
   clientUuid: string;
   localSeq: number;
@@ -65,9 +65,9 @@ interface SqliteOutboxRow {
 }
 
 /**
- * Support SQLite. Il **double** l'écriture dans IndexedDB : la webview lit vite depuis
- * Dexie pour l'affichage, tandis que SQLite garantit la survie des opérations si le
- * profil de la webview est réinitialisé.
+ * SQLite backend. It **duplicates** the write into IndexedDB: the webview reads quickly
+ * from Dexie for display, while SQLite guarantees the operations survive if the
+ * webview profile is reset.
  */
 const sqliteStorage: OutboxStorage = {
   kind: "sqlite",
@@ -87,8 +87,8 @@ const sqliteStorage: OutboxStorage = {
     const local = await indexedDbStorage.pending(limit);
     if (local.length > 0) return local;
 
-    // IndexedDB vide alors que SQLite contient des opérations : le profil de la
-    // webview a été réinitialisé. On restaure depuis le support durable.
+    // IndexedDB empty while SQLite holds operations: the webview profile was reset.
+    // Restore from the durable backend.
     const rows = await tauriInvoke<SqliteOutboxRow[]>("offline_outbox_pending", { limit });
     if (!rows || rows.length === 0) return [];
 
@@ -146,8 +146,8 @@ export function outboxStorage(): OutboxStorage {
 }
 
 /**
- * Instantané de lecture. Dans la coquille desktop il est écrit dans les deux supports :
- * SQLite permet un démarrage hors ligne même après réinitialisation de la webview.
+ * Read snapshot. In the desktop shell it is written to both backends: SQLite allows an
+ * offline start even after the webview has been reset.
  */
 export async function writeSnapshotCache(key: string, value: unknown): Promise<void> {
   await setCache(key, value);
@@ -182,16 +182,15 @@ export async function readMeta(key: string): Promise<string | null> {
   return tauriInvoke<string | null>("offline_cache_read", { key: `meta:${key}` });
 }
 
-/** Vrai si une connexion hors ligne à froid est possible (desktop uniquement). */
+/** True if a cold offline login is possible (desktop only). */
 export async function canLoginOffline(): Promise<boolean> {
   if (!isTauriDesktop()) return false;
   return (await tauriInvoke<boolean>("offline_login_available")) ?? false;
 }
 
 /**
- * Vérifie un mot de passe contre l'instantané local.
- * Ne délivre aucun jeton d'API : l'accès au serveur reste impossible tant que le réseau
- * n'est pas revenu.
+ * Checks a password against the local snapshot.
+ * Issues no API token: server access remains impossible until the network is back.
  */
 export async function verifyOfflineLogin(username: string, password: string): Promise<boolean> {
   if (!isTauriDesktop()) return false;

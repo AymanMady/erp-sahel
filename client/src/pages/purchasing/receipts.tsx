@@ -1,6 +1,7 @@
-/** Bons de réception enregistrés. */
+/** Recorded goods receipts. */
 
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import { formatDate } from "@shared/format";
 import { errorMessage } from "@/shared/api/api-error";
@@ -12,6 +13,7 @@ import { ResourceTable, type Column } from "@/shared/components/resource-table";
 import { StatusBadge } from "@/shared/components/status-badge";
 
 export default function GoodsReceiptsPage() {
+  const { t } = useTranslation("purchasing");
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.goodsReceipts(),
     queryFn: () => purchasingApi.listReceipts(),
@@ -20,19 +22,23 @@ export default function GoodsReceiptsPage() {
   const columns: Column<GoodsReceipt & { supplierName: string }>[] = [
     {
       id: "number",
-      header: "Numéro",
+      header: t("common:labels.number"),
       cell: (row) => <span className="tabular font-medium">{row.number}</span>,
     },
-    { id: "date", header: "Date", cell: (row) => formatDate(row.date) },
+    { id: "date", header: t("common:labels.date"), cell: (row) => formatDate(row.date) },
     {
       id: "supplier",
-      header: "Fournisseur",
+      header: t("common:labels.supplier"),
       cell: (row) => <span className="font-medium">{row.supplierName}</span>,
     },
-    { id: "status", header: "Statut", cell: (row) => <StatusBadge status={row.status} /> },
+    {
+      id: "status",
+      header: t("common:labels.status"),
+      cell: (row) => <StatusBadge status={row.status} />,
+    },
     {
       id: "notes",
-      header: "Notes",
+      header: t("common:labels.notes"),
       hideOnMobile: true,
       cell: (row) => <span className="text-sm text-muted-foreground">{row.notes || "—"}</span>,
     },
@@ -40,18 +46,15 @@ export default function GoodsReceiptsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Réceptions"
-        description="Chaque réception validée crée les mouvements d'entrée en stock."
-      />
+      <PageHeader title={t("receipts.title")} description={t("receipts.description")} />
       <ResourceTable
         columns={columns}
         rows={data ?? []}
         rowKey={(row) => row.id}
         loading={isLoading}
         error={error ? errorMessage(error) : null}
-        emptyTitle="Aucune réception"
-        emptyDescription="Les réceptions se saisissent depuis une commande fournisseur."
+        emptyTitle={t("receipts.emptyTitle")}
+        emptyDescription={t("receipts.emptyDescription")}
       />
     </div>
   );

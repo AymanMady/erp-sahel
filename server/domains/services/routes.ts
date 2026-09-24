@@ -1,9 +1,9 @@
 /**
- * Prestations facturables — domaine volontairement mince.
+ * Billable services — a deliberately thin domain.
  *
- * Aucune orchestration inter-domaines : une prestation n'a ni stock ni écriture
- * propre, elle n'existe qu'en tant que ligne de document. Le service parle donc
- * directement au repository générique, sans couche `application` artificielle.
+ * No cross-domain orchestration: a service has neither stock nor accounting entries of
+ * its own, it only exists as a document line. The routes therefore talk directly to the
+ * generic repository, without an artificial `application` layer.
  */
 
 import type { Express } from "express";
@@ -23,8 +23,8 @@ export const servicesRepository = new TenantRepository(services, [
 ]);
 
 const createServiceSchema = z.object({
-  code: z.string().min(1, "Le code est obligatoire").max(64),
-  name: z.string().min(1, "Le libellé est obligatoire").max(255),
+  code: z.string().min(1, "Code is required").max(64),
+  name: z.string().min(1, "Label is required").max(255),
   description: z.string().max(4000).default(""),
   billingType: z.enum(BILLING_TYPES).default("HOURLY"),
   priceCents: z.number().int().min(0).default(0),
@@ -39,7 +39,7 @@ const listQuerySchema = z.object({
   offset: z.coerce.number().int().min(0).optional(),
 });
 
-const idParamSchema = z.object({ id: z.string().uuid("Identifiant invalide") });
+const idParamSchema = z.object({ id: z.string().uuid("Invalid identifier") });
 
 const canRead = authorize({ anyPermission: ["services.read", "catalog.read"] });
 const canWrite = authorize({ anyPermission: ["services.write", "catalog.write"] });
@@ -88,7 +88,7 @@ export function registerServicesRoutes(app: Express): void {
       const { id } = idParamSchema.parse(req.params);
       const data = updateServiceSchema.parse(req.body);
       const service = await servicesRepository.update(authOf(req).companyId, id, data);
-      if (!service) throw new NotFoundError("Prestation introuvable.");
+      if (!service) throw new NotFoundError("Service not found.");
       res.json(service);
     })
   );
@@ -100,7 +100,7 @@ export function registerServicesRoutes(app: Express): void {
     asyncHandler(async (req, res) => {
       const { id } = idParamSchema.parse(req.params);
       const archived = await servicesRepository.archive(authOf(req).companyId, id);
-      if (!archived) throw new NotFoundError("Prestation introuvable.");
+      if (!archived) throw new NotFoundError("Service not found.");
       res.json({ success: true });
     })
   );

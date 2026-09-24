@@ -1,0 +1,53 @@
+{
+  "allStatuses": "All statuses",
+  "searchPlaceholder": "Number or customer…",
+  "statusUpdated": "Status updated.",
+  "quotes": {
+    "title": "Quotes",
+    "description": "Current and archived sales proposals.",
+    "new": "New quote",
+    "columns": {
+      "expiry": "Valid until"
+    },
+    "emptyTitle": "No quotes",
+    "emptyDescription": "Create a quote to formalize a proposal before the order."
+  },
+  "quote": {
+    "documentTitle": "Quote",
+    "pageTitle": "Quote {{number}}",
+    "notFound": "Quote not found.",
+    "convert": "Convert to order",
+    "converted": "Order {{number}} created from the quote.",
+    "footerNote": "This quote is not an invoice. No stock movement or accounting entry is generated."
+  },
+  "quoteForm": {
+    "title": "New quote",
+    "description": "Sales proposal, with no effect on stock.",
+    "creating": "Creating…",
+    "submit": "Create quote",
+    "header": "Header",
+    "lines": "Lines",
+    "date": "Quote date",
+    "expiryDate": "Valid until",
+    "notesPlaceholder": "Special terms, lead times, notices…",
+    "created": "Quote {{number}} created.",
+    "savedOffline": "Quote {{number}} saved offline.",
+    "savedOfflineDescription": "It will get its final number at the next sync."
+  },
+  "orders": {
+    "title": "Sales orders",
+    "description": "Customer commitments, to be invoiced once delivered.",
+    "columns": {
+      "delivery": "Delivery"
+    },
+    "emptyTitle": "No orders",
+    "emptyDescription": "Orders are created by converting an accepted quote."
+  },
+  "order": {
+    "documentTitle": "Order",
+    "pageTitle": "Order {{number}}",
+    "notFound": "Order not found.",
+    "invoice": "Invoice",
+    "invoiced": "Draft invoice created from the order."
+  }
+}

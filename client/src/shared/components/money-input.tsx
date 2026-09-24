@@ -1,14 +1,19 @@
 /**
- * Saisie d'un montant.
+ * Amount input.
  *
- * L'état interne est une chaîne pour laisser l'utilisateur taper « 1 250,50 » sans que
- * le champ ne se reformate à chaque frappe ; la valeur remontée est toujours un
- * **entier en centimes** ([BR-22] et `shared/money.ts`).
+ * The internal state is a string so the user can type "1 250,50" without the field
+ * reformatting on every keystroke; the value reported upward is always an **integer
+ * number of cents** ([BR-22] and `shared/money.ts`).
+ *
+ * Both "," and "." are accepted as the decimal separator; the value is re-displayed
+ * with the separator of the UI language.
  */
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { centsToMajor, parseAmountToCents, parsePercentToBp, bpToPercent } from "@shared/money";
+import { currentIntlLocale } from "@/shared/i18n";
 import { Input } from "@/shared/ui/input";
 import { cn } from "@/shared/lib/utils";
 
@@ -18,7 +23,7 @@ export function MoneyInput({
   id,
   disabled,
   className,
-  placeholder = "0,00",
+  placeholder,
 }: {
   valueCents: number;
   onChange: (cents: number) => void;
@@ -27,9 +32,10 @@ export function MoneyInput({
   className?: string;
   placeholder?: string;
 }) {
+  useTranslation();
   const [text, setText] = useState(() => formatForEdit(valueCents));
 
-  // Resynchronise quand la valeur change en dehors du champ (prix repris du catalogue).
+  // Resynchronize when the value changes outside the field (price taken from the catalog).
   useEffect(() => {
     setText((current) =>
       parseAmountToCents(current) === valueCents ? current : formatForEdit(valueCents)
@@ -42,7 +48,7 @@ export function MoneyInput({
       inputMode="decimal"
       disabled={disabled}
       className={cn("tabular text-end", className)}
-      placeholder={placeholder}
+      placeholder={placeholder ?? `0${decimalSeparator()}00`}
       value={text}
       onChange={(event) => {
         setText(event.target.value);
@@ -53,12 +59,24 @@ export function MoneyInput({
   );
 }
 
-function formatForEdit(cents: number): string {
-  if (!cents) return "";
-  return centsToMajor(cents).toFixed(2).replace(".", ",");
+/** Decimal separator of the UI language ("," in French, "." in English). */
+function decimalSeparator(): string {
+  const part = new Intl.NumberFormat(currentIntlLocale())
+    .formatToParts(1.5)
+    .find((entry) => entry.type === "decimal");
+  return part?.value ?? ".";
 }
 
-/** Saisie d'un taux (TVA, remise) exprimé en pourcentage, renvoyé en points de base. */
+function formatForEdit(cents: number): string {
+  if (!cents) return "";
+  return centsToMajor(cents).toFixed(2).replace(".", decimalSeparator());
+}
+
+function formatPercentForEdit(bp: number): string {
+  return bp ? String(bpToPercent(bp)).replace(".", decimalSeparator()) : "";
+}
+
+/** Rate input (VAT, discount) expressed as a percentage, reported in basis points. */
 export function RateInput({
   valueBp,
   onChange,
@@ -72,17 +90,11 @@ export function RateInput({
   disabled?: boolean;
   className?: string;
 }) {
-  const [text, setText] = useState(() =>
-    valueBp ? String(bpToPercent(valueBp)).replace(".", ",") : ""
-  );
+  const [text, setText] = useState(() => formatPercentForEdit(valueBp));
 
   useEffect(() => {
     setText((current) =>
-      parsePercentToBp(current) === valueBp
-        ? current
-        : valueBp
-          ? String(bpToPercent(valueBp)).replace(".", ",")
-          : ""
+      parsePercentToBp(current) === valueBp ? current : formatPercentForEdit(valueBp)
     );
   }, [valueBp]);
 
@@ -107,7 +119,7 @@ export function RateInput({
   );
 }
 
-/** Saisie de quantité (jusqu'à 3 décimales). */
+/** Quantity input (up to 3 decimals). */
 export function QuantityInput({
   value,
   onChange,

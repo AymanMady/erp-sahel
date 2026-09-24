@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { lastKnownOnline, onConnectivityChange, probeServer } from "@/shared/api/network";
 
 /**
- * État de connectivité **confirmé par le serveur**, pas seulement par le navigateur.
- * Un poste derrière un Wi-Fi sans Internet est signalé hors ligne, comme il se doit.
+ * Connectivity state **confirmed by the server**, not just by the browser.
+ * A device behind a Wi-Fi without Internet is reported offline, as it should be.
  */
 export function useOnline(): boolean {
   const [online, setOnline] = useState(lastKnownOnline);
@@ -12,8 +12,8 @@ export function useOnline(): boolean {
   useEffect(() => {
     const unsubscribe = onConnectivityChange(setOnline);
     void probeServer(true).then(setOnline);
-    // Revalidation périodique : une coupure survenue sans événement navigateur
-    // (câble débranché côté box) doit finir par être détectée.
+    // Periodic revalidation: an outage that happened without a browser event
+    // (cable unplugged on the router side) must eventually be detected.
     const timer = window.setInterval(() => {
       void probeServer(true).then(setOnline);
     }, 30_000);

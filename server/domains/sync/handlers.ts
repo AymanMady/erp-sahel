@@ -1,10 +1,10 @@
 /**
- * Handlers d'ingestion des opérations hors-ligne.
+ * Ingestion handlers for offline operations.
  *
- * Chaque handler **rejoue le cas d'usage en ligne** — jamais un `INSERT` direct. C'est
- * la garantie qu'une facture créée au comptoir sans réseau produit exactement les mêmes
- * effets (stock, écriture, numéro légal) qu'une facture saisie en ligne : il n'existe
- * pas deux chemins métier à maintenir (`SYNC_STRATEGY.md` §4).
+ * Each handler **replays the online use case** — never a direct `INSERT`. This guarantees
+ * that an invoice created at the counter without network produces exactly the same
+ * effects (stock, accounting entry, legal number) as an invoice entered online: there
+ * are not two business paths to maintain (`SYNC_STRATEGY.md` §4).
  */
 
 import {
@@ -13,6 +13,7 @@ import {
   type SyncEntity,
 } from "@shared/sync-protocol";
 import type { RawDocumentLine } from "../../shared/documents/line-builder";
+import { tr } from "../../shared/i18n";
 import { catalogApplication } from "../catalog/application";
 import { inventoryApplication } from "../inventory/application";
 import { invoicingApplication } from "../invoicing/application";
@@ -22,14 +23,14 @@ import { posApplication } from "../pos/application";
 import { salesApplication } from "../sales/application";
 import { syncDispatcher, type SyncHandlerContext } from "./dispatcher";
 
-/** Valide le payload contre le schéma partagé de l'entité. */
+/** Validates the payload against the entity's shared schema. */
 function parsePayload<E extends SyncEntity>(entity: E, payload: Record<string, unknown>) {
   return SYNC_PAYLOAD_SCHEMAS[entity].parse(payload) as ReturnType<
     (typeof SYNC_PAYLOAD_SCHEMAS)[E]["parse"]
   >;
 }
 
-/** Résout `xxxId` ou son équivalent `xxxClientUuid` créé dans le même lot hors-ligne. */
+/** Resolves `xxxId` or its `xxxClientUuid` counterpart created in the same offline batch. */
 async function resolveReference(
   context: SyncHandlerContext,
   directId: string | null | undefined,
@@ -40,7 +41,7 @@ async function resolveReference(
   return null;
 }
 
-/** Convertit les lignes du protocole en lignes de document, produits inclus. */
+/** Converts protocol lines into document lines, products included. */
 async function resolveLines(
   context: SyncHandlerContext,
   lines: SyncDocumentLine[]
@@ -92,7 +93,7 @@ syncDispatcher.register("catalog.product", async (context, payload) => {
 syncDispatcher.register("sales.quote", async (context, payload) => {
   const data = parsePayload("sales.quote", payload);
   const partyId = await resolveReference(context, data.partyId, data.partyClientUuid);
-  if (!partyId) throw new Error("Le devis ne référence aucun client.");
+  if (!partyId) throw new Error(tr("The quote does not reference any customer."));
   const quote = await salesApplication.createQuote(
     context.company,
     {
@@ -136,8 +137,8 @@ syncDispatcher.register("invoicing.sales_invoice", async (context, payload) => {
       provisionalNumber: data.provisionalNumber,
       clientUuid: context.clientUuid,
       lines: await resolveLines(context, data.lines),
-      // Une vente hors-ligne est un fait accompli au comptoir : elle arrive validée,
-      // ce qui déclenche stock et comptabilité à l'ingestion ([FR-SYNC-4]).
+      // An offline sale is a done deal at the counter: it arrives validated, which
+      // triggers stock and accounting on ingestion ([FR-SYNC-4]).
       validate: true,
     },
     context.userId
@@ -150,9 +151,9 @@ syncDispatcher.register("payments.payment", async (context, payload) => {
   const invoiceId = await resolveReference(context, data.invoiceId, data.invoiceClientUuid);
 
   /**
-   * Un ticket de caisse encaissé hors ligne ne porte pas de client : la facture a été
-   * rattachée au client de passage à l'ingestion. Le règlement doit donc reprendre le
-   * tiers **de la facture**, et non exiger qu'un client ait été saisi au comptoir.
+   * A receipt cashed offline carries no customer: the invoice was attached to the
+   * walk-in customer on ingestion. The payment must therefore reuse the party **of the
+   * invoice**, rather than require a customer to have been entered at the counter.
    */
   const partyId =
     (await resolveReference(context, data.partyId, data.partyClientUuid)) ??
@@ -161,7 +162,9 @@ syncDispatcher.register("payments.payment", async (context, payload) => {
       : null);
 
   if (!partyId) {
-    throw new Error("Le règlement ne référence ni tiers ni facture : impossible de l'imputer.");
+    throw new Error(
+      tr("The payment references neither a party nor an invoice: it cannot be allocated.")
+    );
   }
 
   const payment = await paymentsApplication.createInTx(
@@ -198,7 +201,7 @@ syncDispatcher.register("pos.session_open", async (context, payload) => {
 syncDispatcher.register("pos.session_close", async (context, payload) => {
   const data = parsePayload("pos.session_close", payload);
   const sessionId = await resolveReference(context, data.sessionId, data.sessionClientUuid);
-  if (!sessionId) throw new Error("La clôture ne référence aucune session.");
+  if (!sessionId) throw new Error(tr("The closing does not reference any session."));
   const session = await posApplication.closeSession(
     context.company,
     {
@@ -231,7 +234,7 @@ syncDispatcher.register("inventory.stock_movement", async (context, payload) => 
   return { serverId: movement.id };
 });
 
-/** Entités effectivement acceptées par le serveur — exposé par l'instantané. */
+/** Entities actually accepted by the server — exposed by the snapshot. */
 export function registeredSyncEntities(): string[] {
   return syncDispatcher.entities();
 }

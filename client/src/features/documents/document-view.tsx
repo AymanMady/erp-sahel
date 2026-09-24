@@ -1,12 +1,13 @@
 /**
- * Rendu en lecture d'un document commercial (devis, commande, facture, avoir).
+ * Read-only rendering of a sales document (quote, order, invoice, credit note).
  *
- * Conçu pour l'écran **et pour l'impression** : la feuille porte la classe
- * `print-sheet`, et la coquille applicative disparaît à l'impression (voir `erp.css`).
- * Un client attend une facture imprimable, pas une capture d'écran.
+ * Designed for the screen **and for printing**: the sheet carries the `print-sheet`
+ * class, and the application shell disappears when printing (see `erp.css`).
+ * A customer expects a printable invoice, not a screenshot.
  */
 
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 import { formatDate } from "@shared/format";
 import { computeDocumentTotals } from "@shared/pricing";
@@ -59,6 +60,7 @@ export function DocumentView({
   badge?: ReactNode;
   footerNote?: ReactNode;
 }) {
+  const { t } = useTranslation("documents");
   const { company } = useSession();
   const vatBreakdown = computeDocumentTotals(
     lines.map((line) => ({
@@ -70,8 +72,8 @@ export function DocumentView({
     { vatEnabled: company?.vatEnabled ?? true }
   ).vatBreakdown;
 
-  // Le pays d'origine n'est affiché que s'il est renseigné sur au moins une ligne :
-  // inutile d'encombrer le document sinon ([FR-VNT-5]).
+  // The country of origin is only shown when at least one line has it:
+  // no need to clutter the document otherwise ([FR-VNT-5]).
   const showOrigin = lines.some((line) => line.originCountry);
 
   return (
@@ -83,7 +85,9 @@ export function DocumentView({
           ) : null}
           <div>
             <p className="text-lg font-semibold">{company?.name}</p>
-            <p className="text-xs text-muted-foreground">Devise : {company?.currency}</p>
+            <p className="text-xs text-muted-foreground">
+              {t("view.currency", { currency: company?.currency })}
+            </p>
           </div>
         </div>
         <div className="text-end">
@@ -92,9 +96,13 @@ export function DocumentView({
             {badge}
           </div>
           <p className="tabular text-sm font-medium">{number}</p>
-          <p className="text-xs text-muted-foreground">Date : {formatDate(date)}</p>
+          <p className="text-xs text-muted-foreground">
+            {t("view.date", { date: formatDate(date) })}
+          </p>
           {dueDate ? (
-            <p className="text-xs text-muted-foreground">Échéance : {formatDate(dueDate)}</p>
+            <p className="text-xs text-muted-foreground">
+              {t("view.dueDate", { date: formatDate(dueDate) })}
+            </p>
           ) : null}
         </div>
       </header>
@@ -102,7 +110,9 @@ export function DocumentView({
       <Separator className="my-6" />
 
       <section className="mb-6">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">Destinataire</p>
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">
+          {t("view.recipient")}
+        </p>
         <p className="text-sm font-medium">{partyName}</p>
         {partyDetails}
       </section>
@@ -111,13 +121,13 @@ export function DocumentView({
         <Table className="min-w-[640px]">
           <TableHeader>
             <TableRow className="bg-muted/40">
-              <TableHead>Désignation</TableHead>
-              {showOrigin ? <TableHead>Origine</TableHead> : null}
-              <TableHead className="text-end">Qté</TableHead>
-              <TableHead className="text-end">P.U. HT</TableHead>
-              <TableHead className="text-end">Remise</TableHead>
-              <TableHead className="text-end">TVA</TableHead>
-              <TableHead className="text-end">Total HT</TableHead>
+              <TableHead>{t("view.columns.description")}</TableHead>
+              {showOrigin ? <TableHead>{t("view.columns.origin")}</TableHead> : null}
+              <TableHead className="text-end">{t("view.columns.quantity")}</TableHead>
+              <TableHead className="text-end">{t("view.columns.unitPriceExclTax")}</TableHead>
+              <TableHead className="text-end">{t("common:labels.discount")}</TableHead>
+              <TableHead className="text-end">{t("vat")}</TableHead>
+              <TableHead className="text-end">{t("common:labels.totalExclTax")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -156,36 +166,38 @@ export function DocumentView({
       <div className="mt-6 flex justify-end">
         <div className="w-full max-w-xs space-y-1 text-sm">
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Total HT</span>
+            <span className="text-muted-foreground">{t("common:labels.totalExclTax")}</span>
             <Money cents={totalHtCents} />
           </div>
           {vatBreakdown
             .filter((entry) => entry.vatCents !== 0)
             .map((entry) => (
               <div key={entry.vatRateBp} className="flex items-center justify-between">
-                <span className="text-muted-foreground">TVA {entry.vatRateBp / 100} %</span>
+                <span className="text-muted-foreground">
+                  {t("vatRate", { rate: entry.vatRateBp / 100 })}
+                </span>
                 <Money cents={entry.vatCents} />
               </div>
             ))}
           {vatBreakdown.length === 0 || totalVatCents === 0 ? (
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">TVA</span>
+              <span className="text-muted-foreground">{t("vat")}</span>
               <Money cents={totalVatCents} />
             </div>
           ) : null}
           <Separator className="my-2" />
           <div className="flex items-center justify-between text-base font-semibold">
-            <span>Total TTC</span>
+            <span>{t("common:labels.totalInclTax")}</span>
             <Money cents={totalTtcCents} />
           </div>
           {paidAmountCents !== undefined ? (
             <>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Déjà réglé</span>
+                <span className="text-muted-foreground">{t("view.alreadyPaid")}</span>
                 <Money cents={paidAmountCents} />
               </div>
               <div className="flex items-center justify-between font-medium">
-                <span>Reste à payer</span>
+                <span>{t("view.amountDue")}</span>
                 <Money cents={Math.max(0, totalTtcCents - paidAmountCents)} />
               </div>
             </>
@@ -197,7 +209,9 @@ export function DocumentView({
         <>
           <Separator className="my-6" />
           <div>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Notes</p>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              {t("common:labels.notes")}
+            </p>
             <p className="whitespace-pre-wrap text-sm">{notes}</p>
           </div>
         </>

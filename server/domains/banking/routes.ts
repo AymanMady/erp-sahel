@@ -1,4 +1,4 @@
-/** Routes de la trésorerie. */
+/** Treasury routes. */
 
 import type { Express } from "express";
 

@@ -1,8 +1,8 @@
 /**
- * Middleware Vite en développement : un seul port pour l'API et le client.
+ * Vite middleware in development: a single port for the API and the client.
  *
- * Évite d'avoir deux origines en dev (et donc une configuration CORS différente de la
- * production) — le comportement observé en développement est celui de la production.
+ * Avoids having two origins in dev (and therefore a CORS configuration different from
+ * production) — what you observe in development is what production does.
  */
 
 import fs from "node:fs";

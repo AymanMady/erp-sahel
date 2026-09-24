@@ -1,12 +1,12 @@
-/** Contrats de validation de la comptabilité. */
+/** Accounting validation contracts. */
 
 import { z } from "zod";
 
 import { ACCOUNT_MAPPING_KEYS, ACCOUNT_TYPES, JOURNAL_TYPES } from "@shared/schema";
 
 export const createAccountSchema = z.object({
-  code: z.string().min(1, "Le numéro de compte est obligatoire").max(32),
-  name: z.string().min(1, "Le libellé est obligatoire").max(255),
+  code: z.string().min(1, "Account number is required").max(32),
+  name: z.string().min(1, "Label is required").max(255),
   accountType: z.enum(ACCOUNT_TYPES),
   parentId: z.string().uuid().nullish(),
   isGroup: z.boolean().default(false),
@@ -47,7 +47,7 @@ export const ledgerQuerySchema = periodQuerySchema.extend({
 export const manualEntrySchema = z.object({
   journalType: z.enum(JOURNAL_TYPES).default("MISC"),
   date: z.string().date(),
-  label: z.string().min(1, "Le libellé est obligatoire").max(255),
+  label: z.string().min(1, "Label is required").max(255),
   reference: z.string().max(100).default(""),
   lines: z
     .array(
@@ -59,7 +59,7 @@ export const manualEntrySchema = z.object({
         partyId: z.string().uuid().nullish(),
       })
     )
-    .min(2, "Une écriture comporte au moins deux lignes"),
+    .min(2, "An entry has at least two lines"),
 });
 
 export const createFiscalYearSchema = z.object({
@@ -68,4 +68,4 @@ export const createFiscalYearSchema = z.object({
   endDate: z.string().date(),
 });
 
-export const idParamSchema = z.object({ id: z.string().uuid("Identifiant invalide") });
+export const idParamSchema = z.object({ id: z.string().uuid("Invalid identifier") });

@@ -1,9 +1,9 @@
 /**
- * Tableau de bord et rapports ([FR-RPT-1] à [FR-RPT-3]).
+ * Dashboard and reports ([FR-RPT-1] to [FR-RPT-3]).
  *
- * Ce domaine ne possède aucune table : il **agrège** les vues des domaines
- * propriétaires via leurs applications respectives. C'est ce qui évite que les
- * rapports divergent de la donnée opérationnelle — ils lisent la même source.
+ * This domain owns no table: it **aggregates** the views of the owning domains through
+ * their respective applications. That is what keeps reports from diverging from the
+ * operational data — they read the same source.
  */
 
 import { addDays, todayInput } from "@shared/format";
@@ -21,7 +21,7 @@ export interface PeriodInput {
   toDate?: string | null;
 }
 
-/** Période par défaut : les 30 derniers jours, bornes incluses. */
+/** Default period: the last 30 days, bounds included. */
 function resolvePeriod(input: PeriodInput): { fromDate: string; toDate: string } {
   const toDate = input.toDate ?? todayInput();
   const fromDate = input.fromDate ?? addDays(toDate, -29);
@@ -29,7 +29,7 @@ function resolvePeriod(input: PeriodInput): { fromDate: string; toDate: string }
 }
 
 class ReportsApplication {
-  /** Synthèse du tableau de bord : indicateurs, série quotidienne, alertes. */
+  /** Dashboard summary: indicators, daily series, alerts. */
   async dashboard(companyId: string, input: PeriodInput = {}) {
     const { fromDate, toDate } = resolvePeriod(input);
 
@@ -57,7 +57,7 @@ class ReportsApplication {
       dailyRevenue: daily,
       topProducts,
       lowStock,
-      /** Marge brute approchée : CA HT − achats HT sur la période. */
+      /** Approximate gross margin: revenue excl. tax − purchases excl. tax over the period. */
       grossMarginCents: sales.totalHtCents - purchases.totalHtCents,
     };
   }

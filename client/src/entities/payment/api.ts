@@ -1,4 +1,4 @@
-/** Accès API des règlements. */
+/** Payments API access. */
 
 import { api } from "@/shared/api/http";
 import type { Paginated, PaymentRow } from "@/entities/types";

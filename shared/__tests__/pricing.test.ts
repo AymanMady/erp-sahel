@@ -1,8 +1,8 @@
 /**
- * Calcul des totaux — cœur de la facturation ([FR-VNT-4]).
+ * Totals computation — the core of invoicing ([FR-VNT-4]).
  *
- * Ces tests vérifient surtout l'exactitude au centime : c'est là que se logent les
- * écarts qui déséquilibrent ensuite les écritures comptables.
+ * These tests mainly check accuracy to the cent: that is where the discrepancies
+ * that later unbalance accounting entries hide.
  */
 
 import { describe, expect, it } from "vitest";
@@ -10,33 +10,40 @@ import { describe, expect, it } from "vitest";
 import { applyDiscount, applyRate, formatMoney, parseAmountToCents, roundHalfUp } from "../money";
 import { computeDocumentTotals, derivePaymentStatus, remainingToPayCents } from "../pricing";
 
-describe("arithmétique monétaire", () => {
-  it("arrondit symétriquement autour de zéro", () => {
+describe("money arithmetic", () => {
+  it("rounds symmetrically around zero", () => {
     expect(roundHalfUp(2.5)).toBe(3);
     expect(roundHalfUp(-2.5)).toBe(-3);
     expect(roundHalfUp(2.4)).toBe(2);
   });
 
-  it("applique un taux en points de base sans dérive flottante", () => {
+  it("applies a basis-point rate without floating-point drift", () => {
     expect(applyRate(10_000, 1600)).toBe(1600);
     expect(applyRate(333, 1600)).toBe(53);
     expect(applyDiscount(10_000, 1000)).toBe(9000);
   });
 
-  it("interprète une saisie utilisateur française", () => {
+  it("parses a French-formatted user input", () => {
     expect(parseAmountToCents("1 250,50")).toBe(125_050);
     expect(parseAmountToCents("1250.5")).toBe(125_050);
     expect(parseAmountToCents("")).toBe(0);
+    expect(parseAmountToCents("1,250.50")).toBe(125_050);
+    expect(parseAmountToCents("1.250,50")).toBe(125_050);
+    expect(parseAmountToCents("1,250,000")).toBe(125_000_000);
+    expect(parseAmountToCents("12,5")).toBe(1_250);
+    expect(parseAmountToCents("1٬250٫50")).toBe(125_050);
   });
 
-  it("formate avec la devise et retombe proprement sur un code inconnu", () => {
+  it("formats with the currency and falls back cleanly on an unknown code", () => {
     expect(formatMoney(125_050, "MRU")).toContain("MRU");
+    expect(formatMoney(125_050, "MRU", "fr-FR")).toBe("1\u202f250,50 MRU");
+    expect(formatMoney(125_050, "MRU", "en-GB")).toBe("1,250.50 MRU");
     expect(formatMoney(125_050, "ZZZ")).toContain("ZZZ");
   });
 });
 
-describe("totaux de document", () => {
-  it("calcule HT, TVA et TTC ligne par ligne", () => {
+describe("document totals", () => {
+  it("computes excl. tax, VAT and incl. tax line by line", () => {
     const result = computeDocumentTotals([
       { quantity: 2, unitPriceCents: 52_000, vatRateBp: 1600 },
       { quantity: 1, unitPriceCents: 16_500, vatRateBp: 1600 },
@@ -47,7 +54,7 @@ describe("totaux de document", () => {
     expect(result.totalTtcCents).toBe(139_780);
   });
 
-  it("applique la remise de ligne avant la TVA", () => {
+  it("applies the line discount before VAT", () => {
     const result = computeDocumentTotals([
       { quantity: 1, unitPriceCents: 100_000, discountBp: 1000, vatRateBp: 1600 },
     ]);
@@ -56,11 +63,11 @@ describe("totaux de document", () => {
   });
 
   /**
-   * Cas critique : une remise globale répartie au prorata produit des arrondis.
-   * La somme des lignes doit rester **exactement** égale au total du document, sans
-   * quoi l'écriture comptable serait déséquilibrée d'un centime.
+   * Critical case: a global discount spread pro rata produces rounding.
+   * The sum of the lines must stay **exactly** equal to the document total, otherwise
+   * the accounting entry would be off by one cent.
    */
-  it("répartit la remise globale sans perdre de centime", () => {
+  it("spreads the global discount without losing a cent", () => {
     const result = computeDocumentTotals(
       [
         { quantity: 1, unitPriceCents: 3_333, vatRateBp: 1600 },
@@ -77,7 +84,7 @@ describe("totaux de document", () => {
     expect(result.totalHtCents).toBe(10_000 - expectedDiscount);
   });
 
-  it("annule la TVA quand la société n'est pas assujettie", () => {
+  it("zeroes VAT when the company is not subject to VAT", () => {
     const result = computeDocumentTotals(
       [{ quantity: 3, unitPriceCents: 10_000, vatRateBp: 1600 }],
       {
@@ -88,7 +95,7 @@ describe("totaux de document", () => {
     expect(result.totalTtcCents).toBe(result.totalHtCents);
   });
 
-  it("ventile la TVA par taux", () => {
+  it("breaks VAT down by rate", () => {
     const result = computeDocumentTotals([
       { quantity: 1, unitPriceCents: 10_000, vatRateBp: 1600 },
       { quantity: 1, unitPriceCents: 10_000, vatRateBp: 0 },
@@ -100,7 +107,7 @@ describe("totaux de document", () => {
     ]);
   });
 
-  it("plafonne la remise globale au sous-total", () => {
+  it("caps the global discount at the subtotal", () => {
     const result = computeDocumentTotals([{ quantity: 1, unitPriceCents: 5_000 }], {
       globalDiscountCents: 999_999,
     });
@@ -108,14 +115,14 @@ describe("totaux de document", () => {
   });
 });
 
-describe("statut de règlement", () => {
-  it("se déduit des montants, jamais d'une saisie", () => {
+describe("payment status", () => {
+  it("is derived from the amounts, never entered", () => {
     expect(derivePaymentStatus(10_000, 0)).toBe("VALIDATED");
     expect(derivePaymentStatus(10_000, 4_000)).toBe("PARTIALLY_PAID");
     expect(derivePaymentStatus(10_000, 10_000)).toBe("PAID");
   });
 
-  it("ne renvoie jamais un reste à payer négatif", () => {
+  it("never returns a negative amount due", () => {
     expect(remainingToPayCents(10_000, 12_000)).toBe(0);
   });
 });

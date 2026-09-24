@@ -1,10 +1,10 @@
 /**
- * Contexte de session : utilisateur, société, permissions, modules actifs.
+ * Session context: user, company, permissions, active modules.
  *
- * Point clé pour l'usage terrain : au démarrage **hors ligne**, la session est
- * restaurée depuis le cache local plutôt que d'afficher un écran de connexion
- * inutilisable. Le serveur reste seul juge des autorisations — ce cache ne sert
- * qu'à composer l'interface ([FR-SYNC-1]).
+ * Key point for field use: when starting **offline**, the session is restored
+ * from the local cache instead of showing an unusable login screen. The server
+ * remains the sole judge of authorizations — this cache is only used to build
+ * the interface ([FR-SYNC-1]).
  */
 
 import {
@@ -56,7 +56,7 @@ export interface SessionValue {
   companies: { id: string; name: string; subdomain: string }[];
   permissions: string[];
   modules: string[];
-  /** Vrai quand la session provient du cache local et n'a pas été revalidée. */
+  /** True when the session comes from the local cache and has not been revalidated. */
   isStale: boolean;
   can(permission: PermissionCode | PermissionCode[]): boolean;
   hasModule(code: string): boolean;
@@ -148,7 +148,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const me = await api.get<MeResponse>("/api/auth/me");
       applyFresh(me);
     } catch (error) {
-      // Hors ligne : on garde la session en cache, l'utilisateur continue à travailler.
+      // Offline: keep the cached session, the user keeps working.
       if (error instanceof ApiError && error.isNetworkError && cached) return;
       clearSession();
       setState({
@@ -183,7 +183,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     try {
       await api.post("/api/auth/logout", { refreshToken });
     } catch {
-      // Une déconnexion hors ligne reste une déconnexion : on purge localement.
+      // An offline logout is still a logout: purge locally.
     }
     clearSession();
     await clearOfflineStorage();
@@ -233,12 +233,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 export function useSession(): SessionValue {
   const context = useContext(SessionContext);
   if (!context) {
-    throw new Error("useSession doit être utilisé à l'intérieur de <SessionProvider>.");
+    throw new Error("useSession must be used inside <SessionProvider>.");
   }
   return context;
 }
 
-/** Raccourci ergonomique pour masquer une action non autorisée. */
+/** Convenience shortcut to hide an unauthorized action. */
 export function useCan(): (permission: PermissionCode | PermissionCode[]) => boolean {
   return useSession().can;
 }

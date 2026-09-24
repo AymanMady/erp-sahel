@@ -1,21 +1,22 @@
 /**
- * Cas d'usage du catalogue.
+ * Catalog use cases.
  *
- * Le catalogue est générique : un même produit sert n'importe quel commerce. Cette
- * couche enrichit les listes avec le stock, qui appartient au domaine `inventory` et
- * n'est donc lu que par son application.
+ * The catalog is generic: the same product serves any kind of business. This layer
+ * enriches lists with stock levels, which belong to the `inventory` domain and are
+ * therefore only read through its application layer.
  */
 
 import type { Product } from "@shared/schema";
 import { runInTransaction } from "../../db";
 import { NotFoundError } from "../../shared/errors/app-error";
+import { tr } from "../../shared/i18n";
 import { inventoryApplication } from "../inventory/application";
 import { catalogRepository, type ProductSearchOptions } from "./repository";
 import type { CreateProductInput, UpdateProductInput } from "./schemas";
 
 export interface ProductListItem extends Product {
   categoryName: string | null;
-  /** Solde tous magasins confondus ; absent si `withStock` n'est pas demandé. */
+  /** Balance across all warehouses; absent unless `withStock` is requested. */
   stockQuantity?: number;
 }
 
@@ -48,7 +49,7 @@ class CatalogApplication {
 
   async getDetail(companyId: string, productId: string): Promise<ProductDetail> {
     const product = await catalogRepository.findById(companyId, productId);
-    if (!product) throw new NotFoundError("Produit introuvable.");
+    if (!product) throw new NotFoundError("Product not found.");
 
     const [variants, suppliers, quantities] = await Promise.all([
       catalogRepository.listVariants(companyId, productId),
@@ -78,7 +79,9 @@ class CatalogApplication {
         name: input.name.trim(),
         description: input.description,
         categoryId: input.categoryId ?? null,
-        unit: input.unit,
+        // The unit default is resolved here (not in the Zod schema) so it follows the
+        // request language.
+        unit: input.unit?.trim() || tr("unit"),
         barcode: input.barcode,
         purchasePriceCents: input.purchasePriceCents,
         salePriceCents: input.salePriceCents,
@@ -115,7 +118,7 @@ class CatalogApplication {
           originType: "manual",
           originId: product.id,
           reference: product.sku,
-          reason: "Stock initial à la création du produit",
+          reason: tr("Initial stock on product creation"),
           userId,
         });
       }
@@ -128,16 +131,16 @@ class CatalogApplication {
     return runInTransaction(async (tx) => {
       const repository = catalogRepository.withTransaction(tx);
       const existing = await repository.findById(companyId, productId);
-      if (!existing) throw new NotFoundError("Produit introuvable.");
+      if (!existing) throw new NotFoundError("Product not found.");
 
       const { variants, minStock, ...patch } = input;
       const product = await repository.update(companyId, productId, {
         ...patch,
-        // `minStock` arrive en nombre ou en chaîne côté API ; la colonne `numeric`
-        // attend une chaîne.
+        // `minStock` arrives as a number or a string from the API; the `numeric` column
+        // expects a string.
         ...(minStock != null ? { minStock: String(minStock) } : {}),
       });
-      if (!product) throw new NotFoundError("Produit introuvable.");
+      if (!product) throw new NotFoundError("Product not found.");
 
       if (variants) {
         await repository.replaceVariants(
@@ -160,17 +163,17 @@ class CatalogApplication {
 
   async archive(companyId: string, productId: string): Promise<void> {
     const archived = await catalogRepository.archive(companyId, productId);
-    if (!archived) throw new NotFoundError("Produit introuvable.");
+    if (!archived) throw new NotFoundError("Product not found.");
   }
 
   async findByBarcode(companyId: string, barcode: string): Promise<Product | null> {
     return catalogRepository.findByBarcode(companyId, barcode.trim());
   }
 
-  /** Prix de vente courant — utilisé par les documents et le POS. */
+  /** Current sale price — used by documents and the POS. */
   async resolveSalePrice(companyId: string, productId: string): Promise<number> {
     const product = await catalogRepository.findById(companyId, productId);
-    if (!product) throw new NotFoundError("Produit introuvable.");
+    if (!product) throw new NotFoundError("Product not found.");
     return product.salePriceCents;
   }
 

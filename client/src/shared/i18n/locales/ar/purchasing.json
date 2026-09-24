@@ -1,0 +1,62 @@
+{
+  "orders": {
+    "title": "أوامر الشراء",
+    "description": "التموين: الاستلام هو ما يُدخل البضاعة إلى المخزون.",
+    "expectedDelivery": "التسليم المتوقع",
+    "new": "أمر شراء جديد",
+    "searchPlaceholder": "الرقم أو المورد…",
+    "allStatuses": "جميع الحالات",
+    "emptyTitle": "لا توجد أوامر شراء",
+    "emptyDescription": "أنشئ أمر شراء لتتبع عمليات التموين."
+  },
+  "orderForm": {
+    "title": "أمر شراء جديد",
+    "description": "لا يؤثر أمر الشراء على المخزون: الاستلام هو الذي يفعل ذلك.",
+    "created": "تم إنشاء الأمر {{number}}.",
+    "creating": "جارٍ الإنشاء…",
+    "submit": "إنشاء الأمر",
+    "header": "الترويسة",
+    "selectSupplier": "اختر مورداً",
+    "receivingWarehouse": "مستودع الاستلام",
+    "defaultWarehouse": "المستودع الافتراضي",
+    "lines": "البنود"
+  },
+  "orderDetail": {
+    "title": "الأمر {{number}}",
+    "invoiceCreated": "تم حفظ فاتورة المورد وترحيلها محاسبياً.",
+    "notFound": "الأمر غير موجود.",
+    "receive": "استلام",
+    "supplierInvoice": "فاتورة المورد",
+    "documentTitle": "أمر شراء",
+    "receiptProgress": "تقدم الاستلام",
+    "item": "الصنف",
+    "ordered": "المطلوب",
+    "received": "المستلم",
+    "remaining": "المتبقي",
+    "receipts": "سندات الاستلام"
+  },
+  "receiveDialog": {
+    "title": "استلام البضاعة",
+    "description": "تدخل الكميات المُدخلة إلى المخزون بالتكلفة المحددة وتُحتسب في متوسط التكلفة المرجح.",
+    "validated": "تمت المصادقة على الاستلام: تم تحديث المخزون.",
+    "receiptDate": "تاريخ الاستلام",
+    "unitCost": "تكلفة الوحدة",
+    "lot": "الدفعة",
+    "optional": "اختياري",
+    "receivedValue": "القيمة المستلمة",
+    "submit": "المصادقة على الاستلام"
+  },
+  "receipts": {
+    "title": "الاستلامات",
+    "description": "كل استلام مُصادق عليه يُنشئ حركات الإدخال إلى المخزون.",
+    "emptyTitle": "لا توجد استلامات",
+    "emptyDescription": "تُدخل الاستلامات انطلاقاً من أمر شراء."
+  },
+  "supplierInvoices": {
+    "title": "فواتير الموردين",
+    "description": "الديون المسجلة وضريبة القيمة المضافة القابلة للخصم المرتبطة بها.",
+    "supplierReference": "مرجع المورد",
+    "emptyTitle": "لا توجد فواتير موردين",
+    "emptyDescription": "تُنشأ انطلاقاً من أمر شراء تم استلامه."
+  }
+}

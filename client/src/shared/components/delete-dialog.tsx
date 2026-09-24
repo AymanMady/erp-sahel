@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -23,7 +24,7 @@ export function DeleteDialog({
   open,
   onOpenChange,
   onConfirm,
-  name = "item",
+  name,
   description,
 }: {
   open: boolean;
@@ -32,27 +33,29 @@ export function DeleteDialog({
   name?: string;
   description?: string;
 }) {
+  const { t } = useTranslation("components");
+  const itemName = name ?? t("deleteDialog.defaultName");
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete {name}?</AlertDialogTitle>
+          <AlertDialogTitle>{t("deleteDialog.title", { name: itemName })}</AlertDialogTitle>
           <AlertDialogDescription>
-            {description ?? `This will permanently remove ${name}. This action cannot be undone.`}
+            {description ?? t("deleteDialog.description", { name: itemName })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>{t("common:actions.cancel")}</AlertDialogCancel>
           <AlertDialogAction
             className={cn(buttonVariants({ variant: "destructive" }))}
             onClick={() => {
               onConfirm?.();
-              toast.success(`${name} deleted`, {
-                description: "The record has been removed.",
+              toast.success(t("deleteDialog.deleted", { name: itemName }), {
+                description: t("deleteDialog.deletedDescription"),
               });
             }}
           >
-            Delete
+            {t("common:actions.delete")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -1,16 +1,16 @@
 /**
- * Moteur de synchronisation côté poste.
+ * Device-side synchronization engine.
  *
- * Cycle complet (`SYNC_STRATEGY.md` §3) :
- *   1. vérifier que le serveur est **réellement** joignable ;
- *   2. vider l'outbox dans l'ordre causal : les opérations dédiées partent par lots vers
- *      `/api/sync/push`, les écritures génériques (`offline-http.ts`) sont rejouées
- *      une à une sur leur endpoint d'origine ;
- *   3. appliquer les acquittements (numéro définitif, doublon, erreur, report) ;
- *   4. récupérer le delta serveur et rafraîchir le cache de lecture.
+ * Full cycle (`SYNC_STRATEGY.md` §3):
+ *   1. check that the server is **really** reachable;
+ *   2. drain the outbox in causal order: dedicated operations are sent in batches to
+ *      `/api/sync/push`, generic writes (`offline-http.ts`) are replayed one by one on
+ *      their original endpoint;
+ *   3. apply the acknowledgements (final number, duplicate, error, deferral);
+ *   4. fetch the server delta and refresh the read cache.
  *
- * Le moteur est **réentrant-safe** : un seul cycle à la fois, les déclenchements
- * concurrents (retour réseau + reprise de focus + minuteur) partagent le même.
+ * The engine is **reentrancy-safe**: only one cycle at a time, concurrent triggers
+ * (network back + focus regained + timer) share the same one.
  */
 
 import type { SyncPushResponse } from "@shared/sync-protocol";
@@ -19,6 +19,7 @@ import { probeServer } from "@/shared/api/network";
 import { queryClient } from "@/shared/api/query-client";
 import { getDeviceId } from "@/shared/auth/token-store";
 import { ApiError } from "@/shared/api/api-error";
+import { i18n } from "@/shared/i18n";
 import { HTTP_REQUEST_ENTITY, offlineDb, type OutboxRecord } from "./db";
 import { forgetCachedResponsesMentioning } from "./http-cache";
 import { replayRequest, substituteIds } from "./offline-http";
@@ -34,7 +35,7 @@ import {
 import { applyDelta, pullSnapshot, readSnapshot } from "./snapshot";
 
 const CURSOR_KEY = "sync.cursor";
-/** Taille de lot : assez grand pour être efficace, assez petit pour rester dans un POST. */
+/** Batch size: large enough to be efficient, small enough to fit in a POST. */
 const BATCH_SIZE = 50;
 
 export type SyncState = "idle" | "offline" | "syncing" | "error";
@@ -57,7 +58,7 @@ let current: SyncStatus = {
 
 const listeners = new Set<(status: SyncStatus) => void>();
 let runningCycle: Promise<SyncStatus> | null = null;
-/** Délai avant la prochaine tentative après échec (backoff exponentiel plafonné). */
+/** Delay before the next attempt after a failure (capped exponential backoff). */
 let backoffMs = 0;
 
 function emit(patch: Partial<SyncStatus>): void {
@@ -75,17 +76,17 @@ export function onSyncStatusChange(listener: (status: SyncStatus) => void): () =
   return () => listeners.delete(listener);
 }
 
-/** Recompte la file et publie l'état — appelé après chaque écriture hors ligne. */
+/** Recounts the queue and publishes the state — called after each offline write. */
 export async function refreshCounters(): Promise<void> {
   const [pending, failed] = await Promise.all([countPending(), countFailed()]);
   emit({ pending, failed });
 }
 
 /**
- * Identifiants serveur des créations hors ligne déjà acquittées, indexés par
- * `clientUuid`. `all` sert à réécrire les écritures génériques ; `http` — les seules
- * créations que le serveur ne sait pas résoudre lui-même — sert aussi aux opérations
- * dédiées (une facture sur un magasin créé hors ligne).
+ * Server identifiers of offline creations already acknowledged, keyed by `clientUuid`.
+ * `all` is used to rewrite generic writes; `http` — the only creations the server
+ * cannot resolve on its own — is also used for dedicated operations (an invoice on a
+ * warehouse created offline).
  */
 interface IdMaps {
   all: Map<string, string>;
@@ -106,7 +107,7 @@ function remember(maps: IdMaps, record: OutboxRecord, serverId: string | null | 
     maps.http.set(record.clientUuid.toLowerCase(), serverId);
 }
 
-/** Envoie un lot d'opérations dédiées et applique les acquittements. */
+/** Sends a batch of dedicated operations and applies the acknowledgements. */
 async function pushBatch(
   batch: OutboxRecord[],
   maps: IdMaps
@@ -130,8 +131,8 @@ async function pushBatch(
   let synced = 0;
   for (const result of response.results) {
     if (result.status === "deferred") deferred += 1;
-    // `created` et `duplicate` sont deux succès : dans les deux cas le serveur
-    // détient la donnée, c'est précisément la garantie d'idempotence ([BR-8]).
+    // `created` and `duplicate` are both successes: in both cases the server holds
+    // the data, which is precisely the idempotency guarantee ([BR-8]).
     const ok = result.status === "created" || result.status === "duplicate";
     if (ok) synced += 1;
     await acknowledge({
@@ -145,7 +146,7 @@ async function pushBatch(
     if (ok && record) remember(maps, record, result.serverId);
   }
 
-  // Une opération sans acquittement (réponse tronquée) revient en file d'attente.
+  // An operation without acknowledgement (truncated response) goes back to the queue.
   const acknowledged = new Set(response.results.map((result) => result.clientUuid));
   for (const record of batch) {
     if (!acknowledged.has(record.clientUuid)) {
@@ -158,8 +159,8 @@ async function pushBatch(
 }
 
 /**
- * Rejoue une écriture générique. Une panne réseau interrompt le cycle (l'erreur
- * remonte) ; un refus du serveur est consigné sur l'opération.
+ * Replays a generic write. A network failure interrupts the cycle (the error
+ * propagates); a server rejection is recorded on the operation.
  */
 async function replayHttp(record: OutboxRecord, maps: IdMaps): Promise<boolean> {
   const request = replayRequest(record, maps.all);
@@ -177,7 +178,7 @@ async function replayHttp(record: OutboxRecord, maps: IdMaps): Promise<boolean> 
     remember(maps, record, serverId);
     return true;
   } catch (error) {
-    // Réseau, session expirée ou débit limité : rien n'est perdu, on réessaiera.
+    // Network, expired session or rate limit: nothing is lost, we will retry.
     if (
       !(error instanceof ApiError) ||
       error.isNetworkError ||
@@ -187,13 +188,13 @@ async function replayHttp(record: OutboxRecord, maps: IdMaps): Promise<boolean> 
       await acknowledge({ clientUuid: record.clientUuid, status: "pending" });
       throw error;
     }
-    // Suppression déjà faite (rejeu après une réponse perdue) : c'est un succès.
+    // Deletion already done (replay after a lost response): it is a success.
     if (request.method === "DELETE" && error.status === 404) {
       await acknowledge({ clientUuid: record.clientUuid, status: "synced" });
       return true;
     }
-    // 4xx : refus métier, définitif tant que l'utilisateur n'a pas choisi de
-    // réessayer. 5xx : incident serveur, retenté au cycle suivant.
+    // 4xx: business rejection, final until the user chooses to retry.
+    // 5xx: server incident, retried on the next cycle.
     await acknowledge({
       clientUuid: record.clientUuid,
       status: error.status >= 500 ? "pending" : "error",
@@ -204,19 +205,19 @@ async function replayHttp(record: OutboxRecord, maps: IdMaps): Promise<boolean> 
 }
 
 /**
- * Vide l'outbox dans l'ordre causal. Renvoie les `clientUuid` des écritures
- * génériques rejouées avec succès.
+ * Drains the outbox in causal order. Returns the `clientUuid`s of the generic writes
+ * replayed successfully.
  */
 async function flushOutbox(): Promise<{ synced: number; replayedHttp: string[] }> {
   const maps = await knownServerIds();
   const replayedHttp: string[] = [];
   let synced = 0;
 
-  // Plusieurs passes seulement si des opérations ont été reportées alors que
-  // d'autres progressaient : leur dépendance a pu passer entre-temps.
+  // Several passes only if operations were deferred while others progressed: their
+  // dependency may have gone through in the meantime.
   for (let pass = 0; pass < 3; pass += 1) {
     const pending = (await listPending(1000)).filter(
-      // Une écriture générique refusée ne repart que sur « Réessayer ».
+      // A rejected generic write is only resent on "Retry".
       (record) => !(record.entity === HTTP_REQUEST_ENTITY && record.status === "error")
     );
     if (pending.length === 0) break;
@@ -255,12 +256,12 @@ async function flushOutbox(): Promise<{ synced: number; replayedHttp: string[] }
   return { synced, replayedHttp };
 }
 
-/** Récupère le delta serveur depuis le dernier curseur connu. */
+/** Fetches the server delta since the last known cursor. */
 async function pullDelta(): Promise<void> {
   const cursor = await readMeta(CURSOR_KEY);
   if (!cursor) {
-    // Pas de curseur : le poste n'a jamais synchronisé, un instantané complet
-    // est à la fois plus simple et plus sûr qu'un delta sans point de départ.
+    // No cursor: the device has never synchronized, a full snapshot is both simpler
+    // and safer than a delta without a starting point.
     const snapshot = await pullSnapshot();
     await writeMeta(CURSOR_KEY, snapshot.cursor);
     return;
@@ -273,16 +274,16 @@ async function pullDelta(): Promise<void> {
 }
 
 /**
- * Exécute un cycle complet. Ne lève jamais : un échec de synchronisation ne doit
- * pas interrompre la vente en cours.
+ * Runs a full cycle. Never throws: a synchronization failure must not interrupt the
+ * sale in progress.
  */
 export async function runSync(options: { force?: boolean } = {}): Promise<SyncStatus> {
   if (runningCycle) return runningCycle;
 
   runningCycle = (async () => {
     if (!options.force && backoffMs > 0) {
-      // Une tentative trop rapprochée après un échec n'apporte rien : on laisse
-      // le minuteur de reprise faire son travail.
+      // An attempt too soon after a failure achieves nothing: let the retry timer do
+      // its job.
       return current;
     }
 
@@ -298,9 +299,9 @@ export async function runSync(options: { force?: boolean } = {}): Promise<SyncSt
       const { synced, replayedHttp } = await flushOutbox();
 
       if (replayedHttp.length > 0) {
-        // Les écritures génériques touchent aussi ce que le delta ne couvre pas
-        // (catégories, magasins, modules…) : on repart d'un instantané complet, on
-        // oublie les fiches provisoires, et on relance un préchargement complet.
+        // Generic writes also touch what the delta does not cover (categories,
+        // warehouses, modules…): start again from a full snapshot, forget the
+        // provisional details, and trigger a full prefetch.
         const snapshot = await pullSnapshot();
         await writeMeta(CURSOR_KEY, snapshot.cursor);
         await forgetCachedResponsesMentioning(replayedHttp);
@@ -310,7 +311,7 @@ export async function runSync(options: { force?: boolean } = {}): Promise<SyncSt
       }
       await purgeSynced();
       await refreshCounters();
-      // Les écrans affichent encore le reflet local des saisies : on les recharge.
+      // Screens still show the local reflection of the entries: reload them.
       if (synced > 0) void queryClient.invalidateQueries();
 
       backoffMs = 0;
@@ -318,8 +319,8 @@ export async function runSync(options: { force?: boolean } = {}): Promise<SyncSt
       await writeMeta("sync.lastSyncAt", now);
       emit({ state: "idle", lastSyncAt: now, lastError: null });
     } catch (error) {
-      const message = error instanceof ApiError ? error.message : "Échec de la synchronisation.";
-      // Backoff exponentiel 2s → 4s → … → 60s (`SYNC_STRATEGY.md` §8).
+      const message = error instanceof ApiError ? error.message : i18n.t("offline:sync.failed");
+      // Exponential backoff 2s → 4s → … → 60s (`SYNC_STRATEGY.md` §8).
       backoffMs = Math.min(60_000, backoffMs === 0 ? 2000 : backoffMs * 2);
       setTimeout(() => {
         backoffMs = 0;
@@ -340,7 +341,7 @@ export async function runSync(options: { force?: boolean } = {}): Promise<SyncSt
   }
 }
 
-/** Charge l'état initial au démarrage de l'application. */
+/** Loads the initial state at application startup. */
 export async function initialiseSyncStatus(): Promise<void> {
   const [lastSyncAt, snapshot] = await Promise.all([readMeta("sync.lastSyncAt"), readSnapshot()]);
   emit({

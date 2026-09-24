@@ -1,0 +1,102 @@
+{
+  "offlineUnavailable": "Ce tiers n'est pas disponible hors ligne.",
+  "fields": {
+    "vatNumber": "Identifiant fiscal",
+    "creditLimit": "Encours autorisé",
+    "creditLimitHint": "0 = aucun plafond",
+    "paymentTermsDays": "Délai de règlement (jours)"
+  },
+  "addressTypes": {
+    "billing": "Facturation",
+    "shipping": "Livraison",
+    "other": "Autre"
+  },
+  "list": {
+    "title": "Tiers",
+    "description": "Clients, fournisseurs et prospects de la société.",
+    "new": "Nouveau tiers",
+    "searchPlaceholder": "Nom, code, téléphone, NIF…",
+    "allTypes": "Tous les tiers",
+    "vatNumberShort": "NIF {{number}}",
+    "unlimited": "illimité",
+    "termsDays": "{{days}} j",
+    "cash": "comptant",
+    "columns": {
+      "contact": "Contact",
+      "paymentTerms": "Règlement"
+    },
+    "empty": {
+      "title": "Aucun tiers",
+      "description": "Créez votre premier client ou fournisseur pour commencer à facturer."
+    }
+  },
+  "create": {
+    "title": "Nouveau tiers",
+    "description": "Le code est généré automatiquement selon le type (CLI, FRN, PSP).",
+    "creating": "Création…",
+    "submit": "Créer le tiers",
+    "created": "Tiers « {{name}} » créé ({{code}}).",
+    "savedOffline": "Tiers « {{name}} » enregistré hors ligne.",
+    "savedOfflineDescription": "Il sera créé sur le serveur à la prochaine synchronisation."
+  },
+  "detail": {
+    "notFound": "Tiers introuvable.",
+    "outstanding": "Encours actuel",
+    "creditLimit": "Plafond autorisé :",
+    "noCreditLimit": "Aucun plafond d'encours défini.",
+    "paymentTerms": "Conditions de règlement",
+    "termsDays_one": "{{count}} jour",
+    "termsDays_other": "{{count}} jours",
+    "cash": "Comptant",
+    "leadTime_one": "Délai de livraison fournisseur : {{count}} jour",
+    "leadTime_other": "Délai de livraison fournisseur : {{count}} jours",
+    "noLeadTime": "Aucun délai de livraison par défaut.",
+    "contactInfo": "Coordonnées",
+    "noEmail": "Aucun e-mail",
+    "noVatNumber": "Aucun identifiant fiscal",
+    "tabs": {
+      "history": "Historique",
+      "contacts": "Contacts ({{n}})",
+      "addresses": "Adresses ({{n}})"
+    },
+    "invoices": {
+      "title": "Factures",
+      "description": "Documents émis pour ce tiers.",
+      "empty": "Aucune facture pour ce tiers."
+    },
+    "payments": {
+      "title": "Règlements",
+      "empty": "Aucun règlement enregistré."
+    },
+    "contacts": {
+      "title": "Contacts",
+      "empty": "Aucun contact enregistré."
+    },
+    "addresses": {
+      "title": "Adresses",
+      "empty": "Aucune adresse enregistrée."
+    }
+  },
+  "edit": {
+    "title": "Modifier le tiers",
+    "saved": "Tiers mis à jour."
+  },
+  "contact": {
+    "title": "Nouveau contact",
+    "added": "Contact ajouté.",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "role": "Fonction",
+    "rolePlaceholder": "Responsable achats, comptable…"
+  },
+  "address": {
+    "title": "Nouvelle adresse",
+    "added": "Adresse ajoutée.",
+    "type": "Type d'adresse",
+    "street": "Rue",
+    "city": "Ville",
+    "postalCode": "Code postal",
+    "country": "Pays",
+    "defaultCountry": "Mauritanie"
+  }
+}

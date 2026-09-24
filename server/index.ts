@@ -1,8 +1,8 @@
 /**
- * Point d'entrée du serveur ERP Sahel.
+ * ERP Sahel server entry point.
  *
- * Démarrage : validation de la configuration → routes → client (Vite en dev, statique
- * en prod).
+ * Startup: configuration validation → routes → client (Vite in dev, static files in
+ * prod).
  */
 
 import "dotenv/config";
@@ -29,22 +29,22 @@ async function bootstrap(): Promise<void> {
 
   const port = Number(process.env.PORT ?? 5000);
   server.listen(port, () => {
-    logger.info(`ERP Sahel démarré sur http://localhost:${port}`, {
+    logger.info(`ERP Sahel started on http://localhost:${port}`, {
       env: process.env.NODE_ENV ?? "development",
     });
   });
 }
 
-/** Arrêt propre : on cesse d'accepter des connexions avant de fermer le pool. */
+/** Graceful shutdown: stop accepting connections before closing the pool. */
 async function shutdown(signal: string): Promise<void> {
-  logger.info(`Signal ${signal} reçu, arrêt en cours…`);
+  logger.info(`Signal ${signal} received, shutting down…`);
   const close = async () => {
     await closeDatabase();
     process.exit(0);
   };
   if (httpServer) httpServer.close(close);
   else void close();
-  // Filet de sécurité si une connexion ouverte empêche la fermeture.
+  // Safety net in case an open connection prevents shutdown.
   setTimeout(() => process.exit(1), 10_000).unref();
 }
 
@@ -52,7 +52,7 @@ process.on("SIGTERM", () => void shutdown("SIGTERM"));
 process.on("SIGINT", () => void shutdown("SIGINT"));
 
 bootstrap().catch(async (error) => {
-  logger.error("Échec du démarrage", {
+  logger.error("Startup failed", {
     message: error instanceof Error ? error.message : String(error),
     stack: error instanceof Error ? error.stack : undefined,
   });

@@ -1,4 +1,4 @@
-/** Persistance de la trésorerie : comptes et mouvements. */
+/** Treasury persistence: accounts and transactions. */
 
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 
@@ -48,7 +48,7 @@ export class BankingRepository {
     return row;
   }
 
-  /** Ajuste le solde en base (jamais par relecture-réécriture), comme pour le stock. */
+  /** Adjusts the balance in the database (never read-modify-write), as for stock. */
   async applyBalanceDelta(
     companyId: string,
     bankAccountId: string,
@@ -113,7 +113,7 @@ export class BankingRepository {
     return row ?? null;
   }
 
-  /** Totaux de trésorerie, tous comptes confondus — carte du tableau de bord. */
+  /** Treasury totals across all accounts — dashboard card. */
   async treasuryTotals(companyId: string) {
     const [row] = await this.database
       .select({

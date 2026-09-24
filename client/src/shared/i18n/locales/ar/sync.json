@@ -1,0 +1,64 @@
+{
+  "title": "المزامنة",
+  "description": "قائمة انتظار هذا الجهاز وسجل استيعاب الخادم.",
+  "retryErrors": "إعادة محاولة الأخطاء",
+  "syncNow": "مزامنة",
+  "retried": "أُعيدت العمليات الفاشلة إلى قائمة الانتظار.",
+  "discard": "تجاهل",
+  "discarded": "تم تجاهل العملية.",
+  "never": "أبدًا",
+  "stats": {
+    "pending": "قيد الانتظار على هذا الجهاز",
+    "failed": "فاشلة",
+    "lastSync": "آخر مزامنة",
+    "state": "الحالة"
+  },
+  "states": {
+    "offline": "دون اتصال",
+    "syncing": "جارية",
+    "error": "خطأ",
+    "upToDate": "محدّثة"
+  },
+  "tabs": {
+    "outbox": "القائمة المحلية",
+    "journal": "سجل الخادم",
+    "devices": "الأجهزة"
+  },
+  "columns": {
+    "operation": "العملية",
+    "state": "الحالة",
+    "attempts": "المحاولات",
+    "entity": "الكيان",
+    "assignedNumber": "الرقم المخصص",
+    "device": "الجهاز",
+    "result": "النتيجة",
+    "detail": "التفاصيل"
+  },
+  "outbox": {
+    "emptyTitle": "القائمة فارغة",
+    "emptyDescription": "تمت مزامنة جميع عمليات هذا الجهاز."
+  },
+  "journal": {
+    "emptyTitle": "السجل فارغ",
+    "emptyDescription": "لم يُستوعب أي عملية دون اتصال بعد."
+  },
+  "devices": {
+    "title": "الأجهزة المُزامَنة",
+    "description": "آخر إرسال وآخر لقطة مقدَّمة، لكل جهاز.",
+    "empty": "لا يوجد جهاز مسجّل.",
+    "platform": "المنصة: {{platform}}",
+    "lastPush": "آخر إرسال: {{date}}",
+    "lastSnapshot": "آخر لقطة: {{date}}"
+  },
+  "entities": {
+    "party": "طرف",
+    "product": "منتج",
+    "quote": "عرض سعر",
+    "invoice": "فاتورة",
+    "payment": "دفعة",
+    "posSessionOpen": "فتح الصندوق",
+    "posSessionClose": "إغلاق الصندوق",
+    "stockMovement": "حركة مخزون",
+    "offlineEntry": "إدخال دون اتصال"
+  }
+}

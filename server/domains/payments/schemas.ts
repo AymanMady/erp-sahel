@@ -1,4 +1,4 @@
-/** Contrats de validation des règlements. */
+/** Payment validation contracts. */
 
 import { z } from "zod";
 
@@ -18,11 +18,11 @@ export const listPaymentsQuerySchema = z.object({
 
 export const createPaymentSchema = z.object({
   direction: z.enum(PAYMENT_DIRECTIONS).default("IN"),
-  partyId: z.string().uuid("Sélectionnez un tiers"),
+  partyId: z.string().uuid("Select a party"),
   invoiceId: z.string().uuid().nullish(),
   supplierInvoiceId: z.string().uuid().nullish(),
   bankAccountId: z.string().uuid().nullish(),
-  amountCents: z.number().int().positive("Le montant doit être supérieur à zéro"),
+  amountCents: z.number().int().positive("Amount must be greater than zero"),
   paymentDate: z.string().date().optional(),
   paymentMethod: z.enum(PAYMENT_METHODS).default("CASH"),
   reference: z.string().max(100).default(""),
@@ -30,4 +30,4 @@ export const createPaymentSchema = z.object({
   posSessionId: z.string().uuid().nullish(),
 });
 
-export const idParamSchema = z.object({ id: z.string().uuid("Identifiant invalide") });
+export const idParamSchema = z.object({ id: z.string().uuid("Invalid identifier") });

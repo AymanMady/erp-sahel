@@ -1,8 +1,9 @@
-/** Comptes utilisateurs de la société et affectation des rôles. */
+/** Company user accounts and role assignment. */
 
 import { useState } from "react";
 import { IconPlus } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { formatDateTime, initials } from "@shared/format";
@@ -13,6 +14,7 @@ import { queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
 import { Field, FieldGrid } from "@/shared/components/field";
 import { PageHeader } from "@/shared/components/page-header";
+import { roleName } from "@/shared/lib/i18n-labels";
 import { ResourceTable, type Column } from "@/shared/components/resource-table";
 import { Avatar, AvatarFallback } from "@/shared/ui/avatar";
 import { Badge } from "@/shared/ui/badge";
@@ -32,6 +34,7 @@ import { Switch } from "@/shared/ui/switch";
 export default function UsersSettingsPage() {
   const queryClient = useQueryClient();
   const { can, user: currentUser } = useSession();
+  const { t } = useTranslation("settings");
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<UserWithRoles | null>(null);
 
@@ -56,7 +59,7 @@ export default function UsersSettingsPage() {
   const columns: Column<UserWithRoles>[] = [
     {
       id: "user",
-      header: "Utilisateur",
+      header: t("users.columns.user"),
       cell: (row) => (
         <div className="flex items-center gap-3">
           <Avatar className="size-8">
@@ -75,15 +78,15 @@ export default function UsersSettingsPage() {
     },
     {
       id: "roles",
-      header: "Rôles",
+      header: t("users.columns.roles"),
       cell: (row) => (
         <div className="flex flex-wrap gap-1">
           {row.roles.length === 0 ? (
-            <span className="text-sm text-muted-foreground">aucun</span>
+            <span className="text-sm text-muted-foreground">{t("users.noRole")}</span>
           ) : (
             row.roles.map((role) => (
               <Badge key={role.id} variant="outline">
-                {role.name}
+                {roleName(role)}
               </Badge>
             ))
           )}
@@ -92,27 +95,27 @@ export default function UsersSettingsPage() {
     },
     {
       id: "offline",
-      header: "Connexion hors ligne",
+      header: t("users.columns.offlineLogin"),
       align: "center",
       hideOnMobile: true,
-      cell: (row) => (row.allowOfflineLogin ? "Autorisée" : "—"),
+      cell: (row) => (row.allowOfflineLogin ? t("users.allowed") : "—"),
     },
     {
       id: "lastLogin",
-      header: "Dernière connexion",
+      header: t("users.columns.lastLogin"),
       hideOnMobile: true,
-      cell: (row) => (row.lastLoginAt ? formatDateTime(row.lastLoginAt) : "jamais"),
+      cell: (row) => (row.lastLoginAt ? formatDateTime(row.lastLoginAt) : t("users.never")),
     },
     {
       id: "active",
-      header: "Actif",
+      header: t("common:labels.active"),
       align: "center",
       cell: (row) => (
         <Switch
           checked={row.isActive}
           disabled={!can("users.write") || row.id === currentUser?.id}
           onCheckedChange={(checked) => toggleActive.mutate({ id: row.id, isActive: checked })}
-          aria-label="Activer le compte"
+          aria-label={t("users.activateAccount")}
         />
       ),
     },
@@ -123,7 +126,7 @@ export default function UsersSettingsPage() {
       cell: (row) =>
         can("users.write") ? (
           <Button size="sm" variant="ghost" onClick={() => setEditing(row)}>
-            Modifier
+            {t("common:actions.edit")}
           </Button>
         ) : null,
     },
@@ -131,14 +134,11 @@ export default function UsersSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Utilisateurs"
-        description="Comptes rattachés à cette société et rôles qui leur sont affectés."
-      >
+      <PageHeader title={t("users.title")} description={t("users.description")}>
         {can("users.write") ? (
           <Button onClick={() => setCreating(true)}>
             <IconPlus className="size-4" />
-            Nouvel utilisateur
+            {t("users.new")}
           </Button>
         ) : null}
       </PageHeader>
@@ -149,8 +149,8 @@ export default function UsersSettingsPage() {
         rowKey={(row) => row.id}
         loading={isLoading}
         error={error ? errorMessage(error) : null}
-        emptyTitle="Aucun utilisateur"
-        emptyDescription="Créez des comptes pour vos vendeurs, magasiniers et comptables."
+        emptyTitle={t("users.emptyTitle")}
+        emptyDescription={t("users.emptyDescription")}
         minWidthClassName="min-w-[900px]"
       />
 
@@ -163,7 +163,7 @@ export default function UsersSettingsPage() {
           }
         }}
         user={editing}
-        roles={(roles ?? []).map((role) => ({ id: role.id, name: role.name }))}
+        roles={(roles ?? []).map((role) => ({ id: role.id, name: roleName(role) }))}
       />
     </div>
   );
@@ -181,6 +181,7 @@ function UserDialog({
   roles: { id: string; name: string }[];
 }) {
   const queryClient = useQueryClient();
+  const { t } = useTranslation("settings");
   const [form, setForm] = useState({
     username: "",
     password: "",
@@ -219,7 +220,7 @@ function UserDialog({
       return settingsApi.createUser(form);
     },
     onSuccess: () => {
-      toast.success(user ? "Utilisateur mis à jour." : "Utilisateur créé.");
+      toast.success(user ? t("users.updated") : t("users.created"));
       void queryClient.invalidateQueries({ queryKey: queryKeys.users });
       onOpenChange(false);
     },
@@ -241,10 +242,8 @@ function UserDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{user ? "Modifier l'utilisateur" : "Nouvel utilisateur"}</DialogTitle>
-          <DialogDescription>
-            Les rôles affectés ne valent que pour la société courante.
-          </DialogDescription>
+          <DialogTitle>{user ? t("users.dialog.editTitle") : t("users.new")}</DialogTitle>
+          <DialogDescription>{t("users.dialog.description")}</DialogDescription>
         </DialogHeader>
         <form
           className="space-y-4"
@@ -254,7 +253,7 @@ function UserDialog({
           }}
         >
           <FieldGrid>
-            <Field label="Identifiant" required error={errors.username}>
+            <Field label={t("users.dialog.username")} required error={errors.username}>
               <Input
                 value={form.username}
                 onChange={(event) => setForm({ ...form, username: event.target.value })}
@@ -264,12 +263,10 @@ function UserDialog({
               />
             </Field>
             <Field
-              label={user ? "Nouveau mot de passe" : "Mot de passe"}
+              label={user ? t("users.dialog.newPassword") : t("users.dialog.password")}
               required={!user}
               error={errors.password}
-              hint={
-                user ? "Laisser vide pour ne pas modifier." : "8 caractères, lettres et chiffres."
-              }
+              hint={user ? t("users.dialog.keepPasswordHint") : t("users.dialog.passwordHint")}
             >
               <Input
                 type="password"
@@ -278,26 +275,26 @@ function UserDialog({
                 required={!user}
               />
             </Field>
-            <Field label="Prénom">
+            <Field label={t("users.dialog.firstName")}>
               <Input
                 value={form.firstName}
                 onChange={(event) => setForm({ ...form, firstName: event.target.value })}
               />
             </Field>
-            <Field label="Nom">
+            <Field label={t("users.dialog.lastName")}>
               <Input
                 value={form.lastName}
                 onChange={(event) => setForm({ ...form, lastName: event.target.value })}
               />
             </Field>
-            <Field label="E-mail" error={errors.email}>
+            <Field label={t("common:labels.email")} error={errors.email}>
               <Input
                 type="email"
                 value={form.email}
                 onChange={(event) => setForm({ ...form, email: event.target.value })}
               />
             </Field>
-            <Field label="Téléphone">
+            <Field label={t("common:labels.phone")}>
               <Input
                 value={form.phone}
                 onChange={(event) => setForm({ ...form, phone: event.target.value })}
@@ -305,7 +302,7 @@ function UserDialog({
             </Field>
           </FieldGrid>
 
-          <Field label="Rôles">
+          <Field label={t("users.columns.roles")}>
             <div className="space-y-2 rounded-md border p-3">
               {roles.map((role) => (
                 <label key={role.id} className="flex items-center gap-2 text-sm">
@@ -326,15 +323,15 @@ function UserDialog({
                 setForm({ ...form, allowOfflineLogin: checked === true })
               }
             />
-            Autoriser la connexion hors ligne sur un poste desktop synchronisé
+            {t("users.dialog.allowOffline")}
           </label>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
+              {t("common:actions.cancel")}
             </Button>
             <Button type="submit" disabled={mutation.isPending || !form.username.trim()}>
-              Enregistrer
+              {t("common:actions.save")}
             </Button>
           </DialogFooter>
         </form>

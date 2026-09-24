@@ -1,12 +1,12 @@
 /**
- * Modules de la société ([FR-PLAT-3]).
+ * Company modules ([FR-PLAT-3]).
  *
- * Deux étapes :
- *  1. **un niveau** (simple, avec factures, complet) — un clic active le bon lot ;
- *  2. **les modules un par un** (caisse, achats, stock…) — à ajuster au besoin.
+ * Two steps:
+ *  1. **a level** (simple, with invoices, full) — one click enables the right set;
+ *  2. **modules one by one** (POS, purchasing, stock…) — to fine-tune as needed.
  *
- * Tout changement s'applique immédiatement au menu, aux écrans et à l'API.
- * Désactiver un module ne supprime aucune donnée.
+ * Every change applies immediately to the menu, the screens and the API.
+ * Disabling a module never deletes any data.
  */
 
 import { useState } from "react";
@@ -27,9 +27,10 @@ import {
   IconTruckDelivery,
   type Icon,
 } from "@tabler/icons-react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
-import { MODULE_PRESETS, moduleName, type ModulePreset } from "@shared/modules-catalog";
+import { MODULE_PRESETS, type ModulePreset } from "@shared/modules-catalog";
 import { errorMessage } from "@/shared/api/api-error";
 import { refreshSession } from "@/shared/api/http";
 import { settingsApi } from "@/entities/settings/api";
@@ -37,6 +38,12 @@ import type { ModuleDescriptor } from "@/entities/types";
 import { queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
 import { PageHeader } from "@/shared/components/page-header";
+import {
+  moduleDescription,
+  moduleName,
+  presetDescription,
+  presetName,
+} from "@/shared/lib/i18n-labels";
 import { cn } from "@/shared/lib/utils";
 import {
   AlertDialog,
@@ -72,6 +79,7 @@ function iconOf(name: string): Icon {
 export default function ModulesSettingsPage() {
   const queryClient = useQueryClient();
   const { can, refresh } = useSession();
+  const { t } = useTranslation("settings");
   const canManage = can("modules.manage");
   const [pendingPreset, setPendingPreset] = useState<ModulePreset | null>(null);
 
@@ -82,10 +90,10 @@ export default function ModulesSettingsPage() {
 
   const afterChange = async () => {
     await queryClient.invalidateQueries({ queryKey: queryKeys.modules });
-    // Le jeton d'accès porte les modules actifs : sans le réémettre, le serveur
-    // refuserait les écrans fraîchement activés jusqu'à son expiration.
+    // The access token carries the enabled modules: without re-issuing it, the server
+    // would reject freshly enabled screens until it expires.
     await refreshSession();
-    // La session porte aussi la liste des modules : le menu suit immédiatement.
+    // The session also carries the module list: the menu follows immediately.
     await refresh();
   };
 
@@ -93,7 +101,7 @@ export default function ModulesSettingsPage() {
     mutationFn: ({ code, enable }: { code: string; enable: boolean }) =>
       enable ? settingsApi.enableModule(code) : settingsApi.disableModule(code),
     onSuccess: async (_result, variables) => {
-      toast.success(variables.enable ? "Module activé." : "Module désactivé.");
+      toast.success(variables.enable ? t("modules.enabled") : t("modules.disabled"));
       await afterChange();
     },
     onError: (error) => toast.error(errorMessage(error)),
@@ -102,7 +110,7 @@ export default function ModulesSettingsPage() {
   const applyPreset = useMutation({
     mutationFn: (preset: ModulePreset) => settingsApi.applyModuleSelection({ preset: preset.code }),
     onSuccess: async (_result, preset) => {
-      toast.success(`Niveau « ${preset.name} » appliqué.`);
+      toast.success(t("modules.presetApplied", { name: presetName(preset.code) }));
       setPendingPreset(null);
       await afterChange();
     },
@@ -132,11 +140,15 @@ export default function ModulesSettingsPage() {
           <Icon className="size-5" />
         </span>
         <span className="min-w-0 flex-1 space-y-1">
-          <span className="block font-medium">{module.name}</span>
-          <span className="block text-sm text-muted-foreground">{module.description}</span>
+          <span className="block font-medium">{moduleName(module.code)}</span>
+          <span className="block text-sm text-muted-foreground">
+            {moduleDescription(module.code, module.description)}
+          </span>
           {module.dependencies.length > 0 ? (
             <span className="block text-xs text-muted-foreground">
-              Nécessite : {module.dependencies.map(moduleName).join(", ")}
+              {t("modules.requires", {
+                modules: module.dependencies.map((code) => moduleName(code)).join(", "),
+              })}
             </span>
           ) : null}
         </span>
@@ -144,7 +156,7 @@ export default function ModulesSettingsPage() {
           checked={module.isEnabled}
           disabled={!canManage || busy}
           onCheckedChange={(checked) => toggle.mutate({ code: module.code, enable: checked })}
-          aria-label={`Activer ${module.name}`}
+          aria-label={t("modules.enableAria", { name: moduleName(module.code) })}
         />
       </label>
     );
@@ -152,17 +164,12 @@ export default function ModulesSettingsPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader
-        title="Modules"
-        description="Activez seulement ce que vous utilisez : le menu reste simple. Désactiver un module n'efface jamais vos données."
-      />
+      <PageHeader title={t("modules.title")} description={t("modules.description")} />
 
       <section className="space-y-3">
         <div>
-          <h2 className="text-lg font-semibold">1. Choisissez un niveau</h2>
-          <p className="text-sm text-muted-foreground">
-            Pour tout type de commerce. Vous pourrez ajuster ensuite.
-          </p>
+          <h2 className="text-lg font-semibold">{t("modules.step1Title")}</h2>
+          <p className="text-sm text-muted-foreground">{t("modules.step1Description")}</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
           {MODULE_PRESETS.map((preset) => {
@@ -175,19 +182,19 @@ export default function ModulesSettingsPage() {
                 disabled={!canManage || busy}
                 onClick={() => setPendingPreset(preset)}
                 className={cn(
-                  "relative flex flex-col items-start gap-2 rounded-xl border bg-card p-4 text-left shadow-xs transition-colors",
+                  "relative flex flex-col items-start gap-2 rounded-xl border bg-card p-4 text-start shadow-xs transition-colors",
                   "hover:border-primary hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60",
                   active && "border-primary bg-primary/5"
                 )}
               >
-                {active ? (
-                  <IconCheck className="absolute top-3 right-3 size-4 text-primary" />
-                ) : null}
+                {active ? <IconCheck className="absolute end-3 top-3 size-4 text-primary" /> : null}
                 <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
                   <Icon className="size-5" />
                 </span>
-                <span className="font-medium">{preset.name}</span>
-                <span className="text-xs text-muted-foreground">{preset.description}</span>
+                <span className="font-medium">{presetName(preset.code)}</span>
+                <span className="text-xs text-muted-foreground">
+                  {presetDescription(preset.code)}
+                </span>
               </button>
             );
           })}
@@ -196,10 +203,8 @@ export default function ModulesSettingsPage() {
 
       <section className="space-y-3">
         <div>
-          <h2 className="text-lg font-semibold">2. Ou ajustez module par module</h2>
-          <p className="text-sm text-muted-foreground">
-            Produits, clients, paiements et réglages sont toujours disponibles.
-          </p>
+          <h2 className="text-lg font-semibold">{t("modules.step2Title")}</h2>
+          <p className="text-sm text-muted-foreground">{t("modules.step2Description")}</p>
         </div>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{modules.map(renderModule)}</div>
       </section>
@@ -210,14 +215,19 @@ export default function ModulesSettingsPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Passer au niveau « {pendingPreset?.name} » ?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t("modules.confirmTitle", {
+                name: pendingPreset ? presetName(pendingPreset.code) : "",
+              })}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Modules activés : {pendingPreset?.modules.map(moduleName).join(", ")}. Les autres
-              seront masqués, sans perte de données.
+              {t("modules.confirmDescription", {
+                modules: (pendingPreset?.modules ?? []).map((code) => moduleName(code)).join(", "),
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogCancel>{t("common:actions.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               disabled={applyPreset.isPending}
               onClick={(event) => {
@@ -225,7 +235,7 @@ export default function ModulesSettingsPage() {
                 if (pendingPreset) applyPreset.mutate(pendingPreset);
               }}
             >
-              Appliquer
+              {t("common:actions.apply")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

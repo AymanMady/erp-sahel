@@ -1,8 +1,8 @@
 /**
- * Isolation multi-société ([BR-13]) et autorisations ([FR-AUTH-2]).
+ * Multi-company isolation ([BR-13]) and authorization ([FR-AUTH-2]).
  *
- * Ce sont les deux garanties que l'interface ne peut pas assurer : elles doivent tenir
- * même si l'appelant forge sa requête.
+ * These are the two guarantees the UI cannot provide: they must hold even when the
+ * caller forges its request.
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -33,8 +33,8 @@ afterAll(async () => {
   await closeDatabase();
 });
 
-describe("isolation des données entre sociétés", () => {
-  it("ne laisse pas voir le catalogue d'une autre société", async () => {
+describe("data isolation between companies", () => {
+  it("does not expose another company's catalog", async () => {
     const product = await createStockedProduct(alpha, { sku: "ISO-001" });
 
     const fromAlpha = await catalogApplication.search(alpha.company.id, { search: "ISO-001" });
@@ -43,16 +43,16 @@ describe("isolation des données entre sociétés", () => {
     const fromBeta = await catalogApplication.search(beta.company.id, { search: "ISO-001" });
     expect(fromBeta.items).toHaveLength(0);
 
-    // Même en connaissant l'identifiant, l'accès direct est refusé.
-    await expect(catalogApplication.getDetail(beta.company.id, product.id)).rejects.toThrow(
-      /introuvable/i
-    );
+    // Even when the id is known, direct access is refused.
+    await expect(catalogApplication.getDetail(beta.company.id, product.id)).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
   });
 
-  it("ne laisse pas facturer un tiers d'une autre société", async () => {
+  it("does not allow invoicing a party of another company", async () => {
     const customer = await partiesApplication.create(
       alpha.company.id,
-      { name: "Client Alpha", partyType: "CUSTOMER" },
+      { name: "Customer Alpha", partyType: "CUSTOMER" },
       database
     );
     const product = await createStockedProduct(beta, { sku: "ISO-002" });
@@ -61,20 +61,20 @@ describe("isolation des données entre sociétés", () => {
       invoicingApplication.create(
         beta.company,
         {
-          // Client appartenant à la société Alpha, produit à la société Beta.
+          // Customer belonging to company Alpha, product belonging to company Beta.
           partyId: customer.id,
           lines: [{ productId: product.id, quantity: 1, description: "Article" }],
         },
         beta.userId
       )
-    ).rejects.toThrow(/introuvable/i);
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
-  it("empêche d'utiliser le produit d'une autre société sur une facture", async () => {
+  it("prevents using another company's product on an invoice", async () => {
     const productAlpha = await createStockedProduct(alpha, { sku: "ISO-003" });
     const customerBeta = await partiesApplication.create(
       beta.company.id,
-      { name: "Client Beta", partyType: "CUSTOMER" },
+      { name: "Customer Beta", partyType: "CUSTOMER" },
       database
     );
 
@@ -87,18 +87,21 @@ describe("isolation des données entre sociétés", () => {
         },
         beta.userId
       )
-    ).rejects.toThrow(/appartenant à une autre société/i);
+    ).rejects.toMatchObject({
+      code: "BUSINESS_RULE",
+      message: expect.stringMatching(/another company/i),
+    });
   });
 
-  it("attribue des séquences de numérotation indépendantes par société", async () => {
+  it("assigns independent numbering sequences per company", async () => {
     const customerAlpha = await partiesApplication.create(
       alpha.company.id,
-      { name: "Client A", partyType: "CUSTOMER" },
+      { name: "Customer A", partyType: "CUSTOMER" },
       database
     );
     const customerBeta = await partiesApplication.create(
       beta.company.id,
-      { name: "Client B", partyType: "CUSTOMER" },
+      { name: "Customer B", partyType: "CUSTOMER" },
       database
     );
     const productAlpha = await createStockedProduct(alpha, { sku: "SEQ-A" });
@@ -123,19 +126,19 @@ describe("isolation des données entre sociétés", () => {
       beta.userId
     );
 
-    // Deux sociétés démarrent chacune leur propre séquence : le premier numéro est
-    // identique, ce qui est attendu et sans conflit puisque l'unicité est par société.
+    // Each company starts its own sequence: the first number is identical, which is
+    // expected and conflict-free since uniqueness is per company.
     expect(invoiceAlpha.number).toBe(invoiceBeta.number);
   });
 });
 
-describe("modèle de permissions", () => {
-  it("donne toutes les permissions à l'administrateur", () => {
+describe("permission model", () => {
+  it("grants every permission to the administrator", () => {
     const administrator = DEFAULT_ROLES.find((role) => role.slug === "administrateur");
     expect(resolveRolePermissions(administrator!.permissions).length).toBeGreaterThan(30);
   });
 
-  it("n'accorde au vendeur ni comptabilité ni administration", () => {
+  it("grants the salesperson neither accounting nor administration", () => {
     const seller = DEFAULT_ROLES.find((role) => role.slug === "vendeur");
     const permissions = resolveRolePermissions(seller!.permissions);
     expect(permissions).toContain("pos.use");
@@ -145,16 +148,16 @@ describe("modèle de permissions", () => {
     expect(permissions).not.toContain("modules.manage");
   });
 
-  it("limite le rôle consultation à la lecture", () => {
+  it("limits the read-only role to reads", () => {
     const readOnly = DEFAULT_ROLES.find((role) => role.slug === "consultation");
     const permissions = resolveRolePermissions(readOnly!.permissions);
     expect(permissions.every((code) => code.endsWith(".read"))).toBe(true);
   });
 
-  it("évalue « au moins une permission » correctement", () => {
+  it('evaluates "at least one permission" correctly', () => {
     expect(hasAnyPermission(["invoicing.read"], ["invoicing.read", "invoicing.write"])).toBe(true);
     expect(hasAnyPermission(["invoicing.read"], ["accounting.write"])).toBe(false);
-    // Une liste d'exigences vide n'est pas une restriction.
+    // An empty list of requirements is not a restriction.
     expect(hasAnyPermission([], [])).toBe(true);
   });
 });

@@ -1,0 +1,73 @@
+{
+  "greeting": "مرحبًا",
+  "greetingWithName": "مرحبًا {{name}}",
+  "description": "نظرة عامة على نشاط الشركة.",
+  "lastDays_zero": "آخر {{count}} يوم",
+  "lastDays_one": "آخر يوم",
+  "lastDays_two": "آخر يومين",
+  "lastDays_few": "آخر {{count}} أيام",
+  "lastDays_many": "آخر {{count}} يومًا",
+  "lastDays_other": "آخر {{count}} يوم",
+  "periodLabel": "الفترة",
+  "openRegister": "فتح الصندوق",
+  "quickActions": {
+    "sell": "بيع",
+    "newInvoice": "فاتورة جديدة",
+    "buy": "شراء",
+    "newProduct": "منتج جديد",
+    "viewStock": "عرض المخزون",
+    "newCustomer": "عميل جديد"
+  },
+  "offline": "المؤشرات غير متاحة دون اتصال. ستظهر مجددًا فور عودة الشبكة.",
+  "stats": {
+    "revenue": "رقم الأعمال دون الضريبة",
+    "invoicesHint_zero": "لا توجد فواتير خلال الفترة",
+    "invoicesHint_one": "فاتورة واحدة خلال الفترة",
+    "invoicesHint_two": "فاتورتان خلال الفترة",
+    "invoicesHint_few": "{{count}} فواتير خلال الفترة",
+    "invoicesHint_many": "{{count}} فاتورة خلال الفترة",
+    "invoicesHint_other": "{{count}} فاتورة خلال الفترة",
+    "outstanding": "المتبقي للتحصيل",
+    "outstandingHint": "فواتير مصادق عليها غير مسددة بالكامل",
+    "treasury": "الخزينة",
+    "treasuryHint": "الصندوق {{cash}} · البنك {{bank}}",
+    "stockValue": "قيمة المخزون",
+    "skusHint_zero": "لا توجد مراجع في المخزون",
+    "skusHint_one": "مرجع واحد في المخزون",
+    "skusHint_two": "مرجعان في المخزون",
+    "skusHint_few": "{{count}} مراجع في المخزون",
+    "skusHint_many": "{{count}} مرجعًا في المخزون",
+    "skusHint_other": "{{count}} مرجع في المخزون"
+  },
+  "revenueChart": {
+    "title": "تطور رقم الأعمال",
+    "description": "المبالغ دون الضريبة للفواتير المصادق عليها، من {{from}} إلى {{to}}.",
+    "empty": "لا توجد مبيعات مسجلة خلال الفترة.",
+    "series": "رقم الأعمال دون الضريبة"
+  },
+  "topSales": {
+    "title": "الأكثر مبيعًا",
+    "description": "أفضل 5 أصناف خلال الفترة.",
+    "empty": "لا توجد مبيعات خلال الفترة.",
+    "sold_zero": "لم يُبع شيء",
+    "sold_one": "بيعت وحدة واحدة",
+    "sold_two": "بيعت وحدتان",
+    "sold_few": "بيعت {{count}} وحدات",
+    "sold_many": "بيعت {{count}} وحدة",
+    "sold_other": "بيعت {{count}} وحدة"
+  },
+  "restock": {
+    "title": "تنبيهات إعادة التموين",
+    "description": "أصناف عند حد التنبيه أو دونه.",
+    "viewStock": "عرض المخزون",
+    "empty": "لا توجد أصناف دون حد التنبيه."
+  },
+  "counts": {
+    "title": "البيانات المرجعية",
+    "description": "حجم بيانات الشركة.",
+    "customers": "العملاء",
+    "suppliers": "الموردون",
+    "products": "المنتجات",
+    "services": "الخدمات"
+  }
+}

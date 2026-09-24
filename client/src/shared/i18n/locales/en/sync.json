@@ -1,0 +1,64 @@
+{
+  "title": "Synchronization",
+  "description": "This device's queue and the server ingestion journal.",
+  "retryErrors": "Retry errors",
+  "syncNow": "Synchronize",
+  "retried": "Failed operations queued again.",
+  "discard": "Discard",
+  "discarded": "Operation discarded.",
+  "never": "never",
+  "stats": {
+    "pending": "Pending on this device",
+    "failed": "Failed",
+    "lastSync": "Last synchronization",
+    "state": "Status"
+  },
+  "states": {
+    "offline": "Offline",
+    "syncing": "In progress",
+    "error": "Error",
+    "upToDate": "Up to date"
+  },
+  "tabs": {
+    "outbox": "Local queue",
+    "journal": "Server journal",
+    "devices": "Devices"
+  },
+  "columns": {
+    "operation": "Operation",
+    "state": "Status",
+    "attempts": "Attempts",
+    "entity": "Entity",
+    "assignedNumber": "Assigned number",
+    "device": "Device",
+    "result": "Result",
+    "detail": "Detail"
+  },
+  "outbox": {
+    "emptyTitle": "Queue empty",
+    "emptyDescription": "All operations of this device have been synchronized."
+  },
+  "journal": {
+    "emptyTitle": "Journal empty",
+    "emptyDescription": "No offline operation has been ingested yet."
+  },
+  "devices": {
+    "title": "Synchronized devices",
+    "description": "Last upload and last snapshot served, per device.",
+    "empty": "No device registered.",
+    "platform": "Platform: {{platform}}",
+    "lastPush": "Last upload: {{date}}",
+    "lastSnapshot": "Last snapshot: {{date}}"
+  },
+  "entities": {
+    "party": "Party",
+    "product": "Product",
+    "quote": "Quote",
+    "invoice": "Invoice",
+    "payment": "Payment",
+    "posSessionOpen": "Register opening",
+    "posSessionClose": "Register closing",
+    "stockMovement": "Stock movement",
+    "offlineEntry": "Offline entry"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "title": "Règlements",
+  "description": "Encaissements et décaissements, avec leur impact en trésorerie.",
+  "columns": {
+    "party": "Tiers",
+    "invoice": "Facture",
+    "method": "Mode",
+    "account": "Compte"
+  },
+  "filters": {
+    "allDirections": "Tous les sens",
+    "incoming": "Encaissements",
+    "outgoing": "Décaissements",
+    "allMethods": "Tous les modes"
+  },
+  "empty": {
+    "title": "Aucun règlement",
+    "description": "Les règlements s'enregistrent depuis une facture ou depuis la caisse."
+  },
+  "totalInOnPage": "Total encaissé sur cette page :"
+}

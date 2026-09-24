@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react";
+import { useTranslation } from "react-i18next";
 
+import { currentIntlLocale } from "@/shared/i18n";
 import { Card, CardContent } from "@/shared/ui/card";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { cn } from "@/shared/lib/utils";
@@ -8,14 +10,14 @@ import { cn } from "@/shared/lib/utils";
 export interface StatCardProps {
   label: string;
   value: ReactNode;
-  /** Variation en pourcentage ; omise, aucun badge de tendance n'est affiché. */
+  /** Change in percent; when omitted, no trend badge is shown. */
   change?: number | null;
   hint?: ReactNode;
   icon?: ReactNode;
   loading?: boolean;
   /**
-   * Inverse la lecture de la tendance : pour une dépense ou un impayé, une hausse
-   * n'est pas une bonne nouvelle.
+   * Inverts how the trend reads: for an expense or an unpaid amount, a rise is not
+   * good news.
    */
   invertTrend?: boolean;
 }
@@ -29,6 +31,8 @@ export function StatCard({
   loading,
   invertTrend,
 }: StatCardProps) {
+  // Subscribes to language changes (percentage format).
+  useTranslation();
   const hasChange = typeof change === "number" && Number.isFinite(change);
   const rising = hasChange && change > 0;
   const favourable = invertTrend ? !rising : rising;
@@ -60,7 +64,11 @@ export function StatCard({
               ) : (
                 <IconTrendingDown className="size-3.5" />
               )}
-              {Math.abs(change).toFixed(1)} %
+              {new Intl.NumberFormat(currentIntlLocale(), {
+                style: "percent",
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 1,
+              }).format(Math.abs(change) / 100)}
             </span>
           ) : null}
         </div>

@@ -1,17 +1,18 @@
 /**
- * Supervision de la synchronisation.
+ * Synchronization monitoring.
  *
- * Deux vues complémentaires :
- *  - la **file locale** (ce poste) : opérations en attente, en erreur, déjà remontées ;
- *  - le **journal serveur** : ce que le serveur a ingéré, tous postes confondus.
+ * Two complementary views:
+ *  - the **local queue** (this device): pending, failed and already uploaded operations;
+ *  - the **server journal**: what the server has ingested, across all devices.
  *
- * C'est l'écran de diagnostic terrain : « ma vente est-elle partie ? » doit avoir une
- * réponse en un coup d'œil ([FR-SYNC-6]).
+ * This is the field diagnostic screen: "has my sale been sent?" must be answered at a
+ * glance ([FR-SYNC-6]).
  */
 
 import { useCallback, useEffect, useState } from "react";
 import { IconRefresh, IconTrash } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { formatDateTime } from "@shared/format";
@@ -38,20 +39,24 @@ import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
-const ENTITY_LABELS: Record<string, string> = {
-  "core.party": "Tiers",
-  "catalog.product": "Produit",
-  "sales.quote": "Devis",
-  "invoicing.sales_invoice": "Facture",
-  "payments.payment": "Règlement",
-  "pos.session_open": "Ouverture de caisse",
-  "pos.session_close": "Clôture de caisse",
-  "inventory.stock_movement": "Mouvement de stock",
-  "http.request": "Saisie hors ligne",
+/** Synchronization entity → key in `sync:entities`. */
+const ENTITY_LABEL_KEYS: Record<string, string> = {
+  "core.party": "party",
+  "catalog.product": "product",
+  "sales.quote": "quote",
+  "invoicing.sales_invoice": "invoice",
+  "payments.payment": "payment",
+  "pos.session_open": "posSessionOpen",
+  "pos.session_close": "posSessionClose",
+  "inventory.stock_movement": "stockMovement",
+  "http.request": "offlineEntry",
 };
 
 export default function SyncPage() {
+  const { t } = useTranslation("sync");
   const online = useOnline();
+  const entityLabel = (entity: string) =>
+    ENTITY_LABEL_KEYS[entity] ? t(`entities.${ENTITY_LABEL_KEYS[entity]}`) : entity;
   const [status, setStatus] = useState<SyncStatus>(getSyncStatus);
   const [outbox, setOutbox] = useState<OutboxRecord[]>([]);
   const [loadingOutbox, setLoadingOutbox] = useState(true);
@@ -70,7 +75,7 @@ export default function SyncPage() {
 
   const { data: serverStatus } = useQuery({
     queryKey: queryKeys.syncStatus,
-    // Hors ligne, le dernier état connu est relu depuis le cache local.
+    // Offline, the last known state is read back from the local cache.
     queryFn: () => syncApi.status(),
     retry: false,
   });
@@ -84,19 +89,19 @@ export default function SyncPage() {
   const outboxColumns: Column<OutboxRecord>[] = [
     {
       id: "label",
-      header: "Opération",
+      header: t("columns.operation"),
       cell: (row) => (
         <div className="min-w-0">
           <p className="truncate font-medium">{row.label}</p>
           <p className="text-xs text-muted-foreground">
-            {ENTITY_LABELS[row.entity] ?? row.entity} · {formatDateTime(row.createdAt)}
+            {entityLabel(row.entity)} · {formatDateTime(row.createdAt)}
           </p>
         </div>
       ),
     },
     {
       id: "number",
-      header: "Numéro",
+      header: t("common:labels.number"),
       cell: (row) => (
         <div className="tabular text-sm">
           {row.assignedNumber ? (
@@ -109,17 +114,21 @@ export default function SyncPage() {
         </div>
       ),
     },
-    { id: "status", header: "État", cell: (row) => <StatusBadge status={row.status} /> },
+    {
+      id: "status",
+      header: t("columns.state"),
+      cell: (row) => <StatusBadge status={row.status} />,
+    },
     {
       id: "attempts",
-      header: "Tentatives",
+      header: t("columns.attempts"),
       align: "center",
       hideOnMobile: true,
       cell: (row) => <span className="tabular">{row.attempts}</span>,
     },
     {
       id: "amount",
-      header: "Montant",
+      header: t("common:labels.amount"),
       align: "end",
       cell: (row) =>
         row.amountCents != null ? (
@@ -137,12 +146,12 @@ export default function SyncPage() {
           <Button
             size="icon"
             variant="ghost"
-            aria-label="Abandonner"
+            aria-label={t("discard")}
             onClick={async () => {
               await discard(row.clientUuid);
               await refreshCounters();
               await loadOutbox();
-              toast.success("Opération abandonnée.");
+              toast.success(t("discarded"));
             }}
           >
             <IconTrash className="size-4" />
@@ -152,27 +161,31 @@ export default function SyncPage() {
   ];
 
   const journalColumns: Column<NonNullable<typeof journal>[number]>[] = [
-    { id: "date", header: "Date", cell: (row) => formatDateTime(row.createdAt) },
+    { id: "date", header: t("common:labels.date"), cell: (row) => formatDateTime(row.createdAt) },
     {
       id: "entity",
-      header: "Entité",
-      cell: (row) => <Badge variant="outline">{ENTITY_LABELS[row.entity] ?? row.entity}</Badge>,
+      header: t("columns.entity"),
+      cell: (row) => <Badge variant="outline">{entityLabel(row.entity)}</Badge>,
     },
     {
       id: "number",
-      header: "Numéro attribué",
+      header: t("columns.assignedNumber"),
       cell: (row) => <span className="tabular text-sm">{row.assignedNumber || "—"}</span>,
     },
     {
       id: "device",
-      header: "Poste",
+      header: t("columns.device"),
       hideOnMobile: true,
       cell: (row) => <span className="tabular text-sm">{row.deviceId || "—"}</span>,
     },
-    { id: "status", header: "Résultat", cell: (row) => <StatusBadge status={row.status} /> },
+    {
+      id: "status",
+      header: t("columns.result"),
+      cell: (row) => <StatusBadge status={row.status} />,
+    },
     {
       id: "detail",
-      header: "Détail",
+      header: t("columns.detail"),
       hideOnMobile: true,
       cell: (row) => <span className="text-xs text-muted-foreground">{row.detail || "—"}</span>,
     },
@@ -180,21 +193,18 @@ export default function SyncPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Synchronisation"
-        description="File d'attente de ce poste et journal d'ingestion du serveur."
-      >
+      <PageHeader title={t("title")} description={t("description")}>
         <Button
           variant="outline"
           onClick={async () => {
             await retryFailed();
             await refreshCounters();
             await loadOutbox();
-            toast.success("Opérations en erreur remises en file.");
+            toast.success(t("retried"));
           }}
           disabled={status.failed === 0}
         >
-          Réessayer les erreurs
+          {t("retryErrors")}
         </Button>
         <Button
           onClick={async () => {
@@ -204,27 +214,27 @@ export default function SyncPage() {
           disabled={!online || status.state === "syncing"}
         >
           <IconRefresh className="size-4" />
-          Synchroniser
+          {t("syncNow")}
         </Button>
       </PageHeader>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="En attente sur ce poste" value={status.pending} invertTrend />
-        <StatCard label="En erreur" value={status.failed} invertTrend />
+        <StatCard label={t("stats.pending")} value={status.pending} invertTrend />
+        <StatCard label={t("stats.failed")} value={status.failed} invertTrend />
         <StatCard
-          label="Dernière synchronisation"
-          value={status.lastSyncAt ? formatDateTime(status.lastSyncAt) : "jamais"}
+          label={t("stats.lastSync")}
+          value={status.lastSyncAt ? formatDateTime(status.lastSyncAt) : t("never")}
         />
         <StatCard
-          label="État"
+          label={t("stats.state")}
           value={
             !online
-              ? "Hors ligne"
+              ? t("states.offline")
               : status.state === "syncing"
-                ? "En cours"
+                ? t("states.syncing")
                 : status.state === "error"
-                  ? "Erreur"
-                  : "À jour"
+                  ? t("states.error")
+                  : t("states.upToDate")
           }
         />
       </div>
@@ -237,9 +247,9 @@ export default function SyncPage() {
 
       <Tabs defaultValue="outbox">
         <TabsList>
-          <TabsTrigger value="outbox">File locale</TabsTrigger>
-          <TabsTrigger value="journal">Journal serveur</TabsTrigger>
-          <TabsTrigger value="devices">Postes</TabsTrigger>
+          <TabsTrigger value="outbox">{t("tabs.outbox")}</TabsTrigger>
+          <TabsTrigger value="journal">{t("tabs.journal")}</TabsTrigger>
+          <TabsTrigger value="devices">{t("tabs.devices")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="outbox">
@@ -248,8 +258,8 @@ export default function SyncPage() {
             rows={outbox}
             rowKey={(row) => row.clientUuid}
             loading={loadingOutbox}
-            emptyTitle="File vide"
-            emptyDescription="Toutes les opérations de ce poste ont été synchronisées."
+            emptyTitle={t("outbox.emptyTitle")}
+            emptyDescription={t("outbox.emptyDescription")}
             minWidthClassName="min-w-[840px]"
           />
         </TabsContent>
@@ -260,8 +270,8 @@ export default function SyncPage() {
             rows={journal ?? []}
             rowKey={(row) => row.id}
             error={journalError ? errorMessage(journalError) : null}
-            emptyTitle="Journal vide"
-            emptyDescription="Aucune opération hors-ligne n'a encore été ingérée."
+            emptyTitle={t("journal.emptyTitle")}
+            emptyDescription={t("journal.emptyDescription")}
             minWidthClassName="min-w-[900px]"
           />
         </TabsContent>
@@ -269,15 +279,13 @@ export default function SyncPage() {
         <TabsContent value="devices">
           <Card>
             <CardHeader>
-              <CardTitle>Postes synchronisés</CardTitle>
-              <CardDescription>
-                Dernière remontée et dernier instantané servi, par poste.
-              </CardDescription>
+              <CardTitle>{t("devices.title")}</CardTitle>
+              <CardDescription>{t("devices.description")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               {(serverStatus?.devices.length ?? 0) === 0 ? (
                 <p className="py-6 text-center text-sm text-muted-foreground">
-                  Aucun poste enregistré.
+                  {t("devices.empty")}
                 </p>
               ) : (
                 serverStatus?.devices.map((device) => (
@@ -288,17 +296,21 @@ export default function SyncPage() {
                     <div>
                       <p className="tabular text-sm font-medium">{device.deviceId}</p>
                       <p className="text-xs text-muted-foreground">
-                        Plateforme : {device.platform}
+                        {t("devices.platform", { platform: device.platform })}
                       </p>
                     </div>
                     <div className="text-end text-xs text-muted-foreground">
                       <p>
-                        Dernier envoi :{" "}
-                        {device.lastPushAt ? formatDateTime(device.lastPushAt) : "jamais"}
+                        {t("devices.lastPush", {
+                          date: device.lastPushAt ? formatDateTime(device.lastPushAt) : t("never"),
+                        })}
                       </p>
                       <p>
-                        Dernier instantané :{" "}
-                        {device.lastSnapshotAt ? formatDateTime(device.lastSnapshotAt) : "jamais"}
+                        {t("devices.lastSnapshot", {
+                          date: device.lastSnapshotAt
+                            ? formatDateTime(device.lastSnapshotAt)
+                            : t("never"),
+                        })}
                       </p>
                     </div>
                   </div>

@@ -1,0 +1,96 @@
+{
+  "system": {
+    "administrateur": {
+      "name": "Administrateur",
+      "description": "Paramétrage société, utilisateurs, référentiels et comptabilité."
+    },
+    "responsable-magasin": {
+      "name": "Responsable magasin",
+      "description": "Achats, stock, catalogue et rapports du magasin."
+    },
+    "vendeur": {
+      "name": "Vendeur / Caissier",
+      "description": "Ventes, devis, factures, encaissements et session de caisse."
+    },
+    "comptable": {
+      "name": "Comptable",
+      "description": "Journal, grand livre, balance et rapprochement bancaire."
+    },
+    "consultation": {
+      "name": "Consultation",
+      "description": "Accès en lecture seule à l'ensemble des écrans autorisés."
+    }
+  },
+  "groups": {
+    "masterData": "Référentiels",
+    "operations": "Opérations",
+    "accountingReporting": "Comptabilité & pilotage",
+    "administration": "Administration"
+  },
+  "permissions": {
+    "parties": {
+      "read": "Consulter les tiers",
+      "write": "Créer et modifier les tiers"
+    },
+    "catalog": {
+      "read": "Consulter le catalogue",
+      "write": "Créer et modifier les produits"
+    },
+    "services": {
+      "read": "Consulter les prestations",
+      "write": "Créer et modifier les prestations"
+    },
+    "inventory": {
+      "read": "Consulter le stock",
+      "write": "Mouvements et ajustements de stock"
+    },
+    "purchasing": {
+      "read": "Consulter les achats",
+      "write": "Créer commandes et réceptions"
+    },
+    "sales": {
+      "read": "Consulter devis et commandes",
+      "write": "Créer devis et commandes"
+    },
+    "invoicing": {
+      "read": "Consulter les factures",
+      "write": "Créer et valider les factures",
+      "cancel": "Annuler une facture et émettre un avoir"
+    },
+    "payments": {
+      "read": "Consulter les règlements",
+      "write": "Enregistrer les règlements"
+    },
+    "banking": {
+      "read": "Consulter la trésorerie",
+      "write": "Saisir et rapprocher les mouvements bancaires"
+    },
+    "pos": {
+      "use": "Utiliser la caisse",
+      "session": {
+        "close": "Clôturer une session de caisse"
+      }
+    },
+    "accounting": {
+      "read": "Consulter la comptabilité",
+      "write": "Saisir des écritures"
+    },
+    "reports": {
+      "read": "Consulter les rapports"
+    },
+    "settings": {
+      "read": "Consulter les paramètres",
+      "write": "Modifier les paramètres de la société"
+    },
+    "users": {
+      "read": "Consulter les utilisateurs",
+      "write": "Gérer utilisateurs et rôles"
+    },
+    "modules": {
+      "manage": "Activer ou désactiver les modules"
+    },
+    "audit": {
+      "read": "Consulter le journal d'audit"
+    }
+  }
+}

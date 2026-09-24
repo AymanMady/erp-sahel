@@ -1,0 +1,52 @@
+{
+  "labels": {
+    "DRAFT": "Brouillon",
+    "SENT": "Envoyé",
+    "ACCEPTED": "Accepté",
+    "REJECTED": "Refusé",
+    "EXPIRED": "Expiré",
+    "CONVERTED": "Converti",
+    "CONFIRMED": "Confirmée",
+    "PROCESSING": "En préparation",
+    "SHIPPED": "Expédiée",
+    "DELIVERED": "Livrée",
+    "INVOICED": "Facturée",
+    "CANCELLED": "Annulé",
+    "VALIDATED": "Validée",
+    "PARTIALLY_PAID": "Partiellement payée",
+    "PAID": "Payée",
+    "ORDERED": "Commandée",
+    "PARTIALLY_RECEIVED": "Partiellement reçue",
+    "RECEIVED": "Reçue",
+    "OPEN": "Ouverte",
+    "CLOSED": "Clôturée",
+    "PENDING": "En attente",
+    "created": "Créé",
+    "duplicate": "Doublon ignoré",
+    "error": "Erreur",
+    "deferred": "Reporté",
+    "synced": "Synchronisé",
+    "sending": "Envoi…",
+    "pending": "En attente"
+  },
+  "paymentMethods": {
+    "CASH": "Espèces",
+    "BANK_TRANSFER": "Virement",
+    "CHECK": "Chèque",
+    "CARD": "Carte",
+    "MOBILE_MONEY": "Mobile Money"
+  },
+  "movements": {
+    "IN": "Entrée",
+    "OUT": "Sortie",
+    "TRANSFER": "Transfert",
+    "ADJUSTMENT": "Ajustement",
+    "RETURN": "Retour"
+  },
+  "partyTypes": {
+    "CUSTOMER": "Client",
+    "SUPPLIER": "Fournisseur",
+    "BOTH": "Client & fournisseur",
+    "PROSPECT": "Prospect"
+  }
+}

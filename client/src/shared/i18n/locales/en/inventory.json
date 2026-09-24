@@ -1,0 +1,75 @@
+{
+  "allWarehouses": "All warehouses",
+  "warehouses": {
+    "title": "Warehouses",
+    "description": "Physical locations where stock is held.",
+    "archived": "Warehouse archived.",
+    "defaultBadge": "default",
+    "new": "New warehouse",
+    "emptyTitle": "No warehouses",
+    "emptyDescription": "At least one warehouse is required to validate an invoice.",
+    "updated": "Warehouse updated.",
+    "created": "Warehouse created.",
+    "editTitle": "Edit warehouse",
+    "isDefault": "Default warehouse for documents"
+  },
+  "movements": {
+    "title": "Stock movements",
+    "description": "Every stock in, stock out or adjustment is tracked with its origin.",
+    "item": "Item",
+    "origin": "Origin",
+    "balanceAfter": "Balance after",
+    "unitCost": "Unit cost",
+    "allOrigins": "All origins",
+    "emptyTitle": "No movements",
+    "emptyDescription": "Movements appear from the first receipt or sale.",
+    "origins": {
+      "purchaseReceipt": "Purchase receipt",
+      "salesInvoice": "Sales invoice",
+      "creditNote": "Credit note",
+      "posTicket": "POS receipt",
+      "manual": "Manual entry",
+      "inventoryCount": "Stock count",
+      "transfer": "Transfer"
+    }
+  },
+  "stock": {
+    "title": "Stock",
+    "description": "Balances by item, warehouse and lot.",
+    "lot": "Lot",
+    "averageCost": "Average cost",
+    "value": "Value",
+    "transfer": "Transfer",
+    "manualMovement": "Manual movement",
+    "stockValue": "Stock value",
+    "stockValueHint": "At weighted average cost",
+    "skuCount": "Items in stock",
+    "totalQuantity": "Total quantity",
+    "searchPlaceholder": "Item, reference, barcode…",
+    "lowStockOnly": "Below alert threshold",
+    "emptyTitle": "No stock",
+    "emptyDescription": "Stock is created by a purchase receipt or a manual movement.",
+    "selectItem": "Select an item",
+    "movementDialog": {
+      "title": "Stock movement",
+      "description": "Every movement is logged with its reason: the balance stays auditable.",
+      "savedOffline": "Movement saved offline.",
+      "savedOfflineDescription": "Stock will be updated at the next synchronization.",
+      "saved": "Movement saved.",
+      "direction": "Direction",
+      "in": "In (+)",
+      "out": "Out (−)",
+      "unitCostHint": "Used to value stock in.",
+      "reason": "Reason",
+      "reasonPlaceholder": "Stock count, breakage, entry correction…"
+    },
+    "transferDialog": {
+      "title": "Transfer between warehouses",
+      "description": "The outgoing and incoming movements are recorded together: goods cannot disappear in between.",
+      "done": "Transfer completed.",
+      "from": "Source warehouse",
+      "to": "Destination warehouse",
+      "submit": "Transfer"
+    }
+  }
+}

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useTheme } from "next-themes";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { IconCopy, IconMoon, IconSun, IconDeviceDesktop, IconPalette } from "@tabler/icons-react";
 
@@ -16,6 +17,7 @@ import {
   contentLayouts,
   buildThemeCss,
 } from "@/shared/lib/theme-config";
+import { useDirection } from "@/shared/i18n/direction-provider";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
 import { Label } from "@/shared/ui/label";
@@ -115,12 +117,13 @@ export function ThemeConfigProvider({ children }: { children: React.ReactNode })
 /** Colorful color-wheel button for the header, next to the theme toggle. */
 export function CustomizerButton() {
   const { setOpen } = useThemeConfig();
+  const { t } = useTranslation("layout");
   return (
     <Button
       variant="ghost"
       size="icon"
       className="rounded-full"
-      aria-label="Personnaliser l'apparence"
+      aria-label={t("customizer.open")}
       onClick={() => setOpen(true)}
     >
       <IconPalette className="size-5" />
@@ -171,43 +174,46 @@ function OptionButton({
 export function ThemeCustomizer() {
   const { config, setConfig, reset, open, setOpen } = useThemeConfig();
   const { theme, setTheme } = useTheme();
+  const { t } = useTranslation("layout");
+  const direction = useDirection();
 
   function copyConfig() {
     const css = buildThemeCss(config);
     navigator.clipboard.writeText(css).then(
       () =>
-        toast.success("Thème copié", { description: "Collez-le dans votre feuille de styles." }),
-      () => toast.error("Copie dans le presse-papiers impossible.")
+        toast.success(t("customizer.copied"), { description: t("customizer.copiedDescription") }),
+      () => toast.error(t("customizer.copyFailed"))
     );
   }
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-sm">
+      <SheetContent
+        side={direction === "rtl" ? "left" : "right"}
+        className="flex w-full flex-col gap-0 p-0 sm:max-w-sm"
+      >
         <SheetHeader className="shrink-0 border-b">
-          <SheetTitle>Apparence</SheetTitle>
-          <SheetDescription>
-            Ajustez le thème de l'interface. Le réglage est propre à ce poste.
-          </SheetDescription>
+          <SheetTitle>{t("customizer.title")}</SheetTitle>
+          <SheetDescription>{t("customizer.description")}</SheetDescription>
         </SheetHeader>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <div className="space-y-6 p-4">
-            <Section label="Mode">
+            <Section label={t("customizer.mode")}>
               <div className="grid grid-cols-3 gap-2">
                 <OptionButton active={theme === "light"} onClick={() => setTheme("light")}>
-                  <IconSun className="size-4" /> Clair
+                  <IconSun className="size-4" /> {t("customizer.light")}
                 </OptionButton>
                 <OptionButton active={theme === "dark"} onClick={() => setTheme("dark")}>
-                  <IconMoon className="size-4" /> Sombre
+                  <IconMoon className="size-4" /> {t("customizer.dark")}
                 </OptionButton>
                 <OptionButton active={theme === "system"} onClick={() => setTheme("system")}>
-                  <IconDeviceDesktop className="size-4" /> Auto
+                  <IconDeviceDesktop className="size-4" /> {t("customizer.system")}
                 </OptionButton>
               </div>
             </Section>
 
-            <Section label="Couleur d'accent">
+            <Section label={t("customizer.accent")}>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-2">
                 {accents.map((a) => (
                   <button
@@ -223,13 +229,13 @@ export function ThemeCustomizer() {
                       className="size-4 shrink-0 rounded-full"
                       style={{ background: a.swatch }}
                     />
-                    <span className="truncate">{a.label}</span>
+                    <span className="truncate">{t(a.labelKey)}</span>
                   </button>
                 ))}
               </div>
             </Section>
 
-            <Section label="Arrondi">
+            <Section label={t("customizer.radius")}>
               <div className="grid grid-cols-6 gap-2">
                 {radii.map((r) => (
                   <OptionButton
@@ -243,7 +249,7 @@ export function ThemeCustomizer() {
               </div>
             </Section>
 
-            <Section label="Police">
+            <Section label={t("customizer.font")}>
               <div className="grid grid-cols-2 gap-2">
                 {fonts.map((f) => (
                   <OptionButton
@@ -251,7 +257,7 @@ export function ThemeCustomizer() {
                     active={config.font === f.key}
                     onClick={() => setConfig((c) => ({ ...c, font: f.key }))}
                   >
-                    {f.label}
+                    {t(f.labelKey)}
                   </OptionButton>
                 ))}
               </div>
@@ -259,7 +265,7 @@ export function ThemeCustomizer() {
 
             <Separator />
 
-            <Section label="Style de la barre latérale">
+            <Section label={t("customizer.sidebarStyle")}>
               <div className="grid grid-cols-3 gap-2">
                 {sidebarVariants.map((v) => (
                   <OptionButton
@@ -267,13 +273,13 @@ export function ThemeCustomizer() {
                     active={config.sidebarVariant === v.key}
                     onClick={() => setConfig((c) => ({ ...c, sidebarVariant: v.key }))}
                   >
-                    {v.label}
+                    {t(v.labelKey)}
                   </OptionButton>
                 ))}
               </div>
             </Section>
 
-            <Section label="Réduction de la barre latérale">
+            <Section label={t("customizer.sidebarCollapse")}>
               <div className="grid grid-cols-2 gap-2">
                 {collapsibleModes.map((m) => (
                   <OptionButton
@@ -281,13 +287,13 @@ export function ThemeCustomizer() {
                     active={config.sidebarCollapsible === m.key}
                     onClick={() => setConfig((c) => ({ ...c, sidebarCollapsible: m.key }))}
                   >
-                    {m.label}
+                    {t(m.labelKey)}
                   </OptionButton>
                 ))}
               </div>
             </Section>
 
-            <Section label="Largeur du contenu">
+            <Section label={t("customizer.contentWidth")}>
               <div className="grid grid-cols-2 gap-2">
                 {contentLayouts.map((l) => (
                   <OptionButton
@@ -295,7 +301,7 @@ export function ThemeCustomizer() {
                     active={config.contentLayout === l.key}
                     onClick={() => setConfig((c) => ({ ...c, contentLayout: l.key }))}
                   >
-                    {l.label}
+                    {t(l.labelKey)}
                   </OptionButton>
                 ))}
               </div>
@@ -305,10 +311,10 @@ export function ThemeCustomizer() {
 
         <div className="flex shrink-0 gap-2 border-t p-4">
           <Button variant="outline" className="flex-1" onClick={reset}>
-            Réinitialiser
+            {t("common:actions.reset")}
           </Button>
           <Button className="flex-1" onClick={copyConfig}>
-            <IconCopy className="size-4" /> Copier le thème
+            <IconCopy className="size-4" /> {t("customizer.copy")}
           </Button>
         </div>
       </SheetContent>

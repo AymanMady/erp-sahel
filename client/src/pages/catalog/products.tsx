@@ -1,12 +1,13 @@
 /**
- * Catalogue produits — recherche par nom, référence ou code-barres, filtre par
- * catégorie ([FR-SRCH-1]).
+ * Product catalog — search by name, reference or barcode, filter by
+ * category ([FR-SRCH-1]).
  */
 
 import { useState } from "react";
 import { IconFilter, IconPlus } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 
 import { errorMessage } from "@/shared/api/api-error";
 import { catalogApi, type ProductFilters } from "@/entities/catalog/api";
@@ -25,6 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 const ALL = "ALL";
 
 export default function ProductsPage() {
+  const { t } = useTranslation("catalog");
   const [, navigate] = useLocation();
   const { can } = useSession();
   const [search, setSearch] = useState("");
@@ -54,12 +56,12 @@ export default function ProductsPage() {
   const columns: Column<ProductListItem>[] = [
     {
       id: "sku",
-      header: "Référence",
+      header: t("common:labels.reference"),
       cell: (row) => <span className="tabular text-sm font-medium">{row.sku}</span>,
     },
     {
       id: "name",
-      header: "Désignation",
+      header: t("products.designation"),
       cell: (row) => (
         <div className="min-w-0">
           <p className="truncate font-medium">{row.name}</p>
@@ -71,7 +73,7 @@ export default function ProductsPage() {
     },
     {
       id: "category",
-      header: "Catégorie",
+      header: t("common:labels.category"),
       hideOnMobile: true,
       cell: (row) =>
         row.categoryName ? (
@@ -82,11 +84,11 @@ export default function ProductsPage() {
     },
     {
       id: "stock",
-      header: "Stock",
+      header: t("products.stock"),
       align: "end",
       cell: (row) =>
         row.isService ? (
-          <span className="text-xs text-muted-foreground">prestation</span>
+          <span className="text-xs text-muted-foreground">{t("products.serviceTag")}</span>
         ) : (
           <span
             className={
@@ -99,7 +101,7 @@ export default function ProductsPage() {
     },
     {
       id: "price",
-      header: "Prix de vente",
+      header: t("products.salePrice"),
       align: "end",
       cell: (row) => <Money cents={row.salePriceCents} />,
     },
@@ -107,16 +109,16 @@ export default function ProductsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Produits" description="Catalogue générique de la société.">
+      <PageHeader title={t("products.title")} description={t("products.description")}>
         <Button variant="outline" onClick={() => setShowFilters((value) => !value)}>
           <IconFilter className="size-4" />
-          Filtres
+          {t("products.filters")}
         </Button>
         {can("catalog.write") ? (
           <Button asChild>
             <Link href="/products/new">
               <IconPlus className="size-4" />
-              Nouveau produit
+              {t("products.new")}
             </Link>
           </Button>
         ) : null}
@@ -129,7 +131,7 @@ export default function ProductsPage() {
             setSearch(value);
             setPage((current) => ({ ...current, offset: 0 }));
           }}
-          placeholder="Désignation, référence, code-barres…"
+          placeholder={t("products.searchPlaceholder")}
           className="sm:max-w-md"
         />
 
@@ -143,10 +145,10 @@ export default function ProductsPage() {
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Catégorie" />
+                <SelectValue placeholder={t("common:labels.category")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ALL}>Toutes les catégories</SelectItem>
+                <SelectItem value={ALL}>{t("products.allCategories")}</SelectItem>
                 {(categories ?? []).map((category) => (
                   <SelectItem key={category.id} value={category.id}>
                     {category.name}
@@ -164,8 +166,8 @@ export default function ProductsPage() {
         rowKey={(row) => row.id}
         loading={isLoading}
         error={error ? errorMessage(error) : null}
-        emptyTitle="Aucun produit"
-        emptyDescription="Ajoutez vos articles pour pouvoir les vendre et suivre leur stock."
+        emptyTitle={t("products.emptyTitle")}
+        emptyDescription={t("products.emptyDescription")}
         onRowClick={(row) => navigate(`/products/${row.id}/edit`)}
         pagination={{
           total: data?.total ?? 0,

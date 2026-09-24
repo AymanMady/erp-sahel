@@ -1,27 +1,30 @@
 /**
- * Catalogue des modules — source unique serveur + client.
+ * Module catalog — single source for server and client.
  *
- * L'ERP est générique : il sert n'importe quel commerce (pièces auto, vêtements,
- * alimentation, quincaillerie…). Chaque fonctionnalité (caisse, achats, stock…) est un
- * **module** activable par société. Un commerçant choisit un niveau (simple, avec
- * factures, complet) puis peut affiner module par module.
+ * The ERP is generic: it serves any kind of shop (auto parts, clothing, groceries,
+ * hardware…). Each feature (POS, purchasing, stock…) is a **module** that can be
+ * enabled per company. A merchant picks a level (simple, with invoices, full) and can
+ * then fine-tune module by module.
+ *
+ * Names and descriptions are the English source text: the client translates them by
+ * `code`, and the server translates module names through its `plugins` catalog.
  */
 
 import type { ModuleCode } from "./schema/plugins";
 
 export interface FeatureModuleDefinition {
   code: ModuleCode;
-  /** Libellé court, en mots simples. */
+  /** Short label, in plain words. */
   name: string;
-  /** Une phrase qui dit à quoi sert le module, sans jargon. */
+  /** One sentence saying what the module is for, without jargon. */
   description: string;
   icon: string;
   dependencies: ModuleCode[];
-  /** Routes API servies par ce module : refusées (403) quand il est désactivé. */
+  /** API routes served by this module: rejected (403) when it is disabled. */
   apiPrefixes: string[];
   /**
-   * Lectures restant ouvertes même module désactivé, car d'autres écrans s'en
-   * servent (ex. liste des comptes bancaires dans le règlement d'une facture).
+   * Reads that stay open even when the module is disabled, because other screens use
+   * them (e.g. the bank account list when paying an invoice).
    */
   openReads?: string[];
 }
@@ -29,32 +32,32 @@ export interface FeatureModuleDefinition {
 export const FEATURE_MODULES: FeatureModuleDefinition[] = [
   {
     code: "pos",
-    name: "Caisse",
-    description: "Vendre au comptoir rapidement, encaisser et imprimer le ticket.",
+    name: "Point of sale",
+    description: "Sell quickly at the counter, take payment and print the receipt.",
     icon: "IconCashRegister",
     dependencies: [],
     apiPrefixes: ["/api/pos"],
   },
   {
     code: "invoicing",
-    name: "Factures",
-    description: "Faire des factures clients et des avoirs.",
+    name: "Invoices",
+    description: "Issue customer invoices and credit notes.",
     icon: "IconFileInvoice",
     dependencies: [],
     apiPrefixes: ["/api/invoices", "/api/credit-notes"],
   },
   {
     code: "sales",
-    name: "Devis et commandes",
-    description: "Préparer un devis, le transformer en commande puis en facture.",
+    name: "Quotes and orders",
+    description: "Prepare a quote, turn it into an order and then an invoice.",
     icon: "IconClipboardList",
     dependencies: ["invoicing"],
     apiPrefixes: ["/api/quotes", "/api/sales-orders"],
   },
   {
     code: "purchasing",
-    name: "Achats",
-    description: "Commander chez les fournisseurs et recevoir la marchandise.",
+    name: "Purchasing",
+    description: "Order from suppliers and receive the goods.",
     icon: "IconTruckDelivery",
     dependencies: ["inventory"],
     apiPrefixes: ["/api/purchase-orders", "/api/goods-receipts", "/api/supplier-invoices"],
@@ -62,50 +65,50 @@ export const FEATURE_MODULES: FeatureModuleDefinition[] = [
   {
     code: "inventory",
     name: "Stock",
-    description: "Voir ce qui reste en magasin, les entrées et les sorties.",
+    description: "See what is left in the warehouse, goods in and goods out.",
     icon: "IconPackages",
     dependencies: [],
     apiPrefixes: ["/api/inventory"],
   },
   {
     code: "services",
-    name: "Prestations",
-    description: "Vendre des services (pose, réparation, livraison…).",
+    name: "Services",
+    description: "Sell services (installation, repair, delivery…).",
     icon: "IconTool",
     dependencies: [],
     apiPrefixes: ["/api/services"],
-    // Le choix d'une ligne de document liste les prestations existantes.
+    // Picking a document line lists the existing services.
     openReads: ["/api/services"],
   },
   {
     code: "banking",
-    name: "Caisse et banque",
-    description: "Suivre l'argent en caisse, en banque et sur Bankily / Masrvi / Sedad.",
+    name: "Cash and bank",
+    description: "Track money in the till, in the bank and on Bankily / Masrvi / Sedad.",
     icon: "IconBuildingBank",
     dependencies: [],
     apiPrefixes: ["/api/banking"],
-    // Le règlement d'une facture et le paramétrage des caisses choisissent un compte.
+    // Paying an invoice and setting up registers both pick an account.
     openReads: ["/api/banking/accounts"],
   },
   {
     code: "accounting",
-    name: "Comptabilité",
-    description: "Journal, grand livre et balance (pour le comptable).",
+    name: "Accounting",
+    description: "Journal, general ledger and trial balance (for the accountant).",
     icon: "IconCalculator",
     dependencies: [],
     apiPrefixes: ["/api/accounting"],
   },
   {
     code: "reports",
-    name: "Rapports",
-    description: "Chiffres des ventes, des achats et du stock.",
+    name: "Reports",
+    description: "Sales, purchasing and stock figures.",
     icon: "IconChartBar",
     dependencies: [],
     apiPrefixes: ["/api/reports"],
   },
 ];
 
-/** Niveau d'utilisation proposé : un préréglage de modules. */
+/** Suggested usage level: a preset of modules. */
 export interface ModulePreset {
   code: string;
   name: string;
@@ -121,21 +124,21 @@ export const MODULE_PRESETS: ModulePreset[] = [
   {
     code: "simple",
     name: "Simple",
-    description: "Caisse, stock et achats. Idéal pour une boutique.",
+    description: "POS, stock and purchasing. Ideal for a shop.",
     icon: "IconBuildingStore",
     modules: SIMPLE,
   },
   {
     code: "invoices",
-    name: "Avec factures",
-    description: "En plus : devis, factures, prestations et rapports.",
+    name: "With invoices",
+    description: "Plus: quotes, invoices, services and reports.",
     icon: "IconFileInvoice",
     modules: WITH_INVOICES,
   },
   {
     code: "full",
-    name: "Complet",
-    description: "Tout, y compris la banque et la comptabilité.",
+    name: "Full",
+    description: "Everything, including banking and accounting.",
     icon: "IconApps",
     modules: [...WITH_INVOICES, "banking", "accounting"],
   },

@@ -1,27 +1,13 @@
-/** État des séquences de numérotation légale par type de document et exercice. */
+/** State of the legal numbering sequences per document type and fiscal year. */
 
 import { useQuery } from "@tanstack/react-query";
+import { Trans, useTranslation } from "react-i18next";
 
 import { settingsApi } from "@/entities/settings/api";
 import { errorMessage } from "@/shared/api/api-error";
 import { PageHeader } from "@/shared/components/page-header";
 import { ResourceTable, type Column } from "@/shared/components/resource-table";
 import { Card, CardContent } from "@/shared/ui/card";
-
-const DOCUMENT_LABELS: Record<string, string> = {
-  QUOTE: "Devis",
-  SALES_ORDER: "Commandes de vente",
-  SALES_INVOICE: "Factures clients",
-  CREDIT_NOTE: "Avoirs",
-  PURCHASE_ORDER: "Commandes fournisseurs",
-  GOODS_RECEIPT: "Bons de réception",
-  SUPPLIER_INVOICE: "Factures fournisseurs",
-  PAYMENT: "Règlements",
-  JOURNAL_ENTRY: "Écritures comptables",
-  INVENTORY_COUNT: "Inventaires",
-  POS_TICKET: "Tickets de caisse",
-  PARTY: "Tiers",
-};
 
 interface SequenceRow {
   documentType: string;
@@ -31,6 +17,11 @@ interface SequenceRow {
 }
 
 export default function NumberingSettingsPage() {
+  const { t, i18n } = useTranslation("settings");
+  const documentLabel = (type: string) =>
+    i18n.exists(`settings:numbering.documentTypes.${type}`)
+      ? t(`numbering.documentTypes.${type}`)
+      : type;
   const { data, isLoading, error } = useQuery({
     queryKey: ["company-sequences"],
     queryFn: () => settingsApi.listSequences(),
@@ -39,20 +30,22 @@ export default function NumberingSettingsPage() {
   const columns: Column<SequenceRow>[] = [
     {
       id: "type",
-      header: "Type de document",
-      cell: (row) => (
-        <span className="font-medium">{DOCUMENT_LABELS[row.documentType] ?? row.documentType}</span>
-      ),
+      header: t("numbering.columns.documentType"),
+      cell: (row) => <span className="font-medium">{documentLabel(row.documentType)}</span>,
     },
-    { id: "year", header: "Exercice", cell: (row) => <span className="tabular">{row.year}</span> },
+    {
+      id: "year",
+      header: t("numbering.columns.year"),
+      cell: (row) => <span className="tabular">{row.year}</span>,
+    },
     {
       id: "prefix",
-      header: "Préfixe",
+      header: t("numbering.columns.prefix"),
       cell: (row) => <span className="tabular">{row.prefix}</span>,
     },
     {
       id: "last",
-      header: "Dernier numéro",
+      header: t("numbering.columns.lastNumber"),
       align: "end",
       cell: (row) => (
         <span className="tabular">
@@ -64,16 +57,16 @@ export default function NumberingSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Numérotation"
-        description="Séquences légales par type de document et par exercice."
-      />
+      <PageHeader title={t("numbering.title")} description={t("numbering.description")} />
 
       <Card>
         <CardContent className="py-4 text-sm text-muted-foreground">
-          Les numéros sont attribués par le serveur au moment de la validation, dans la transaction
-          du document : deux postes ne peuvent pas obtenir le même. Hors ligne, un numéro provisoire{" "}
-          <span className="tabular">OFFLINE-…</span> est affiché jusqu'à la synchronisation.
+          <Trans
+            t={t}
+            i18nKey="numbering.info"
+            values={{ code: "OFFLINE-…" }}
+            components={{ code: <span className="tabular" /> }}
+          />
         </CardContent>
       </Card>
 
@@ -83,8 +76,8 @@ export default function NumberingSettingsPage() {
         rowKey={(row) => `${row.documentType}-${row.year}`}
         loading={isLoading}
         error={error ? errorMessage(error) : null}
-        emptyTitle="Aucune séquence"
-        emptyDescription="Les séquences se créent à l'émission du premier document de chaque type."
+        emptyTitle={t("numbering.emptyTitle")}
+        emptyDescription={t("numbering.emptyDescription")}
       />
     </div>
   );

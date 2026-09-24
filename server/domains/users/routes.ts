@@ -1,9 +1,9 @@
 /**
- * Administration des utilisateurs, rôles et permissions.
+ * Administration of users, roles and permissions.
  *
- * Un administrateur ne peut agir que **dans sa société** : créer un utilisateur le
- * rattache à cette société, et lui affecter un rôle ne vaut que pour elle ([BR-13]).
- * La création de super-administrateurs plateforme n'est pas exposée ici.
+ * An administrator can only act **within their company**: creating a user links it
+ * to that company, and assigning a role only applies to it ([BR-13]).
+ * Creating platform super-administrators is not exposed here.
  */
 
 import type { Express } from "express";
@@ -14,21 +14,22 @@ import { slugify } from "@shared/format";
 import { runInTransaction } from "../../db";
 import { BusinessRuleError, ConflictError, NotFoundError } from "../../shared/errors/app-error";
 import { asyncHandler } from "../../shared/http/handler";
+import { tr } from "../../shared/i18n";
 import { hashPassword } from "../auth/application";
 import { authOf, authorize, requireAuth } from "../auth/guards";
 import { usersRepository } from "./repository";
 
 const passwordSchema = z
   .string()
-  .min(8, "8 caractères minimum")
+  .min(8, "At least 8 characters")
   .max(200)
-  .regex(/[A-Za-z]/, "Le mot de passe doit contenir au moins une lettre")
-  .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre");
+  .regex(/[A-Za-z]/, "The password must contain at least one letter")
+  .regex(/[0-9]/, "The password must contain at least one digit");
 
 const createUserSchema = z.object({
-  username: z.string().min(3, "3 caractères minimum").max(150),
+  username: z.string().min(3, "At least 3 characters").max(150),
   password: passwordSchema,
-  email: z.string().email("Adresse e-mail invalide").or(z.literal("")).default(""),
+  email: z.string().email("Invalid email address").or(z.literal("")).default(""),
   firstName: z.string().max(100).default(""),
   lastName: z.string().max(100).default(""),
   phone: z.string().max(64).default(""),
@@ -44,17 +45,17 @@ const updateUserSchema = z.object({
   allowOfflineLogin: z.boolean().optional(),
   isActive: z.boolean().optional(),
   roleIds: z.array(z.string().uuid()).optional(),
-  /** Réinitialisation par un administrateur (sans connaître l'ancien mot de passe). */
+  /** Reset by an administrator (without knowing the old password). */
   password: passwordSchema.optional(),
 });
 
 const roleSchema = z.object({
-  name: z.string().min(1, "Le nom est obligatoire").max(100),
+  name: z.string().min(1, "Name is required").max(100),
   description: z.string().max(1000).default(""),
   permissions: z.array(z.enum(ALL_PERMISSION_CODES as [string, ...string[]])).default([]),
 });
 
-const idParamSchema = z.object({ id: z.string().uuid("Identifiant invalide") });
+const idParamSchema = z.object({ id: z.string().uuid("Invalid identifier") });
 
 const canRead = authorize({ anyPermission: ["users.read"] });
 const canWrite = authorize({ anyPermission: ["users.write"] });
@@ -78,7 +79,7 @@ export function registerUsersRoutes(app: Express): void {
       const data = createUserSchema.parse(req.body);
 
       if (await usersRepository.findByUsername(data.username)) {
-        throw new ConflictError("Cet identifiant est déjà utilisé.");
+        throw new ConflictError("This username is already taken.");
       }
 
       const user = await runInTransaction(async (tx) => {
@@ -112,13 +113,10 @@ export function registerUsersRoutes(app: Express): void {
       const data = updateUserSchema.parse(req.body);
 
       if (!(await usersRepository.isMember(id, auth.companyId))) {
-        throw new NotFoundError("Utilisateur introuvable dans cette société.");
+        throw new NotFoundError("User not found in this company.");
       }
       if (id === auth.userId && data.isActive === false) {
-        throw new BusinessRuleError(
-          "Vous ne pouvez pas désactiver votre propre compte.",
-          "SELF_DEACTIVATION"
-        );
+        throw new BusinessRuleError("You cannot deactivate your own account.", "SELF_DEACTIVATION");
       }
 
       const { roleIds, password, ...patch } = data;
@@ -128,7 +126,7 @@ export function registerUsersRoutes(app: Express): void {
           ...patch,
           ...(password ? { passwordHash: await hashPassword(password) } : {}),
         });
-        if (!user) throw new NotFoundError("Utilisateur introuvable.");
+        if (!user) throw new NotFoundError("User not found.");
         if (roleIds) await repository.setUserRoles(id, auth.companyId, roleIds);
         return user;
       });
@@ -180,10 +178,10 @@ export function registerUsersRoutes(app: Express): void {
       const data = roleSchema.partial().parse(req.body);
 
       const role = await usersRepository.findRole(auth.companyId, id);
-      if (!role) throw new NotFoundError("Rôle introuvable.");
+      if (!role) throw new NotFoundError("Role not found.");
       if (role.isSystem) {
         throw new BusinessRuleError(
-          "Un rôle système ne peut pas être modifié. Dupliquez-le pour l'adapter.",
+          "A system role cannot be modified. Duplicate it to adapt it.",
           "SYSTEM_ROLE_READONLY"
         );
       }
@@ -209,14 +207,14 @@ export function registerUsersRoutes(app: Express): void {
       const auth = authOf(req);
       const { id } = idParamSchema.parse(req.params);
       const role = await usersRepository.findRole(auth.companyId, id);
-      if (!role) throw new NotFoundError("Rôle introuvable.");
+      if (!role) throw new NotFoundError("Role not found.");
       if (role.isSystem) {
-        throw new BusinessRuleError("Un rôle système ne peut pas être supprimé.");
+        throw new BusinessRuleError("A system role cannot be deleted.");
       }
       const assignments = await usersRepository.countRoleAssignments(id);
       if (assignments > 0) {
         throw new BusinessRuleError(
-          `Ce rôle est affecté à ${assignments} utilisateur(s) : retirez-le d'abord.`,
+          tr("This role is assigned to {count} user(s): remove it first.", { count: assignments }),
           "ROLE_IN_USE"
         );
       }

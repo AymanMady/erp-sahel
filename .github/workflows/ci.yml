@@ -38,28 +38,28 @@ jobs:
 
       - run: npm ci
 
-      - name: Vérification TypeScript
+      - name: TypeScript check
         run: npm run check
 
-      - name: Lint (règles d'architecture comprises)
+      - name: Lint (including architecture rules)
         run: npm run lint
 
       - name: Format
         run: npm run format:check
 
-      - name: Schéma de base
+      - name: Database schema
         run: npx drizzle-kit push --force
 
-      - name: Tests unitaires et d'intégration
+      - name: Unit and integration tests
         run: npm test
 
       - name: Build
         run: npm run build
 
-      - name: Amorçage (noyau uniquement)
+      - name: Seed (core only)
         run: npm run db:seed -- --core-only
 
-      - name: Navigateur end-to-end
+      - name: End-to-end browser
         run: npx playwright install --with-deps chromium
 
       - name: Tests end-to-end

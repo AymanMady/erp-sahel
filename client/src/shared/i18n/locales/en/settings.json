@@ -1,0 +1,149 @@
+{
+  "company": {
+    "title": "Company",
+    "description": "Identity, taxation and accounting framework.",
+    "saved": "Settings saved.",
+    "identity": "Identity",
+    "taxAccounting": "Taxation and accounting",
+    "taxAccountingDescription": "The accounting framework determines the chart installed; the accounts used by automatic postings remain editable in the chart of accounts.",
+    "vatEnabled": "Company subject to VAT",
+    "fields": {
+      "name": "Trade name",
+      "legalName": "Legal name",
+      "taxId": "Tax ID",
+      "website": "Website",
+      "city": "City",
+      "country": "Country",
+      "currencyHint": "Three-letter ISO code.",
+      "accountingStandard": "Accounting framework",
+      "defaultVatRate": "Default VAT rate",
+      "fiscalYearStart": "Fiscal year start"
+    },
+    "logo": {
+      "title": "Logo",
+      "description": "Shown in the sidebar and on printed documents.",
+      "alt": "Company logo",
+      "none": "No logo",
+      "choose": "Choose an image",
+      "remove": "Remove the logo",
+      "tooLarge": "Logo too large (400 KB maximum)."
+    }
+  },
+  "numbering": {
+    "title": "Numbering",
+    "description": "Legal sequences per document type and fiscal year.",
+    "info": "Numbers are assigned by the server at validation time, within the document's transaction: two devices cannot get the same one. Offline, a provisional number <code>{{code}}</code> is shown until synchronization.",
+    "emptyTitle": "No sequences",
+    "emptyDescription": "Sequences are created when the first document of each type is issued.",
+    "columns": {
+      "documentType": "Document type",
+      "year": "Fiscal year",
+      "prefix": "Prefix",
+      "lastNumber": "Last number"
+    },
+    "documentTypes": {
+      "QUOTE": "Quotes",
+      "SALES_ORDER": "Sales orders",
+      "SALES_INVOICE": "Customer invoices",
+      "CREDIT_NOTE": "Credit notes",
+      "PURCHASE_ORDER": "Purchase orders",
+      "GOODS_RECEIPT": "Goods receipts",
+      "SUPPLIER_INVOICE": "Supplier invoices",
+      "PAYMENT": "Payments",
+      "JOURNAL_ENTRY": "Journal entries",
+      "INVENTORY_COUNT": "Stock counts",
+      "POS_TICKET": "POS receipts",
+      "PARTY": "Business partners"
+    }
+  },
+  "registers": {
+    "title": "Cash registers",
+    "description": "Points of sale and session history.",
+    "new": "New cash register",
+    "archived": "Cash register archived.",
+    "created": "Cash register created.",
+    "tabs": {
+      "registers": "Cash registers",
+      "sessions": "Sessions"
+    },
+    "columns": {
+      "register": "Cash register",
+      "cashier": "Cashier",
+      "openedAt": "Opened",
+      "closedAt": "Closed",
+      "sales": "Sales",
+      "difference": "Difference"
+    },
+    "emptyRegistersTitle": "No cash registers",
+    "emptyRegistersDescription": "A cash register is required to open a sales session.",
+    "emptySessionsTitle": "No sessions",
+    "emptySessionsDescription": "Sessions appear as soon as a cash register is first opened.",
+    "dialog": {
+      "warehouse": "Linked warehouse",
+      "warehouseHint": "Determines where the sold stock comes from.",
+      "cashAccount": "Cash account",
+      "cashAccountHint": "Credited by cash collections.",
+      "defaultAccount": "Default account"
+    }
+  },
+  "users": {
+    "title": "Users",
+    "description": "Accounts attached to this company and the roles assigned to them.",
+    "new": "New user",
+    "updated": "User updated.",
+    "created": "User created.",
+    "noRole": "none",
+    "allowed": "Allowed",
+    "never": "never",
+    "activateAccount": "Enable the account",
+    "emptyTitle": "No users",
+    "emptyDescription": "Create accounts for your salespeople, storekeepers and accountants.",
+    "columns": {
+      "user": "User",
+      "roles": "Roles",
+      "offlineLogin": "Offline sign-in",
+      "lastLogin": "Last sign-in"
+    },
+    "dialog": {
+      "editTitle": "Edit user",
+      "description": "Assigned roles only apply to the current company.",
+      "username": "Username",
+      "newPassword": "New password",
+      "password": "Password",
+      "keepPasswordHint": "Leave empty to keep the current one.",
+      "passwordHint": "8 characters, letters and digits.",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "allowOffline": "Allow offline sign-in on a synchronized desktop device"
+    }
+  },
+  "roles": {
+    "title": "Roles & permissions",
+    "description": "Hiding things in the interface is a convenience; authorization is checked on every server call.",
+    "new": "New role",
+    "deleted": "Role deleted.",
+    "updated": "Role updated.",
+    "created": "Role created.",
+    "permissionCount_one": "{{count}} permission",
+    "permissionCount_other": "{{count}} permissions",
+    "dialog": {
+      "systemTitle": "System role — {{name}}",
+      "editTitle": "Edit role"
+    }
+  },
+  "modules": {
+    "title": "Modules",
+    "description": "Enable only what you use: the menu stays simple. Disabling a module never deletes your data.",
+    "enabled": "Module enabled.",
+    "disabled": "Module disabled.",
+    "presetApplied": "Level “{{name}}” applied.",
+    "step1Title": "1. Choose a level",
+    "step1Description": "For any kind of business. You can fine-tune afterwards.",
+    "step2Title": "2. Or fine-tune module by module",
+    "step2Description": "Products, customers, payments and settings are always available.",
+    "requires": "Requires: {{modules}}",
+    "enableAria": "Enable {{name}}",
+    "confirmTitle": "Switch to the “{{name}}” level?",
+    "confirmDescription": "Enabled modules: {{modules}}. The others will be hidden, without any data loss."
+  }
+}

@@ -1,8 +1,9 @@
-/** Caisses (points de vente) et sessions passées. */
+/** Cash registers (points of sale) and past sessions. */
 
 import { useState } from "react";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { formatDateTime } from "@shared/format";
@@ -42,6 +43,7 @@ interface SessionRow {
 export default function RegistersSettingsPage() {
   const queryClient = useQueryClient();
   const { can } = useSession();
+  const { t } = useTranslation("settings");
   const [open, setOpen] = useState(false);
 
   const {
@@ -60,7 +62,7 @@ export default function RegistersSettingsPage() {
   const archive = useMutation({
     mutationFn: (id: string) => posApi.archiveRegister(id),
     onSuccess: () => {
-      toast.success("Caisse archivée.");
+      toast.success(t("registers.archived"));
       void queryClient.invalidateQueries({ queryKey: queryKeys.posRegisters });
     },
     onError: (mutationError) => toast.error(errorMessage(mutationError)),
@@ -69,10 +71,14 @@ export default function RegistersSettingsPage() {
   const registerColumns: Column<PosRegister>[] = [
     {
       id: "code",
-      header: "Code",
+      header: t("common:labels.code"),
       cell: (row) => <span className="tabular font-medium">{row.code}</span>,
     },
-    { id: "name", header: "Nom", cell: (row) => <span className="font-medium">{row.name}</span> },
+    {
+      id: "name",
+      header: t("common:labels.name"),
+      cell: (row) => <span className="font-medium">{row.name}</span>,
+    },
     {
       id: "actions",
       header: "",
@@ -82,7 +88,7 @@ export default function RegistersSettingsPage() {
           <Button
             size="icon"
             variant="ghost"
-            aria-label="Archiver"
+            aria-label={t("common:actions.archive")}
             onClick={() => archive.mutate(row.id)}
           >
             <IconTrash className="size-4" />
@@ -94,27 +100,35 @@ export default function RegistersSettingsPage() {
   const sessionColumns: Column<SessionRow>[] = [
     {
       id: "register",
-      header: "Caisse",
+      header: t("registers.columns.register"),
       cell: (row) => <span className="font-medium">{row.registerName}</span>,
     },
-    { id: "user", header: "Caissier", cell: (row) => row.userName },
-    { id: "opened", header: "Ouverture", cell: (row) => formatDateTime(row.openedAt) },
+    { id: "user", header: t("registers.columns.cashier"), cell: (row) => row.userName },
+    {
+      id: "opened",
+      header: t("registers.columns.openedAt"),
+      cell: (row) => formatDateTime(row.openedAt),
+    },
     {
       id: "closed",
-      header: "Clôture",
+      header: t("registers.columns.closedAt"),
       hideOnMobile: true,
       cell: (row) => (row.closedAt ? formatDateTime(row.closedAt) : "—"),
     },
-    { id: "status", header: "Statut", cell: (row) => <StatusBadge status={row.status} /> },
+    {
+      id: "status",
+      header: t("common:labels.status"),
+      cell: (row) => <StatusBadge status={row.status} />,
+    },
     {
       id: "sales",
-      header: "Ventes",
+      header: t("registers.columns.sales"),
       align: "end",
       cell: (row) => <Money cents={row.totalSalesCents} />,
     },
     {
       id: "difference",
-      header: "Écart",
+      header: t("registers.columns.difference"),
       align: "end",
       cell: (row) =>
         row.status === "CLOSED" ? (
@@ -127,19 +141,19 @@ export default function RegistersSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Caisses" description="Postes de vente et historique des sessions.">
+      <PageHeader title={t("registers.title")} description={t("registers.description")}>
         {can("settings.write") ? (
           <Button onClick={() => setOpen(true)}>
             <IconPlus className="size-4" />
-            Nouvelle caisse
+            {t("registers.new")}
           </Button>
         ) : null}
       </PageHeader>
 
       <Tabs defaultValue="registers">
         <TabsList>
-          <TabsTrigger value="registers">Caisses</TabsTrigger>
-          <TabsTrigger value="sessions">Sessions</TabsTrigger>
+          <TabsTrigger value="registers">{t("registers.tabs.registers")}</TabsTrigger>
+          <TabsTrigger value="sessions">{t("registers.tabs.sessions")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="registers">
@@ -149,8 +163,8 @@ export default function RegistersSettingsPage() {
             rowKey={(row) => row.id}
             loading={isLoading}
             error={error ? errorMessage(error) : null}
-            emptyTitle="Aucune caisse"
-            emptyDescription="Une caisse est nécessaire pour ouvrir une session de vente."
+            emptyTitle={t("registers.emptyRegistersTitle")}
+            emptyDescription={t("registers.emptyRegistersDescription")}
           />
         </TabsContent>
 
@@ -159,8 +173,8 @@ export default function RegistersSettingsPage() {
             columns={sessionColumns}
             rows={(sessions ?? []) as unknown as SessionRow[]}
             rowKey={(row) => row.id}
-            emptyTitle="Aucune session"
-            emptyDescription="Les sessions apparaissent dès la première ouverture de caisse."
+            emptyTitle={t("registers.emptySessionsTitle")}
+            emptyDescription={t("registers.emptySessionsDescription")}
             minWidthClassName="min-w-[900px]"
           />
         </TabsContent>
@@ -179,6 +193,7 @@ function RegisterDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const queryClient = useQueryClient();
+  const { t } = useTranslation("settings");
   const [form, setForm] = useState({ code: "", name: "", warehouseId: "", cashAccountId: NONE });
 
   const { data: warehouses } = useQuery({
@@ -199,7 +214,7 @@ function RegisterDialog({
         cashAccountId: form.cashAccountId === NONE ? null : form.cashAccountId,
       }),
     onSuccess: () => {
-      toast.success("Caisse créée.");
+      toast.success(t("registers.created"));
       void queryClient.invalidateQueries({ queryKey: queryKeys.posRegisters });
       onOpenChange(false);
       setForm({ code: "", name: "", warehouseId: "", cashAccountId: NONE });
@@ -211,7 +226,7 @@ function RegisterDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Nouvelle caisse</DialogTitle>
+          <DialogTitle>{t("registers.new")}</DialogTitle>
         </DialogHeader>
         <form
           className="space-y-4"
@@ -220,7 +235,7 @@ function RegisterDialog({
             mutation.mutate();
           }}
         >
-          <Field label="Code" required>
+          <Field label={t("common:labels.code")} required>
             <Input
               value={form.code}
               onChange={(event) => setForm({ ...form, code: event.target.value.toUpperCase() })}
@@ -228,20 +243,24 @@ function RegisterDialog({
               className="tabular"
             />
           </Field>
-          <Field label="Nom" required>
+          <Field label={t("common:labels.name")} required>
             <Input
               value={form.name}
               onChange={(event) => setForm({ ...form, name: event.target.value })}
               required
             />
           </Field>
-          <Field label="Magasin rattaché" required hint="Détermine d'où sort le stock vendu.">
+          <Field
+            label={t("registers.dialog.warehouse")}
+            required
+            hint={t("registers.dialog.warehouseHint")}
+          >
             <Select
               value={form.warehouseId}
               onValueChange={(value) => setForm({ ...form, warehouseId: value })}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Sélectionner" />
+                <SelectValue placeholder={t("common:actions.select")} />
               </SelectTrigger>
               <SelectContent>
                 {(warehouses ?? []).map((warehouse) => (
@@ -252,7 +271,10 @@ function RegisterDialog({
               </SelectContent>
             </Select>
           </Field>
-          <Field label="Compte de caisse" hint="Crédité par les encaissements en espèces.">
+          <Field
+            label={t("registers.dialog.cashAccount")}
+            hint={t("registers.dialog.cashAccountHint")}
+          >
             <Select
               value={form.cashAccountId}
               onValueChange={(value) => setForm({ ...form, cashAccountId: value })}
@@ -261,7 +283,7 @@ function RegisterDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={NONE}>Compte par défaut</SelectItem>
+                <SelectItem value={NONE}>{t("registers.dialog.defaultAccount")}</SelectItem>
                 {(accounts ?? [])
                   .filter((account) => account.accountType === "CASH")
                   .map((account) => (
@@ -274,7 +296,7 @@ function RegisterDialog({
           </Field>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
+              {t("common:actions.cancel")}
             </Button>
             <Button
               type="submit"
@@ -282,7 +304,7 @@ function RegisterDialog({
                 mutation.isPending || !form.code.trim() || !form.name.trim() || !form.warehouseId
               }
             >
-              Créer
+              {t("common:actions.create")}
             </Button>
           </DialogFooter>
         </form>

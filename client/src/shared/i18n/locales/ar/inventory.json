@@ -1,0 +1,75 @@
+{
+  "allWarehouses": "جميع المستودعات",
+  "warehouses": {
+    "title": "المستودعات",
+    "description": "المواقع الفعلية التي يُحتفظ فيها بالمخزون.",
+    "archived": "تمت أرشفة المستودع.",
+    "defaultBadge": "افتراضي",
+    "new": "مستودع جديد",
+    "emptyTitle": "لا توجد مستودعات",
+    "emptyDescription": "يلزم مستودع واحد على الأقل للمصادقة على فاتورة.",
+    "updated": "تم تحديث المستودع.",
+    "created": "تم إنشاء المستودع.",
+    "editTitle": "تعديل المستودع",
+    "isDefault": "المستودع الافتراضي للمستندات"
+  },
+  "movements": {
+    "title": "حركات المخزون",
+    "description": "يتم تتبع كل إدخال أو إخراج أو تسوية مع مصدرها.",
+    "item": "الصنف",
+    "origin": "المصدر",
+    "balanceAfter": "الرصيد بعد الحركة",
+    "unitCost": "تكلفة الوحدة",
+    "allOrigins": "جميع المصادر",
+    "emptyTitle": "لا توجد حركات",
+    "emptyDescription": "تظهر الحركات منذ أول استلام أو بيع.",
+    "origins": {
+      "purchaseReceipt": "استلام مشتريات",
+      "salesInvoice": "فاتورة مبيعات",
+      "creditNote": "إشعار دائن",
+      "posTicket": "إيصال الصندوق",
+      "manual": "إدخال يدوي",
+      "inventoryCount": "جرد",
+      "transfer": "تحويل"
+    }
+  },
+  "stock": {
+    "title": "المخزون",
+    "description": "الأرصدة حسب الصنف والمستودع والدفعة.",
+    "lot": "الدفعة",
+    "averageCost": "متوسط التكلفة",
+    "value": "القيمة",
+    "transfer": "تحويل",
+    "manualMovement": "حركة يدوية",
+    "stockValue": "قيمة المخزون",
+    "stockValueHint": "بمتوسط التكلفة المرجح",
+    "skuCount": "الأصناف في المخزون",
+    "totalQuantity": "الكمية الإجمالية",
+    "searchPlaceholder": "الصنف، المرجع، الرمز الشريطي…",
+    "lowStockOnly": "دون حد التنبيه",
+    "emptyTitle": "لا يوجد مخزون",
+    "emptyDescription": "يُنشأ المخزون عبر استلام مشتريات أو حركة يدوية.",
+    "selectItem": "اختر صنفاً",
+    "movementDialog": {
+      "title": "حركة مخزون",
+      "description": "تُسجَّل كل حركة مع سببها: يبقى الرصيد قابلاً للتدقيق.",
+      "savedOffline": "تم حفظ الحركة دون اتصال.",
+      "savedOfflineDescription": "سيتم تحديث المخزون عند المزامنة التالية.",
+      "saved": "تم حفظ الحركة.",
+      "direction": "الاتجاه",
+      "in": "إدخال (+)",
+      "out": "إخراج (−)",
+      "unitCostHint": "يُستخدم لتقييم الإدخالات.",
+      "reason": "السبب",
+      "reasonPlaceholder": "جرد، تلف، تصحيح إدخال…"
+    },
+    "transferDialog": {
+      "title": "تحويل بين المستودعات",
+      "description": "يُسجَّل الإخراج والإدخال معاً: لا يمكن أن تختفي البضاعة بينهما.",
+      "done": "تم التحويل.",
+      "from": "المستودع المصدر",
+      "to": "المستودع الوجهة",
+      "submit": "تحويل"
+    }
+  }
+}

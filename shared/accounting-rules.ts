@@ -1,11 +1,14 @@
 /**
- * Règles comptables : plan par défaut **OHADA** (SYSCOHADA révisé) et construction des
- * écritures automatiques ([FR-CPT-1], [BR-7], [BR-21]).
+ * Accounting rules: default **OHADA** chart of accounts (revised SYSCOHADA) and
+ * construction of automatic entries ([FR-CPT-1], [BR-7], [BR-21]).
  *
- * Le plan est une **donnée**, pas du code : changer de référentiel (PCG, CGNC, IFRS)
- * revient à fournir un autre `ChartTemplate` et les `accountMappings` correspondants —
- * les fonctions de construction d'écritures ci-dessous restent inchangées puisqu'elles
- * raisonnent en **clés logiques** (`SALES_REVENUE`, `VAT_COLLECTED`…) et non en numéros.
+ * The chart is **data**, not code: switching standards (PCG, CGNC, IFRS) means providing
+ * another `ChartTemplate` and the matching `accountMappings` — the entry builders below
+ * stay unchanged since they work with **logical keys** (`SALES_REVENUE`, `VAT_COLLECTED`…)
+ * rather than account numbers.
+ *
+ * Account and journal names are English source strings: the server translates them into
+ * the company's language when it installs the chart (see the accounting domain).
  */
 
 import type { AccountMappingKey, AccountType } from "./schema/accounting";
@@ -16,7 +19,7 @@ export interface ChartAccountTemplate {
   name: string;
   accountType: AccountType;
   isGroup?: boolean;
-  /** Clé logique servie par ce compte (au plus une par clé). */
+  /** Logical key served by this account (at most one account per key). */
   mappingKey?: AccountMappingKey;
 }
 
@@ -33,166 +36,166 @@ export interface ChartTemplate {
   journals: JournalTemplate[];
 }
 
-/** Plan comptable OHADA (SYSCOHADA révisé) — sous-ensemble opérationnel d'un ERP négoce. */
+/** OHADA chart of accounts (revised SYSCOHADA) — operational subset for a trading ERP. */
 export const OHADA_CHART: ChartTemplate = {
   standard: "OHADA",
-  label: "OHADA — SYSCOHADA révisé",
+  label: "OHADA — revised SYSCOHADA",
   accounts: [
-    // Classe 1 — Ressources durables
+    // Class 1 — Long-term funding
     { code: "10", name: "Capital", accountType: "EQUITY", isGroup: true },
-    { code: "101", name: "Capital social", accountType: "EQUITY" },
-    { code: "11", name: "Réserves", accountType: "EQUITY", isGroup: true },
+    { code: "101", name: "Share capital", accountType: "EQUITY" },
+    { code: "11", name: "Reserves", accountType: "EQUITY", isGroup: true },
     {
       code: "110",
-      name: "Report à nouveau",
+      name: "Retained earnings",
       accountType: "EQUITY",
       mappingKey: "RESULT_CARRY_FORWARD",
     },
-    { code: "12", name: "Report à nouveau / Résultat", accountType: "EQUITY", isGroup: true },
-    { code: "120", name: "Résultat de l'exercice", accountType: "EQUITY" },
-    // Classe 3 — Stocks
-    { code: "31", name: "Marchandises", accountType: "ASSET", isGroup: true },
-    { code: "311", name: "Stock de marchandises", accountType: "ASSET", mappingKey: "INVENTORY" },
-    // Classe 4 — Tiers
-    { code: "40", name: "Fournisseurs", accountType: "LIABILITY", isGroup: true },
+    { code: "12", name: "Retained earnings / Net income", accountType: "EQUITY", isGroup: true },
+    { code: "120", name: "Net income for the year", accountType: "EQUITY" },
+    // Class 3 — Inventories
+    { code: "31", name: "Goods", accountType: "ASSET", isGroup: true },
+    { code: "311", name: "Goods inventory", accountType: "ASSET", mappingKey: "INVENTORY" },
+    // Class 4 — Third parties
+    { code: "40", name: "Suppliers", accountType: "LIABILITY", isGroup: true },
     {
       code: "401",
-      name: "Fournisseurs, dettes en compte",
+      name: "Suppliers, trade payables",
       accountType: "LIABILITY",
       mappingKey: "SUPPLIER_PAYABLE",
     },
-    { code: "41", name: "Clients", accountType: "ASSET", isGroup: true },
-    { code: "411", name: "Clients", accountType: "ASSET", mappingKey: "CUSTOMER_RECEIVABLE" },
-    { code: "44", name: "État et collectivités", accountType: "LIABILITY", isGroup: true },
+    { code: "41", name: "Customers", accountType: "ASSET", isGroup: true },
+    { code: "411", name: "Customers", accountType: "ASSET", mappingKey: "CUSTOMER_RECEIVABLE" },
+    { code: "44", name: "State and public authorities", accountType: "LIABILITY", isGroup: true },
     {
       code: "4431",
-      name: "TVA facturée sur ventes",
+      name: "VAT charged on sales",
       accountType: "LIABILITY",
       mappingKey: "VAT_COLLECTED",
     },
     {
       code: "4451",
-      name: "TVA récupérable sur achats",
+      name: "Recoverable VAT on purchases",
       accountType: "ASSET",
       mappingKey: "VAT_DEDUCTIBLE",
     },
-    // Classe 5 — Trésorerie
-    { code: "52", name: "Banques", accountType: "ASSET", isGroup: true },
-    { code: "521", name: "Banques locales", accountType: "ASSET", mappingKey: "BANK" },
-    { code: "53", name: "Établissements financiers", accountType: "ASSET", isGroup: true },
+    // Class 5 — Treasury
+    { code: "52", name: "Banks", accountType: "ASSET", isGroup: true },
+    { code: "521", name: "Local banks", accountType: "ASSET", mappingKey: "BANK" },
+    { code: "53", name: "Financial institutions", accountType: "ASSET", isGroup: true },
     { code: "531", name: "Mobile money", accountType: "ASSET", mappingKey: "MOBILE_MONEY" },
-    { code: "57", name: "Caisse", accountType: "ASSET", isGroup: true },
-    { code: "571", name: "Caisse siège social", accountType: "ASSET", mappingKey: "CASH" },
-    // Classe 6 — Charges
-    { code: "60", name: "Achats et variations de stocks", accountType: "EXPENSE", isGroup: true },
+    { code: "57", name: "Cash on hand", accountType: "ASSET", isGroup: true },
+    { code: "571", name: "Head office cash", accountType: "ASSET", mappingKey: "CASH" },
+    // Class 6 — Expenses
+    { code: "60", name: "Purchases and inventory changes", accountType: "EXPENSE", isGroup: true },
     {
       code: "601",
-      name: "Achats de marchandises",
+      name: "Purchases of goods",
       accountType: "EXPENSE",
       mappingKey: "PURCHASES",
     },
     {
       code: "6031",
-      name: "Variation des stocks de marchandises",
+      name: "Change in goods inventory",
       accountType: "EXPENSE",
       mappingKey: "INVENTORY_VARIATION",
     },
-    { code: "65", name: "Autres charges", accountType: "EXPENSE", isGroup: true },
+    { code: "65", name: "Other expenses", accountType: "EXPENSE", isGroup: true },
     {
       code: "658",
-      name: "Charges diverses",
+      name: "Miscellaneous expenses",
       accountType: "EXPENSE",
       mappingKey: "ROUNDING_DIFFERENCE",
     },
-    // Classe 7 — Produits
-    { code: "70", name: "Ventes", accountType: "REVENUE", isGroup: true },
+    // Class 7 — Revenue
+    { code: "70", name: "Sales", accountType: "REVENUE", isGroup: true },
     {
       code: "701",
-      name: "Ventes de marchandises",
+      name: "Sales of goods",
       accountType: "REVENUE",
       mappingKey: "SALES_REVENUE",
     },
-    { code: "706", name: "Services vendus", accountType: "REVENUE" },
+    { code: "706", name: "Services sold", accountType: "REVENUE" },
     {
       code: "709",
-      name: "Rabais, remises et ristournes accordés",
+      name: "Rebates, discounts and allowances granted",
       accountType: "REVENUE",
       mappingKey: "SALES_DISCOUNT",
     },
-    { code: "89", name: "À-nouveaux", accountType: "EQUITY", isGroup: true },
+    { code: "89", name: "Opening entries", accountType: "EQUITY", isGroup: true },
     {
       code: "890",
-      name: "Bilan d'ouverture",
+      name: "Opening balance sheet",
       accountType: "EQUITY",
       mappingKey: "OPENING_BALANCE",
     },
   ],
   journals: [
-    { code: "VT", name: "Journal des ventes", journalType: "SALES" },
-    { code: "AC", name: "Journal des achats", journalType: "PURCHASES" },
-    { code: "BQ", name: "Journal de banque", journalType: "BANK" },
-    { code: "CA", name: "Journal de caisse", journalType: "CASH" },
-    { code: "OD", name: "Opérations diverses", journalType: "MISC" },
+    { code: "VT", name: "Sales journal", journalType: "SALES" },
+    { code: "AC", name: "Purchases journal", journalType: "PURCHASES" },
+    { code: "BQ", name: "Bank journal", journalType: "BANK" },
+    { code: "CA", name: "Cash journal", journalType: "CASH" },
+    { code: "OD", name: "Miscellaneous operations", journalType: "MISC" },
   ],
 };
 
 /**
- * Plan comptable général français — fourni pour démontrer que le référentiel est
- * interchangeable sans toucher au moteur d'écritures ([BR-21]).
+ * French general chart of accounts — provided to show that the standard can be swapped
+ * without touching the posting engine ([BR-21]).
  */
 export const PCG_CHART: ChartTemplate = {
   standard: "PCG",
-  label: "PCG — Plan comptable général (France)",
+  label: "PCG — French general chart of accounts",
   accounts: [
     { code: "101", name: "Capital", accountType: "EQUITY" },
     {
       code: "110",
-      name: "Report à nouveau",
+      name: "Retained earnings",
       accountType: "EQUITY",
       mappingKey: "RESULT_CARRY_FORWARD",
     },
-    { code: "120", name: "Résultat de l'exercice", accountType: "EQUITY" },
-    { code: "370", name: "Stocks de marchandises", accountType: "ASSET", mappingKey: "INVENTORY" },
-    { code: "401", name: "Fournisseurs", accountType: "LIABILITY", mappingKey: "SUPPLIER_PAYABLE" },
-    { code: "411", name: "Clients", accountType: "ASSET", mappingKey: "CUSTOMER_RECEIVABLE" },
-    { code: "44571", name: "TVA collectée", accountType: "LIABILITY", mappingKey: "VAT_COLLECTED" },
-    { code: "44566", name: "TVA déductible", accountType: "ASSET", mappingKey: "VAT_DEDUCTIBLE" },
-    { code: "512", name: "Banques", accountType: "ASSET", mappingKey: "BANK" },
+    { code: "120", name: "Net income for the year", accountType: "EQUITY" },
+    { code: "370", name: "Goods inventories", accountType: "ASSET", mappingKey: "INVENTORY" },
+    { code: "401", name: "Suppliers", accountType: "LIABILITY", mappingKey: "SUPPLIER_PAYABLE" },
+    { code: "411", name: "Customers", accountType: "ASSET", mappingKey: "CUSTOMER_RECEIVABLE" },
+    { code: "44571", name: "VAT collected", accountType: "LIABILITY", mappingKey: "VAT_COLLECTED" },
+    { code: "44566", name: "Deductible VAT", accountType: "ASSET", mappingKey: "VAT_DEDUCTIBLE" },
+    { code: "512", name: "Banks", accountType: "ASSET", mappingKey: "BANK" },
     { code: "5125", name: "Mobile money", accountType: "ASSET", mappingKey: "MOBILE_MONEY" },
-    { code: "531", name: "Caisse", accountType: "ASSET", mappingKey: "CASH" },
+    { code: "531", name: "Cash on hand", accountType: "ASSET", mappingKey: "CASH" },
     {
       code: "607",
-      name: "Achats de marchandises",
+      name: "Purchases of goods",
       accountType: "EXPENSE",
       mappingKey: "PURCHASES",
     },
     {
       code: "6037",
-      name: "Variation des stocks",
+      name: "Change in inventories",
       accountType: "EXPENSE",
       mappingKey: "INVENTORY_VARIATION",
     },
     {
       code: "658",
-      name: "Charges diverses de gestion",
+      name: "Miscellaneous operating expenses",
       accountType: "EXPENSE",
       mappingKey: "ROUNDING_DIFFERENCE",
     },
     {
       code: "707",
-      name: "Ventes de marchandises",
+      name: "Sales of goods",
       accountType: "REVENUE",
       mappingKey: "SALES_REVENUE",
     },
     {
       code: "709",
-      name: "Rabais, remises et ristournes accordés",
+      name: "Rebates, discounts and allowances granted",
       accountType: "REVENUE",
       mappingKey: "SALES_DISCOUNT",
     },
     {
       code: "890",
-      name: "Bilan d'ouverture",
+      name: "Opening balance sheet",
       accountType: "EQUITY",
       mappingKey: "OPENING_BALANCE",
     },
@@ -209,10 +212,10 @@ export function chartTemplateFor(standard: AccountingStandard): ChartTemplate {
   return CHART_TEMPLATES[standard] ?? OHADA_CHART;
 }
 
-/** Ligne d'écriture exprimée en **clés logiques** : le domaine résout ensuite les comptes. */
+/** Entry line expressed with **logical keys**: the domain then resolves the accounts. */
 export interface PostingLine {
   mappingKey: AccountMappingKey;
-  /** Surcharge explicite : compte de trésorerie choisi par l'utilisateur, par exemple. */
+  /** Explicit override: e.g. the treasury account picked by the user. */
   accountId?: string | null;
   debitCents: number;
   creditCents: number;
@@ -225,14 +228,12 @@ export class UnbalancedEntryError extends Error {
     readonly totalDebitCents: number,
     readonly totalCreditCents: number
   ) {
-    super(
-      `Écriture déséquilibrée : débit ${totalDebitCents} ≠ crédit ${totalCreditCents} (centimes)`
-    );
+    super(`Unbalanced entry: debit ${totalDebitCents} ≠ credit ${totalCreditCents} (cents)`);
     this.name = "UnbalancedEntryError";
   }
 }
 
-/** Garde-fou appliqué avant toute insertion d'écriture [FR-CPT-1]. */
+/** Guard applied before inserting any entry [FR-CPT-1]. */
 export function assertBalanced(lines: PostingLine[]): {
   totalDebitCents: number;
   totalCreditCents: number;
@@ -245,7 +246,7 @@ export function assertBalanced(lines: PostingLine[]): {
   return { totalDebitCents, totalCreditCents };
 }
 
-/** Clé de trésorerie correspondant à un mode de règlement. */
+/** Treasury key matching a payment method. */
 export function treasuryMappingKey(
   method: "CASH" | "BANK_TRANSFER" | "CHECK" | "CARD" | "MOBILE_MONEY"
 ): AccountMappingKey {
@@ -255,10 +256,10 @@ export function treasuryMappingKey(
 }
 
 /**
- * Facture de vente validée :
- *   D  411 Clients            TTC
- *   C  701 Ventes             HT
- *   C  4431 TVA facturée      TVA
+ * Validated sales invoice:
+ *   D  411 Customers          incl. tax (TTC)
+ *   C  701 Sales              excl. tax (HT)
+ *   C  4431 VAT charged       VAT
  */
 export function buildSalesInvoicePosting(input: {
   totalHtCents: number;
@@ -266,6 +267,8 @@ export function buildSalesInvoicePosting(input: {
   totalTtcCents: number;
   partyId: string;
   label: string;
+  /** Label of the VAT line (defaults to `VAT — <label>`); the server passes a translated one. */
+  vatLabel?: string;
 }): PostingLine[] {
   const lines: PostingLine[] = [
     {
@@ -287,19 +290,20 @@ export function buildSalesInvoicePosting(input: {
       mappingKey: "VAT_COLLECTED",
       debitCents: 0,
       creditCents: input.totalVatCents,
-      label: `TVA — ${input.label}`,
+      label: input.vatLabel ?? `VAT — ${input.label}`,
     });
   }
   return lines;
 }
 
-/** Avoir client : écriture strictement inverse de la facture [FR-VNT-6]. */
+/** Customer credit note: the exact reverse of the invoice entry [FR-VNT-6]. */
 export function buildCreditNotePosting(input: {
   totalHtCents: number;
   totalVatCents: number;
   totalTtcCents: number;
   partyId: string;
   label: string;
+  vatLabel?: string;
 }): PostingLine[] {
   return buildSalesInvoicePosting(input).map((line) => ({
     ...line,
@@ -309,10 +313,10 @@ export function buildCreditNotePosting(input: {
 }
 
 /**
- * Facture fournisseur :
- *   D  601 Achats             HT
- *   D  4451 TVA récupérable   TVA
- *   C  401 Fournisseurs       TTC
+ * Supplier invoice:
+ *   D  601 Purchases          excl. tax (HT)
+ *   D  4451 Recoverable VAT   VAT
+ *   C  401 Suppliers          incl. tax (TTC)
  */
 export function buildSupplierInvoicePosting(input: {
   totalHtCents: number;
@@ -320,6 +324,8 @@ export function buildSupplierInvoicePosting(input: {
   totalTtcCents: number;
   partyId: string;
   label: string;
+  /** Label of the VAT line (defaults to `VAT — <label>`); the server passes a translated one. */
+  vatLabel?: string;
 }): PostingLine[] {
   const lines: PostingLine[] = [
     { mappingKey: "PURCHASES", debitCents: input.totalHtCents, creditCents: 0, label: input.label },
@@ -329,7 +335,7 @@ export function buildSupplierInvoicePosting(input: {
       mappingKey: "VAT_DEDUCTIBLE",
       debitCents: input.totalVatCents,
       creditCents: 0,
-      label: `TVA — ${input.label}`,
+      label: input.vatLabel ?? `VAT — ${input.label}`,
     });
   }
   lines.push({
@@ -343,17 +349,17 @@ export function buildSupplierInvoicePosting(input: {
 }
 
 /**
- * Règlement client (encaissement) :
- *   D  521/571 Trésorerie     montant
- *   C  411 Clients            montant
+ * Customer payment (receipt):
+ *   D  521/571 Treasury       amount
+ *   C  411 Customers          amount
  *
- * Règlement fournisseur (décaissement) : écriture inverse.
+ * Supplier payment (disbursement): the reverse entry.
  */
 export function buildPaymentPosting(input: {
   direction: "IN" | "OUT";
   amountCents: number;
   method: "CASH" | "BANK_TRANSFER" | "CHECK" | "CARD" | "MOBILE_MONEY";
-  /** Compte de trésorerie explicitement choisi (compte bancaire de l'ERP). */
+  /** Explicitly chosen treasury account (the ERP's bank account). */
   treasuryAccountId?: string | null;
   partyId: string;
   label: string;
@@ -375,12 +381,12 @@ export function buildPaymentPosting(input: {
   return input.direction === "IN" ? [treasury, counterpart] : [counterpart, treasury];
 }
 
-/** Sens naturel d'un type de compte : pilote l'affichage du solde en balance. */
+/** Natural side of an account type: drives how the balance is displayed in the trial balance. */
 export function naturalBalance(accountType: AccountType): "DEBIT" | "CREDIT" {
   return accountType === "ASSET" || accountType === "EXPENSE" ? "DEBIT" : "CREDIT";
 }
 
-/** Solde signé d'un compte selon son sens naturel (positif = dans le sens naturel). */
+/** Signed balance of an account on its natural side (positive = on the natural side). */
 export function accountBalanceCents(
   accountType: AccountType,
   debitCents: number,

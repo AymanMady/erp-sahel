@@ -1,6 +1,6 @@
 /**
- * Cas d'usage d'authentification : connexion, rafraîchissement, déconnexion,
- * et construction du contexte d'autorisation (permissions + modules actifs).
+ * Authentication use cases: login, refresh, logout, and building the
+ * authorization context (permissions + enabled modules).
  */
 
 import bcrypt from "bcryptjs";
@@ -31,7 +31,7 @@ export interface SessionTokens {
   expiresIn: number;
 }
 
-/** Coût bcrypt : 10 tours, compromis usuel entre résistance et latence de connexion. */
+/** bcrypt cost: 10 rounds, the usual trade-off between strength and login latency. */
 const BCRYPT_ROUNDS = 10;
 
 export function hashPassword(plain: string): Promise<string> {
@@ -51,8 +51,8 @@ class AuthApplication {
   constructor(private readonly repository = authRepository) {}
 
   /**
-   * Résout la société de travail : celle demandée si l'utilisateur y est rattaché,
-   * sinon sa société par défaut. Un superuser peut cibler n'importe quelle société.
+   * Resolves the working company: the requested one if the user belongs to it,
+   * otherwise their default company. A superuser may target any company.
    */
   private async resolveCompanyId(
     userId: string,
@@ -63,7 +63,7 @@ class AuthApplication {
       if (isSuperuser || (await this.repository.hasMembership(userId, requestedCompanyId))) {
         return requestedCompanyId;
       }
-      throw new UnauthorizedError("Vous n'avez pas accès à cette société.");
+      throw new UnauthorizedError("You do not have access to this company.");
     }
     const memberships = await this.repository.listMemberships(userId);
     const preferred = memberships.find((m) => m.isDefault) ?? memberships[0];
@@ -73,17 +73,17 @@ class AuthApplication {
       const [firstCompany] = await companiesRepository.listAll(1);
       if (firstCompany) return firstCompany.id;
     }
-    throw new UnauthorizedError("Aucune société n'est rattachée à ce compte.");
+    throw new UnauthorizedError("No company is linked to this account.");
   }
 
   async buildContext(userId: string, requestedCompanyId?: string | null): Promise<SessionContext> {
     const user = await this.repository.findUserById(userId);
     if (!user || !user.isActive) {
-      throw new UnauthorizedError("Compte introuvable ou désactivé.");
+      throw new UnauthorizedError("Account not found or disabled.");
     }
     const companyId = await this.resolveCompanyId(user.id, user.isSuperuser, requestedCompanyId);
     const company = await companiesRepository.findById(companyId);
-    if (!company) throw new NotFoundError("Société introuvable.");
+    if (!company) throw new NotFoundError("Company not found.");
 
     const [permissions, modules] = await Promise.all([
       this.repository.listEffectivePermissions(user.id, companyId),
@@ -93,7 +93,7 @@ class AuthApplication {
     return {
       user: toPublicUser(user),
       company,
-      // Un superuser porte l'intégralité des permissions sans affectation de rôle.
+      // A superuser holds every permission without any role assignment.
       permissions: user.isSuperuser ? [...ALL_PERMISSION_CODES] : (permissions as PermissionCode[]),
       modules,
     };
@@ -132,11 +132,11 @@ class AuthApplication {
     userAgent: string;
   }): Promise<SessionContext & { tokens: SessionTokens }> {
     const user = await this.repository.findUserByUsername(input.username);
-    // Message volontairement identique que l'utilisateur existe ou non : ne pas
-    // transformer la page de connexion en oracle d'existence de comptes.
-    const invalid = new UnauthorizedError("Identifiant ou mot de passe incorrect.");
+    // Deliberately the same message whether the user exists or not: the login
+    // page must not become an account-existence oracle.
+    const invalid = new UnauthorizedError("Incorrect username or password.");
     if (!user || !user.isActive) {
-      // Comparaison à vide pour conserver un temps de réponse comparable.
+      // Dummy comparison to keep a comparable response time.
       await bcrypt.compare(input.password, "$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinv");
       throw invalid;
     }
@@ -148,7 +148,7 @@ class AuthApplication {
     return { ...context, tokens };
   }
 
-  /** Rotation : l'ancien jeton est révoqué au moment même où le nouveau est émis. */
+  /** Rotation: the old token is revoked at the very moment the new one is issued. */
   async refresh(input: {
     refreshToken: string;
     companyId?: string | null;
@@ -157,7 +157,7 @@ class AuthApplication {
     const tokenHash = hashRefreshToken(input.refreshToken);
     const stored = await this.repository.findRefreshToken(tokenHash);
     if (!stored || stored.revokedAt || stored.expiresAt.getTime() < Date.now()) {
-      throw new UnauthorizedError("Session expirée, reconnectez-vous.");
+      throw new UnauthorizedError("Session expired, please sign in again.");
     }
     await this.repository.revokeRefreshToken(tokenHash);
     const context = await this.buildContext(stored.userId, input.companyId ?? stored.companyId);
@@ -174,7 +174,7 @@ class AuthApplication {
     await this.repository.revokeAllForUser(userId);
   }
 
-  /** Bascule de société sans ressaisie du mot de passe (multi-société). */
+  /** Switches company without re-entering the password (multi-company). */
   async switchCompany(input: {
     userId: string;
     companyId: string;

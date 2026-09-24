@@ -1,8 +1,9 @@
-/** Journal comptable : écritures et saisie manuelle ([FR-CPT-1]). */
+/** General journal: entries and manual entry ([FR-CPT-1]). */
 
 import { useState } from "react";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { JOURNAL_TYPES } from "@shared/schema";
@@ -33,15 +34,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 const ALL = "ALL";
 
-const JOURNAL_TYPE_LABELS: Record<string, string> = {
-  SALES: "Ventes",
-  PURCHASES: "Achats",
-  BANK: "Banque",
-  CASH: "Caisse",
-  MISC: "Opérations diverses",
-};
-
 export default function EntriesPage() {
+  const { t } = useTranslation("accounting");
   const { can } = useSession();
   const [journalId, setJournalId] = useState(ALL);
   const [fromDate, setFromDate] = useState("");
@@ -67,14 +61,11 @@ export default function EntriesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Journal comptable"
-        description="Toutes les écritures, générées automatiquement ou saisies à la main."
-      >
+      <PageHeader title={t("entries.title")} description={t("entries.description")}>
         {can("accounting.write") ? (
           <Button onClick={() => setOpen(true)}>
             <IconPlus className="size-4" />
-            Saisir une écriture
+            {t("entries.newEntry")}
           </Button>
         ) : null}
       </PageHeader>
@@ -85,7 +76,7 @@ export default function EntriesPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>Tous les journaux</SelectItem>
+            <SelectItem value={ALL}>{t("entries.allJournals")}</SelectItem>
             {(journals ?? []).map((journal) => (
               <SelectItem key={journal.id} value={journal.id}>
                 {journal.code} — {journal.name}
@@ -93,8 +84,18 @@ export default function EntriesPage() {
             ))}
           </SelectContent>
         </Select>
-        <Input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
-        <Input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
+        <Input
+          type="date"
+          aria-label={t("filters.fromDate")}
+          value={fromDate}
+          onChange={(event) => setFromDate(event.target.value)}
+        />
+        <Input
+          type="date"
+          aria-label={t("filters.toDate")}
+          value={toDate}
+          onChange={(event) => setToDate(event.target.value)}
+        />
       </div>
 
       {isLoading ? (
@@ -108,7 +109,7 @@ export default function EntriesPage() {
       ) : (data?.items.length ?? 0) === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            Aucune écriture sur la période. Les factures et règlements en génèrent automatiquement.
+            {t("entries.empty")}
           </CardContent>
         </Card>
       ) : (
@@ -132,10 +133,10 @@ export default function EntriesPage() {
                   <Table className="min-w-[560px]">
                     <TableHeader>
                       <TableRow className="bg-muted/40">
-                        <TableHead>Compte</TableHead>
-                        <TableHead>Libellé</TableHead>
-                        <TableHead className="text-end">Débit</TableHead>
-                        <TableHead className="text-end">Crédit</TableHead>
+                        <TableHead>{t("columns.account")}</TableHead>
+                        <TableHead>{t("columns.label")}</TableHead>
+                        <TableHead className="text-end">{t("columns.debit")}</TableHead>
+                        <TableHead className="text-end">{t("columns.credit")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -183,6 +184,7 @@ function ManualEntryDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useTranslation("accounting");
   const queryClient = useQueryClient();
   const [journalType, setJournalType] = useState<(typeof JOURNAL_TYPES)[number]>("MISC");
   const [date, setDate] = useState(todayInput());
@@ -220,7 +222,7 @@ function ManualEntryDialog({
           })),
       }),
     onSuccess: () => {
-      toast.success("Écriture enregistrée.");
+      toast.success(t("entries.saved"));
       void queryClient.invalidateQueries({ queryKey: ["entries"] });
       void queryClient.invalidateQueries({ queryKey: ["balance"] });
       void queryClient.invalidateQueries({ queryKey: ["ledger"] });
@@ -236,14 +238,12 @@ function ManualEntryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Saisie d'une écriture</DialogTitle>
-          <DialogDescription>
-            L'écriture doit être équilibrée : le total des débits doit égaler celui des crédits.
-          </DialogDescription>
+          <DialogTitle>{t("entries.dialog.title")}</DialogTitle>
+          <DialogDescription>{t("entries.dialog.description")}</DialogDescription>
         </DialogHeader>
 
         <FieldGrid columns={3}>
-          <Field label="Journal">
+          <Field label={t("entries.dialog.journal")}>
             <Select
               value={journalType}
               onValueChange={(value) => setJournalType(value as (typeof JOURNAL_TYPES)[number])}
@@ -254,21 +254,21 @@ function ManualEntryDialog({
               <SelectContent>
                 {JOURNAL_TYPES.map((type) => (
                   <SelectItem key={type} value={type}>
-                    {JOURNAL_TYPE_LABELS[type]}
+                    {t(`journalTypes.${type}`)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </Field>
-          <Field label="Date">
+          <Field label={t("common:labels.date")}>
             <Input type="date" value={date} onChange={(event) => setDate(event.target.value)} />
           </Field>
-          <Field label="Référence">
+          <Field label={t("common:labels.reference")}>
             <Input value={reference} onChange={(event) => setReference(event.target.value)} />
           </Field>
         </FieldGrid>
 
-        <Field label="Libellé de l'écriture" required>
+        <Field label={t("entries.dialog.entryLabel")} required>
           <Input value={label} onChange={(event) => setLabel(event.target.value)} required />
         </Field>
 
@@ -276,10 +276,10 @@ function ManualEntryDialog({
           <Table className="min-w-[640px]">
             <TableHeader>
               <TableRow className="bg-muted/40">
-                <TableHead>Compte</TableHead>
-                <TableHead>Libellé</TableHead>
-                <TableHead className="w-32 text-end">Débit</TableHead>
-                <TableHead className="w-32 text-end">Crédit</TableHead>
+                <TableHead>{t("columns.account")}</TableHead>
+                <TableHead>{t("columns.label")}</TableHead>
+                <TableHead className="w-32 text-end">{t("columns.debit")}</TableHead>
+                <TableHead className="w-32 text-end">{t("columns.credit")}</TableHead>
                 <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
@@ -292,7 +292,7 @@ function ManualEntryDialog({
                       onValueChange={(value) => update(line.key, { accountId: value })}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Compte" />
+                        <SelectValue placeholder={t("columns.account")} />
                       </SelectTrigger>
                       <SelectContent>
                         {(accounts ?? [])
@@ -327,7 +327,7 @@ function ManualEntryDialog({
                     <Button
                       size="icon"
                       variant="ghost"
-                      aria-label="Supprimer"
+                      aria-label={t("entries.dialog.removeLine")}
                       disabled={lines.length <= 2}
                       onClick={() =>
                         setLines((current) => current.filter((entry) => entry.key !== line.key))
@@ -360,33 +360,35 @@ function ManualEntryDialog({
             }
           >
             <IconPlus className="size-4" />
-            Ajouter une ligne
+            {t("entries.dialog.addLine")}
           </Button>
           <div className="flex items-center gap-4 text-sm">
             <span className="text-muted-foreground">
-              Débit <Money cents={totalDebit} className="font-medium text-foreground" />
+              {t("columns.debit")}{" "}
+              <Money cents={totalDebit} className="font-medium text-foreground" />
             </span>
             <span className="text-muted-foreground">
-              Crédit <Money cents={totalCredit} className="font-medium text-foreground" />
+              {t("columns.credit")}{" "}
+              <Money cents={totalCredit} className="font-medium text-foreground" />
             </span>
             <Badge
               variant="outline"
               className={balanced ? "text-status-success" : "text-status-danger"}
             >
-              {balanced ? "Équilibrée" : "Déséquilibrée"}
+              {balanced ? t("balanced") : t("unbalanced")}
             </Badge>
           </div>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
+            {t("common:actions.cancel")}
           </Button>
           <Button
             onClick={() => mutation.mutate()}
             disabled={!balanced || !label.trim() || mutation.isPending}
           >
-            Enregistrer l'écriture
+            {t("entries.dialog.submit")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,14 +1,14 @@
 /**
- * Couche ERP : jetons et utilitaires **propres au métier**, ajoutés par-dessus le
- * design system.
+ * ERP layer: **business-specific** tokens and utilities, added on top of the design
+ * system.
  *
- * Rien ici ne redéfinit un jeton shadcn : on n'ajoute que ce que le design system ne
- * peut pas connaître — les couleurs sémantiques des statuts de documents et les
- * corrections d'impression. Le mode sombre est géré par les mêmes variables.
+ * Nothing here redefines a shadcn token: it only adds what the design system cannot
+ * know — semantic colors for document statuses and print fixes. Dark mode is handled
+ * through the same variables.
  */
 
 :root {
-  /* Statuts de documents : brouillon, validé, partiel, payé, annulé. */
+  /* Document statuses: draft, validated, partial, paid, cancelled. */
   --status-draft: oklch(0.62 0.02 260);
   --status-draft-bg: oklch(0.96 0.005 260);
   --status-pending: oklch(0.62 0.15 70);
@@ -20,7 +20,7 @@
   --status-info: oklch(0.58 0.17 255);
   --status-info-bg: oklch(0.96 0.03 255);
 
-  /* Bandeau d'état de connexion (hors ligne / synchronisation en cours). */
+  /* Connection status banner (offline / sync in progress). */
   --offline-bg: oklch(0.62 0.15 70);
   --offline-fg: oklch(0.99 0 0);
 }
@@ -54,21 +54,21 @@
 }
 
 /**
- * Chiffres tabulaires pour toutes les colonnes de montants : sans cela, les totaux
- * d'une facture ne s'alignent pas verticalement et deviennent pénibles à contrôler.
+ * Tabular figures for every amount column: without them, an invoice's totals do not
+ * line up vertically and become tedious to check.
  */
 .tabular {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
 }
 
-/** Le POS occupe tout le viewport : pas de défilement de page, seules les colonnes défilent. */
+/** The POS fills the whole viewport: no page scrolling, only the columns scroll. */
 .pos-shell {
   height: 100dvh;
   overflow: hidden;
 }
 
-/** Impression des documents (facture, devis, ticket) : on masque toute la coquille. */
+/** Document printing (invoice, quote, receipt): hide the whole shell. */
 @media print {
   body {
     background: #fff;

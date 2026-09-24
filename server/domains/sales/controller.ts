@@ -1,4 +1,4 @@
-/** Frontière HTTP des devis et commandes. */
+/** HTTP boundary of quotes and sales orders. */
 
 import type { Request, Response } from "express";
 

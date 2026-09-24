@@ -1,10 +1,13 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * Configuration end-to-end.
+ * End-to-end configuration.
  *
- * Le serveur de test est lancé sur un port dédié avec sa propre base : les tests E2E
- * créent de vraies factures, ils ne doivent pas polluer l'environnement de travail.
+ * The test server runs on a dedicated port with its own database: E2E tests create real
+ * invoices, they must not pollute the working environment.
+ *
+ * Specs select elements by their English UI text: the browser locale is English and
+ * each spec also forces the stored UI language (`erp.language`) before loading.
  */
 const PORT = Number(process.env.E2E_PORT ?? 5100);
 
@@ -19,7 +22,7 @@ export default defineConfig({
     baseURL: `http://localhost:${PORT}`,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
-    locale: "fr-FR",
+    locale: "en-GB",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {

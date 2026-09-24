@@ -1,4 +1,4 @@
-/** Contrats de validation de la facturation. */
+/** Invoicing validation contracts. */
 
 import { z } from "zod";
 
@@ -35,7 +35,7 @@ export const listInvoicesQuerySchema = z.object({
 });
 
 export const createInvoiceSchema = z.object({
-  partyId: z.string().uuid("Sélectionnez un client"),
+  partyId: z.string().uuid("Select a customer"),
   salesOrderId: z.string().uuid().nullish(),
   warehouseId: z.string().uuid().nullish(),
   source: z.enum(INVOICE_SOURCES).default("MANUAL"),
@@ -43,8 +43,8 @@ export const createInvoiceSchema = z.object({
   dueDate: z.string().date().nullish(),
   globalDiscountBp: z.number().int().min(0).max(10_000).default(0),
   notes: z.string().max(4000).default(""),
-  lines: z.array(documentLineSchema).min(1, "Ajoutez au moins une ligne"),
-  /** Crée directement une facture validée (vente comptoir). */
+  lines: z.array(documentLineSchema).min(1, "Add at least one line"),
+  /** Creates a validated invoice directly (counter sale). */
   validate: z.boolean().default(false),
 });
 
@@ -54,9 +54,9 @@ export const createCreditNoteSchema = z.object({
   invoiceId: z.string().uuid(),
   date: z.string().date().optional(),
   reason: z.string().max(2000).default(""),
-  /** Réintègre les articles en stock ; `false` pour une marchandise détruite. */
+  /** Puts the items back in stock; `false` for destroyed goods. */
   restock: z.boolean().default(true),
-  /** Avoir partiel ; omis, l'avoir reprend toutes les lignes de la facture. */
+  /** Partial credit note; when omitted, the credit note takes all the invoice lines. */
   lines: z.array(documentLineSchema).min(1).optional(),
 });
 
@@ -66,4 +66,4 @@ export const listCreditNotesQuerySchema = z.object({
   offset: z.coerce.number().int().min(0).optional(),
 });
 
-export const idParamSchema = z.object({ id: z.string().uuid("Identifiant invalide") });
+export const idParamSchema = z.object({ id: z.string().uuid("Invalid identifier") });

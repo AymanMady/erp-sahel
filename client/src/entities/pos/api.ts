@@ -1,4 +1,4 @@
-/** Accès API du point de vente. */
+/** Point of sale API access. */
 
 import { api } from "@/shared/api/http";
 import { withOfflineFallback } from "@/shared/offline/offline-reads";

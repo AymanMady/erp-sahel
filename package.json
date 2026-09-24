@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "ERP Sahel — ERP générique, simple et hors ligne, pour tout type de commerce (modules activables : caisse, achats, stock…).",
+  "description": "ERP Sahel — a generic, simple, offline-capable ERP for any kind of business (optional modules: point of sale, purchasing, inventory…).",
   "engines": {
     "node": ">=20.11.0"
   },
@@ -51,6 +51,7 @@
     "exceljs": "^4.4.0",
     "express": "^5.1.0",
     "express-rate-limit": "^7.5.0",
+    "i18next": "^26.4.2",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "1.24.0",
     "next-themes": "0.4.6",
@@ -61,6 +62,7 @@
     "react-day-picker": "10.0.1",
     "react-dom": "19.2.4",
     "react-hook-form": "^7.54.2",
+    "react-i18next": "^17.0.15",
     "recharts": "3.9.2",
     "sonner": "2.0.7",
     "tailwind-merge": "3.6.0",

@@ -1,9 +1,9 @@
 /**
- * Build de production : client Vite + serveur groupé en un seul fichier.
+ * Production build: Vite client + server bundled into a single file.
  *
- * Le serveur est empaqueté en CommonJS (`dist/index.cjs`) avec ses dépendances
- * externalisées : c'est le format qui démarre le plus simplement sur un hébergement
- * mutualisé, sans exiger la résolution ESM ni un `package.json` particulier à côté.
+ * The server is bundled as CommonJS (`dist/index.cjs`) with its dependencies
+ * externalized: it is the format that starts most easily on shared hosting, without
+ * requiring ESM resolution or a special `package.json` next to it.
  */
 
 import { execFileSync } from "node:child_process";
@@ -24,13 +24,13 @@ function run(command: string, args: string[]): void {
 async function main(): Promise<void> {
   fs.rmSync(path.join(rootDir, "dist"), { recursive: true, force: true });
 
-  console.log("→ Build du client (Vite)…");
+  console.log("→ Building client (Vite)…");
   run("npx", ["vite", "build"]);
 
-  console.log("→ Génération du manifeste de pré-cache…");
+  console.log("→ Generating precache manifest…");
   writePrecacheManifest(path.join(rootDir, "dist", "public"));
 
-  console.log("→ Build du serveur (esbuild)…");
+  console.log("→ Building server (esbuild)…");
   await build({
     entryPoints: [path.join(rootDir, "server/index.ts")],
     outfile: path.join(rootDir, "dist/index.cjs"),
@@ -40,12 +40,12 @@ async function main(): Promise<void> {
     bundle: true,
     minify: true,
     sourcemap: true,
-    // `pg` et ses dépendances natives doivent rester externes : les empaqueter
-    // casserait le chargement des modules optionnels (`pg-native`, `cloudflare:sockets`).
+    // `pg` and its native dependencies must stay external: bundling them would break
+    // loading of optional modules (`pg-native`, `cloudflare:sockets`).
     packages: "external",
-    // `import.meta.url` n'existe pas en CommonJS : on le réécrit vers l'équivalent
-    // calculé depuis `__filename`, sinon `fileURLToPath` reçoit `undefined` au
-    // démarrage du bundle.
+    // `import.meta.url` does not exist in CommonJS: we rewrite it to the equivalent
+    // computed from `__filename`, otherwise `fileURLToPath` receives `undefined` when
+    // the bundle starts.
     banner: {
       js: 'const __import_meta_url = require("node:url").pathToFileURL(__filename).href;',
     },
@@ -57,13 +57,13 @@ async function main(): Promise<void> {
     logLevel: "info",
   });
 
-  console.log("\n✔ Build terminé.");
+  console.log("\n✔ Build complete.");
   console.log("  Client  : dist/public/");
-  console.log("  Serveur : dist/index.cjs");
-  console.log("  Démarrage : npm start");
+  console.log("  Server  : dist/index.cjs");
+  console.log("  Start   : npm start");
 }
 
 main().catch((error) => {
-  console.error("Échec du build :", error);
+  console.error("Build failed:", error);
   process.exit(1);
 });

@@ -1,0 +1,104 @@
+{
+  "companySwitcher": {
+    "switched": "تم تغيير الشركة.",
+    "currency": "العملة {{currency}}",
+    "companies": "الشركات"
+  },
+  "moduleGate": {
+    "title": "الوحدة «{{module}}» غير مفعّلة",
+    "canEnable": "فعّل هذه الوحدة لاستخدام هذه الشاشة. لا تُحذف بياناتك أبدًا.",
+    "askAdmin": "اطلب من المسؤول تفعيل هذه الوحدة.",
+    "backHome": "العودة إلى الرئيسية",
+    "manageModules": "إدارة الوحدات"
+  },
+  "userMenu": {
+    "profile": "ملفي الشخصي",
+    "settings": "الإعدادات",
+    "lightTheme": "المظهر الفاتح",
+    "darkTheme": "المظهر الداكن",
+    "signOut": "تسجيل الخروج"
+  },
+  "sync": {
+    "offline": "غير متصل",
+    "errors_zero": "لا أخطاء",
+    "errors_one": "خطأ واحد",
+    "errors_two": "خطآن",
+    "errors_few": "{{count}} أخطاء",
+    "errors_many": "{{count}} خطأً",
+    "errors_other": "{{count}} خطأ",
+    "syncing": "جارٍ المزامنة…",
+    "pendingCount_zero": "لا عمليات معلّقة",
+    "pendingCount_one": "عملية واحدة معلّقة",
+    "pendingCount_two": "عمليتان معلّقتان",
+    "pendingCount_few": "{{count}} عمليات معلّقة",
+    "pendingCount_many": "{{count}} عملية معلّقة",
+    "pendingCount_other": "{{count}} عملية معلّقة",
+    "upToDate": "محدّث",
+    "statusAria": "حالة المزامنة: {{status}}",
+    "connected": "متصل بالخادم",
+    "offlineMode": "وضع عدم الاتصال",
+    "onlineHint": "تُرفع المبيعات تلقائيًا.",
+    "offlineHint": "تُحفظ المبيعات محليًا وستُرفع عند عودة الشبكة.",
+    "pending": "معلّقة",
+    "failed": "فاشلة",
+    "lastSync": "آخر مزامنة",
+    "never": "أبدًا",
+    "syncNow": "المزامنة الآن",
+    "viewQueue": "عرض قائمة الانتظار"
+  },
+  "offlineBanner": "وضع عدم الاتصال — تُحفظ إدخالاتك على هذا الجهاز وستُزامَن تلقائيًا.",
+  "theme": {
+    "toggle": "تبديل المظهر"
+  },
+  "customizer": {
+    "open": "تخصيص المظهر",
+    "title": "المظهر",
+    "description": "اضبط مظهر الواجهة. يُطبَّق هذا الإعداد على هذا الجهاز فقط.",
+    "mode": "الوضع",
+    "light": "فاتح",
+    "dark": "داكن",
+    "system": "تلقائي",
+    "accent": "لون التمييز",
+    "radius": "استدارة الزوايا",
+    "font": "الخط",
+    "sidebarStyle": "نمط الشريط الجانبي",
+    "sidebarCollapse": "طيّ الشريط الجانبي",
+    "contentWidth": "عرض المحتوى",
+    "copy": "نسخ المظهر",
+    "copied": "تم نسخ المظهر",
+    "copiedDescription": "الصقه في ورقة الأنماط الخاصة بك.",
+    "copyFailed": "تعذّر النسخ إلى الحافظة.",
+    "accents": {
+      "neutral": "محايد",
+      "blue": "أزرق",
+      "violet": "بنفسجي",
+      "green": "أخضر",
+      "teal": "أزرق مخضر",
+      "amber": "كهرماني",
+      "orange": "برتقالي",
+      "rose": "وردي"
+    },
+    "fonts": {
+      "geist": "Geist",
+      "system": "النظام",
+      "serif": "مذيّل",
+      "mono": "أحادي المسافة"
+    },
+    "sidebarVariants": {
+      "inset": "مدمج",
+      "sidebar": "كلاسيكي",
+      "floating": "عائم"
+    },
+    "collapsible": {
+      "icon": "أيقونات",
+      "offcanvas": "مخفي"
+    },
+    "contentLayouts": {
+      "full": "عرض كامل",
+      "centered": "في الوسط"
+    }
+  },
+  "boot": {
+    "loading": "جارٍ تحميل نظام تخطيط الموارد…"
+  }
+}

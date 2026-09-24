@@ -1,4 +1,4 @@
-/** Accès API du tableau de bord et des rapports. */
+/** Dashboard and reports API access. */
 
 import { api } from "@/shared/api/http";
 import type { DashboardData } from "@/entities/types";

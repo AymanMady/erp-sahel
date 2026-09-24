@@ -1,4 +1,4 @@
-/** Persistance de l'administration des utilisateurs et des rôles. */
+/** Persistence for user and role administration. */
 
 import { and, asc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
@@ -21,7 +21,7 @@ export class UsersRepository {
     return new UsersRepository(tx);
   }
 
-  /** Utilisateurs rattachés à la société, rôles inclus. */
+  /** Users linked to the company, roles included. */
   async listForCompany(companyId: string): Promise<(PublicUser & { roles: Role[] })[]> {
     const memberRows = await this.database
       .select({
@@ -103,7 +103,7 @@ export class UsersRepository {
     return Boolean(row);
   }
 
-  /** Remplace les rôles d'un utilisateur dans une société. */
+  /** Replaces a user's roles within a company. */
   async setUserRoles(userId: string, companyId: string, roleIds: string[]): Promise<void> {
     await this.database
       .delete(userRoles)
@@ -115,7 +115,7 @@ export class UsersRepository {
       .onConflictDoNothing();
   }
 
-  /** Rôles visibles par la société : les siens plus les rôles système. */
+  /** Roles visible to the company: its own plus the system roles. */
   async listRoles(companyId: string) {
     const rows = await this.database
       .select({ role: roles, permissionCode: permissions.code })

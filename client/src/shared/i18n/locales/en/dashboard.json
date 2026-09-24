@@ -1,0 +1,57 @@
+{
+  "greeting": "Hello",
+  "greetingWithName": "Hello {{name}}",
+  "description": "Overview of the company's activity.",
+  "lastDays_one": "Last {{count}} day",
+  "lastDays_other": "Last {{count}} days",
+  "periodLabel": "Period",
+  "openRegister": "Open the register",
+  "quickActions": {
+    "sell": "Sell",
+    "newInvoice": "New invoice",
+    "buy": "Buy",
+    "newProduct": "New product",
+    "viewStock": "View stock",
+    "newCustomer": "New customer"
+  },
+  "offline": "Indicators are not available offline. They will reappear as soon as the network is back.",
+  "stats": {
+    "revenue": "Revenue excl. tax",
+    "invoicesHint_one": "{{count}} invoice in the period",
+    "invoicesHint_other": "{{count}} invoices in the period",
+    "outstanding": "Outstanding receivables",
+    "outstandingHint": "Validated invoices not fully paid",
+    "treasury": "Cash position",
+    "treasuryHint": "Cash {{cash}} · Bank {{bank}}",
+    "stockValue": "Stock value",
+    "skusHint_one": "{{count}} SKU in stock",
+    "skusHint_other": "{{count}} SKUs in stock"
+  },
+  "revenueChart": {
+    "title": "Revenue trend",
+    "description": "Amounts excluding tax of validated invoices, from {{from}} to {{to}}.",
+    "empty": "No sales recorded in this period.",
+    "series": "Revenue excl. tax"
+  },
+  "topSales": {
+    "title": "Best sellers",
+    "description": "Top 5 items in the period.",
+    "empty": "No sales in this period.",
+    "sold_one": "{{count}} sold",
+    "sold_other": "{{count}} sold"
+  },
+  "restock": {
+    "title": "Reorder alerts",
+    "description": "Items at or below their threshold.",
+    "viewStock": "View stock",
+    "empty": "No items below their alert threshold."
+  },
+  "counts": {
+    "title": "Master data",
+    "description": "Company data volumes.",
+    "customers": "Customers",
+    "suppliers": "Suppliers",
+    "products": "Products",
+    "services": "Services"
+  }
+}

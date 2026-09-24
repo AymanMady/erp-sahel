@@ -1,23 +1,25 @@
 /**
- * Orchestration de la facturation client.
+ * Customer invoicing orchestration.
  *
- * La **validation** d'une facture est le point où trois effets doivent se produire
- * ensemble, ou pas du tout — ils partagent donc une seule transaction :
- *   1. attribution du **numéro légal** définitif ([FR-VNT-7]) ;
- *   2. **décrément du stock** des lignes produit ([FR-VNT-3], [BR-6]) ;
- *   3. **écriture comptable équilibrée** ([FR-CPT-1], [BR-7]).
+ * **Validating** an invoice is the point where three effects must happen together, or
+ * not at all — so they share a single transaction:
+ *   1. allocation of the final **legal number** ([FR-VNT-7]);
+ *   2. **stock decrement** for product lines ([FR-VNT-3], [BR-6]);
+ *   3. **balanced accounting entry** ([FR-CPT-1], [BR-7]).
  *
- * Après validation, la facture est verrouillée : toute correction passe par un avoir
+ * Once validated the invoice is locked: any correction goes through a credit note
  * ([BR-10], [FR-VNT-6]).
  */
 
 import { addDays, todayInput } from "@shared/format";
+import { formatMoney } from "@shared/money";
 import { derivePaymentStatus } from "@shared/pricing";
 import { buildCreditNotePosting, buildSalesInvoicePosting } from "@shared/accounting-rules";
 import type { Company, SalesInvoice } from "@shared/schema";
 import { db, runInTransaction, type Database } from "../../db";
 import { BusinessRuleError, NotFoundError } from "../../shared/errors/app-error";
 import { buildDocumentLines, type RawDocumentLine } from "../../shared/documents/line-builder";
+import { tr } from "../../shared/i18n";
 import { accountingApplication } from "../accounting/application";
 import { inventoryApplication } from "../inventory/application";
 import { numberingApplication } from "../numbering/application";
@@ -35,7 +37,7 @@ export interface CreateInvoiceInput {
   globalDiscountBp?: number;
   notes?: string;
   lines: RawDocumentLine[];
-  /** Valide immédiatement (POS, vente comptoir) au lieu de créer un brouillon. */
+  /** Validates immediately (POS, counter sale) instead of creating a draft. */
   validate?: boolean;
   clientUuid?: string | null;
   provisionalNumber?: string;
@@ -43,29 +45,35 @@ export interface CreateInvoiceInput {
 
 class InvoicingApplication {
   /**
-   * Contrôle de l'encours client avant validation.
-   * Une limite à 0 signifie « pas de limite » : imposer un blocage par défaut
-   * paralyserait une société qui n'a pas paramétré ses encours.
+   * Customer credit limit check before validation.
+   * A limit of 0 means "no limit": blocking by default would paralyse a company that
+   * has not configured its credit limits.
    */
   private async assertCreditLimit(
     tx: Database,
-    companyId: string,
+    company: Pick<Company, "id" | "currency">,
     partyId: string,
     additionalCents: number
   ): Promise<void> {
-    const party = await partiesApplication.requireParty(companyId, partyId, tx);
+    const party = await partiesApplication.requireParty(company.id, partyId, tx);
     if (party.creditLimitCents <= 0) return;
-    const outstanding = await partiesApplication.outstandingBalanceCents(companyId, partyId, tx);
+    const outstanding = await partiesApplication.outstandingBalanceCents(company.id, partyId, tx);
     if (outstanding + additionalCents > party.creditLimitCents) {
       throw new BusinessRuleError(
-        `Encours dépassé pour ${party.name} : limite ${party.creditLimitCents / 100}, ` +
-          `encours après facturation ${(outstanding + additionalCents) / 100}.`,
+        tr(
+          "Credit limit exceeded for {party}: limit {limit}, outstanding after invoicing {outstanding}.",
+          {
+            party: party.name,
+            limit: formatMoney(party.creditLimitCents, company.currency),
+            outstanding: formatMoney(outstanding + additionalCents, company.currency),
+          }
+        ),
         "CREDIT_LIMIT_EXCEEDED"
       );
     }
   }
 
-  /** Crée la facture (brouillon ou validée) dans une transaction dédiée. */
+  /** Creates the invoice (draft or validated) in a dedicated transaction. */
   async create(
     company: Company,
     input: CreateInvoiceInput,
@@ -75,8 +83,8 @@ class InvoicingApplication {
   }
 
   /**
-   * Variante transactionnelle : utilisée par le POS et l'ingestion de synchronisation,
-   * qui créent la facture **et** son règlement dans la même transaction.
+   * Transactional variant: used by the POS and the sync ingestion, which create the
+   * invoice **and** its payment in the same transaction.
    */
   async createInTx(
     tx: Database,
@@ -94,11 +102,11 @@ class InvoicingApplication {
 
     const shouldValidate = input.validate ?? false;
     if (shouldValidate) {
-      await this.assertCreditLimit(tx, company.id, input.partyId, built.totalTtcCents);
+      await this.assertCreditLimit(tx, company, input.partyId, built.totalTtcCents);
     }
 
-    // Un brouillon ne consomme pas de numéro légal : la séquence resterait trouée
-    // si le brouillon était abandonné.
+    // A draft does not consume a legal number: the sequence would have a gap if the
+    // draft were abandoned.
     const number = shouldValidate
       ? await numberingApplication.allocateForCompany(tx, company, "SALES_INVOICE", date)
       : `BR-${Date.now().toString(36).toUpperCase()}`;
@@ -142,7 +150,7 @@ class InvoicingApplication {
     return (await repository.findById(company.id, invoice.id)) as InvoiceWithLines;
   }
 
-  /** Effets de bord d'une validation : stock puis comptabilité, dans cet ordre. */
+  /** Side effects of a validation: stock then accounting, in that order. */
   private async applyValidationEffects(
     tx: Database,
     company: Company,
@@ -161,11 +169,12 @@ class InvoicingApplication {
       lines: lines.map((line) => ({ productId: line.productId, quantity: line.quantity })),
     });
 
+    const label = tr("Invoice {number}", { number: invoice.number });
     await accountingApplication.postEntry(tx, {
       company,
       journalType: "SALES",
       date: invoice.date,
-      label: `Facture ${invoice.number}`,
+      label,
       reference: invoice.number,
       originType: "sales_invoice",
       originId: invoice.id,
@@ -174,12 +183,13 @@ class InvoicingApplication {
         totalVatCents: invoice.totalVatCents,
         totalTtcCents: invoice.totalTtcCents,
         partyId: invoice.partyId,
-        label: `Facture ${invoice.number}`,
+        label,
+        vatLabel: tr("VAT — {label}", { label }),
       }),
     });
   }
 
-  /** Valide un brouillon existant. */
+  /** Validates an existing draft. */
   async validate(
     company: Company,
     invoiceId: string,
@@ -188,18 +198,20 @@ class InvoicingApplication {
     return runInTransaction(async (tx) => {
       const repository = invoicingRepository.withTransaction(tx);
       const invoice = await repository.findById(company.id, invoiceId);
-      if (!invoice) throw new NotFoundError("Facture introuvable.");
+      if (!invoice) throw new NotFoundError("Invoice not found.");
       if (invoice.status !== "DRAFT") {
         throw new BusinessRuleError(
-          `Seul un brouillon peut être validé (statut actuel : ${invoice.status}).`,
+          tr("Only a draft can be validated (current status: {status}).", {
+            status: invoice.status,
+          }),
           "INVOICE_NOT_DRAFT"
         );
       }
       if (invoice.lines.length === 0) {
-        throw new BusinessRuleError("Une facture sans ligne ne peut pas être validée.");
+        throw new BusinessRuleError("An invoice without lines cannot be validated.");
       }
 
-      await this.assertCreditLimit(tx, company.id, invoice.partyId, invoice.totalTtcCents);
+      await this.assertCreditLimit(tx, company, invoice.partyId, invoice.totalTtcCents);
 
       const number = await numberingApplication.allocateForCompany(
         tx,
@@ -212,7 +224,7 @@ class InvoicingApplication {
         status: "VALIDATED",
         isLocked: true,
       });
-      if (!updated) throw new NotFoundError("Facture introuvable.");
+      if (!updated) throw new NotFoundError("Invoice not found.");
 
       await this.applyValidationEffects(tx, company, updated, invoice.lines, userId);
       return (await repository.findById(company.id, invoiceId)) as InvoiceWithLines;
@@ -227,10 +239,10 @@ class InvoicingApplication {
     return runInTransaction(async (tx) => {
       const repository = invoicingRepository.withTransaction(tx);
       const invoice = await repository.findById(company.id, invoiceId);
-      if (!invoice) throw new NotFoundError("Facture introuvable.");
+      if (!invoice) throw new NotFoundError("Invoice not found.");
       if (invoice.isLocked) {
         throw new BusinessRuleError(
-          "Une facture validée est inaltérable : émettez un avoir pour la corriger.",
+          "A validated invoice cannot be modified: issue a credit note to correct it.",
           "INVOICE_LOCKED"
         );
       }
@@ -259,13 +271,13 @@ class InvoicingApplication {
     });
   }
 
-  /** Annule un brouillon. Une facture validée ne s'annule pas : elle s'avoire ([BR-10]). */
+  /** Cancels a draft. A validated invoice is never cancelled: it is credited ([BR-10]). */
   async cancelDraft(companyId: string, invoiceId: string): Promise<void> {
     const invoice = await invoicingRepository.findById(companyId, invoiceId);
-    if (!invoice) throw new NotFoundError("Facture introuvable.");
+    if (!invoice) throw new NotFoundError("Invoice not found.");
     if (invoice.status !== "DRAFT") {
       throw new BusinessRuleError(
-        "Une facture validée ne peut pas être annulée : émettez un avoir.",
+        "A validated invoice cannot be cancelled: issue a credit note.",
         "INVOICE_LOCKED"
       );
     }
@@ -273,8 +285,8 @@ class InvoicingApplication {
   }
 
   /**
-   * Avoir : réintègre le stock si demandé et passe l'écriture inverse.
-   * Sans ligne fournie, l'avoir reprend **toutes** les lignes de la facture (retour total).
+   * Credit note: restocks if requested and posts the reverse entry.
+   * Without lines, the credit note takes **all** of the invoice lines (full return).
    */
   async createCreditNote(
     company: Company,
@@ -290,10 +302,10 @@ class InvoicingApplication {
     return runInTransaction(async (tx) => {
       const repository = invoicingRepository.withTransaction(tx);
       const invoice = await repository.findById(company.id, input.invoiceId);
-      if (!invoice) throw new NotFoundError("Facture introuvable.");
+      if (!invoice) throw new NotFoundError("Invoice not found.");
       if (invoice.status === "DRAFT" || invoice.status === "CANCELLED") {
         throw new BusinessRuleError(
-          "Un avoir ne peut porter que sur une facture validée.",
+          "A credit note can only apply to a validated invoice.",
           "INVOICE_NOT_VALIDATED"
         );
       }
@@ -319,7 +331,7 @@ class InvoicingApplication {
       const built = await buildDocumentLines(tx, company, sourceLines);
       if (built.totalTtcCents > invoice.totalTtcCents) {
         throw new BusinessRuleError(
-          "Le montant de l'avoir dépasse celui de la facture d'origine.",
+          "The credit note amount exceeds that of the original invoice.",
           "CREDIT_NOTE_TOO_LARGE"
         );
       }
@@ -372,11 +384,15 @@ class InvoicingApplication {
         });
       }
 
+      const creditNoteLabel = tr("Credit note {number}", { number: creditNote.number });
       await accountingApplication.postEntry(tx, {
         company,
         journalType: "SALES",
         date,
-        label: `Avoir ${creditNote.number} (facture ${invoice.number})`,
+        label: tr("Credit note {number} (invoice {invoice})", {
+          number: creditNote.number,
+          invoice: invoice.number,
+        }),
         reference: creditNote.number,
         originType: "credit_note",
         originId: creditNote.id,
@@ -385,11 +401,12 @@ class InvoicingApplication {
           totalVatCents: creditNote.totalVatCents,
           totalTtcCents: creditNote.totalTtcCents,
           partyId: invoice.partyId,
-          label: `Avoir ${creditNote.number}`,
+          label: creditNoteLabel,
+          vatLabel: tr("VAT — {label}", { label: creditNoteLabel }),
         }),
       });
 
-      // Un avoir total solde la facture : elle ne doit plus apparaître en impayé.
+      // A full credit note settles the invoice: it must no longer show as unpaid.
       if (built.totalTtcCents >= invoice.totalTtcCents - invoice.paidAmountCents) {
         await repository.update(company.id, invoice.id, { status: "CANCELLED" });
       }
@@ -399,8 +416,8 @@ class InvoicingApplication {
   }
 
   /**
-   * Répercute un encaissement sur la facture. Appelé par le domaine `payments`,
-   * dans **sa** transaction, pour que règlement et statut restent cohérents.
+   * Applies a receipt to the invoice. Called by the `payments` domain, within **its**
+   * transaction, so that payment and status stay consistent.
    */
   async applyPayment(
     tx: Database,
@@ -410,12 +427,9 @@ class InvoicingApplication {
   ): Promise<SalesInvoice> {
     const repository = invoicingRepository.withTransaction(tx);
     const invoice = await repository.addPaidAmount(companyId, invoiceId, amountCents);
-    if (!invoice) throw new NotFoundError("Facture introuvable.");
+    if (!invoice) throw new NotFoundError("Invoice not found.");
     if (invoice.paidAmountCents > invoice.totalTtcCents) {
-      throw new BusinessRuleError(
-        "Le total réglé dépasserait le montant de la facture.",
-        "OVERPAYMENT"
-      );
+      throw new BusinessRuleError("The total paid would exceed the invoice amount.", "OVERPAYMENT");
     }
     const status = derivePaymentStatus(invoice.totalTtcCents, invoice.paidAmountCents);
     const updated = await repository.update(companyId, invoiceId, { status });
@@ -423,9 +437,8 @@ class InvoicingApplication {
   }
 
   /**
-   * Relit une facture complète. `database` doit être la transaction en cours quand
-   * l'appelant en a une : une facture qui vient d'y être créée n'est pas encore
-   * visible depuis une autre connexion.
+   * Reloads a full invoice. `database` must be the current transaction when the caller
+   * has one: an invoice just created in it is not yet visible from another connection.
    */
   async get(
     companyId: string,
@@ -435,7 +448,7 @@ class InvoicingApplication {
     const invoice = await invoicingRepository
       .withTransaction(database)
       .findById(companyId, invoiceId);
-    if (!invoice) throw new NotFoundError("Facture introuvable.");
+    if (!invoice) throw new NotFoundError("Invoice not found.");
     return invoice;
   }
 }

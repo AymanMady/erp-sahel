@@ -1,8 +1,8 @@
 /**
- * Création et modification d'un produit.
+ * Product creation and editing.
  *
- * Fiche **générique** : la même pour tout type de marchandise (pièce auto, vêtement,
- * alimentation…). Seuls la référence et la désignation sont obligatoires.
+ * **Generic** product sheet: the same for any kind of goods (auto parts, clothing,
+ * food…). Only the reference and the name are required.
  */
 
 import { useEffect, useState } from "react";
@@ -10,6 +10,7 @@ import { IconArrowLeft, IconDeviceFloppy } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useParams } from "wouter";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 import { errorMessage, fieldErrors } from "@/shared/api/api-error";
 import { catalogApi } from "@/entities/catalog/api";
@@ -45,6 +46,7 @@ interface ProductForm {
 }
 
 export default function ProductFormPage() {
+  const { t } = useTranslation("catalog");
   const params = useParams<{ id?: string }>();
   const productId = params.id;
   const isEdit = Boolean(productId);
@@ -57,7 +59,7 @@ export default function ProductFormPage() {
     name: "",
     description: "",
     categoryId: NONE,
-    unit: "pièce",
+    unit: t("productForm.defaultUnit"),
     barcode: "",
     purchasePriceCents: 0,
     salePriceCents: 0,
@@ -123,8 +125,8 @@ export default function ProductFormPage() {
           .updateProduct(productId as string, payload)
           .then((result) => ({ mode: "online" as const, result }));
       }
-      // Création hors ligne : mise en file, rejouée telle quelle à la synchronisation
-      // (stock initial compris).
+      // Offline creation: queued, replayed as-is on synchronization
+      // (initial stock included).
       return onlineOrQueued(
         () => catalogApi.createProduct(payload),
         () => queueProductCreate(payload as unknown as Parameters<typeof queueProductCreate>[0])
@@ -133,11 +135,13 @@ export default function ProductFormPage() {
     onSuccess: (outcome) => {
       const product = outcome.result;
       if (outcome.mode === "offline") {
-        toast.success(`Produit « ${product.name} » enregistré hors ligne.`, {
-          description: "Il sera créé sur le serveur à la prochaine synchronisation.",
+        toast.success(t("productForm.savedOffline", { name: product.name }), {
+          description: t("productForm.savedOfflineDescription"),
         });
       } else {
-        toast.success(isEdit ? "Produit mis à jour." : `Produit « ${product.name} » créé.`);
+        toast.success(
+          isEdit ? t("productForm.updated") : t("productForm.created", { name: product.name })
+        );
       }
       void queryClient.invalidateQueries({ queryKey: ["products"] });
       void queryClient.invalidateQueries({ queryKey: queryKeys.product(product.id) });
@@ -161,18 +165,18 @@ export default function ProductFormPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={isEdit ? "Modifier le produit" : "Nouveau produit"}
-        description="Seules la référence et la désignation sont obligatoires."
+        title={isEdit ? t("productForm.editTitle") : t("products.new")}
+        description={t("productForm.description")}
       >
         <Button variant="outline" asChild>
           <Link href="/products">
-            <IconArrowLeft className="size-4" />
-            Retour
+            <IconArrowLeft className="size-4 rtl:rotate-180" />
+            {t("common:actions.back")}
           </Link>
         </Button>
         <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
           <IconDeviceFloppy className="size-4" />
-          {mutation.isPending ? "Enregistrement…" : "Enregistrer"}
+          {mutation.isPending ? t("common:states.saving") : t("common:actions.save")}
         </Button>
       </PageHeader>
 
@@ -186,11 +190,11 @@ export default function ProductFormPage() {
         <div className="space-y-6 lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Informations générales</CardTitle>
+              <CardTitle>{t("productForm.generalInfo")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <FieldGrid>
-                <Field label="Référence" required error={errors.sku}>
+                <Field label={t("common:labels.reference")} required error={errors.sku}>
                   <Input
                     value={form.sku}
                     onChange={(event) => setForm({ ...form, sku: event.target.value })}
@@ -198,7 +202,7 @@ export default function ProductFormPage() {
                     className="tabular"
                   />
                 </Field>
-                <Field label="Code-barres" error={errors.barcode}>
+                <Field label={t("productForm.barcode")} error={errors.barcode}>
                   <Input
                     value={form.barcode}
                     onChange={(event) => setForm({ ...form, barcode: event.target.value })}
@@ -207,7 +211,7 @@ export default function ProductFormPage() {
                 </Field>
               </FieldGrid>
 
-              <Field label="Nom du produit" required error={errors.name}>
+              <Field label={t("productForm.productName")} required error={errors.name}>
                 <Input
                   value={form.name}
                   onChange={(event) => setForm({ ...form, name: event.target.value })}
@@ -215,7 +219,7 @@ export default function ProductFormPage() {
                 />
               </Field>
 
-              <Field label="Description">
+              <Field label={t("common:labels.description")}>
                 <Textarea
                   rows={3}
                   value={form.description}
@@ -224,7 +228,7 @@ export default function ProductFormPage() {
               </Field>
 
               <FieldGrid>
-                <Field label="Catégorie">
+                <Field label={t("common:labels.category")}>
                   <Select
                     value={form.categoryId}
                     onValueChange={(value) => setForm({ ...form, categoryId: value })}
@@ -233,7 +237,7 @@ export default function ProductFormPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={NONE}>Aucune</SelectItem>
+                      <SelectItem value={NONE}>{t("common:states.none")}</SelectItem>
                       {(categories ?? []).map((category) => (
                         <SelectItem key={category.id} value={category.id}>
                           {category.name}
@@ -242,7 +246,7 @@ export default function ProductFormPage() {
                     </SelectContent>
                   </Select>
                 </Field>
-                <Field label="Unité">
+                <Field label={t("productForm.unit")}>
                   <Input
                     value={form.unit}
                     onChange={(event) => setForm({ ...form, unit: event.target.value })}
@@ -255,7 +259,7 @@ export default function ProductFormPage() {
                   checked={form.isService}
                   onCheckedChange={(checked) => setForm({ ...form, isService: checked === true })}
                 />
-                Article non stocké (prestation)
+                {t("productForm.nonStocked")}
               </label>
             </CardContent>
           </Card>
@@ -264,22 +268,22 @@ export default function ProductFormPage() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Tarification</CardTitle>
+              <CardTitle>{t("productForm.pricing")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Field label="Prix d'achat HT">
+              <Field label={t("productForm.purchasePriceExclTax")}>
                 <MoneyInput
                   valueCents={form.purchasePriceCents}
                   onChange={(cents) => setForm({ ...form, purchasePriceCents: cents })}
                 />
               </Field>
-              <Field label="Prix de vente HT">
+              <Field label={t("productForm.salePriceExclTax")}>
                 <MoneyInput
                   valueCents={form.salePriceCents}
                   onChange={(cents) => setForm({ ...form, salePriceCents: cents })}
                 />
               </Field>
-              <Field label="Taux de TVA">
+              <Field label={t("productForm.vatRate")}>
                 <RateInput
                   valueBp={form.vatRateBp}
                   onChange={(bp) => setForm({ ...form, vatRateBp: bp })}
@@ -287,7 +291,7 @@ export default function ProductFormPage() {
               </Field>
               {form.salePriceCents > 0 && form.purchasePriceCents > 0 ? (
                 <p className="text-xs text-muted-foreground">
-                  Marge :{" "}
+                  {t("productForm.margin")}{" "}
                   <span className="tabular font-medium text-foreground">
                     {(
                       ((form.salePriceCents - form.purchasePriceCents) / form.salePriceCents) *
@@ -303,10 +307,10 @@ export default function ProductFormPage() {
           {!form.isService ? (
             <Card>
               <CardHeader>
-                <CardTitle>Stock</CardTitle>
+                <CardTitle>{t("products.stock")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Field label="Seuil d'alerte" hint="0 = aucune alerte de réapprovisionnement">
+                <Field label={t("productForm.minStock")} hint={t("productForm.minStockHint")}>
                   <QuantityInput
                     value={form.minStock}
                     onChange={(value) => setForm({ ...form, minStock: value })}
@@ -315,7 +319,7 @@ export default function ProductFormPage() {
 
                 {!isEdit ? (
                   <>
-                    <Field label="Magasin de stock initial">
+                    <Field label={t("productForm.initialStockWarehouse")}>
                       <Select
                         value={initialStock.warehouseId}
                         onValueChange={(value) =>
@@ -323,10 +327,10 @@ export default function ProductFormPage() {
                         }
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Aucun" />
+                          <SelectValue placeholder={t("common:states.none")} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value={NONE}>Aucun stock initial</SelectItem>
+                          <SelectItem value={NONE}>{t("productForm.noInitialStock")}</SelectItem>
                           {(warehouses ?? []).map((warehouse) => (
                             <SelectItem key={warehouse.id} value={warehouse.id}>
                               {warehouse.name}
@@ -337,7 +341,7 @@ export default function ProductFormPage() {
                     </Field>
                     {initialStock.warehouseId !== NONE ? (
                       <FieldGrid>
-                        <Field label="Quantité">
+                        <Field label={t("common:labels.quantity")}>
                           <QuantityInput
                             value={initialStock.quantity}
                             onChange={(value) =>
@@ -345,7 +349,7 @@ export default function ProductFormPage() {
                             }
                           />
                         </Field>
-                        <Field label="Coût unitaire">
+                        <Field label={t("productForm.unitCost")}>
                           <MoneyInput
                             valueCents={initialStock.unitCostCents}
                             onChange={(cents) =>
@@ -357,10 +361,7 @@ export default function ProductFormPage() {
                     ) : null}
                   </>
                 ) : (
-                  <p className="text-xs text-muted-foreground">
-                    Le stock se modifie par des mouvements, jamais directement sur la fiche — c'est
-                    ce qui rend le solde auditable.
-                  </p>
+                  <p className="text-xs text-muted-foreground">{t("productForm.stockEditHint")}</p>
                 )}
               </CardContent>
             </Card>

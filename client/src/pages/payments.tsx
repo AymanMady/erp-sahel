@@ -1,7 +1,8 @@
-/** Journal des règlements clients et fournisseurs. */
+/** Customer and supplier payments journal. */
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import { PAYMENT_METHODS } from "@shared/schema";
 import { formatDate } from "@shared/format";
@@ -20,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 const ALL = "ALL";
 
 export default function PaymentsPage() {
+  const { t } = useTranslation("payments");
   const [method, setMethod] = useState(ALL);
   const [direction, setDirection] = useState(ALL);
   const [fromDate, setFromDate] = useState("");
@@ -42,18 +44,18 @@ export default function PaymentsPage() {
   const columns: Column<PaymentRow>[] = [
     {
       id: "number",
-      header: "Numéro",
+      header: t("common:labels.number"),
       cell: (row) => <span className="tabular font-medium">{row.number}</span>,
     },
-    { id: "date", header: "Date", cell: (row) => formatDate(row.paymentDate) },
+    { id: "date", header: t("common:labels.date"), cell: (row) => formatDate(row.paymentDate) },
     {
       id: "party",
-      header: "Tiers",
+      header: t("columns.party"),
       cell: (row) => <span className="font-medium">{row.partyName}</span>,
     },
     {
       id: "invoice",
-      header: "Facture",
+      header: t("columns.invoice"),
       hideOnMobile: true,
       cell: (row) =>
         row.invoiceNumber ? (
@@ -64,18 +66,18 @@ export default function PaymentsPage() {
     },
     {
       id: "method",
-      header: "Mode",
+      header: t("columns.method"),
       cell: (row) => <Badge variant="outline">{paymentMethodLabel(row.paymentMethod)}</Badge>,
     },
     {
       id: "account",
-      header: "Compte",
+      header: t("columns.account"),
       hideOnMobile: true,
       cell: (row) => row.bankAccountName ?? "—",
     },
     {
       id: "amount",
-      header: "Montant",
+      header: t("common:labels.amount"),
       align: "end",
       cell: (row) => (
         <Money cents={row.direction === "IN" ? row.amountCents : -row.amountCents} tone="auto" />
@@ -89,10 +91,7 @@ export default function PaymentsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Règlements"
-        description="Encaissements et décaissements, avec leur impact en trésorerie."
-      />
+      <PageHeader title={t("title")} description={t("description")} />
 
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <Select value={direction} onValueChange={setDirection}>
@@ -100,9 +99,9 @@ export default function PaymentsPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>Tous les sens</SelectItem>
-            <SelectItem value="IN">Encaissements</SelectItem>
-            <SelectItem value="OUT">Décaissements</SelectItem>
+            <SelectItem value={ALL}>{t("filters.allDirections")}</SelectItem>
+            <SelectItem value="IN">{t("filters.incoming")}</SelectItem>
+            <SelectItem value="OUT">{t("filters.outgoing")}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={method} onValueChange={setMethod}>
@@ -110,7 +109,7 @@ export default function PaymentsPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>Tous les modes</SelectItem>
+            <SelectItem value={ALL}>{t("filters.allMethods")}</SelectItem>
             {PAYMENT_METHODS.map((entry) => (
               <SelectItem key={entry} value={entry}>
                 {paymentMethodLabel(entry)}
@@ -118,8 +117,18 @@ export default function PaymentsPage() {
             ))}
           </SelectContent>
         </Select>
-        <Input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
-        <Input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
+        <Input
+          type="date"
+          aria-label={t("common:labels.from")}
+          value={fromDate}
+          onChange={(event) => setFromDate(event.target.value)}
+        />
+        <Input
+          type="date"
+          aria-label={t("common:labels.to")}
+          value={toDate}
+          onChange={(event) => setToDate(event.target.value)}
+        />
       </div>
 
       <ResourceTable
@@ -128,8 +137,8 @@ export default function PaymentsPage() {
         rowKey={(row) => row.id}
         loading={isLoading}
         error={error ? errorMessage(error) : null}
-        emptyTitle="Aucun règlement"
-        emptyDescription="Les règlements s'enregistrent depuis une facture ou depuis la caisse."
+        emptyTitle={t("empty.title")}
+        emptyDescription={t("empty.description")}
         pagination={{
           total: data?.total ?? 0,
           limit: page.limit,
@@ -140,8 +149,7 @@ export default function PaymentsPage() {
 
       {(data?.items.length ?? 0) > 0 ? (
         <p className="text-end text-sm text-muted-foreground">
-          Total encaissé sur cette page :{" "}
-          <Money cents={totalIn} className="font-medium text-foreground" />
+          {t("totalInOnPage")} <Money cents={totalIn} className="font-medium text-foreground" />
         </p>
       ) : null}
     </div>

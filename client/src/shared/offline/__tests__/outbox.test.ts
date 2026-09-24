@@ -1,9 +1,9 @@
 /**
- * File d'attente hors-ligne : persistance, ordre causal et acquittements.
+ * Offline queue: persistence, causal order and acknowledgements.
  *
- * `fake-indexeddb` reproduit fidèlement IndexedDB en mémoire : ces tests vérifient donc
- * le comportement réel du stockage du poste, y compris la survie des opérations après
- * « fermeture du navigateur » (§16.3 du cahier des charges).
+ * `fake-indexeddb` faithfully reproduces IndexedDB in memory: these tests therefore
+ * check the real behavior of the device storage, including operations surviving a
+ * "browser close" (§16.3 of the specification).
  */
 
 import "fake-indexeddb/auto";
@@ -31,8 +31,8 @@ beforeEach(async () => {
   await offlineDb.cache.clear();
 });
 
-describe("mise en file", () => {
-  it("attribue un identifiant d'idempotence et une séquence croissante", async () => {
+describe("enqueueing", () => {
+  it("assigns an idempotency identifier and an increasing sequence", async () => {
     const first = await enqueue({ entity: "core.party", payload: { name: "A" }, label: "A" });
     const second = await enqueue({ entity: "core.party", payload: { name: "B" }, label: "B" });
 
@@ -41,7 +41,7 @@ describe("mise en file", () => {
     expect(first.status).toBe("pending");
   });
 
-  it("accepte un identifiant fourni, pour lier une facture à son règlement", async () => {
+  it("accepts a provided identifier, to link an invoice to its payment", async () => {
     const invoiceUuid = "11111111-1111-4111-8111-111111111111";
     const invoice = await enqueue({
       clientUuid: invoiceUuid,
@@ -52,7 +52,7 @@ describe("mise en file", () => {
     const payment = await enqueue({
       entity: "payments.payment",
       payload: { invoiceClientUuid: invoiceUuid },
-      label: "Règlement",
+      label: "Payment",
       dependsOn: [invoiceUuid],
     });
 
@@ -60,9 +60,9 @@ describe("mise en file", () => {
     expect(payment.dependsOn).toEqual([invoiceUuid]);
   });
 
-  it("conserve les opérations après réouverture de la base", async () => {
-    await enqueue({ entity: "core.party", payload: { name: "Persistant" }, label: "Tiers" });
-    // Fermer puis rouvrir reproduit la fermeture du navigateur.
+  it("keeps operations after reopening the database", async () => {
+    await enqueue({ entity: "core.party", payload: { name: "Persistent" }, label: "Party" });
+    // Closing then reopening reproduces the browser being closed.
     offlineDb.close();
     await offlineDb.open();
 
@@ -70,13 +70,13 @@ describe("mise en file", () => {
   });
 });
 
-describe("ordre de rejeu", () => {
-  it("restitue les opérations dans l'ordre causal, pas d'insertion", async () => {
+describe("replay order", () => {
+  it("returns operations in causal order, not insertion order", async () => {
     const a = await enqueue({ entity: "core.party", payload: {}, label: "1" });
     const b = await enqueue({ entity: "invoicing.sales_invoice", payload: {}, label: "2" });
     const c = await enqueue({ entity: "payments.payment", payload: {}, label: "3" });
 
-    // On perturbe l'ordre d'écriture : la file doit rester triée par `localSeq`.
+    // Disturb the write order: the queue must stay sorted by `localSeq`.
     await offlineDb.outbox.update(b.clientUuid, { updatedAt: new Date(0).toISOString() });
 
     const pending = await listPending();
@@ -88,9 +88,9 @@ describe("ordre de rejeu", () => {
   });
 });
 
-describe("acquittements", () => {
-  it("retire de la file une opération créée ou dupliquée", async () => {
-    const record = await enqueue({ entity: "core.party", payload: {}, label: "Tiers" });
+describe("acknowledgements", () => {
+  it("removes a created or duplicate operation from the queue", async () => {
+    const record = await enqueue({ entity: "core.party", payload: {}, label: "Party" });
     await markSending([record.clientUuid]);
     await acknowledge({
       clientUuid: record.clientUuid,
@@ -105,38 +105,42 @@ describe("acquittements", () => {
     expect(stored.assignedNumber).toBe("CLI-0001");
   });
 
-  it("garde en file une opération reportée", async () => {
-    const record = await enqueue({ entity: "payments.payment", payload: {}, label: "Règlement" });
+  it("keeps a deferred operation in the queue", async () => {
+    const record = await enqueue({ entity: "payments.payment", payload: {}, label: "Payment" });
     await acknowledge({
       clientUuid: record.clientUuid,
       status: "deferred",
-      error: "dépendance absente",
+      error: "missing dependency",
     });
 
-    // Un report doit être rejoué : l'opération reste envoyable.
+    // A deferral must be replayed: the operation stays sendable.
     const pending = await listPending();
     expect(pending.map((entry) => entry.clientUuid)).toContain(record.clientUuid);
   });
 
-  it("compte les tentatives et permet de réessayer les erreurs", async () => {
-    const record = await enqueue({ entity: "core.party", payload: {}, label: "Tiers" });
-    await acknowledge({ clientUuid: record.clientUuid, status: "error", error: "refus serveur" });
+  it("counts attempts and allows retrying errors", async () => {
+    const record = await enqueue({ entity: "core.party", payload: {}, label: "Party" });
+    await acknowledge({
+      clientUuid: record.clientUuid,
+      status: "error",
+      error: "server rejection",
+    });
 
     expect(await countFailed()).toBe(1);
     const [failed] = await listAll();
     expect(failed.attempts).toBe(1);
-    expect(failed.lastError).toBe("refus serveur");
+    expect(failed.lastError).toBe("server rejection");
 
     await retryFailed();
     expect(await countFailed()).toBe(0);
     expect(await countPending()).toBe(1);
   });
 
-  it("n'abandonne une opération que sur demande explicite", async () => {
-    const record = await enqueue({ entity: "core.party", payload: {}, label: "Tiers" });
-    await acknowledge({ clientUuid: record.clientUuid, status: "error", error: "refus" });
+  it("discards an operation only on explicit request", async () => {
+    const record = await enqueue({ entity: "core.party", payload: {}, label: "Party" });
+    await acknowledge({ clientUuid: record.clientUuid, status: "error", error: "rejected" });
 
-    // La purge automatique ne touche jamais une opération non synchronisée.
+    // The automatic purge never touches an unsynchronized operation.
     await purgeSynced(0);
     expect(await countFailed()).toBe(1);
 
@@ -146,14 +150,14 @@ describe("acquittements", () => {
 });
 
 describe("purge", () => {
-  it("ne supprime que les opérations synchronisées anciennes", async () => {
-    const synced = await enqueue({ entity: "core.party", payload: {}, label: "Ancien" });
+  it("only deletes old synchronized operations", async () => {
+    const synced = await enqueue({ entity: "core.party", payload: {}, label: "Old" });
     await acknowledge({ clientUuid: synced.clientUuid, status: "synced", serverId: "srv" });
     await offlineDb.outbox.update(synced.clientUuid, {
       updatedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
     });
 
-    const pending = await enqueue({ entity: "core.party", payload: {}, label: "Récent" });
+    const pending = await enqueue({ entity: "core.party", payload: {}, label: "Recent" });
 
     const removed = await purgeSynced(7);
     expect(removed).toBe(1);

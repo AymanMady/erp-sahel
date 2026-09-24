@@ -1,4 +1,4 @@
-/** Tiers : clients, fournisseurs, prospects — un tiers peut cumuler les rôles [FR-TIERS-3]. */
+/** Parties: customers, suppliers, prospects — a party can hold several roles [FR-TIERS-3]. */
 
 import { index, integer, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
@@ -23,12 +23,12 @@ export const parties = pgTable(
     partyType: text("party_type").$type<PartyType>().default("CUSTOMER").notNull(),
     email: text("email").default("").notNull(),
     phone: text("phone").default("").notNull(),
-    /** Identifiant fiscal (NIF) — critère de recherche [FR-TIERS-4]. */
+    /** Tax identification number (NIF) — search criterion [FR-TIERS-4]. */
     vatNumber: text("vat_number").default("").notNull(),
     creditLimitCents: moneyCents("credit_limit_cents").default(0).notNull(),
-    /** Conditions de paiement en jours (échéance = date document + N jours). */
+    /** Payment terms in days (due date = document date + N days). */
     paymentTermsDays: integer("payment_terms_days").default(0).notNull(),
-    /** Délai de livraison par défaut du fournisseur [FR-TIERS-2]. */
+    /** Supplier's default delivery lead time [FR-TIERS-2]. */
     defaultLeadTimeDays: integer("default_lead_time_days").default(0).notNull(),
     assignedToId: uuid("assigned_to_id").references(() => users.id, { onDelete: "set null" }),
     notes: text("notes").default("").notNull(),
@@ -43,7 +43,7 @@ export const parties = pgTable(
 );
 
 export const insertPartySchema = createInsertSchema(parties, {
-  name: (s) => s.min(1, "Le nom du tiers est obligatoire"),
+  name: (s) => s.min(1, "Party name is required"),
   email: (s) => s.email("Adresse e-mail invalide").or(z.literal("")),
 }).omit({ id: true, createdAt: true, updatedAt: true });
 

@@ -1,6 +1,6 @@
 /**
- * Mode hors ligne des écrans de gestion : cache des lectures `GET` et mise en file
- * des créations faites dans les formulaires.
+ * Offline mode of the management screens: cache of `GET` reads and queueing of the
+ * creations made in forms.
  */
 
 import "fake-indexeddb/auto";
@@ -28,13 +28,13 @@ beforeEach(async () => {
 const networkError = () =>
   new ApiError({ status: 0, code: "NETWORK_ERROR", message: "x", isNetworkError: true });
 
-describe("cache des lectures", () => {
-  it("relit une réponse par son URL, quel que soit l'ordre des paramètres", async () => {
+describe("read cache", () => {
+  it("reads a response back by its URL, whatever the parameter order", async () => {
     await storeCachedResponse("/api/invoices/abc?b=2&a=1", { id: "abc" });
     expect(await readCachedResponse("/api/invoices/abc?a=1&b=2")).toEqual({ id: "abc" });
   });
 
-  it("reconstitue une page à partir d'une liste préchargée plus large", async () => {
+  it("rebuilds a page from a wider prefetched list", async () => {
     const items = Array.from({ length: 60 }, (_, index) => ({ id: String(index) }));
     await storeCachedResponse("/api/invoices?limit=200&offset=0", {
       items,
@@ -53,12 +53,12 @@ describe("cache des lectures", () => {
     expect(page2.offset).toBe(25);
   });
 
-  it("ne mélange pas des listes aux filtres différents", async () => {
+  it("does not mix lists with different filters", async () => {
     await storeCachedResponse("/api/invoices?limit=200&offset=0", { items: [{ id: "1" }] });
     expect(await readCachedResponse("/api/invoices?limit=25&offset=0&status=PAID")).toBe(undefined);
   });
 
-  it("ne conserve jamais l'authentification, mais garde l'administration consultable", async () => {
+  it("never keeps authentication, but keeps administration viewable", async () => {
     await storeCachedResponse("/api/auth/me", { id: "u" });
     await storeCachedResponse("/api/users", [{ id: "u" }]);
     await storeCachedResponse("/api/roles", [{ id: "r" }]);
@@ -69,7 +69,7 @@ describe("cache des lectures", () => {
     expect(await readCachedResponse("/api/sync/status")).toEqual({ stats: {} });
   });
 
-  it("applique localement recherche, statut et dates à une liste préchargée", async () => {
+  it("applies search, status and dates locally to a prefetched list", async () => {
     await storeCachedResponse("/api/invoices?limit=200&offset=0", {
       items: [
         { id: "1", number: "FAC-1", status: "PAID", partyName: "Garage Atlas", date: "2026-09-01" },
@@ -101,15 +101,15 @@ describe("cache des lectures", () => {
   });
 });
 
-describe("créations hors ligne", () => {
-  it("met en file seulement si le serveur est injoignable", async () => {
+describe("offline creations", () => {
+  it("queues only when the server is unreachable", async () => {
     const offline = await onlineOrQueued(
       () => Promise.reject(networkError()),
       () => Promise.resolve("queued")
     );
     expect(offline).toEqual({ mode: "offline", result: "queued" });
 
-    const refusal = new ApiError({ status: 422, code: "VALIDATION_ERROR", message: "refus" });
+    const refusal = new ApiError({ status: 422, code: "VALIDATION_ERROR", message: "rejected" });
     await expect(
       onlineOrQueued(
         () => Promise.reject(refusal),
@@ -118,19 +118,19 @@ describe("créations hors ligne", () => {
     ).rejects.toBe(refusal);
   });
 
-  it("rend un tiers créé hors ligne aussitôt sélectionnable", async () => {
-    const party = await queuePartyCreate({ name: "Garage Nouveau", partyType: "CUSTOMER" });
+  it("makes a party created offline immediately selectable", async () => {
+    const party = await queuePartyCreate({ name: "New Garage", partyType: "CUSTOMER" });
     const pending = await pendingParties();
     expect(pending.map((row) => row.id)).toEqual([party.id]);
-    expect(pending[0].name).toBe("Garage Nouveau");
+    expect(pending[0].name).toBe("New Garage");
   });
 
-  it("lie un devis au tiers créé hors ligne par dépendance", async () => {
-    const party = await queuePartyCreate({ name: "Client local", partyType: "CUSTOMER" });
+  it("links a quote to the party created offline through a dependency", async () => {
+    const party = await queuePartyCreate({ name: "Local customer", partyType: "CUSTOMER" });
     const { provisionalNumber } = await queueQuoteCreate({
       partyId: party.id,
       date: "2026-09-23",
-      lines: [{ description: "Filtre", quantity: 2, unitPriceCents: 1500 }],
+      lines: [{ description: "Filter", quantity: 2, unitPriceCents: 1500 }],
     });
 
     const quote = (await offlineDb.outbox.toArray()).find((row) => row.entity === "sales.quote");
@@ -140,12 +140,12 @@ describe("créations hors ligne", () => {
     expect(quote?.dependsOn).toEqual([party.id]);
   });
 
-  it("référence directement un tiers déjà connu du serveur", async () => {
+  it("references a party already known to the server directly", async () => {
     const serverId = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
     await queueInvoiceCreate({
       partyId: serverId,
       date: "2026-09-23",
-      lines: [{ description: "Pièce", quantity: 1, unitPriceCents: 1000 }],
+      lines: [{ description: "Part", quantity: 1, unitPriceCents: 1000 }],
     });
     const [invoice] = await offlineDb.outbox.toArray();
     expect(invoice.payload.partyId).toBe(serverId);

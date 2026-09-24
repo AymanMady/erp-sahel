@@ -1,4 +1,4 @@
-/** Frontière applicative des règlements. */
+/** Application boundary of payments. */
 
 import { tenancyApplication } from "../tenancy/application";
 import { paymentsApplication } from "./application";

@@ -1,4 +1,4 @@
-/** Routes de la facturation client. */
+/** Customer invoicing routes. */
 
 import type { Express } from "express";
 

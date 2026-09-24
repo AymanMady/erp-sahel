@@ -1,4 +1,4 @@
-/** Frontière applicative de la facturation. */
+/** Application boundary of invoicing. */
 
 import { invoicingApplication } from "./application";
 import { invoicingRepository } from "./repository";

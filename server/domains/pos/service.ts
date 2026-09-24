@@ -1,4 +1,4 @@
-/** Frontière applicative du point de vente. */
+/** Application boundary of the point of sale. */
 
 import { asc } from "drizzle-orm";
 
@@ -33,14 +33,14 @@ export class PosService {
       registerId,
       updateRegisterSchema.parse(body)
     );
-    if (!register) throw new NotFoundError("Caisse introuvable.");
+    if (!register) throw new NotFoundError("Register not found.");
     return register;
   }
 
   async archiveRegister(companyId: string, id: unknown) {
     const { id: registerId } = idParamSchema.parse({ id });
     const archived = await posRegistersRepository.archive(companyId, registerId);
-    if (!archived) throw new NotFoundError("Caisse introuvable.");
+    if (!archived) throw new NotFoundError("Register not found.");
     return { success: true as const };
   }
 

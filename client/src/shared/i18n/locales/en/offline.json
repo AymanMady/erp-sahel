@@ -1,0 +1,58 @@
+{
+  "api": {
+    "requestFailed": "The request failed.",
+    "serverUnreachable": "Server unreachable."
+  },
+  "sync": {
+    "failed": "Synchronization failed."
+  },
+  "errors": {
+    "productNotSynced": "This product is not synchronized yet: its stock can be adjusted after synchronization."
+  },
+  "write": {
+    "label": "{{verb}} — {{resource}}",
+    "labelNamed": "{{verb}} — {{resource}} “{{name}}”",
+    "customAction": "Action “{{action}}”",
+    "pendingNumber": "Pending",
+    "savedOffline": "Saved offline",
+    "savedOfflineDescription": "The change will be sent to the server at the next synchronization.",
+    "actions": {
+      "create": "Creation",
+      "update": "Update",
+      "delete": "Deletion"
+    }
+  },
+  "resources": {
+    "user": "User",
+    "role": "Role",
+    "setting": "Setting",
+    "company": "Company",
+    "module": "Module",
+    "category": "Category",
+    "product": "Product",
+    "service": "Service",
+    "party": "Party",
+    "warehouse": "Warehouse",
+    "stock": "Stock",
+    "quote": "Quote",
+    "salesOrder": "Sales order",
+    "invoice": "Invoice",
+    "creditNote": "Credit note",
+    "payment": "Payment",
+    "purchaseOrder": "Purchase order",
+    "goodsReceipt": "Goods receipt",
+    "supplierInvoice": "Supplier invoice",
+    "treasury": "Treasury",
+    "pos": "Point of sale",
+    "accounting": "Accounting",
+    "write": "Write"
+  },
+  "outboxLabels": {
+    "party": "Party “{{name}}”",
+    "product": "Product {{sku}} “{{name}}”",
+    "quote": "Quote {{number}}",
+    "invoice": "Invoice {{number}}",
+    "payment": "Payment {{reference}}",
+    "stockAdjustment": "Stock adjustment ({{quantity}})"
+  }
+}

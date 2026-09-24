@@ -1,4 +1,4 @@
-/** Frontière HTTP du stock. */
+/** HTTP boundary of inventory. */
 
 import type { Request, Response } from "express";
 

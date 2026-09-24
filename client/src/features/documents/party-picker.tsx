@@ -1,6 +1,7 @@
-/** Sélecteur de tiers (client ou fournisseur) avec recherche serveur et création rapide. */
+/** Party picker (customer or supplier) with server-side search and quick creation. */
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { IconChevronDown, IconPlus } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -19,7 +20,7 @@ export function PartyPicker({
   value,
   onChange,
   role = "CUSTOMER",
-  placeholder = "Sélectionner un client",
+  placeholder,
   disabled,
 }: {
   value: Party | null;
@@ -28,6 +29,7 @@ export function PartyPicker({
   placeholder?: string;
   disabled?: boolean;
 }) {
+  const { t } = useTranslation("documents");
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [search, setSearch] = useState("");
@@ -49,7 +51,9 @@ export function PartyPicker({
         onClick={() => setOpen(true)}
         disabled={disabled}
       >
-        <span className={value ? "" : "text-muted-foreground"}>{value?.name ?? placeholder}</span>
+        <span className={value ? "" : "text-muted-foreground"}>
+          {value?.name ?? placeholder ?? t("partyPicker.selectCustomer")}
+        </span>
         <IconChevronDown className="size-4 opacity-50" />
       </Button>
 
@@ -57,7 +61,9 @@ export function PartyPicker({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {role === "SUPPLIER" ? "Choisir un fournisseur" : "Choisir un client"}
+              {role === "SUPPLIER"
+                ? t("partyPicker.chooseSupplier")
+                : t("partyPicker.chooseCustomer")}
             </DialogTitle>
           </DialogHeader>
 
@@ -67,7 +73,7 @@ export function PartyPicker({
               <Button
                 variant="outline"
                 size="icon"
-                aria-label="Nouveau tiers"
+                aria-label={t("partyPicker.newParty")}
                 onClick={() => setCreating(true)}
               >
                 <IconPlus className="size-4" />
@@ -96,7 +102,7 @@ export function PartyPicker({
               ))}
               {(data?.items.length ?? 0) === 0 ? (
                 <p className="py-8 text-center text-sm text-muted-foreground">
-                  Aucun tiers trouvé.
+                  {t("partyPicker.noResults")}
                 </p>
               ) : null}
             </div>

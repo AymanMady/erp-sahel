@@ -1,4 +1,4 @@
-/** Persistance des règlements. */
+/** Payment persistence. */
 
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 
@@ -99,7 +99,7 @@ export class PaymentsRepository {
     };
   }
 
-  /** Encaissements d'une période, ventilés par mode — rapport de caisse [FR-RPT-1]. */
+  /** Receipts of a period, broken down by method — cash report [FR-RPT-1]. */
   async collectionsByMethod(companyId: string, fromDate: string, toDate: string) {
     return this.database
       .select({
@@ -120,7 +120,7 @@ export class PaymentsRepository {
       .groupBy(payments.paymentMethod);
   }
 
-  /** Total encaissé sur une session de caisse, par mode — clôture POS [FR-POS-2]. */
+  /** Total collected in a register session, by method — POS closing [FR-POS-2]. */
   async sessionTotals(companyId: string, posSessionId: string) {
     const rows = await this.database
       .select({

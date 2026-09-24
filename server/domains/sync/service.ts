@@ -1,4 +1,4 @@
-/** Frontière applicative de la synchronisation. */
+/** Application boundary of synchronization. */
 
 import { and, eq, gt, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -16,7 +16,7 @@ const pullQuerySchema = z.object({
   deviceId: z.string().max(128).optional(),
 });
 
-/** Plateforme déclarée par le poste ; `web` par défaut (le plus restrictif). */
+/** Platform declared by the device; `web` by default (the most restrictive). */
 function normalizePlatform(value: unknown): string {
   const platform = String(value ?? "web").toLowerCase();
   return platform === "desktop" || platform === "android" ? platform : "web";
@@ -46,9 +46,9 @@ export class SyncService {
   }
 
   /**
-   * Delta depuis un curseur : uniquement les référentiels que le poste affiche.
-   * Sans `since`, on renvoie un delta vide plutôt que tout le catalogue — le poste
-   * doit alors demander un instantané complet, ce qui est explicite et borné.
+   * Delta since a cursor: only the reference data the device displays.
+   * Without `since`, an empty delta is returned rather than the whole catalog — the
+   * device must then request a full snapshot, which is explicit and bounded.
    */
   async pull(companyId: string, query: unknown) {
     const { since } = pullQuerySchema.parse(query ?? {});
@@ -103,7 +103,7 @@ export class SyncService {
       parties: changedParties,
       services: changedServices,
       stock: changedStock,
-      /** Opérations ingérées depuis d'autres postes — utile au suivi terrain. */
+      /** Operations ingested from other devices — useful for field monitoring. */
       operations: operations.map((operation) => ({
         clientUuid: operation.clientUuid,
         entity: operation.entity,
@@ -139,8 +139,8 @@ export class SyncService {
 
   async journal(companyId: string) {
     const rows = await syncApplication.listRecent(companyId, 200);
-    // Le journal d'une écriture HTTP rejouée conserve la réponse servie aux rejeux :
-    // elle n'a rien à faire à l'écran de supervision.
+    // The journal row of a replayed HTTP write keeps the response served to replays:
+    // it does not belong on the supervision screen.
     return rows.map((row) => (row.entity === "http.request" ? { ...row, payload: null } : row));
   }
 }

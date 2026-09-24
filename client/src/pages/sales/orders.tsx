@@ -1,6 +1,7 @@
-/** Liste des commandes de vente. */
+/** Sales order list. */
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 
@@ -21,6 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 const ALL = "ALL";
 
 export default function SalesOrdersPage() {
+  const { t } = useTranslation("sales");
   const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState(ALL);
@@ -41,25 +43,29 @@ export default function SalesOrdersPage() {
   const columns: Column<SalesOrder & { partyName: string }>[] = [
     {
       id: "number",
-      header: "Numéro",
+      header: t("common:labels.number"),
       cell: (row) => <span className="tabular font-medium">{row.number}</span>,
     },
-    { id: "date", header: "Date", cell: (row) => formatDate(row.date) },
+    { id: "date", header: t("common:labels.date"), cell: (row) => formatDate(row.date) },
     {
       id: "party",
-      header: "Client",
+      header: t("common:labels.customer"),
       cell: (row) => <span className="font-medium">{row.partyName}</span>,
     },
     {
       id: "delivery",
-      header: "Livraison",
+      header: t("orders.columns.delivery"),
       hideOnMobile: true,
       cell: (row) => (row.deliveryDate ? formatDate(row.deliveryDate) : "—"),
     },
-    { id: "status", header: "Statut", cell: (row) => <StatusBadge status={row.status} /> },
+    {
+      id: "status",
+      header: t("common:labels.status"),
+      cell: (row) => <StatusBadge status={row.status} />,
+    },
     {
       id: "total",
-      header: "Total TTC",
+      header: t("common:labels.totalInclTax"),
       align: "end",
       cell: (row) => <Money cents={row.totalTtcCents} />,
     },
@@ -67,10 +73,7 @@ export default function SalesOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Commandes de vente"
-        description="Engagements clients, à facturer une fois livrés."
-      />
+      <PageHeader title={t("orders.title")} description={t("orders.description")} />
 
       <div className="flex flex-col gap-2 sm:flex-row">
         <SearchInput
@@ -79,7 +82,7 @@ export default function SalesOrdersPage() {
             setSearch(value);
             setPage((current) => ({ ...current, offset: 0 }));
           }}
-          placeholder="Numéro ou client…"
+          placeholder={t("searchPlaceholder")}
           className="sm:max-w-sm"
         />
         <Select
@@ -93,7 +96,7 @@ export default function SalesOrdersPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>Tous les statuts</SelectItem>
+            <SelectItem value={ALL}>{t("allStatuses")}</SelectItem>
             {SALES_ORDER_STATUSES.map((entry) => (
               <SelectItem key={entry} value={entry}>
                 {statusLabel(entry)}
@@ -109,8 +112,8 @@ export default function SalesOrdersPage() {
         rowKey={(row) => row.id}
         loading={isLoading}
         error={error ? errorMessage(error) : null}
-        emptyTitle="Aucune commande"
-        emptyDescription="Les commandes naissent de la conversion d'un devis accepté."
+        emptyTitle={t("orders.emptyTitle")}
+        emptyDescription={t("orders.emptyDescription")}
         onRowClick={(row) => navigate(`/sales-orders/${row.id}`)}
         pagination={{
           total: data?.total ?? 0,

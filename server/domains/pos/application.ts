@@ -1,10 +1,10 @@
 /**
- * Orchestration du point de vente.
+ * Point-of-sale orchestration.
  *
- * Un **ticket POS est une facture de vente validée** (`source = 'POS'`) accompagnée de
- * son règlement : la même transaction produit le document, le décrément de stock,
- * l'écriture comptable et le mouvement de caisse. C'est ce qui permet au POS de
- * fonctionner hors-ligne sans second circuit comptable à réconcilier ([FR-POS-3]).
+ * A **POS ticket is a validated sales invoice** (`source = 'POS'`) together with its
+ * payment: the same transaction produces the document, the stock decrement, the
+ * accounting entry and the cash movement. This is what lets the POS work offline
+ * without a second accounting flow to reconcile ([FR-POS-3]).
  */
 
 import { todayInput } from "@shared/format";
@@ -12,6 +12,7 @@ import type { Company, PaymentMethod, PosSession } from "@shared/schema";
 import { runInTransaction, type Database } from "../../db";
 import type { RawDocumentLine } from "../../shared/documents/line-builder";
 import { BusinessRuleError, NotFoundError } from "../../shared/errors/app-error";
+import { tr } from "../../shared/i18n";
 import { invoicingApplication } from "../invoicing/application";
 import type { InvoiceWithLines } from "../invoicing/repository";
 import { partiesApplication } from "../parties/application";
@@ -44,7 +45,7 @@ export interface CreateTicketInput {
   date?: string;
   clientUuid?: string | null;
   provisionalNumber?: string;
-  /** `clientUuid` du règlement, pour que le rejeu hors-ligne reste idempotent. */
+  /** `clientUuid` of each payment, so that offline replay stays idempotent. */
   paymentClientUuids?: (string | null)[];
 }
 
@@ -66,12 +67,15 @@ class PosApplication {
       const register = await posRegistersRepository
         .withTransaction(database)
         .findById(company.id, input.registerId);
-      if (!register) throw new NotFoundError("Caisse introuvable.");
+      if (!register) throw new NotFoundError("Register not found.");
 
       const open = await repository.findOpenSession(company.id, input.registerId);
       if (open) {
         throw new BusinessRuleError(
-          `La caisse « ${register.name} » a déjà une session ouverte. Clôturez-la avant d'en ouvrir une nouvelle.`,
+          tr(
+            'Register "{register}" already has an open session. Close it before opening a new one.',
+            { register: register.name }
+          ),
           "POS_SESSION_ALREADY_OPEN",
           { sessionId: open.id }
         );
@@ -93,8 +97,9 @@ class PosApplication {
   }
 
   /**
-   * Clôture : recalcule l'attendu à partir des règlements **de la session**, puis fige
-   * les totaux. L'écart (compté − attendu) reste visible pour le contrôle de caisse.
+   * Closing: recomputes the expected balance from the **session's** payments, then
+   * freezes the totals. The difference (counted − expected) stays visible for cash
+   * control.
    */
   async closeSession(
     company: Company,
@@ -109,10 +114,10 @@ class PosApplication {
     const run = async (database: Database) => {
       const repository = posRepository.withTransaction(database);
       const session = await repository.findById(company.id, input.sessionId);
-      if (!session) throw new NotFoundError("Session de caisse introuvable.");
+      if (!session) throw new NotFoundError("Register session not found.");
       if (session.status === "CLOSED") {
-        // Rejouer une clôture hors-ligne ne doit pas échouer : la session est déjà
-        // dans l'état voulu, on renvoie simplement son état ([BR-8]).
+        // Replaying an offline closing must not fail: the session is already in the
+        // desired state, so we simply return it ([BR-8]).
         return {
           ...session,
           differenceCents: session.closingBalanceCents - session.expectedBalanceCents,
@@ -133,7 +138,7 @@ class PosApplication {
         totalCashCents: totals.cashCents,
         notes: input.notes ?? session.notes,
       });
-      if (!updated) throw new NotFoundError("Session de caisse introuvable.");
+      if (!updated) throw new NotFoundError("Register session not found.");
       return {
         ...updated,
         differenceCents: input.closingBalanceCents - expectedBalanceCents,
@@ -143,9 +148,9 @@ class PosApplication {
   }
 
   /**
-   * Encaisse un ticket : facture validée + règlements, dans une transaction unique.
-   * Le total des règlements doit couvrir exactement le TTC — un ticket partiellement
-   * réglé n'a pas de sens au comptoir, et laisserait une dette sans client identifié.
+   * Checks out a ticket: validated invoice + payments, in a single transaction.
+   * The payments must exactly cover the total incl. tax — a partially paid ticket makes
+   * no sense at the counter and would leave a debt with no identified customer.
    */
   async createTicket(
     company: Company,
@@ -156,10 +161,10 @@ class PosApplication {
     const run = async (database: Database) => {
       const repository = posRepository.withTransaction(database);
       const session = await repository.findById(company.id, input.sessionId);
-      if (!session) throw new NotFoundError("Session de caisse introuvable.");
+      if (!session) throw new NotFoundError("Register session not found.");
       if (session.status !== "OPEN") {
         throw new BusinessRuleError(
-          "La session de caisse est clôturée : rouvrez-en une pour encaisser.",
+          "The register session is closed: open a new one to take payments.",
           "POS_SESSION_CLOSED"
         );
       }
@@ -167,7 +172,7 @@ class PosApplication {
       const register = await posRegistersRepository
         .withTransaction(database)
         .findById(company.id, session.registerId);
-      if (!register) throw new NotFoundError("Caisse introuvable.");
+      if (!register) throw new NotFoundError("Register not found.");
 
       const partyId =
         input.partyId ?? (await partiesApplication.ensureWalkInCustomer(company.id, database)).id;
@@ -194,9 +199,10 @@ class PosApplication {
       const paidCents = input.payments.reduce((sum, payment) => sum + payment.amountCents, 0);
       if (paidCents !== invoice.totalTtcCents) {
         throw new BusinessRuleError(
-          `Le total encaissé (${paidCents / 100}) doit être égal au total du ticket (${
-            invoice.totalTtcCents / 100
-          }).`,
+          tr("The amount collected ({paid}) must equal the ticket total ({total}).", {
+            paid: paidCents / 100,
+            total: invoice.totalTtcCents / 100,
+          }),
           "POS_PAYMENT_MISMATCH"
         );
       }
@@ -245,7 +251,7 @@ class PosApplication {
 
   async sessionSummary(companyId: string, sessionId: string) {
     const session = await posRepository.findById(companyId, sessionId);
-    if (!session) throw new NotFoundError("Session de caisse introuvable.");
+    if (!session) throw new NotFoundError("Register session not found.");
     const totals = await paymentsRepository.sessionTotals(companyId, sessionId);
     return {
       ...session,

@@ -1,47 +1,47 @@
 /**
- * Calcul des totaux de documents commerciaux (devis, commandes, factures, avoirs, tickets POS).
+ * Totals of commercial documents (quotes, orders, invoices, credit notes, POS receipts).
  *
- * Source unique de vérité partagée client ⇄ serveur : le POS hors-ligne affiche les
- * mêmes montants que ceux recalculés par le serveur à l'ingestion, ce qui évite les
- * divergences décrites dans `SYNC_STRATEGY.md` §4 (le client produit des intentions,
- * le serveur fait autorité — mais avec la **même** formule).
+ * Single source of truth shared client ⇄ server: the offline POS displays the same
+ * amounts as those recomputed by the server on ingestion, which avoids the divergences
+ * described in `SYNC_STRATEGY.md` §4 (the client produces intents, the server is
+ * authoritative — but with the **same** formula).
  *
- * Règles ([FR-VNT-4], [BR-6]) :
- *  1. base ligne      = quantité × prix unitaire  (arrondi au centime)
- *  2. base remisée    = base − remise ligne (points de base)
- *  3. remise globale  = répartie au prorata des bases remisées, le reliquat d'arrondi
- *                       allant à la dernière ligne pour que Σ lignes = total document
- *  4. TVA ligne       = base nette × taux ligne   (arrondi au centime, par ligne)
- *  5. TTC             = HT + TVA
+ * Rules ([FR-VNT-4], [BR-6]):
+ *  1. line base        = quantity × unit price  (rounded to the cent)
+ *  2. discounted base  = base − line discount (basis points)
+ *  3. global discount  = spread pro rata over the discounted bases, the rounding
+ *                        remainder going to the last line so that Σ lines = document total
+ *  4. line VAT         = net base × line rate   (rounded to the cent, per line)
+ *  5. incl. tax (TTC)  = excl. tax (HT) + VAT
  */
 
 import { applyDiscount, applyRate, normalizeQuantity, roundHalfUp } from "./money";
 
-/** Ligne telle que saisie dans l'UI ou reçue par l'API. */
+/** A line as entered in the UI or received by the API. */
 export interface PricingLineInput {
-  /** Quantité (max 3 décimales). */
+  /** Quantity (max 3 decimals). */
   quantity: number | string;
-  /** Prix unitaire HT en centimes. */
+  /** Unit price excluding tax, in cents. */
   unitPriceCents: number;
-  /** Remise de ligne en points de base (1000 ⇒ 10 %). */
+  /** Line discount in basis points (1000 ⇒ 10 %). */
   discountBp?: number;
-  /** Taux de TVA en points de base (1600 ⇒ 16 %). */
+  /** VAT rate in basis points (1600 ⇒ 16 %). */
   vatRateBp?: number;
 }
 
-/** Ligne calculée : montants nets après remise ligne **et** quote-part de remise globale. */
+/** Computed line: net amounts after the line discount **and** the share of the global discount. */
 export interface PricingLineResult {
   quantity: number;
   unitPriceCents: number;
   discountBp: number;
   vatRateBp: number;
-  /** Quantité × prix unitaire, avant toute remise. */
+  /** Quantity × unit price, before any discount. */
   grossCents: number;
-  /** Remise de ligne, en centimes. */
+  /** Line discount, in cents. */
   lineDiscountCents: number;
-  /** Quote-part de la remise globale du document, en centimes. */
+  /** Share of the document's global discount, in cents. */
   globalDiscountShareCents: number;
-  /** Base HT nette de toutes remises. */
+  /** Base excluding tax, net of all discounts. */
   totalHtCents: number;
   totalVatCents: number;
   totalTtcCents: number;
@@ -49,23 +49,23 @@ export interface PricingLineResult {
 
 export interface PricingDocumentResult {
   lines: PricingLineResult[];
-  /** Somme des bases avant remise. */
+  /** Sum of the bases before discount. */
   grossCents: number;
-  /** Remises de ligne + remise globale. */
+  /** Line discounts + global discount. */
   totalDiscountCents: number;
   totalHtCents: number;
   totalVatCents: number;
   totalTtcCents: number;
-  /** Ventilation de la TVA par taux — nécessaire aux écritures comptables et à la facture. */
+  /** VAT breakdown by rate — needed for accounting entries and the invoice. */
   vatBreakdown: { vatRateBp: number; baseCents: number; vatCents: number }[];
 }
 
 export interface PricingDocumentOptions {
-  /** Remise globale en points de base, appliquée après les remises de ligne. */
+  /** Global discount in basis points, applied after the line discounts. */
   globalDiscountBp?: number;
-  /** Remise globale en valeur absolue (centimes). Cumulable avec `globalDiscountBp`. */
+  /** Global discount as an absolute value (cents). Can be combined with `globalDiscountBp`. */
   globalDiscountCents?: number;
-  /** Si `false`, les lignes sont exonérées de TVA (société non assujettie). */
+  /** If `false`, lines are VAT-exempt (company not subject to VAT). */
   vatEnabled?: boolean;
 }
 
@@ -75,11 +75,11 @@ function clampBp(value: number | undefined): number {
 }
 
 /**
- * Calcule les totaux d'un document.
+ * Computes the totals of a document.
  *
- * La remise globale est répartie au prorata puis **corrigée sur la dernière ligne
- * remisable** : sans cela, Σ(HT lignes) peut différer du HT document de quelques
- * centimes et déséquilibrer l'écriture comptable ([BR-7]).
+ * The global discount is spread pro rata then **adjusted on the last discountable
+ * line**: otherwise Σ(line HT) could differ from the document HT by a few cents and
+ * unbalance the accounting entry ([BR-7]).
  */
 export function computeDocumentTotals(
   inputs: PricingLineInput[],
@@ -107,12 +107,12 @@ export function computeDocumentTotals(
 
   const subtotalCents = staged.reduce((sum, l) => sum + l.afterLineDiscountCents, 0);
 
-  // Remise globale : part relative + part absolue, plafonnée au sous-total.
+  // Global discount: relative part + absolute part, capped at the subtotal.
   const relativeGlobal = applyRate(subtotalCents, clampBp(options.globalDiscountBp));
   const absoluteGlobal = Math.max(0, Math.trunc(options.globalDiscountCents || 0));
   const globalDiscountCents = Math.min(subtotalCents, relativeGlobal + absoluteGlobal);
 
-  // Répartition au prorata, reliquat sur la dernière ligne non nulle.
+  // Pro rata distribution, remainder on the last non-zero line.
   const shares = staged.map((l) =>
     subtotalCents > 0
       ? roundHalfUp((globalDiscountCents * l.afterLineDiscountCents) / subtotalCents)
@@ -168,12 +168,12 @@ export function computeDocumentTotals(
   };
 }
 
-/** Reste à payer d'une facture (jamais négatif). */
+/** Amount still due on an invoice (never negative). */
 export function remainingToPayCents(totalTtcCents: number, paidCents: number): number {
   return Math.max(0, totalTtcCents - paidCents);
 }
 
-/** Statut de règlement dérivé des montants — jamais saisi à la main. */
+/** Payment status derived from the amounts — never entered by hand. */
 export function derivePaymentStatus(
   totalTtcCents: number,
   paidCents: number

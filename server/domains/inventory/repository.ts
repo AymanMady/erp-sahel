@@ -1,7 +1,7 @@
 /**
- * Persistance du stock. **Seul ce repository écrit `stock_items` et `stock_movements`** :
- * c'est l'invariant d'architecture qui garantit qu'aucun domaine ne contourne le
- * journal des mouvements ([FR-STK-3], `docs/ARCHITECTURE.md` §3).
+ * Inventory persistence. **Only this repository writes `stock_items` and
+ * `stock_movements`**: this architectural invariant guarantees that no domain bypasses
+ * the movement ledger ([FR-STK-3], `docs/ARCHITECTURE.md` §3).
  */
 
 import { and, asc, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
@@ -29,7 +29,7 @@ export const stockLocationsRepository = new TenantRepository(stockLocations, [
   stockLocations.zone,
 ]);
 
-/** Ligne de stock enrichie du produit — format attendu par les écrans et l'instantané POS. */
+/** Stock line enriched with its product — the shape expected by screens and the POS snapshot. */
 export interface StockRow extends StockItem {
   productSku: string;
   productName: string;
@@ -46,9 +46,9 @@ export class InventoryRepository {
   }
 
   /**
-   * Retourne la ligne de stock de la combinaison d'axes, en la créant si besoin.
-   * `ON CONFLICT DO UPDATE` plutôt qu'un `SELECT` suivi d'un `INSERT` : deux ventes
-   * simultanées du même article ne peuvent pas créer deux lignes concurrentes.
+   * Returns the stock line for the combination of axes, creating it if needed.
+   * `ON CONFLICT DO UPDATE` rather than a `SELECT` followed by an `INSERT`: two
+   * concurrent sales of the same item cannot create two competing lines.
    */
   async ensureStockItem(input: {
     companyId: string;
@@ -82,9 +82,10 @@ export class InventoryRepository {
   }
 
   /**
-   * Applique un delta au solde et renvoie la ligne mise à jour.
-   * Le calcul est fait **par la base** (`quantity + delta`) : aucune lecture-modification
-   * -écriture côté Node, donc aucune perte d'incrément entre deux transactions ([FR-STK-4]).
+   * Applies a delta to the balance and returns the updated line.
+   * The computation is done **by the database** (`quantity + delta`): no
+   * read-modify-write on the Node side, so no lost increment between two transactions
+   * ([FR-STK-4]).
    */
   async applyDelta(input: {
     companyId: string;
@@ -128,7 +129,7 @@ export class InventoryRepository {
     return row ?? null;
   }
 
-  /** Quantité disponible d'un produit, tous magasins ou pour un magasin donné. */
+  /** Available quantity of a product, across all warehouses or for a given one. */
   async availableQuantity(
     companyId: string,
     productId: string,
@@ -147,7 +148,7 @@ export class InventoryRepository {
     return Number.parseFloat(row?.value ?? "0");
   }
 
-  /** Soldes par produit — alimente la colonne « Stock » du catalogue et du POS. */
+  /** Balances per product — feeds the "Stock" column of the catalog and the POS. */
   async quantitiesByProduct(companyId: string, productIds: string[]): Promise<Map<string, number>> {
     if (productIds.length === 0) return new Map();
     const rows = await this.database
@@ -269,7 +270,7 @@ export class InventoryRepository {
     };
   }
 
-  /** Valorisation du stock au coût moyen pondéré [FR-RPT-1]. */
+  /** Stock valuation at weighted average cost [FR-RPT-1]. */
   async valuation(companyId: string, warehouseId?: string | null) {
     const [row] = await this.database
       .select({
@@ -291,7 +292,7 @@ export class InventoryRepository {
     };
   }
 
-  /** Produits sous le seuil d'alerte [FR-STK-5]. */
+  /** Products below the alert threshold [FR-STK-5]. */
   async lowStock(companyId: string, limit = 20) {
     return this.database
       .select({

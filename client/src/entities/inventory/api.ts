@@ -1,4 +1,4 @@
-/** Accès API du stock. */
+/** Inventory API access. */
 
 import { api } from "@/shared/api/http";
 import {

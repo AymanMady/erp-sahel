@@ -8,8 +8,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  /* `--app-font-sans` est posé par le personnalisateur de thème ; sans lui, police
-     système — aucune police n'est téléchargée, l'affichage est identique hors ligne. */
+  /* `--app-font-sans` is set by the theme customizer; without it, the system font is
+     used — no font is downloaded, so rendering is identical offline. */
   --font-sans: var(
     --app-font-sans,
     "Geist",
@@ -20,6 +20,8 @@
     Roboto,
     Helvetica,
     Arial,
+    "Noto Sans Arabic",
+    Tahoma,
     sans-serif
   );
   --font-mono: var(--font-geist-mono, ui-monospace, SFMono-Regular, Menlo, monospace);

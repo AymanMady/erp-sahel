@@ -1,9 +1,9 @@
 /**
- * Utilisateurs, rôles, permissions (RBAC) et journal d'audit.
+ * Users, roles, permissions (RBAC) and audit log.
  *
- * Une permission est toujours évaluée **pour un utilisateur dans une société**
- * (`user_roles` porte `company_id`) : un comptable de la société A n'est rien dans
- * la société B ([FR-AUTH-2], [NFR-SEC-2]).
+ * A permission is always evaluated **for a user within a company**
+ * (`user_roles` carries `company_id`): an accountant of company A has no rights in
+ * company B ([FR-AUTH-2], [NFR-SEC-2]).
  */
 
 import { sql } from "drizzle-orm";
@@ -34,9 +34,9 @@ export const users = pgTable(
     lastName: text("last_name").default("").notNull(),
     phone: text("phone").default("").notNull(),
     avatarUrl: text("avatar_url"),
-    /** Super-administrateur plateforme : court-circuite le RBAC (jamais créé par l'UI tenant). */
+    /** Platform super-administrator: bypasses RBAC (never created by the tenant UI). */
     isSuperuser: boolean("is_superuser").default(false).notNull(),
-    /** Autorise la connexion hors-ligne du poste (le hash bcrypt part dans l'instantané POS). */
+    /** Allows offline login on the workstation (the bcrypt hash is included in the POS snapshot). */
     allowOfflineLogin: boolean("allow_offline_login").default(true).notNull(),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
   },
@@ -47,23 +47,23 @@ export const users = pgTable(
 );
 
 export const insertUserSchema = createInsertSchema(users, {
-  username: (s) => s.min(3, "3 caractères minimum"),
+  username: (s) => s.min(3, "At least 3 characters"),
   email: (s) => s.email("Adresse e-mail invalide").or(z.literal("")),
 }).omit({ id: true, createdAt: true, updatedAt: true, lastLoginAt: true });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
-/** Utilisateur exposé par l'API : jamais de `passwordHash`. */
+/** User as exposed by the API: never includes `passwordHash`. */
 export type PublicUser = Omit<User, "passwordHash">;
 
 export const permissions = pgTable(
   "permissions",
   {
     ...baseColumns,
-    /** Code `module.action` (ex. `invoicing.write`). */
+    /** `module.action` code (e.g. `invoicing.write`). */
     code: text("code").notNull(),
     label: text("label").default("").notNull(),
-    /** Module propriétaire — un plugin déclare ses permissions [FR-PLUG-1]. */
+    /** Owning module — a plugin declares its own permissions [FR-PLUG-1]. */
     moduleCode: text("module_code").default("core").notNull(),
   },
   (table) => [uniqueIndex("uq_permissions_code").on(table.code)]
@@ -75,7 +75,7 @@ export const roles = pgTable(
   "roles",
   {
     ...baseColumns,
-    /** `null` = rôle système partagé par toutes les sociétés (Administrateur, Vendeur…). */
+    /** `null` = system role shared by all companies (Administrator, Salesperson…). */
     companyId: uuid("company_id").references(() => companies.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     slug: text("slug").notNull(),
@@ -84,9 +84,8 @@ export const roles = pgTable(
   },
   (table) => [
     uniqueIndex("uq_roles_company_slug").on(table.companyId, table.slug),
-    // PostgreSQL considère deux NULL comme distincts : sans cet index partiel, les
-    // rôles système (`company_id IS NULL`) pourraient être dupliqués à chaque
-    // réexécution de l'amorçage.
+    // PostgreSQL treats two NULLs as distinct: without this partial index, system
+    // roles (`company_id IS NULL`) could be duplicated each time the seed is re-run.
     uniqueIndex("uq_roles_system_slug")
       .on(table.slug)
       .where(sql`${table.companyId} is null`),
@@ -110,7 +109,7 @@ export const rolePermissions = pgTable(
 
 export type RolePermission = typeof rolePermissions.$inferSelect;
 
-/** Rattachement d'un utilisateur à une société (membership). */
+/** Assignment of a user to a company (membership). */
 export const userCompanies = pgTable(
   "user_companies",
   {
@@ -128,7 +127,7 @@ export const userCompanies = pgTable(
 
 export type UserCompany = typeof userCompanies.$inferSelect;
 
-/** Affectation d'un rôle dans le périmètre d'une société. */
+/** Role assignment scoped to a company. */
 export const userRoles = pgTable(
   "user_roles",
   {
@@ -148,7 +147,7 @@ export const userRoles = pgTable(
 
 export type UserRole = typeof userRoles.$inferSelect;
 
-/** Rattachement utilisateur ↔ magasin autorisé [FR-AUTH-4]. */
+/** User ↔ allowed store assignment [FR-AUTH-4]. */
 export const userWarehouses = pgTable(
   "user_warehouses",
   {
@@ -165,8 +164,8 @@ export const userWarehouses = pgTable(
 );
 
 /**
- * Jetons de rafraîchissement : rotation et révocation [NFR-SEC-1].
- * Seul le SHA-256 du jeton est stocké — une fuite de base ne permet pas de rejouer une session.
+ * Refresh tokens: rotation and revocation [NFR-SEC-1].
+ * Only the token's SHA-256 is stored — a database leak does not allow replaying a session.
  */
 export const refreshTokens = pgTable(
   "refresh_tokens",
@@ -190,7 +189,7 @@ export const refreshTokens = pgTable(
 
 export type RefreshToken = typeof refreshTokens.$inferSelect;
 
-/** Journal d'audit inaltérable des opérations sensibles [FR-AUTH-3], [NFR-SEC-6]. */
+/** Tamper-proof audit log of sensitive operations [FR-AUTH-3], [NFR-SEC-6]. */
 export const auditLogs = pgTable(
   "audit_logs",
   {

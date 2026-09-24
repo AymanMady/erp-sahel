@@ -1,10 +1,10 @@
 /**
- * Orchestration des achats : commande → réception → facture fournisseur.
+ * Purchasing orchestration: order → goods receipt → supplier invoice.
  *
- * La **réception** est le seul moment où le stock entre ([FR-ACH-3]) ; la **facture
- * fournisseur** est le seul moment où la dette et la TVA récupérable sont comptabilisées.
- * Les deux restent distincts : une marchandise peut arriver avant sa facture, et
- * inversement — l'ERP doit refléter cela sans forcer un ordre artificiel.
+ * The **goods receipt** is the only moment stock comes in ([FR-ACH-3]); the **supplier
+ * invoice** is the only moment the payable and the recoverable VAT are posted. The two
+ * remain separate: goods may arrive before their invoice and vice versa — the ERP must
+ * reflect that without forcing an artificial order.
  */
 
 import { normalizeQuantity } from "@shared/money";
@@ -14,6 +14,7 @@ import type { Company, PurchaseOrder } from "@shared/schema";
 import { runInTransaction } from "../../db";
 import { buildDocumentLines, type RawDocumentLine } from "../../shared/documents/line-builder";
 import { BusinessRuleError, NotFoundError } from "../../shared/errors/app-error";
+import { tr } from "../../shared/i18n";
 import { accountingApplication } from "../accounting/application";
 import { inventoryApplication } from "../inventory/application";
 import { numberingApplication } from "../numbering/application";
@@ -104,10 +105,10 @@ class PurchasingApplication {
     return runInTransaction(async (tx) => {
       const repository = purchasingRepository.withTransaction(tx);
       const order = await repository.findOrder(company.id, orderId);
-      if (!order) throw new NotFoundError("Commande d'achat introuvable.");
+      if (!order) throw new NotFoundError("Purchase order not found.");
       if (order.status === "RECEIVED" || order.status === "CANCELLED") {
         throw new BusinessRuleError(
-          "Une commande reçue ou annulée ne peut plus être modifiée.",
+          "A received or cancelled order can no longer be modified.",
           "PURCHASE_ORDER_FROZEN"
         );
       }
@@ -146,13 +147,13 @@ class PurchasingApplication {
     status: PurchaseOrder["status"]
   ): Promise<PurchaseOrder> {
     const order = await purchasingRepository.updateOrder(companyId, orderId, { status });
-    if (!order) throw new NotFoundError("Commande d'achat introuvable.");
+    if (!order) throw new NotFoundError("Purchase order not found.");
     return order;
   }
 
   /**
-   * Valide une réception : entrée en stock au coût d'achat, puis mise à jour de
-   * l'avancement de la commande (partiellement reçue / reçue).
+   * Validates a goods receipt: stock comes in at purchase cost, then the order progress
+   * is updated (partially received / received).
    */
   async createReceipt(company: Company, input: ReceiptInput, userId?: string | null) {
     return runInTransaction(async (tx) => {
@@ -163,12 +164,12 @@ class PurchasingApplication {
         ? await repository.findOrder(company.id, input.purchaseOrderId)
         : null;
       if (input.purchaseOrderId && !order) {
-        throw new NotFoundError("Commande d'achat introuvable.");
+        throw new NotFoundError("Purchase order not found.");
       }
 
       const supplierId = input.supplierId ?? order?.supplierId;
       if (!supplierId) {
-        throw new BusinessRuleError("Indiquez le fournisseur de cette réception.");
+        throw new BusinessRuleError("Specify the supplier of this receipt.");
       }
       await partiesApplication.requireParty(company.id, supplierId, tx);
 
@@ -244,7 +245,7 @@ class PurchasingApplication {
     });
   }
 
-  /** Facture fournisseur : dette et TVA récupérable ([FR-ACH-4], [BR-7]). */
+  /** Supplier invoice: payable and recoverable VAT ([FR-ACH-4], [BR-7]). */
   async createSupplierInvoice(
     company: Company,
     input: {
@@ -309,11 +310,12 @@ class PurchasingApplication {
         }))
       );
 
+      const label = tr("Supplier invoice {number}", { number: invoice.number });
       await accountingApplication.postEntry(tx, {
         company,
         journalType: "PURCHASES",
         date,
-        label: `Facture fournisseur ${invoice.number}`,
+        label,
         reference: invoice.supplierReference || invoice.number,
         originType: "supplier_invoice",
         originId: invoice.id,
@@ -322,7 +324,8 @@ class PurchasingApplication {
           totalVatCents: invoice.totalVatCents,
           totalTtcCents: invoice.totalTtcCents,
           partyId: supplier.id,
-          label: `Facture fournisseur ${invoice.number}`,
+          label,
+          vatLabel: tr("VAT — {label}", { label }),
         }),
       });
 
@@ -332,7 +335,7 @@ class PurchasingApplication {
 
   async getOrder(companyId: string, orderId: string): Promise<PurchaseOrderWithLines> {
     const order = await purchasingRepository.findOrder(companyId, orderId);
-    if (!order) throw new NotFoundError("Commande d'achat introuvable.");
+    if (!order) throw new NotFoundError("Purchase order not found.");
     return order;
   }
 }

@@ -1,0 +1,96 @@
+{
+  "companySwitcher": {
+    "switched": "Société changée.",
+    "currency": "Devise {{currency}}",
+    "companies": "Sociétés"
+  },
+  "moduleGate": {
+    "title": "« {{module}} » n'est pas activé",
+    "canEnable": "Activez ce module pour utiliser cet écran. Vos données ne sont jamais effacées.",
+    "askAdmin": "Demandez à l'administrateur d'activer ce module.",
+    "backHome": "Retour à l'accueil",
+    "manageModules": "Gérer les modules"
+  },
+  "userMenu": {
+    "profile": "Mon profil",
+    "settings": "Paramètres",
+    "lightTheme": "Thème clair",
+    "darkTheme": "Thème sombre",
+    "signOut": "Se déconnecter"
+  },
+  "sync": {
+    "offline": "Hors ligne",
+    "errors_one": "{{count}} erreur",
+    "errors_other": "{{count}} erreurs",
+    "syncing": "Synchronisation…",
+    "pendingCount_one": "{{count}} en attente",
+    "pendingCount_other": "{{count}} en attente",
+    "upToDate": "À jour",
+    "statusAria": "État de synchronisation : {{status}}",
+    "connected": "Connecté au serveur",
+    "offlineMode": "Mode hors ligne",
+    "onlineHint": "Les ventes sont remontées automatiquement.",
+    "offlineHint": "Les ventes sont enregistrées localement et remonteront au retour du réseau.",
+    "pending": "En attente",
+    "failed": "En erreur",
+    "lastSync": "Dernière synchro.",
+    "never": "jamais",
+    "syncNow": "Synchroniser maintenant",
+    "viewQueue": "Voir la file d'attente"
+  },
+  "offlineBanner": "Mode hors ligne — vos saisies sont enregistrées sur ce poste et seront synchronisées automatiquement.",
+  "theme": {
+    "toggle": "Changer de thème"
+  },
+  "customizer": {
+    "open": "Personnaliser l'apparence",
+    "title": "Apparence",
+    "description": "Ajustez le thème de l'interface. Le réglage est propre à ce poste.",
+    "mode": "Mode",
+    "light": "Clair",
+    "dark": "Sombre",
+    "system": "Auto",
+    "accent": "Couleur d'accent",
+    "radius": "Arrondi",
+    "font": "Police",
+    "sidebarStyle": "Style de la barre latérale",
+    "sidebarCollapse": "Réduction de la barre latérale",
+    "contentWidth": "Largeur du contenu",
+    "copy": "Copier le thème",
+    "copied": "Thème copié",
+    "copiedDescription": "Collez-le dans votre feuille de styles.",
+    "copyFailed": "Copie dans le presse-papiers impossible.",
+    "accents": {
+      "neutral": "Neutre",
+      "blue": "Bleu",
+      "violet": "Violet",
+      "green": "Vert",
+      "teal": "Sarcelle",
+      "amber": "Ambre",
+      "orange": "Orange",
+      "rose": "Rose"
+    },
+    "fonts": {
+      "geist": "Geist",
+      "system": "Système",
+      "serif": "Serif",
+      "mono": "Mono"
+    },
+    "sidebarVariants": {
+      "inset": "Encastrée",
+      "sidebar": "Classique",
+      "floating": "Flottante"
+    },
+    "collapsible": {
+      "icon": "Icônes",
+      "offcanvas": "Masquée"
+    },
+    "contentLayouts": {
+      "full": "Pleine largeur",
+      "centered": "Centré"
+    }
+  },
+  "boot": {
+    "loading": "Chargement de l'ERP…"
+  }
+}

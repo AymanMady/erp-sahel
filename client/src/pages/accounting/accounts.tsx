@@ -1,14 +1,15 @@
 /**
- * Plan comptable et comptes des automatismes.
+ * Chart of accounts and accounts used by automatic entries.
  *
- * Le second bloc est ce qui rend le référentiel interchangeable ([BR-21]) : les
- * écritures automatiques désignent des **clés logiques**, et cet écran dit quel compte
- * sert chaque clé.
+ * The second block is what makes the chart of accounts interchangeable ([BR-21]):
+ * automatic entries refer to **logical keys**, and this screen says which account
+ * serves each key.
  */
 
 import { useState } from "react";
 import { IconPlus } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { ACCOUNT_MAPPING_KEYS, ACCOUNT_TYPES, type AccountMappingKey } from "@shared/schema";
@@ -29,34 +30,8 @@ import { Input } from "@/shared/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
-const ACCOUNT_TYPE_LABELS: Record<string, string> = {
-  ASSET: "Actif",
-  LIABILITY: "Passif",
-  EQUITY: "Capitaux propres",
-  REVENUE: "Produits",
-  EXPENSE: "Charges",
-};
-
-/** Libellés métier des clés d'automatisme, pour que l'écran reste compréhensible. */
-const MAPPING_LABELS: Record<AccountMappingKey, string> = {
-  SALES_REVENUE: "Ventes de marchandises",
-  SALES_DISCOUNT: "Remises accordées",
-  VAT_COLLECTED: "TVA facturée (collectée)",
-  VAT_DEDUCTIBLE: "TVA récupérable (déductible)",
-  CUSTOMER_RECEIVABLE: "Créances clients",
-  SUPPLIER_PAYABLE: "Dettes fournisseurs",
-  PURCHASES: "Achats de marchandises",
-  INVENTORY: "Stock de marchandises",
-  INVENTORY_VARIATION: "Variation de stock",
-  CASH: "Caisse",
-  BANK: "Banque",
-  MOBILE_MONEY: "Mobile money",
-  ROUNDING_DIFFERENCE: "Écarts et arrondis",
-  OPENING_BALANCE: "Bilan d'ouverture",
-  RESULT_CARRY_FORWARD: "Report à nouveau",
-};
-
 export default function ChartOfAccountsPage() {
+  const { t } = useTranslation("accounting");
   const queryClient = useQueryClient();
   const { can } = useSession();
   const [open, setOpen] = useState(false);
@@ -78,7 +53,7 @@ export default function ChartOfAccountsPage() {
     mutationFn: ({ key, accountId }: { key: AccountMappingKey; accountId: string }) =>
       accountingApi.setMapping(key, accountId),
     onSuccess: () => {
-      toast.success("Compte associé mis à jour.");
+      toast.success(t("accounts.mappingUpdated"));
       void queryClient.invalidateQueries({ queryKey: queryKeys.accountMappings });
     },
     onError: (mutationError) => toast.error(errorMessage(mutationError)),
@@ -89,42 +64,43 @@ export default function ChartOfAccountsPage() {
   const columns: Column<Account>[] = [
     {
       id: "code",
-      header: "Numéro",
+      header: t("columns.accountNumber"),
       cell: (row) => <span className="tabular font-medium">{row.code}</span>,
     },
-    { id: "name", header: "Intitulé", cell: (row) => row.name },
+    { id: "name", header: t("columns.accountName"), cell: (row) => row.name },
     {
       id: "type",
-      header: "Nature",
-      cell: (row) => <Badge variant="outline">{ACCOUNT_TYPE_LABELS[row.accountType]}</Badge>,
+      header: t("columns.nature"),
+      cell: (row) => (
+        <Badge variant="outline">
+          {t(`accountTypes.${row.accountType}`, { defaultValue: row.accountType })}
+        </Badge>
+      ),
     },
     {
       id: "group",
-      header: "Regroupement",
+      header: t("columns.group"),
       align: "center",
       hideOnMobile: true,
-      cell: (row) => (row.isGroup ? "Oui" : "—"),
+      cell: (row) => (row.isGroup ? t("common:states.yes") : "—"),
     },
   ];
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Plan comptable"
-        description="Référentiel de la société et comptes utilisés par les écritures automatiques."
-      >
+      <PageHeader title={t("accounts.title")} description={t("accounts.description")}>
         {can("accounting.write") ? (
           <Button onClick={() => setOpen(true)}>
             <IconPlus className="size-4" />
-            Nouveau compte
+            {t("accounts.newAccount")}
           </Button>
         ) : null}
       </PageHeader>
 
       <Tabs defaultValue="accounts">
         <TabsList>
-          <TabsTrigger value="accounts">Comptes</TabsTrigger>
-          <TabsTrigger value="mappings">Automatismes</TabsTrigger>
+          <TabsTrigger value="accounts">{t("accounts.tabs.accounts")}</TabsTrigger>
+          <TabsTrigger value="mappings">{t("accounts.tabs.mappings")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="accounts">
@@ -134,32 +110,28 @@ export default function ChartOfAccountsPage() {
             rowKey={(row) => row.id}
             loading={isLoading}
             error={error ? errorMessage(error) : null}
-            emptyTitle="Plan comptable vide"
-            emptyDescription="Le plan est installé automatiquement à la création de la société."
+            emptyTitle={t("accounts.emptyTitle")}
+            emptyDescription={t("accounts.emptyDescription")}
           />
         </TabsContent>
 
         <TabsContent value="mappings">
           <Card>
             <CardHeader>
-              <CardTitle>Comptes des écritures automatiques</CardTitle>
-              <CardDescription>
-                Les factures et règlements désignent une clé logique ; c'est ici qu'elle est reliée
-                à un compte du plan. Changer de référentiel comptable revient à modifier ces
-                associations.
-              </CardDescription>
+              <CardTitle>{t("accounts.mappingsTitle")}</CardTitle>
+              <CardDescription>{t("accounts.mappingsDescription")}</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-2">
               {ACCOUNT_MAPPING_KEYS.map((key) => (
                 <div key={key} className="space-y-1.5">
-                  <label className="text-sm font-medium">{MAPPING_LABELS[key]}</label>
+                  <label className="text-sm font-medium">{t(`mappingKeys.${key}`)}</label>
                   <Select
                     value={mappingByKey.get(key) ?? ""}
                     onValueChange={(accountId) => setMapping.mutate({ key, accountId })}
                     disabled={!can("accounting.write")}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Non configuré" />
+                      <SelectValue placeholder={t("accounts.notConfigured")} />
                     </SelectTrigger>
                     <SelectContent>
                       {(accounts ?? [])
@@ -192,6 +164,7 @@ function AccountDialog({
   onOpenChange: (open: boolean) => void;
   accounts: Account[];
 }) {
+  const { t } = useTranslation("accounting");
   const queryClient = useQueryClient();
   const [form, setForm] = useState({
     code: "",
@@ -204,7 +177,7 @@ function AccountDialog({
   const mutation = useMutation({
     mutationFn: () => accountingApi.createAccount({ ...form, parentId: form.parentId || null }),
     onSuccess: () => {
-      toast.success("Compte créé.");
+      toast.success(t("accounts.created"));
       void queryClient.invalidateQueries({ queryKey: queryKeys.accounts });
       onOpenChange(false);
       setForm({ code: "", name: "", accountType: "ASSET", parentId: "", isGroup: false });
@@ -216,7 +189,7 @@ function AccountDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Nouveau compte</DialogTitle>
+          <DialogTitle>{t("accounts.newAccount")}</DialogTitle>
         </DialogHeader>
         <form
           className="space-y-4"
@@ -226,7 +199,7 @@ function AccountDialog({
           }}
         >
           <FieldGrid>
-            <Field label="Numéro" required>
+            <Field label={t("columns.accountNumber")} required>
               <Input
                 value={form.code}
                 onChange={(event) => setForm({ ...form, code: event.target.value })}
@@ -234,7 +207,7 @@ function AccountDialog({
                 className="tabular"
               />
             </Field>
-            <Field label="Nature" required>
+            <Field label={t("columns.nature")} required>
               <Select
                 value={form.accountType}
                 onValueChange={(value) =>
@@ -247,21 +220,21 @@ function AccountDialog({
                 <SelectContent>
                   {ACCOUNT_TYPES.map((type) => (
                     <SelectItem key={type} value={type}>
-                      {ACCOUNT_TYPE_LABELS[type]}
+                      {t(`accountTypes.${type}`)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </Field>
           </FieldGrid>
-          <Field label="Intitulé" required>
+          <Field label={t("columns.accountName")} required>
             <Input
               value={form.name}
               onChange={(event) => setForm({ ...form, name: event.target.value })}
               required
             />
           </Field>
-          <Field label="Compte parent">
+          <Field label={t("accounts.dialog.parentAccount")}>
             <Select
               value={form.parentId || "NONE"}
               onValueChange={(value) =>
@@ -272,7 +245,7 @@ function AccountDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="NONE">Aucun</SelectItem>
+                <SelectItem value="NONE">{t("common:states.none")}</SelectItem>
                 {accounts
                   .filter((account) => account.isGroup)
                   .map((account) => (
@@ -288,17 +261,17 @@ function AccountDialog({
               checked={form.isGroup}
               onCheckedChange={(checked) => setForm({ ...form, isGroup: checked === true })}
             />
-            Compte de regroupement (ne reçoit pas d'écriture)
+            {t("accounts.dialog.isGroup")}
           </label>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
+              {t("common:actions.cancel")}
             </Button>
             <Button
               type="submit"
               disabled={mutation.isPending || !form.code.trim() || !form.name.trim()}
             >
-              Créer
+              {t("common:actions.create")}
             </Button>
           </DialogFooter>
         </form>

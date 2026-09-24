@@ -1,4 +1,5 @@
 import { IconSearch, IconX } from "@tabler/icons-react";
+import { useTranslation } from "react-i18next";
 
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
@@ -7,7 +8,7 @@ import { Input } from "@/shared/ui/input";
 export function SearchInput({
   value,
   onChange,
-  placeholder = "Rechercher…",
+  placeholder,
   className,
   autoFocus,
 }: {
@@ -17,13 +18,14 @@ export function SearchInput({
   className?: string;
   autoFocus?: boolean;
 }) {
+  const { t } = useTranslation("components");
   return (
     <div className={cn("relative", className)}>
       <IconSearch className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
       <Input
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
+        placeholder={placeholder ?? t("common:actions.searchEllipsis")}
         className="ps-9 pe-9"
         autoFocus={autoFocus}
       />
@@ -32,7 +34,7 @@ export function SearchInput({
           type="button"
           variant="ghost"
           size="icon"
-          aria-label="Effacer la recherche"
+          aria-label={t("searchInput.clear")}
           className="absolute end-1 top-1/2 size-7 -translate-y-1/2"
           onClick={() => onChange("")}
         >

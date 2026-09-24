@@ -1,19 +1,20 @@
 /**
- * Éditeur de lignes de document, partagé par les devis, commandes, factures et
- * commandes d'achat.
+ * Document line editor, shared by quotes, sales orders, invoices and purchase orders.
  *
- * Il existe parce que ces quatre documents ont **exactement** la même grille de saisie :
- * la dupliquer garantirait qu'un jour les remises se calculent différemment sur un
- * devis et sur la facture qui en découle.
+ * It exists because these four documents have **exactly** the same entry grid:
+ * duplicating it would guarantee that one day discounts are computed differently on
+ * a quote and on the invoice that stems from it.
  */
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 
 import { computeDocumentTotals } from "@shared/pricing";
 import { catalogApi } from "@/entities/catalog/api";
 import { settingsApi } from "@/entities/settings/api";
+import { i18n } from "@/shared/i18n";
 import { queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
 import { Money } from "@/shared/components/money";
@@ -34,7 +35,7 @@ import { Separator } from "@/shared/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
 
 export interface DocumentLine {
-  /** Identifiant local de la ligne, pour les clés React. */
+  /** Local line identifier, used for React keys. */
   key: string;
   productId: string | null;
   serviceId: string | null;
@@ -55,14 +56,15 @@ export function emptyLine(vatRateBp = 0): DocumentLine {
     productSku: "",
     description: "",
     quantity: "1",
-    unit: "unité",
+    // Default unit, written in the current UI language (stored on the document).
+    unit: i18n.t("documents:units.unit"),
     unitPriceCents: 0,
     discountBp: 0,
     vatRateBp,
   };
 }
 
-/** Convertit les lignes de l'éditeur vers le format attendu par l'API. */
+/** Converts editor lines to the format expected by the API. */
 export function toApiLines(lines: DocumentLine[]) {
   return lines
     .filter((line) => line.description.trim() && Number(line.quantity) > 0)
@@ -84,7 +86,7 @@ export function LineEditor({
   onChange,
   globalDiscountBp = 0,
   onGlobalDiscountChange,
-  /** Achat : on propose le prix d'achat plutôt que le prix de vente. */
+  /** Purchasing: suggest the purchase price rather than the sale price. */
   usePurchasePrice = false,
   readOnly = false,
 }: {
@@ -95,6 +97,7 @@ export function LineEditor({
   usePurchasePrice?: boolean;
   readOnly?: boolean;
 }) {
+  const { t } = useTranslation("documents");
   const { company } = useSession();
   const [pickerOpen, setPickerOpen] = useState(false);
 
@@ -119,12 +122,12 @@ export function LineEditor({
         <Table className="min-w-[900px]">
           <TableHeader>
             <TableRow className="bg-muted/40">
-              <TableHead className="w-[34%]">Désignation</TableHead>
-              <TableHead className="w-24 text-end">Quantité</TableHead>
-              <TableHead className="w-32 text-end">Prix unitaire</TableHead>
-              <TableHead className="w-24 text-end">Remise</TableHead>
-              <TableHead className="w-24 text-end">TVA</TableHead>
-              <TableHead className="w-32 text-end">Total HT</TableHead>
+              <TableHead className="w-[34%]">{t("lineEditor.columns.description")}</TableHead>
+              <TableHead className="w-24 text-end">{t("common:labels.quantity")}</TableHead>
+              <TableHead className="w-32 text-end">{t("common:labels.unitPrice")}</TableHead>
+              <TableHead className="w-24 text-end">{t("common:labels.discount")}</TableHead>
+              <TableHead className="w-24 text-end">{t("vat")}</TableHead>
+              <TableHead className="w-32 text-end">{t("common:labels.totalExclTax")}</TableHead>
               {!readOnly ? <TableHead className="w-12" /> : null}
             </TableRow>
           </TableHeader>
@@ -135,7 +138,7 @@ export function LineEditor({
                   colSpan={readOnly ? 6 : 7}
                   className="h-24 text-center text-muted-foreground"
                 >
-                  Aucune ligne. Ajoutez un article ou une prestation.
+                  {t("lineEditor.empty")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -146,7 +149,7 @@ export function LineEditor({
                       value={line.description}
                       onChange={(event) => update(line.key, { description: event.target.value })}
                       disabled={readOnly}
-                      placeholder="Désignation de la ligne"
+                      placeholder={t("lineEditor.descriptionPlaceholder")}
                     />
                     {line.productSku ? (
                       <p className="tabular mt-1 text-xs text-muted-foreground">
@@ -190,7 +193,7 @@ export function LineEditor({
                       <Button
                         size="icon"
                         variant="ghost"
-                        aria-label="Supprimer la ligne"
+                        aria-label={t("lineEditor.removeLine")}
                         onClick={() => remove(line.key)}
                       >
                         <IconTrash className="size-4" />
@@ -208,14 +211,14 @@ export function LineEditor({
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" onClick={() => setPickerOpen(true)}>
             <IconPlus className="size-4" />
-            Ajouter un article
+            {t("lineEditor.addItem")}
           </Button>
           <Button
             type="button"
             variant="ghost"
             onClick={() => onChange([...lines, emptyLine(company?.defaultVatRateBp ?? 0)])}
           >
-            Ligne libre
+            {t("lineEditor.freeLine")}
           </Button>
         </div>
       ) : null}
@@ -224,27 +227,29 @@ export function LineEditor({
         <div className="w-full max-w-xs space-y-1 text-sm">
           {onGlobalDiscountChange && !readOnly ? (
             <div className="flex items-center justify-between gap-3 pb-2">
-              <span className="text-muted-foreground">Remise globale</span>
+              <span className="text-muted-foreground">{t("lineEditor.globalDiscount")}</span>
               <div className="w-24">
                 <RateInput valueBp={globalDiscountBp} onChange={onGlobalDiscountChange} />
               </div>
             </div>
           ) : null}
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Total HT</span>
+            <span className="text-muted-foreground">{t("common:labels.totalExclTax")}</span>
             <Money cents={totals.totalHtCents} />
           </div>
           {totals.vatBreakdown
             .filter((entry) => entry.vatCents !== 0)
             .map((entry) => (
               <div key={entry.vatRateBp} className="flex items-center justify-between">
-                <span className="text-muted-foreground">TVA {entry.vatRateBp / 100} %</span>
+                <span className="text-muted-foreground">
+                  {t("vatRate", { rate: entry.vatRateBp / 100 })}
+                </span>
                 <Money cents={entry.vatCents} />
               </div>
             ))}
           <Separator className="my-2" />
           <div className="flex items-center justify-between text-base font-semibold">
-            <span>Total TTC</span>
+            <span>{t("common:labels.totalInclTax")}</span>
             <Money cents={totals.totalTtcCents} />
           </div>
         </div>
@@ -263,7 +268,7 @@ export function LineEditor({
   );
 }
 
-/** Sélecteur d'article ou de prestation, avec recherche serveur. */
+/** Item or service picker, with server-side search. */
 function ProductPicker({
   open,
   onOpenChange,
@@ -275,6 +280,7 @@ function ProductPicker({
   onPick: (line: DocumentLine) => void;
   usePurchasePrice: boolean;
 }) {
+  const { t } = useTranslation("documents");
   const [search, setSearch] = useState("");
   const debounced = useDebounced(search);
 
@@ -294,16 +300,14 @@ function ProductPicker({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Ajouter une ligne</DialogTitle>
-          <DialogDescription>
-            Le prix et le taux de TVA sont repris du catalogue ; ils restent modifiables.
-          </DialogDescription>
+          <DialogTitle>{t("productPicker.title")}</DialogTitle>
+          <DialogDescription>{t("productPicker.description")}</DialogDescription>
         </DialogHeader>
 
         <SearchInput
           value={search}
           onChange={setSearch}
-          placeholder="Article ou prestation…"
+          placeholder={t("productPicker.searchPlaceholder")}
           autoFocus
         />
 
@@ -331,7 +335,9 @@ function ProductPicker({
                   <p className="truncate text-sm font-medium">{product.name}</p>
                   <p className="tabular text-xs text-muted-foreground">
                     {product.sku}
-                    {product.isService ? " · prestation" : ` · stock ${product.stockQuantity ?? 0}`}
+                    {product.isService
+                      ? ` · ${t("productPicker.service")}`
+                      : ` · ${t("productPicker.stock", { quantity: product.stockQuantity ?? 0 })}`}
                   </p>
                 </div>
                 <Money
@@ -352,7 +358,7 @@ function ProductPicker({
                     serviceId: service.id,
                     productSku: service.code,
                     description: service.name,
-                    unit: "prestation",
+                    unit: t("units.service"),
                     unitPriceCents: service.priceCents,
                   })
                 }
@@ -360,7 +366,7 @@ function ProductPicker({
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{service.name}</p>
                   <p className="tabular text-xs text-muted-foreground">
-                    {service.code} · prestation
+                    {service.code} · {t("productPicker.service")}
                   </p>
                 </div>
                 <Money cents={service.priceCents} className="shrink-0 text-sm" />
@@ -368,7 +374,9 @@ function ProductPicker({
             ))}
 
             {(products?.items.length ?? 0) === 0 && (services?.items.length ?? 0) === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">Aucun résultat.</p>
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                {t("common:states.noResults")}
+              </p>
             ) : null}
           </div>
         </ScrollArea>

@@ -1,4 +1,4 @@
-/** Routes des devis et commandes de vente. */
+/** Routes for quotes and sales orders. */
 
 import type { Express } from "express";
 

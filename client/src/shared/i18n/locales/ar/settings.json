@@ -1,0 +1,153 @@
+{
+  "company": {
+    "title": "الشركة",
+    "description": "الهوية والضرائب والإطار المحاسبي.",
+    "saved": "تم حفظ الإعدادات.",
+    "identity": "الهوية",
+    "taxAccounting": "الضرائب والمحاسبة",
+    "taxAccountingDescription": "يحدد الإطار المحاسبي دليل الحسابات المثبَّت؛ وتبقى الحسابات المستخدمة في القيود الآلية قابلة للتعديل في دليل الحسابات.",
+    "vatEnabled": "الشركة خاضعة لضريبة القيمة المضافة",
+    "fields": {
+      "name": "الاسم التجاري",
+      "legalName": "الاسم القانوني",
+      "taxId": "الرقم الضريبي",
+      "website": "الموقع الإلكتروني",
+      "city": "المدينة",
+      "country": "البلد",
+      "currencyHint": "رمز ISO من ثلاثة أحرف.",
+      "accountingStandard": "الإطار المحاسبي",
+      "defaultVatRate": "نسبة ضريبة القيمة المضافة الافتراضية",
+      "fiscalYearStart": "بداية السنة المالية"
+    },
+    "logo": {
+      "title": "الشعار",
+      "description": "يظهر في الشريط الجانبي وعلى المستندات المطبوعة.",
+      "alt": "شعار الشركة",
+      "none": "لا يوجد شعار",
+      "choose": "اختيار صورة",
+      "remove": "إزالة الشعار",
+      "tooLarge": "حجم الشعار كبير جدًا (400 كيلوبايت كحد أقصى)."
+    }
+  },
+  "numbering": {
+    "title": "الترقيم",
+    "description": "التسلسلات القانونية حسب نوع المستند والسنة المالية.",
+    "info": "يُسند الخادم الأرقام عند الاعتماد، ضمن معاملة المستند: لا يمكن لجهازين الحصول على الرقم نفسه. في وضع عدم الاتصال، يُعرض رقم مؤقت <code>{{code}}</code> حتى المزامنة.",
+    "emptyTitle": "لا توجد تسلسلات",
+    "emptyDescription": "تُنشأ التسلسلات عند إصدار أول مستند من كل نوع.",
+    "columns": {
+      "documentType": "نوع المستند",
+      "year": "السنة المالية",
+      "prefix": "البادئة",
+      "lastNumber": "آخر رقم"
+    },
+    "documentTypes": {
+      "QUOTE": "عروض الأسعار",
+      "SALES_ORDER": "أوامر البيع",
+      "SALES_INVOICE": "فواتير العملاء",
+      "CREDIT_NOTE": "الإشعارات الدائنة",
+      "PURCHASE_ORDER": "أوامر الشراء",
+      "GOODS_RECEIPT": "سندات الاستلام",
+      "SUPPLIER_INVOICE": "فواتير الموردين",
+      "PAYMENT": "التسديدات",
+      "JOURNAL_ENTRY": "القيود المحاسبية",
+      "INVENTORY_COUNT": "الجرود",
+      "POS_TICKET": "إيصالات الصندوق",
+      "PARTY": "الأطراف"
+    }
+  },
+  "registers": {
+    "title": "الصناديق",
+    "description": "نقاط البيع وسجل الجلسات.",
+    "new": "صندوق جديد",
+    "archived": "تمت أرشفة الصندوق.",
+    "created": "تم إنشاء الصندوق.",
+    "tabs": {
+      "registers": "الصناديق",
+      "sessions": "الجلسات"
+    },
+    "columns": {
+      "register": "الصندوق",
+      "cashier": "أمين الصندوق",
+      "openedAt": "الفتح",
+      "closedAt": "الإغلاق",
+      "sales": "المبيعات",
+      "difference": "الفرق"
+    },
+    "emptyRegistersTitle": "لا توجد صناديق",
+    "emptyRegistersDescription": "يلزم وجود صندوق لفتح جلسة بيع.",
+    "emptySessionsTitle": "لا توجد جلسات",
+    "emptySessionsDescription": "تظهر الجلسات بمجرد فتح الصندوق لأول مرة.",
+    "dialog": {
+      "warehouse": "المستودع المرتبط",
+      "warehouseHint": "يحدد المستودع الذي يُسحب منه المخزون المباع.",
+      "cashAccount": "حساب الصندوق",
+      "cashAccountHint": "يُقيَّد له في الجانب الدائن بالمقبوضات النقدية.",
+      "defaultAccount": "الحساب الافتراضي"
+    }
+  },
+  "users": {
+    "title": "المستخدمون",
+    "description": "الحسابات المرتبطة بهذه الشركة والأدوار المسندة إليها.",
+    "new": "مستخدم جديد",
+    "updated": "تم تحديث المستخدم.",
+    "created": "تم إنشاء المستخدم.",
+    "noRole": "لا يوجد",
+    "allowed": "مسموح",
+    "never": "أبدًا",
+    "activateAccount": "تفعيل الحساب",
+    "emptyTitle": "لا يوجد مستخدمون",
+    "emptyDescription": "أنشئ حسابات للبائعين وأمناء المخازن والمحاسبين.",
+    "columns": {
+      "user": "المستخدم",
+      "roles": "الأدوار",
+      "offlineLogin": "الدخول دون اتصال",
+      "lastLogin": "آخر دخول"
+    },
+    "dialog": {
+      "editTitle": "تعديل المستخدم",
+      "description": "لا تسري الأدوار المسندة إلا على الشركة الحالية.",
+      "username": "اسم المستخدم",
+      "newPassword": "كلمة مرور جديدة",
+      "password": "كلمة المرور",
+      "keepPasswordHint": "اتركه فارغًا للإبقاء على كلمة المرور الحالية.",
+      "passwordHint": "8 أحرف، حروف وأرقام.",
+      "firstName": "الاسم الأول",
+      "lastName": "اسم العائلة",
+      "allowOffline": "السماح بالدخول دون اتصال على جهاز مكتبي متزامن"
+    }
+  },
+  "roles": {
+    "title": "الأدوار والصلاحيات",
+    "description": "الإخفاء في الواجهة مجرد تسهيل؛ يُتحقق من الصلاحيات في كل طلب إلى الخادم.",
+    "new": "دور جديد",
+    "deleted": "تم حذف الدور.",
+    "updated": "تم تحديث الدور.",
+    "created": "تم إنشاء الدور.",
+    "permissionCount_zero": "لا صلاحيات",
+    "permissionCount_one": "صلاحية واحدة",
+    "permissionCount_two": "صلاحيتان",
+    "permissionCount_few": "{{count}} صلاحيات",
+    "permissionCount_many": "{{count}} صلاحية",
+    "permissionCount_other": "{{count}} صلاحية",
+    "dialog": {
+      "systemTitle": "دور النظام — {{name}}",
+      "editTitle": "تعديل الدور"
+    }
+  },
+  "modules": {
+    "title": "الوحدات",
+    "description": "فعّل فقط ما تستخدمه: تبقى القائمة بسيطة. تعطيل وحدة لا يحذف بياناتك أبدًا.",
+    "enabled": "تم تفعيل الوحدة.",
+    "disabled": "تم تعطيل الوحدة.",
+    "presetApplied": "تم تطبيق المستوى «{{name}}».",
+    "step1Title": "1. اختر مستوى",
+    "step1Description": "لأي نوع من الأنشطة التجارية. يمكنك التعديل لاحقًا.",
+    "step2Title": "2. أو عدّل وحدةً وحدة",
+    "step2Description": "المنتجات والعملاء والمدفوعات والإعدادات متاحة دائمًا.",
+    "requires": "يتطلب: {{modules}}",
+    "enableAria": "تفعيل {{name}}",
+    "confirmTitle": "الانتقال إلى المستوى «{{name}}»؟",
+    "confirmDescription": "الوحدات المفعّلة: {{modules}}. ستُخفى الوحدات الأخرى دون أي فقدان للبيانات."
+  }
+}

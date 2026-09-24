@@ -1,9 +1,9 @@
 /**
- * Journalisation applicative [NFR-OBS-1].
+ * Application logging [NFR-OBS-1].
  *
- * Sortie JSON en production (exploitable par un collecteur), lisible en développement.
- * Les clés sensibles sont systématiquement masquées : un journal ne doit jamais
- * contenir de mot de passe ni de jeton ([NFR-SEC-3]).
+ * JSON output in production (usable by a collector), human-readable in development.
+ * Sensitive keys are always masked: a log must never contain a password or a token
+ * ([NFR-SEC-3]).
  */
 
 type Level = "debug" | "info" | "warn" | "error";
@@ -47,7 +47,7 @@ function emit(level: Level, message: string, context?: Record<string, unknown>):
     console[level === "debug" ? "log" : level](JSON.stringify(payload));
     return;
   }
-  const time = new Date().toLocaleTimeString("fr-FR");
+  const time = new Date().toLocaleTimeString("en-GB");
   const extra = context ? ` ${JSON.stringify(redact(context))}` : "";
   console[level === "debug" ? "log" : level](`${time} [${level}] ${message}${extra}`);
 }

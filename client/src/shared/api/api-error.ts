@@ -1,16 +1,18 @@
+import { i18n } from "@/shared/i18n";
+
 /**
- * Représentation typée d'une réponse non-2xx.
+ * Typed representation of a non-2xx response.
  *
- * Le serveur renvoie systématiquement `{ error, code, requestId?, details? }`
- * (`server/middleware/error-handler.ts`). L'UI branche sur `code`, jamais sur le texte :
- * un message peut être reformulé, un code est un contrat.
+ * The server always returns `{ error, code, requestId?, details? }`
+ * (`server/middleware/error-handler.ts`). The UI branches on `code`, never on the text:
+ * a message may be reworded, a code is a contract.
  */
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
   readonly details?: unknown;
   readonly requestId?: string;
-  /** Vrai quand la requête n'a pas abouti (réseau coupé, serveur injoignable). */
+  /** True when the request never completed (network down, server unreachable). */
   readonly isNetworkError: boolean;
 
   constructor(args: {
@@ -30,35 +32,35 @@ export class ApiError extends Error {
     this.isNetworkError = args.isNetworkError ?? false;
   }
 
-  /** Session expirée ou absente : l'UI doit renvoyer vers la connexion. */
+  /** Session expired or missing: the UI must redirect to the login page. */
   get isUnauthorized(): boolean {
     return this.status === 401;
   }
 
-  /** Droits insuffisants ou module désactivé : on reste sur place avec un message. */
+  /** Insufficient rights or disabled module: stay on the page and show a message. */
   get isForbidden(): boolean {
     return this.status === 403;
   }
 
-  /** Erreur de validation : les détails alimentent les messages de champ. */
+  /** Validation error: the details feed the field messages. */
   get isValidation(): boolean {
     return this.code === "VALIDATION_ERROR";
   }
 }
 
-/** Message affichable pour une erreur quelconque. */
+/** Displayable message for any error. */
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     if (error.isNetworkError) {
-      return "Serveur injoignable. Vos saisies restent enregistrées localement.";
+      return i18n.t("common:errors.serverUnreachable");
     }
     return error.message;
   }
   if (error instanceof Error) return error.message;
-  return "Une erreur inattendue est survenue.";
+  return i18n.t("common:errors.unexpected");
 }
 
-/** Erreurs de champ issues d'un `ZodError` sérialisé, pour `react-hook-form`. */
+/** Field errors from a serialized `ZodError`, for `react-hook-form`. */
 export function fieldErrors(error: unknown): Record<string, string> {
   if (!(error instanceof ApiError) || !error.isValidation) return {};
   const issues = error.details;
@@ -74,7 +76,10 @@ export function fieldErrors(error: unknown): Record<string, string> {
   return result;
 }
 
-/** Élément absent des données locales : erreur affichable, sans nouvel essai réseau. */
+/**
+ * Item missing from the local data: displayable error, no further network attempt.
+ * `message` must already be translated (use `i18n.t` at the call site).
+ */
 export function offlineNotFound(message: string): ApiError {
   return new ApiError({ status: 404, code: "OFFLINE_UNAVAILABLE", message });
 }

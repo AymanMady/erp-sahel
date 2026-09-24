@@ -1,9 +1,9 @@
 /**
- * Pont vers la coquille desktop (Tauri), sans dépendance dure.
+ * Bridge to the desktop shell (Tauri), without a hard dependency.
  *
- * L'application est **la même** en navigateur et dans la coquille : on n'importe le
- * module Tauri que s'il est présent à l'exécution. En web, ces fonctions renvoient
- * `null` et l'appelant retombe sur le stockage navigateur.
+ * The app is **the same** in the browser and in the shell: the Tauri module is only
+ * imported if it is present at runtime. On the web, these functions return `null`
+ * and the caller falls back to browser storage.
  */
 
 declare global {
@@ -13,7 +13,7 @@ declare global {
   }
 }
 
-/** Build statique destiné à la coquille desktop (défini par Vite). */
+/** Static build targeting the desktop shell (defined by Vite). */
 declare const __DESKTOP_BUILD__: boolean;
 
 export function isDesktopBuild(): boolean {
@@ -25,7 +25,7 @@ export function isTauriDesktop(): boolean {
   return Boolean(window.__TAURI_INTERNALS__ ?? window.__TAURI__);
 }
 
-/** Plateforme déclarée au serveur : conditionne le contenu de l'instantané hors-ligne. */
+/** Platform declared to the server: determines the content of the offline snapshot. */
 export function devicePlatform(): "desktop" | "web" {
   return isTauriDesktop() ? "desktop" : "web";
 }
@@ -41,8 +41,8 @@ async function loadInvoke(): Promise<InvokeFn | null> {
     return null;
   }
   try {
-    // Spécificateur construit à l'exécution : le paquet Tauri n'est pas une
-    // dépendance du build web, et ne doit donc pas être résolu à la compilation.
+    // Specifier built at runtime: the Tauri package is not a dependency of the
+    // web build, so it must not be resolved at compile time.
     const specifier = ["@tauri-apps", "api", "core"].join("/");
     const module = (await import(/* @vite-ignore */ specifier)) as { invoke: InvokeFn };
     cachedInvoke = module.invoke;
@@ -53,8 +53,8 @@ async function loadInvoke(): Promise<InvokeFn | null> {
 }
 
 /**
- * Appelle une commande Rust. Renvoie `null` hors coquille desktop, ou si la commande
- * échoue — l'appelant doit toujours prévoir le cas « pas de desktop ».
+ * Calls a Rust command. Returns `null` outside the desktop shell, or if the command
+ * fails — the caller must always handle the "no desktop" case.
  */
 export async function tauriInvoke<T>(
   command: string,
@@ -65,7 +65,7 @@ export async function tauriInvoke<T>(
   try {
     return await invoke<T>(command, args);
   } catch (error) {
-    console.warn(`[desktop] commande « ${command} » en échec`, error);
+    console.warn(`[desktop] command "${command}" failed`, error);
     return null;
   }
 }

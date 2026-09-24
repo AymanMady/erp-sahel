@@ -1,0 +1,62 @@
+{
+  "orders": {
+    "title": "Purchase orders",
+    "description": "Procurement: the receipt is what brings goods into stock.",
+    "expectedDelivery": "Expected delivery",
+    "new": "New order",
+    "searchPlaceholder": "Number or supplier…",
+    "allStatuses": "All statuses",
+    "emptyTitle": "No purchase orders",
+    "emptyDescription": "Create an order to track your procurement."
+  },
+  "orderForm": {
+    "title": "New purchase order",
+    "description": "The order does not affect stock: the receipt does.",
+    "created": "Order {{number}} created.",
+    "creating": "Creating…",
+    "submit": "Create order",
+    "header": "Header",
+    "selectSupplier": "Select a supplier",
+    "receivingWarehouse": "Receiving warehouse",
+    "defaultWarehouse": "Default warehouse",
+    "lines": "Lines"
+  },
+  "orderDetail": {
+    "title": "Order {{number}}",
+    "invoiceCreated": "Supplier invoice saved and posted.",
+    "notFound": "Order not found.",
+    "receive": "Receive",
+    "supplierInvoice": "Supplier invoice",
+    "documentTitle": "Purchase order",
+    "receiptProgress": "Receipt progress",
+    "item": "Item",
+    "ordered": "Ordered",
+    "received": "Received",
+    "remaining": "Remaining",
+    "receipts": "Goods receipts"
+  },
+  "receiveDialog": {
+    "title": "Goods receipt",
+    "description": "Entered quantities go into stock at the stated cost and feed the weighted average cost.",
+    "validated": "Receipt validated: stock updated.",
+    "receiptDate": "Receipt date",
+    "unitCost": "Unit cost",
+    "lot": "Lot",
+    "optional": "optional",
+    "receivedValue": "Received value",
+    "submit": "Validate receipt"
+  },
+  "receipts": {
+    "title": "Goods receipts",
+    "description": "Each validated receipt creates the stock-in movements.",
+    "emptyTitle": "No goods receipts",
+    "emptyDescription": "Receipts are entered from a purchase order."
+  },
+  "supplierInvoices": {
+    "title": "Supplier invoices",
+    "description": "Recorded payables and the related deductible VAT.",
+    "supplierReference": "Supplier ref.",
+    "emptyTitle": "No supplier invoices",
+    "emptyDescription": "They are created from a received purchase order."
+  }
+}

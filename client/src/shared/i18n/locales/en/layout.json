@@ -1,0 +1,96 @@
+{
+  "companySwitcher": {
+    "switched": "Company switched.",
+    "currency": "Currency {{currency}}",
+    "companies": "Companies"
+  },
+  "moduleGate": {
+    "title": "“{{module}}” is not enabled",
+    "canEnable": "Enable this module to use this screen. Your data is never deleted.",
+    "askAdmin": "Ask the administrator to enable this module.",
+    "backHome": "Back to home",
+    "manageModules": "Manage modules"
+  },
+  "userMenu": {
+    "profile": "My profile",
+    "settings": "Settings",
+    "lightTheme": "Light theme",
+    "darkTheme": "Dark theme",
+    "signOut": "Sign out"
+  },
+  "sync": {
+    "offline": "Offline",
+    "errors_one": "{{count}} error",
+    "errors_other": "{{count}} errors",
+    "syncing": "Syncing…",
+    "pendingCount_one": "{{count}} pending",
+    "pendingCount_other": "{{count}} pending",
+    "upToDate": "Up to date",
+    "statusAria": "Sync status: {{status}}",
+    "connected": "Connected to the server",
+    "offlineMode": "Offline mode",
+    "onlineHint": "Sales are uploaded automatically.",
+    "offlineHint": "Sales are saved locally and will be uploaded when the network is back.",
+    "pending": "Pending",
+    "failed": "Failed",
+    "lastSync": "Last sync",
+    "never": "never",
+    "syncNow": "Sync now",
+    "viewQueue": "View the queue"
+  },
+  "offlineBanner": "Offline mode — your entries are saved on this device and will be synchronized automatically.",
+  "theme": {
+    "toggle": "Toggle theme"
+  },
+  "customizer": {
+    "open": "Customize appearance",
+    "title": "Appearance",
+    "description": "Adjust the interface theme. The setting applies to this device only.",
+    "mode": "Mode",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "Auto",
+    "accent": "Accent color",
+    "radius": "Radius",
+    "font": "Font",
+    "sidebarStyle": "Sidebar style",
+    "sidebarCollapse": "Sidebar collapse",
+    "contentWidth": "Content width",
+    "copy": "Copy theme",
+    "copied": "Theme copied",
+    "copiedDescription": "Paste it into your stylesheet.",
+    "copyFailed": "Could not copy to the clipboard.",
+    "accents": {
+      "neutral": "Neutral",
+      "blue": "Blue",
+      "violet": "Violet",
+      "green": "Green",
+      "teal": "Teal",
+      "amber": "Amber",
+      "orange": "Orange",
+      "rose": "Rose"
+    },
+    "fonts": {
+      "geist": "Geist",
+      "system": "System",
+      "serif": "Serif",
+      "mono": "Mono"
+    },
+    "sidebarVariants": {
+      "inset": "Inset",
+      "sidebar": "Sidebar",
+      "floating": "Floating"
+    },
+    "collapsible": {
+      "icon": "Icons",
+      "offcanvas": "Off-canvas"
+    },
+    "contentLayouts": {
+      "full": "Full width",
+      "centered": "Centered"
+    }
+  },
+  "boot": {
+    "loading": "Loading the ERP…"
+  }
+}

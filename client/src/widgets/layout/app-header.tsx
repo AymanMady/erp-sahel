@@ -1,16 +1,18 @@
 /**
- * En-tête applicatif : fil d'Ariane, recherche globale (⌘K), état de synchronisation,
- * thème et raccourci caisse.
+ * Application header: breadcrumb, global search (⌘K), sync status, language,
+ * theme and point-of-sale shortcut.
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { IconCashRegister, IconSearch } from "@tabler/icons-react";
+import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "wouter";
 
 import { useSession } from "@/shared/auth/session";
 import { flattenNav, visibleNavGroups } from "@/shared/config/nav";
 import { useIsMac } from "@/shared/hooks/use-platform";
 import { CustomizerButton } from "@/shared/components/theme-customizer";
+import { LanguageSwitcher } from "@/shared/components/language-switcher";
 import { ThemeToggle } from "@/shared/components/theme-toggle";
 import { Button } from "@/shared/ui/button";
 import {
@@ -34,65 +36,68 @@ import { SidebarTrigger } from "@/shared/ui/sidebar";
 import type { SyncStatus } from "@/shared/offline/sync-engine";
 import { SyncIndicator } from "./sync-indicator";
 
-/** Segments d'URL dont le libellé humain ne se déduit pas du texte. */
-const CRUMB_LABELS: Record<string, string> = {
-  pos: "Caisse",
-  quotes: "Devis",
-  "sales-orders": "Commandes",
-  invoices: "Factures",
-  "credit-notes": "Avoirs",
-  payments: "Règlements",
-  "purchase-orders": "Commandes fournisseurs",
-  "goods-receipts": "Réceptions",
-  "supplier-invoices": "Factures fournisseurs",
-  inventory: "Stock",
-  movements: "Mouvements",
-  warehouses: "Magasins",
-  parties: "Tiers",
-  products: "Produits",
-  categories: "Catégories",
-  services: "Prestations",
-  banking: "Trésorerie",
-  accounting: "Comptabilité",
-  entries: "Journal",
-  ledger: "Grand livre",
-  balance: "Balance",
-  accounts: "Plan comptable",
-  settings: "Paramètres",
-  company: "Société",
-  users: "Utilisateurs",
-  roles: "Rôles",
-  modules: "Modules",
-  numbering: "Numérotation",
-  registers: "Caisses",
-  audit: "Audit",
-  reports: "Rapports",
-  sales: "Ventes",
-  stock: "Stock",
-  purchases: "Achats",
-  sync: "Synchronisation",
-  search: "Recherche",
-  equivalences: "Équivalences",
-  manufacturers: "Fabricants",
-  vehicles: "Véhicules",
-  "size-grids": "Grilles de tailles",
-  lots: "Lots",
-  expiring: "Péremption",
-  new: "Nouveau",
-  profile: "Profil",
+/** URL segments whose human label cannot be derived from the text (keys of `nav:crumbs`). */
+const CRUMB_KEYS: Record<string, string> = {
+  pos: "pos",
+  quotes: "quotes",
+  "sales-orders": "salesOrders",
+  invoices: "invoices",
+  "credit-notes": "creditNotes",
+  payments: "payments",
+  "purchase-orders": "purchaseOrders",
+  "goods-receipts": "goodsReceipts",
+  "supplier-invoices": "supplierInvoices",
+  inventory: "inventory",
+  movements: "movements",
+  warehouses: "warehouses",
+  parties: "parties",
+  products: "products",
+  categories: "categories",
+  services: "services",
+  banking: "banking",
+  accounting: "accounting",
+  entries: "entries",
+  ledger: "ledger",
+  balance: "balance",
+  accounts: "accounts",
+  settings: "settings",
+  company: "company",
+  users: "users",
+  roles: "roles",
+  modules: "modules",
+  numbering: "numbering",
+  registers: "registers",
+  audit: "audit",
+  reports: "reports",
+  sales: "sales",
+  stock: "stock",
+  purchases: "purchases",
+  sync: "sync",
+  search: "search",
+  equivalences: "equivalences",
+  manufacturers: "manufacturers",
+  vehicles: "vehicles",
+  "size-grids": "sizeGrids",
+  lots: "lots",
+  expiring: "expiring",
+  new: "new",
+  edit: "edit",
+  profile: "profile",
 };
 
 function useBreadcrumb(pathname: string): string[] {
+  const { t } = useTranslation("nav");
   return useMemo(() => {
     const segments = pathname.split("/").filter(Boolean);
-    if (segments.length === 0) return ["Tableau de bord"];
+    if (segments.length === 0) return [t("crumbs.dashboard")];
     return segments.map((segment) => {
-      if (CRUMB_LABELS[segment]) return CRUMB_LABELS[segment];
-      // Les identifiants (UUID) n'ont pas de libellé lisible : on les abrège.
+      const key = CRUMB_KEYS[segment];
+      if (key) return t(`crumbs.${key}`);
+      // Identifiers (UUIDs) have no readable label: shorten them.
       if (/^[0-9a-f]{8}-/i.test(segment)) return `#${segment.slice(0, 8)}`;
       return segment.replace(/-/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
     });
-  }, [pathname]);
+  }, [pathname, t]);
 }
 
 export function AppHeader({ syncStatus }: { syncStatus: SyncStatus }) {
@@ -101,8 +106,12 @@ export function AppHeader({ syncStatus }: { syncStatus: SyncStatus }) {
   const isMac = useIsMac();
   const [open, setOpen] = useState(false);
   const { can, hasModule } = useSession();
+  const { t } = useTranslation("nav");
 
-  const entries = useMemo(() => flattenNav(visibleNavGroups(can, hasModule)), [can, hasModule]);
+  const entries = useMemo(
+    () => flattenNav(visibleNavGroups(can, hasModule), t),
+    [can, hasModule, t]
+  );
 
   const go = useCallback(
     (url: string) => {
@@ -160,7 +169,7 @@ export function AppHeader({ syncStatus }: { syncStatus: SyncStatus }) {
           onClick={() => setOpen(true)}
         >
           <IconSearch className="size-4" />
-          <span>Rechercher…</span>
+          <span>{t("common:actions.searchEllipsis")}</span>
           <KbdGroup className="ms-2">
             <Kbd>{isMac ? "⌘" : "Ctrl"}</Kbd>
             <Kbd>K</Kbd>
@@ -170,7 +179,7 @@ export function AppHeader({ syncStatus }: { syncStatus: SyncStatus }) {
           variant="ghost"
           size="icon"
           className="md:hidden"
-          aria-label="Rechercher"
+          aria-label={t("common:actions.search")}
           onClick={() => setOpen(true)}
         >
           <IconSearch className="size-4" />
@@ -180,20 +189,26 @@ export function AppHeader({ syncStatus }: { syncStatus: SyncStatus }) {
           <Button variant="ghost" size="sm" asChild className="gap-2">
             <Link href="/pos">
               <IconCashRegister className="size-4" />
-              <span className="hidden lg:inline">Caisse</span>
+              <span className="hidden lg:inline">{t("items.pos")}</span>
             </Link>
           </Button>
         ) : null}
 
         <SyncIndicator status={syncStatus} />
+        <LanguageSwitcher />
         <ThemeToggle />
         <CustomizerButton />
       </div>
 
-      <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Rechercher un écran…" />
+      <CommandDialog
+        open={open}
+        onOpenChange={setOpen}
+        title={t("palette.title")}
+        description={t("palette.description")}
+      >
+        <CommandInput placeholder={t("palette.placeholder")} />
         <CommandList>
-          <CommandEmpty>Aucun résultat.</CommandEmpty>
+          <CommandEmpty>{t("common:states.noResults")}</CommandEmpty>
           {grouped.map(([group, items]) => (
             <CommandGroup key={group} heading={group}>
               {items.map((item) => (

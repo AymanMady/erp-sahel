@@ -1,11 +1,11 @@
 /**
- * Facturation client et avoirs.
+ * Customer invoicing and credit notes.
  *
- * Invariants :
- *  - la **validation** d'une facture décrémente le stock ([FR-VNT-3], [BR-6]) et produit
- *    une écriture comptable équilibrée ([BR-7]) ;
- *  - une facture validée est **inaltérable** : `is_locked` passe à `true` et toute
- *    correction passe par un avoir ([BR-10], [FR-VNT-6]).
+ * Invariants:
+ *  - **validating** an invoice decrements stock ([FR-VNT-3], [BR-6]) and produces a
+ *    balanced journal entry ([BR-7]);
+ *  - a validated invoice is **immutable**: `is_locked` becomes `true` and any correction
+ *    goes through a credit note ([BR-10], [FR-VNT-6]).
  */
 
 import { boolean, date, index, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
@@ -43,10 +43,10 @@ export const salesInvoices = pgTable(
       .notNull()
       .references(() => parties.id),
     salesOrderId: uuid("sales_order_id").references(() => salesOrders.id, { onDelete: "set null" }),
-    /** Magasin qui livre — détermine les axes de décrément du stock. */
+    /** Delivering store — determines the stock axes to decrement. */
     warehouseId: uuid("warehouse_id").references(() => warehouses.id, { onDelete: "set null" }),
     source: text("source").$type<InvoiceSource>().default("MANUAL").notNull(),
-    /** Session de caisse d'origine pour un ticket POS [FR-POS-2]. */
+    /** Originating cash session for a POS ticket [FR-POS-2]. */
     posSessionId: uuid("pos_session_id"),
     date: date("date").notNull(),
     dueDate: date("due_date"),
@@ -58,10 +58,10 @@ export const salesInvoices = pgTable(
     paidAmountCents: moneyCents("paid_amount_cents").default(0).notNull(),
     currency: text("currency").default("MRU").notNull(),
     notes: text("notes").default("").notNull(),
-    /** Document figé après validation — aucune modification possible [BR-10]. */
+    /** Document frozen after validation — no modification possible [BR-10]. */
     isLocked: boolean("is_locked").default(false).notNull(),
     userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
-    /** Numéro provisoire porté par le poste hors ligne avant l'ACK (`SYNC_STRATEGY.md` §6). */
+    /** Provisional number assigned by the offline workstation before the ACK (`SYNC_STRATEGY.md` §6). */
     provisionalNumber: text("provisional_number").default("").notNull(),
     clientUuid: clientUuid(),
   },
@@ -100,7 +100,7 @@ export type SalesInvoiceLine = typeof salesInvoiceLines.$inferSelect;
 export const CREDIT_NOTE_STATUSES = ["DRAFT", "VALIDATED", "CANCELLED"] as const;
 export type CreditNoteStatus = (typeof CREDIT_NOTE_STATUSES)[number];
 
-/** Avoir / retour : réintègre le stock et génère les écritures inverses [FR-VNT-6], [BR-6]. */
+/** Credit note / return: restocks items and generates the reversing entries [FR-VNT-6], [BR-6]. */
 export const creditNotes = pgTable(
   "credit_notes",
   {
@@ -117,7 +117,7 @@ export const creditNotes = pgTable(
     date: date("date").notNull(),
     status: text("status").$type<CreditNoteStatus>().default("DRAFT").notNull(),
     reason: text("reason").default("").notNull(),
-    /** `true` si les articles reviennent physiquement en stock. */
+    /** `true` if the items physically return to stock. */
     restock: boolean("restock").default(true).notNull(),
     totalHtCents: moneyCents("total_ht_cents").default(0).notNull(),
     totalVatCents: moneyCents("total_vat_cents").default(0).notNull(),

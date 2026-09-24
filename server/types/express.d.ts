@@ -1,16 +1,16 @@
 import type { Company } from "@shared/schema";
 import type { PermissionCode } from "@shared/rbac";
 
-/** Identité résolue par `requireAuth` — jamais renseignée par le client. */
+/** Identity resolved by `requireAuth` — never supplied by the client. */
 export interface AuthContext {
   userId: string;
   username: string;
   isSuperuser: boolean;
-  /** Société active de la session (claim `companyId` du JWT). */
+  /** Active company of the session (`companyId` claim of the JWT). */
   companyId: string;
-  /** Permissions effectives dans cette société. */
+  /** Effective permissions within this company. */
   permissions: PermissionCode[];
-  /** Modules activés pour cette société ([BR-12]). */
+  /** Modules enabled for this company ([BR-12]). */
   enabledModules: string[];
 }
 

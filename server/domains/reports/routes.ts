@@ -1,4 +1,4 @@
-/** Routes des rapports et du tableau de bord. */
+/** Report and dashboard routes. */
 
 import type { Express } from "express";
 import { z } from "zod";
@@ -19,8 +19,8 @@ export function registerReportsRoutes(app: Express): void {
     "/api/dashboard",
     requireAuth,
     asyncHandler(async (req, res) => {
-      // Le tableau de bord est le premier écran : il reste accessible à tout
-      // utilisateur authentifié, quitte à n'afficher que des zéros.
+      // The dashboard is the first screen: it stays accessible to every authenticated
+      // user, even if it only shows zeros.
       res.json(
         await reportsApplication.dashboard(
           authOf(req).companyId,

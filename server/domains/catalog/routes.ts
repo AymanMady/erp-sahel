@@ -1,4 +1,4 @@
-/** Routes du catalogue. */
+/** Catalog routes. */
 
 import type { Express } from "express";
 

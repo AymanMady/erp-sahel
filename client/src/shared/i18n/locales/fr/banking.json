@@ -1,0 +1,68 @@
+{
+  "title": "Trésorerie",
+  "description": "Comptes, mouvements et rapprochement bancaire.",
+  "markReconciled": "Marquer comme rapproché",
+  "accountTypes": {
+    "bank": "Compte bancaire",
+    "cash": "Caisse",
+    "mobileMoney": "Mobile money"
+  },
+  "transactionTypes": {
+    "deposit": "Dépôt",
+    "withdrawal": "Retrait",
+    "transfer": "Virement"
+  },
+  "columns": {
+    "account": "Compte",
+    "label": "Libellé",
+    "reconciled": "Rapproché"
+  },
+  "actions": {
+    "transfer": "Virement interne",
+    "newMovement": "Saisir un mouvement",
+    "newAccount": "Nouveau compte"
+  },
+  "stats": {
+    "total": "Trésorerie totale",
+    "cash": "Caisse",
+    "bank": "Banque",
+    "mobile": "Mobile money"
+  },
+  "accounts": {
+    "title": "Comptes",
+    "empty": "Aucun compte de trésorerie. Créez-en un pour enregistrer des règlements."
+  },
+  "filters": {
+    "allAccounts": "Tous les comptes"
+  },
+  "empty": {
+    "title": "Aucun mouvement",
+    "description": "Les règlements alimentent automatiquement ce journal."
+  },
+  "accountDialog": {
+    "title": "Nouveau compte de trésorerie",
+    "accountNumber": "Numéro de compte",
+    "iban": "IBAN",
+    "isDefault": "Compte par défaut pour ce type de règlement"
+  },
+  "movementDialog": {
+    "title": "Mouvement de trésorerie",
+    "description": "Pour un dépôt ou un retrait sans facture associée (apport, frais bancaires…).",
+    "direction": "Sens",
+    "deposit": "Dépôt (+)",
+    "withdrawal": "Retrait (−)"
+  },
+  "transferDialog": {
+    "title": "Virement interne",
+    "description": "Transfert entre deux comptes de la société (remise d'espèces en banque, par exemple).",
+    "defaultDescription": "Virement interne",
+    "from": "Depuis",
+    "to": "Vers",
+    "submit": "Virer"
+  },
+  "toasts": {
+    "accountCreated": "Compte créé.",
+    "movementSaved": "Mouvement enregistré.",
+    "transferDone": "Virement effectué."
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "system": {
+    "administrateur": {
+      "name": "Administrator",
+      "description": "Company settings, users, master data and accounting."
+    },
+    "responsable-magasin": {
+      "name": "Store manager",
+      "description": "Store purchasing, stock, catalog and reports."
+    },
+    "vendeur": {
+      "name": "Salesperson / Cashier",
+      "description": "Sales, quotes, invoices, collections and POS session."
+    },
+    "comptable": {
+      "name": "Accountant",
+      "description": "Journal, general ledger, trial balance and bank reconciliation."
+    },
+    "consultation": {
+      "name": "Read-only",
+      "description": "Read-only access to all authorized screens."
+    }
+  },
+  "groups": {
+    "masterData": "Master data",
+    "operations": "Operations",
+    "accountingReporting": "Accounting & reporting",
+    "administration": "Administration"
+  },
+  "permissions": {
+    "parties": {
+      "read": "View parties",
+      "write": "Create and edit parties"
+    },
+    "catalog": {
+      "read": "View the catalog",
+      "write": "Create and edit products"
+    },
+    "services": {
+      "read": "View services",
+      "write": "Create and edit services"
+    },
+    "inventory": {
+      "read": "View stock",
+      "write": "Stock movements and adjustments"
+    },
+    "purchasing": {
+      "read": "View purchasing",
+      "write": "Create orders and receipts"
+    },
+    "sales": {
+      "read": "View quotes and orders",
+      "write": "Create quotes and orders"
+    },
+    "invoicing": {
+      "read": "View invoices",
+      "write": "Create and validate invoices",
+      "cancel": "Cancel an invoice and issue a credit note"
+    },
+    "payments": {
+      "read": "View payments",
+      "write": "Record payments"
+    },
+    "banking": {
+      "read": "View cash and bank",
+      "write": "Enter and reconcile bank transactions"
+    },
+    "pos": {
+      "use": "Use the point of sale",
+      "session": {
+        "close": "Close a POS session"
+      }
+    },
+    "accounting": {
+      "read": "View accounting",
+      "write": "Enter journal entries"
+    },
+    "reports": {
+      "read": "View reports"
+    },
+    "settings": {
+      "read": "View settings",
+      "write": "Edit company settings"
+    },
+    "users": {
+      "read": "View users",
+      "write": "Manage users and roles"
+    },
+    "modules": {
+      "manage": "Enable or disable modules"
+    },
+    "audit": {
+      "read": "View the audit log"
+    }
+  }
+}

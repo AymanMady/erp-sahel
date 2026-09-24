@@ -1,9 +1,9 @@
-//! Coquille desktop d'ERP Sahel.
+//! ERP Sahel desktop shell.
 //!
-//! Elle embarque **la même application web** (build `--mode desktop`) et y ajoute ce que
-//! le navigateur ne peut pas offrir : un cache hors-ligne durable en SQLite et une
-//! connexion à froid sans réseau. Aucune logique métier n'est dupliquée ici — le
-//! protocole de synchronisation reste celui décrit dans `docs/SYNC_STRATEGY.md`.
+//! It embeds **the same web application** (build `--mode desktop`) and adds what the
+//! browser cannot provide: a durable offline cache in SQLite and a cold login without
+//! network. No business logic is duplicated here — the sync protocol remains the one
+//! described in `docs/SYNC_STRATEGY.md`.
 
 mod offline_db;
 
@@ -23,5 +23,5 @@ pub fn run() {
             offline_db::offline_try_login,
         ])
         .run(tauri::generate_context!())
-        .expect("Échec du démarrage de la coquille ERP Sahel");
+        .expect("Failed to start the ERP Sahel shell");
 }

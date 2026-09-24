@@ -1,0 +1,102 @@
+{
+  "accountTypes": {
+    "ASSET": "Asset",
+    "LIABILITY": "Liability",
+    "EQUITY": "Equity",
+    "REVENUE": "Revenue",
+    "EXPENSE": "Expense"
+  },
+  "journalTypes": {
+    "SALES": "Sales",
+    "PURCHASES": "Purchases",
+    "BANK": "Bank",
+    "CASH": "Cash",
+    "MISC": "Miscellaneous"
+  },
+  "mappingKeys": {
+    "SALES_REVENUE": "Sales of goods",
+    "SALES_DISCOUNT": "Discounts granted",
+    "VAT_COLLECTED": "Output VAT (collected)",
+    "VAT_DEDUCTIBLE": "Input VAT (deductible)",
+    "CUSTOMER_RECEIVABLE": "Accounts receivable",
+    "SUPPLIER_PAYABLE": "Accounts payable",
+    "PURCHASES": "Purchases of goods",
+    "INVENTORY": "Merchandise inventory",
+    "INVENTORY_VARIATION": "Change in inventory",
+    "CASH": "Cash",
+    "BANK": "Bank",
+    "MOBILE_MONEY": "Mobile money",
+    "ROUNDING_DIFFERENCE": "Differences and rounding",
+    "OPENING_BALANCE": "Opening balance",
+    "RESULT_CARRY_FORWARD": "Retained earnings"
+  },
+  "columns": {
+    "account": "Account",
+    "accountNumber": "Number",
+    "accountName": "Title",
+    "nature": "Type",
+    "group": "Group",
+    "entry": "Entry",
+    "label": "Label",
+    "debit": "Debit",
+    "credit": "Credit",
+    "balance": "Balance"
+  },
+  "filters": {
+    "fromDate": "Start date",
+    "toDate": "End date"
+  },
+  "balanced": "Balanced",
+  "unbalanced": "Unbalanced",
+  "accounts": {
+    "title": "Chart of accounts",
+    "description": "The company's chart of accounts and the accounts used by automatic entries.",
+    "newAccount": "New account",
+    "tabs": {
+      "accounts": "Accounts",
+      "mappings": "Automation"
+    },
+    "mappingUpdated": "Linked account updated.",
+    "created": "Account created.",
+    "emptyTitle": "Empty chart of accounts",
+    "emptyDescription": "The chart is installed automatically when the company is created.",
+    "mappingsTitle": "Accounts for automatic entries",
+    "mappingsDescription": "Invoices and payments refer to a logical key; this is where it is linked to an account of the chart. Switching to another accounting framework simply means changing these links.",
+    "notConfigured": "Not configured",
+    "dialog": {
+      "parentAccount": "Parent account",
+      "isGroup": "Group account (receives no entries)"
+    }
+  },
+  "balance": {
+    "title": "Trial balance",
+    "description": "Debit/credit totals per account. Both columns must add up to the same total.",
+    "emptyTitle": "Empty trial balance",
+    "emptyDescription": "No account has movements in the selected period.",
+    "totals": "Totals"
+  },
+  "entries": {
+    "title": "General journal",
+    "description": "All entries, generated automatically or recorded manually.",
+    "newEntry": "Record an entry",
+    "allJournals": "All journals",
+    "empty": "No entries in this period. Invoices and payments generate them automatically.",
+    "saved": "Entry recorded.",
+    "dialog": {
+      "title": "Record an entry",
+      "description": "The entry must be balanced: total debits must equal total credits.",
+      "journal": "Journal",
+      "entryLabel": "Entry label",
+      "removeLine": "Remove line",
+      "addLine": "Add a line",
+      "submit": "Record entry"
+    }
+  },
+  "ledger": {
+    "title": "General ledger",
+    "description": "Movements by account. Select an account to follow its running balance.",
+    "allAccounts": "All accounts",
+    "emptyTitle": "No movements",
+    "emptyDescription": "No entries match the selected criteria."
+  }
+}

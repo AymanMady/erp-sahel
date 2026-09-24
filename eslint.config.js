@@ -3,11 +3,10 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 /**
- * Règles de style et de sûreté.
+ * Style and safety rules.
  *
- * `no-floating-promises` porte une intention d'architecture plutôt qu'un goût : il évite
- * les effets de bord silencieux, particulièrement dangereux dans le moteur de
- * synchronisation.
+ * `no-floating-promises` reflects an architectural intent rather than a taste: it
+ * prevents silent side effects, which are especially dangerous in the sync engine.
  */
 export default tseslint.config(
   { ignores: ["dist/**", "node_modules/**", "src-tauri/**", "migrations/**", "client/public/**"] },
@@ -34,8 +33,8 @@ export default tseslint.config(
   },
 
   {
-    // Les scripts sont des outils en ligne de commande : leur sortie console est
-    // leur interface, pas une trace de débogage oubliée.
+    // Scripts are command-line tools: their console output is their interface, not a
+    // forgotten debug trace.
     files: ["scripts/**/*.ts", "server/seed.ts", "server/shared/logging/logger.ts"],
     rules: { "no-console": "off" },
   },

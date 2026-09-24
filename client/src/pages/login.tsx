@@ -1,12 +1,13 @@
 /**
- * Écran de connexion.
+ * Login screen.
  *
- * Particularité terrain : si le poste est **hors ligne** et qu'une session a déjà été
- * ouverte sur cet appareil, on l'indique explicitement et on propose de reprendre le
- * travail hors connexion, plutôt que d'afficher un formulaire qui ne peut pas aboutir.
+ * Field specificity: if the device is **offline** and a session has already been opened
+ * on it, this is stated explicitly and the user is offered to resume working offline,
+ * rather than showing a form that cannot succeed.
  */
 
 import { useEffect, useState, type FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { IconAlertTriangle, IconCloudOff, IconLock, IconUser } from "@tabler/icons-react";
 
 import { errorMessage } from "@/shared/api/api-error";
@@ -23,6 +24,7 @@ import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 
 export default function LoginPage() {
+  const { t } = useTranslation("auth");
   const { login, refresh } = useSession();
   const online = useOnline();
   const cached = getCachedSession();
@@ -32,8 +34,8 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [offlineLoginReady, setOfflineLoginReady] = useState(false);
 
-  // Connexion à froid hors ligne : réservée à la coquille desktop, où les empreintes
-  // des comptes autorisés vivent dans un SQLite applicatif ([NFR-SEC-5]).
+  // Cold offline login: reserved for the desktop shell, where the hashes of the
+  // authorized accounts live in an application SQLite database ([NFR-SEC-5]).
   useEffect(() => {
     if (!isTauriDesktop()) return;
     void canLoginOffline().then(setOfflineLoginReady);
@@ -46,15 +48,15 @@ export default function LoginPage() {
     try {
       await login({ username: username.trim(), password });
     } catch (submitError) {
-      // Hors ligne sur un poste desktop déjà synchronisé : on vérifie l'empreinte
-      // locale pour déverrouiller l'interface, sans jeton d'API.
+      // Offline on an already synchronized desktop device: check the local hash to
+      // unlock the interface, without an API token.
       if (!online && offlineLoginReady) {
         const accepted = await verifyOfflineLogin(username.trim(), password);
         if (accepted) {
           await refresh();
           return;
         }
-        setError("Identifiants incorrects (vérification hors ligne).");
+        setError(t("login.offlineInvalidCredentials"));
         return;
       }
       setError(errorMessage(submitError));
@@ -71,36 +73,34 @@ export default function LoginPage() {
             <BrandIcon className="size-6" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold tracking-tight">ERP Sahel</h1>
-            <p className="text-sm text-muted-foreground">
-              Gestion commerciale, stock, caisse et comptabilité
-            </p>
+            <h1 className="text-xl font-semibold tracking-tight">{t("common:appName")}</h1>
+            <p className="text-sm text-muted-foreground">{t("login.tagline")}</p>
           </div>
         </div>
 
         {!online ? (
           <Alert>
             <IconCloudOff className="size-4" />
-            <AlertTitle>Serveur injoignable</AlertTitle>
+            <AlertTitle>{t("login.offline.title")}</AlertTitle>
             <AlertDescription>
               {cached
-                ? "Une session existe sur ce poste. Reconnectez-vous dès le retour du réseau ; vos ventes enregistrées localement seront alors synchronisées."
+                ? t("login.offline.sessionExists")
                 : offlineLoginReady
-                  ? "Ce poste est synchronisé : saisissez vos identifiants habituels pour travailler hors ligne."
-                  : "Une première connexion au serveur est nécessaire avant de pouvoir travailler hors ligne sur ce poste."}
+                  ? t("login.offline.deviceSynced")
+                  : t("login.offline.firstLoginRequired")}
             </AlertDescription>
           </Alert>
         ) : null}
 
         <Card>
           <CardHeader>
-            <CardTitle>Connexion</CardTitle>
-            <CardDescription>Saisissez vos identifiants pour accéder à l'ERP.</CardDescription>
+            <CardTitle>{t("login.title")}</CardTitle>
+            <CardDescription>{t("login.description")}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Identifiant</Label>
+                <Label htmlFor="username">{t("login.username")}</Label>
                 <div className="relative">
                   <IconUser className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -117,7 +117,7 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Mot de passe</Label>
+                <Label htmlFor="password">{t("login.password")}</Label>
                 <div className="relative">
                   <IconLock className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -141,7 +141,7 @@ export default function LoginPage() {
               ) : null}
 
               <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting ? "Connexion…" : "Se connecter"}
+                {submitting ? t("login.submitting") : t("login.submit")}
               </Button>
 
               {cached && !online ? (
@@ -151,17 +151,14 @@ export default function LoginPage() {
                   className="w-full"
                   onClick={() => void refresh()}
                 >
-                  Reprendre la session hors ligne
+                  {t("login.resumeOffline")}
                 </Button>
               ) : null}
             </form>
           </CardContent>
         </Card>
 
-        <p className="text-center text-xs text-muted-foreground">
-          Les ventes réalisées hors ligne sont conservées sur ce poste et synchronisées
-          automatiquement au retour du réseau.
-        </p>
+        <p className="text-center text-xs text-muted-foreground">{t("login.offlineFootnote")}</p>
       </div>
     </div>
   );

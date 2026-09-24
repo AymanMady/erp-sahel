@@ -1,0 +1,68 @@
+{
+  "title": "الخزينة",
+  "description": "الحسابات والحركات والتسوية البنكية.",
+  "markReconciled": "تحديد كمُسوّى",
+  "accountTypes": {
+    "bank": "حساب بنكي",
+    "cash": "صندوق نقدي",
+    "mobileMoney": "المحفظة الإلكترونية"
+  },
+  "transactionTypes": {
+    "deposit": "إيداع",
+    "withdrawal": "سحب",
+    "transfer": "تحويل"
+  },
+  "columns": {
+    "account": "الحساب",
+    "label": "البيان",
+    "reconciled": "مُسوّى"
+  },
+  "actions": {
+    "transfer": "تحويل داخلي",
+    "newMovement": "تسجيل حركة",
+    "newAccount": "حساب جديد"
+  },
+  "stats": {
+    "total": "إجمالي الخزينة",
+    "cash": "الصندوق",
+    "bank": "البنك",
+    "mobile": "المحفظة الإلكترونية"
+  },
+  "accounts": {
+    "title": "الحسابات",
+    "empty": "لا يوجد حساب خزينة. أنشئ حسابًا لتسجيل المدفوعات."
+  },
+  "filters": {
+    "allAccounts": "كل الحسابات"
+  },
+  "empty": {
+    "title": "لا توجد حركات",
+    "description": "تُغذّي المدفوعات هذا السجل تلقائيًا."
+  },
+  "accountDialog": {
+    "title": "حساب خزينة جديد",
+    "accountNumber": "رقم الحساب",
+    "iban": "رقم الآيبان (IBAN)",
+    "isDefault": "الحساب الافتراضي لهذا النوع من المدفوعات"
+  },
+  "movementDialog": {
+    "title": "حركة خزينة",
+    "description": "لإيداع أو سحب دون فاتورة مرتبطة (مساهمة، رسوم بنكية…).",
+    "direction": "الاتجاه",
+    "deposit": "إيداع (+)",
+    "withdrawal": "سحب (−)"
+  },
+  "transferDialog": {
+    "title": "تحويل داخلي",
+    "description": "تحويل بين حسابين للشركة (إيداع النقد في البنك مثلًا).",
+    "defaultDescription": "تحويل داخلي",
+    "from": "من",
+    "to": "إلى",
+    "submit": "تحويل"
+  },
+  "toasts": {
+    "accountCreated": "تم إنشاء الحساب.",
+    "movementSaved": "تم تسجيل الحركة.",
+    "transferDone": "تم التحويل."
+  }
+}

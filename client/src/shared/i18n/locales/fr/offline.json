@@ -1,0 +1,58 @@
+{
+  "api": {
+    "requestFailed": "La requête a échoué.",
+    "serverUnreachable": "Serveur injoignable."
+  },
+  "sync": {
+    "failed": "Échec de la synchronisation."
+  },
+  "errors": {
+    "productNotSynced": "Ce produit n'est pas encore synchronisé : son stock pourra être ajusté après la synchronisation."
+  },
+  "write": {
+    "label": "{{verb}} — {{resource}}",
+    "labelNamed": "{{verb}} — {{resource}} « {{name}} »",
+    "customAction": "Action « {{action}} »",
+    "pendingNumber": "En attente",
+    "savedOffline": "Enregistré hors ligne",
+    "savedOfflineDescription": "La modification sera envoyée au serveur à la prochaine synchronisation.",
+    "actions": {
+      "create": "Création",
+      "update": "Modification",
+      "delete": "Suppression"
+    }
+  },
+  "resources": {
+    "user": "Utilisateur",
+    "role": "Rôle",
+    "setting": "Paramètre",
+    "company": "Société",
+    "module": "Module",
+    "category": "Catégorie",
+    "product": "Produit",
+    "service": "Prestation",
+    "party": "Tiers",
+    "warehouse": "Magasin",
+    "stock": "Stock",
+    "quote": "Devis",
+    "salesOrder": "Commande client",
+    "invoice": "Facture",
+    "creditNote": "Avoir",
+    "payment": "Règlement",
+    "purchaseOrder": "Commande fournisseur",
+    "goodsReceipt": "Réception",
+    "supplierInvoice": "Facture fournisseur",
+    "treasury": "Trésorerie",
+    "pos": "Caisse",
+    "accounting": "Comptabilité",
+    "write": "Écriture"
+  },
+  "outboxLabels": {
+    "party": "Tiers « {{name}} »",
+    "product": "Produit {{sku}} « {{name}} »",
+    "quote": "Devis {{number}}",
+    "invoice": "Facture {{number}}",
+    "payment": "Règlement {{reference}}",
+    "stockAdjustment": "Ajustement de stock ({{quantity}})"
+  }
+}

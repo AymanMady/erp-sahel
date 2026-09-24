@@ -1,0 +1,57 @@
+{
+  "greeting": "Bonjour",
+  "greetingWithName": "Bonjour {{name}}",
+  "description": "Vue d'ensemble de l'activité de la société.",
+  "lastDays_one": "{{count}} dernier jour",
+  "lastDays_other": "{{count}} derniers jours",
+  "periodLabel": "Période",
+  "openRegister": "Ouvrir la caisse",
+  "quickActions": {
+    "sell": "Vendre",
+    "newInvoice": "Nouvelle facture",
+    "buy": "Acheter",
+    "newProduct": "Nouveau produit",
+    "viewStock": "Voir le stock",
+    "newCustomer": "Nouveau client"
+  },
+  "offline": "Les indicateurs ne sont pas disponibles hors ligne. Ils réapparaîtront dès le retour du réseau.",
+  "stats": {
+    "revenue": "Chiffre d'affaires HT",
+    "invoicesHint_one": "{{count}} facture sur la période",
+    "invoicesHint_other": "{{count}} factures sur la période",
+    "outstanding": "Restant à encaisser",
+    "outstandingHint": "Factures validées non soldées",
+    "treasury": "Trésorerie",
+    "treasuryHint": "Caisse {{cash}} · Banque {{bank}}",
+    "stockValue": "Valeur du stock",
+    "skusHint_one": "{{count}} référence en stock",
+    "skusHint_other": "{{count}} références en stock"
+  },
+  "revenueChart": {
+    "title": "Évolution du chiffre d'affaires",
+    "description": "Montants hors taxes des factures validées, du {{from}} au {{to}}.",
+    "empty": "Aucune vente enregistrée sur la période.",
+    "series": "CA HT"
+  },
+  "topSales": {
+    "title": "Meilleures ventes",
+    "description": "Top 5 des articles sur la période.",
+    "empty": "Aucune vente sur la période.",
+    "sold_one": "{{count}} vendu",
+    "sold_other": "{{count}} vendus"
+  },
+  "restock": {
+    "title": "Alertes de réapprovisionnement",
+    "description": "Articles au seuil ou en dessous.",
+    "viewStock": "Voir le stock",
+    "empty": "Aucun article sous son seuil d'alerte."
+  },
+  "counts": {
+    "title": "Référentiels",
+    "description": "Volumétrie de la société.",
+    "customers": "Clients",
+    "suppliers": "Fournisseurs",
+    "products": "Produits",
+    "services": "Prestations"
+  }
+}

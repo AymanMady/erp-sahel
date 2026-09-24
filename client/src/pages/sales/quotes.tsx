@@ -1,6 +1,7 @@
-/** Liste des devis. */
+/** Quote list. */
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { IconPlus } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
@@ -24,6 +25,7 @@ import type { Quote } from "@/entities/types";
 const ALL = "ALL";
 
 export default function QuotesPage() {
+  const { t } = useTranslation("sales");
   const [, navigate] = useLocation();
   const { can } = useSession();
   const [search, setSearch] = useState("");
@@ -45,25 +47,29 @@ export default function QuotesPage() {
   const columns: Column<Quote & { partyName: string }>[] = [
     {
       id: "number",
-      header: "Numéro",
+      header: t("common:labels.number"),
       cell: (row) => <span className="tabular font-medium">{row.number}</span>,
     },
-    { id: "date", header: "Date", cell: (row) => formatDate(row.date) },
+    { id: "date", header: t("common:labels.date"), cell: (row) => formatDate(row.date) },
     {
       id: "party",
-      header: "Client",
+      header: t("common:labels.customer"),
       cell: (row) => <span className="font-medium">{row.partyName}</span>,
     },
     {
       id: "expiry",
-      header: "Validité",
+      header: t("quotes.columns.expiry"),
       hideOnMobile: true,
       cell: (row) => (row.expiryDate ? formatDate(row.expiryDate) : "—"),
     },
-    { id: "status", header: "Statut", cell: (row) => <StatusBadge status={row.status} /> },
+    {
+      id: "status",
+      header: t("common:labels.status"),
+      cell: (row) => <StatusBadge status={row.status} />,
+    },
     {
       id: "total",
-      header: "Total TTC",
+      header: t("common:labels.totalInclTax"),
       align: "end",
       cell: (row) => <Money cents={row.totalTtcCents} />,
     },
@@ -71,12 +77,12 @@ export default function QuotesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Devis" description="Propositions commerciales en cours et archivées.">
+      <PageHeader title={t("quotes.title")} description={t("quotes.description")}>
         {can("sales.write") ? (
           <Button asChild>
             <Link href="/quotes/new">
               <IconPlus className="size-4" />
-              Nouveau devis
+              {t("quotes.new")}
             </Link>
           </Button>
         ) : null}
@@ -89,7 +95,7 @@ export default function QuotesPage() {
             setSearch(value);
             setPage((current) => ({ ...current, offset: 0 }));
           }}
-          placeholder="Numéro ou client…"
+          placeholder={t("searchPlaceholder")}
           className="sm:max-w-sm"
         />
         <Select
@@ -103,7 +109,7 @@ export default function QuotesPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>Tous les statuts</SelectItem>
+            <SelectItem value={ALL}>{t("allStatuses")}</SelectItem>
             {QUOTE_STATUSES.map((entry) => (
               <SelectItem key={entry} value={entry}>
                 {statusLabel(entry)}
@@ -119,8 +125,8 @@ export default function QuotesPage() {
         rowKey={(row) => row.id}
         loading={isLoading}
         error={error ? errorMessage(error) : null}
-        emptyTitle="Aucun devis"
-        emptyDescription="Créez un devis pour formaliser une proposition avant la commande."
+        emptyTitle={t("quotes.emptyTitle")}
+        emptyDescription={t("quotes.emptyDescription")}
         onRowClick={(row) => navigate(`/quotes/${row.id}`)}
         pagination={{
           total: data?.total ?? 0,

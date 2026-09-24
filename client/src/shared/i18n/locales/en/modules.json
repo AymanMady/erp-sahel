@@ -1,0 +1,52 @@
+{
+  "pos": {
+    "name": "Point of sale",
+    "description": "Sell quickly at the counter, take payment and print the receipt."
+  },
+  "invoicing": {
+    "name": "Invoices",
+    "description": "Issue customer invoices and credit notes."
+  },
+  "sales": {
+    "name": "Quotes and orders",
+    "description": "Prepare a quote, turn it into an order and then an invoice."
+  },
+  "purchasing": {
+    "name": "Purchasing",
+    "description": "Order from suppliers and receive the goods."
+  },
+  "inventory": {
+    "name": "Stock",
+    "description": "See what is left in the warehouse, goods in and goods out."
+  },
+  "services": {
+    "name": "Services",
+    "description": "Sell services (installation, repair, delivery…)."
+  },
+  "banking": {
+    "name": "Cash and bank",
+    "description": "Track money in the till, in the bank and on Bankily / Masrvi / Sedad."
+  },
+  "accounting": {
+    "name": "Accounting",
+    "description": "Journal, general ledger and trial balance (for the accountant)."
+  },
+  "reports": {
+    "name": "Reports",
+    "description": "Sales, purchasing and stock figures."
+  },
+  "presets": {
+    "simple": {
+      "name": "Simple",
+      "description": "POS, stock and purchasing. Ideal for a shop."
+    },
+    "invoices": {
+      "name": "With invoices",
+      "description": "Plus: quotes, invoices, services and reports."
+    },
+    "full": {
+      "name": "Full",
+      "description": "Everything, including banking and accounting."
+    }
+  }
+}

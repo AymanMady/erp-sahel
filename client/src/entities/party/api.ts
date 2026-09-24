@@ -1,4 +1,4 @@
-/** Accès API des tiers. */
+/** Parties (customers/suppliers) API access. */
 
 import { api } from "@/shared/api/http";
 import {
@@ -7,6 +7,7 @@ import {
   withOfflineFallback,
 } from "@/shared/offline/offline-reads";
 import { offlineNotFound } from "@/shared/api/api-error";
+import { i18n } from "@/shared/i18n";
 import { pendingParties } from "@/shared/offline/offline-writes";
 import type { Contact, Paginated, Party, PartyAddress, PartyDetail } from "@/entities/types";
 
@@ -30,7 +31,7 @@ export const partyApi = {
       () => api.get<PartyDetail>(`/api/parties/${id}`),
       async (snapshot) => {
         const detail = partyDetailOffline(snapshot, id, await pendingParties());
-        if (!detail) throw offlineNotFound("Ce tiers n'est pas disponible hors ligne.");
+        if (!detail) throw offlineNotFound(i18n.t("parties:offlineUnavailable"));
         return detail as PartyDetail;
       }
     ),

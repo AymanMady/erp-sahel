@@ -1,4 +1,4 @@
-/** Routes des règlements. */
+/** Payment routes. */
 
 import type { Express } from "express";
 

@@ -1,0 +1,52 @@
+{
+  "labels": {
+    "DRAFT": "Draft",
+    "SENT": "Sent",
+    "ACCEPTED": "Accepted",
+    "REJECTED": "Rejected",
+    "EXPIRED": "Expired",
+    "CONVERTED": "Converted",
+    "CONFIRMED": "Confirmed",
+    "PROCESSING": "Processing",
+    "SHIPPED": "Shipped",
+    "DELIVERED": "Delivered",
+    "INVOICED": "Invoiced",
+    "CANCELLED": "Cancelled",
+    "VALIDATED": "Validated",
+    "PARTIALLY_PAID": "Partially paid",
+    "PAID": "Paid",
+    "ORDERED": "Ordered",
+    "PARTIALLY_RECEIVED": "Partially received",
+    "RECEIVED": "Received",
+    "OPEN": "Open",
+    "CLOSED": "Closed",
+    "PENDING": "Pending",
+    "created": "Created",
+    "duplicate": "Duplicate ignored",
+    "error": "Error",
+    "deferred": "Deferred",
+    "synced": "Synced",
+    "sending": "Sending…",
+    "pending": "Pending"
+  },
+  "paymentMethods": {
+    "CASH": "Cash",
+    "BANK_TRANSFER": "Bank transfer",
+    "CHECK": "Cheque",
+    "CARD": "Card",
+    "MOBILE_MONEY": "Mobile Money"
+  },
+  "movements": {
+    "IN": "In",
+    "OUT": "Out",
+    "TRANSFER": "Transfer",
+    "ADJUSTMENT": "Adjustment",
+    "RETURN": "Return"
+  },
+  "partyTypes": {
+    "CUSTOMER": "Customer",
+    "SUPPLIER": "Supplier",
+    "BOTH": "Customer & supplier",
+    "PROSPECT": "Prospect"
+  }
+}

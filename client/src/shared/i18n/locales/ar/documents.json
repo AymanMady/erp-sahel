@@ -1,0 +1,47 @@
+{
+  "view": {
+    "currency": "العملة: {{currency}}",
+    "date": "التاريخ: {{date}}",
+    "dueDate": "تاريخ الاستحقاق: {{date}}",
+    "recipient": "المرسل إليه",
+    "columns": {
+      "description": "البيان",
+      "origin": "المنشأ",
+      "quantity": "الكمية",
+      "unitPriceExclTax": "سعر الوحدة دون ضريبة"
+    },
+    "alreadyPaid": "المبلغ المدفوع",
+    "amountDue": "المبلغ المتبقي"
+  },
+  "vat": "ض.ق.م",
+  "vatRate": "ض.ق.م {{rate}} %",
+  "lineEditor": {
+    "columns": {
+      "description": "البيان"
+    },
+    "empty": "لا توجد أسطر. أضف صنفًا أو خدمة.",
+    "descriptionPlaceholder": "بيان السطر",
+    "removeLine": "حذف السطر",
+    "addItem": "إضافة صنف",
+    "freeLine": "سطر حر",
+    "globalDiscount": "خصم إجمالي"
+  },
+  "productPicker": {
+    "title": "إضافة سطر",
+    "description": "يُؤخذ السعر ونسبة ض.ق.م من الكتالوج، ويمكن تعديلهما.",
+    "searchPlaceholder": "صنف أو خدمة…",
+    "service": "خدمة",
+    "stock": "المخزون {{quantity}}"
+  },
+  "partyPicker": {
+    "selectCustomer": "اختر عميلًا",
+    "chooseCustomer": "اختيار عميل",
+    "chooseSupplier": "اختيار مورد",
+    "newParty": "جهة جديدة",
+    "noResults": "لم يُعثر على أي جهة."
+  },
+  "units": {
+    "unit": "وحدة",
+    "service": "خدمة"
+  }
+}

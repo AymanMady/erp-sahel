@@ -1,4 +1,4 @@
-/** Contrats typés entre contrôleur et service du domaine authentification. */
+/** Typed contracts between the controller and the service of the authentication domain. */
 
 import type { Company, PublicUser } from "@shared/schema";
 import type { PermissionCode } from "@shared/rbac";
@@ -10,7 +10,7 @@ export interface SessionResponseDto {
   modules: string[];
   accessToken: string;
   refreshToken: string;
-  /** Durée de vie du refresh token, en secondes. */
+  /** Refresh token lifetime, in seconds. */
   expiresIn: number;
 }
 

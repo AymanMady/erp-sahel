@@ -1,8 +1,8 @@
 /**
- * En-têtes de sécurité et CORS [NFR-SEC-3], [NFR-SEC-4].
+ * Security headers and CORS [NFR-SEC-3], [NFR-SEC-4].
  *
- * La CSP autorise `asset:` afin que la coquille Tauri puisse afficher les vignettes
- * produit mises en cache localement pour le mode hors-ligne.
+ * The CSP allows `asset:` so the Tauri shell can display product thumbnails cached
+ * locally for offline mode.
  */
 
 import type { NextFunction, Request, Response } from "express";
@@ -16,12 +16,12 @@ function allowedOrigins(): string[] {
 }
 
 const DEV_ORIGIN_PATTERN = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
-/** Origines de la coquille desktop (Tauri) selon la plateforme. */
+/** Origins of the desktop shell (Tauri) depending on the platform. */
 const DESKTOP_ORIGIN_PATTERN =
   /^(tauri:\/\/localhost|https?:\/\/tauri\.localhost|https?:\/\/asset\.localhost)$/;
 
 export function isOriginAllowed(origin: string | undefined): boolean {
-  if (!origin) return true; // requête même-origine ou client non navigateur
+  if (!origin) return true; // same-origin request or non-browser client
   if (allowedOrigins().includes(origin)) return true;
   if (DESKTOP_ORIGIN_PATTERN.test(origin)) return true;
   if (process.env.NODE_ENV !== "production" && DEV_ORIGIN_PATTERN.test(origin)) return true;
