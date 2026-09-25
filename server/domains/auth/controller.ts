@@ -37,17 +37,6 @@ export class AuthController {
     res.json(await this.service.me(auth.userId, auth.companyId));
   };
 
-  switchCompany = async (req: Request, res: Response): Promise<void> => {
-    const auth = authOf(req);
-    res.json(
-      await this.service.switchCompany({
-        userId: auth.userId,
-        body: req.body,
-        userAgent: this.userAgent(req),
-      })
-    );
-  };
-
   changePassword = async (req: Request, res: Response): Promise<void> => {
     const auth = authOf(req);
     res.json(await this.service.changePassword({ userId: auth.userId, body: req.body }));

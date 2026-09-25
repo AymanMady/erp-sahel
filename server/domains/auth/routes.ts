@@ -14,6 +14,5 @@ export function registerAuthRoutes(app: Express): void {
   app.post("/api/auth/refresh", authRateLimit, asyncHandler(controller.refresh));
   app.post("/api/auth/logout", asyncHandler(controller.logout));
   app.get("/api/auth/me", requireAuth, asyncHandler(controller.me));
-  app.post("/api/auth/switch-company", requireAuth, asyncHandler(controller.switchCompany));
   app.post("/api/auth/change-password", requireAuth, asyncHandler(controller.changePassword));
 }

@@ -173,17 +173,6 @@ class AuthApplication {
   async logoutEverywhere(userId: string): Promise<void> {
     await this.repository.revokeAllForUser(userId);
   }
-
-  /** Switches company without re-entering the password (multi-company). */
-  async switchCompany(input: {
-    userId: string;
-    companyId: string;
-    userAgent: string;
-  }): Promise<SessionContext & { tokens: SessionTokens }> {
-    const context = await this.buildContext(input.userId, input.companyId);
-    const tokens = await this.issueTokens(context, input.userAgent);
-    return { ...context, tokens };
-  }
 }
 
 export const authApplication = new AuthApplication();

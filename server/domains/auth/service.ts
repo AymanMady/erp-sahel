@@ -5,7 +5,6 @@
 
 import { ALL_PERMISSION_CODES } from "@shared/rbac";
 import { NotFoundError, UnauthorizedError, ValidationError } from "../../shared/errors/app-error";
-import { companiesRepository } from "../tenancy/repository";
 import { authApplication, hashPassword, verifyPassword } from "./application";
 import type {
   ChangePasswordRequestDto,
@@ -15,7 +14,7 @@ import type {
   SessionResponseDto,
 } from "./dto";
 import { authRepository } from "./repository";
-import { changePasswordSchema, loginSchema, refreshSchema, switchCompanySchema } from "./schemas";
+import { changePasswordSchema, loginSchema, refreshSchema } from "./schemas";
 
 export class AuthService {
   constructor(
@@ -71,44 +70,11 @@ export class AuthService {
 
   async me(userId: string, companyId: string): Promise<MeResponseDto> {
     const context = await this.application.buildContext(userId, companyId);
-    const companies = await this.repository.listUserCompanies(userId);
     return {
       user: context.user,
       company: context.company,
-      // A superuser sees every company, not only those they are a member of.
-      companies: context.user.isSuperuser
-        ? (await companiesRepository.listAll()).map((c) => ({
-            id: c.id,
-            name: c.name,
-            subdomain: c.subdomain,
-          }))
-        : companies.map((c) => ({ id: c.id, name: c.name, subdomain: c.subdomain })),
       permissions: context.user.isSuperuser ? [...ALL_PERMISSION_CODES] : context.permissions,
       modules: context.modules,
-    };
-  }
-
-  async switchCompany(input: {
-    userId: string;
-    body: unknown;
-    userAgent: string;
-  }): Promise<SessionResponseDto> {
-    const data = switchCompanySchema.parse(input.body);
-    const company = await companiesRepository.findById(data.companyId);
-    if (!company) throw new NotFoundError("Company not found.");
-    const session = await this.application.switchCompany({
-      userId: input.userId,
-      companyId: data.companyId,
-      userAgent: input.userAgent,
-    });
-    return {
-      user: session.user,
-      company: session.company,
-      permissions: session.permissions,
-      modules: session.modules,
-      accessToken: session.tokens.accessToken,
-      refreshToken: session.tokens.refreshToken,
-      expiresIn: session.tokens.expiresIn,
     };
   }
 

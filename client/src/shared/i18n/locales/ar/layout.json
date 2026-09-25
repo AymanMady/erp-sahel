@@ -1,8 +1,6 @@
 {
-  "companySwitcher": {
-    "switched": "تم تغيير الشركة.",
-    "currency": "العملة {{currency}}",
-    "companies": "الشركات"
+  "companyBrand": {
+    "currency": "العملة {{currency}}"
   },
   "moduleGate": {
     "title": "الوحدة «{{module}}» غير مفعّلة",

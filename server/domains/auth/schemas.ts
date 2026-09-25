@@ -18,10 +18,6 @@ export const logoutSchema = z.object({
   refreshToken: z.string().min(10).nullish(),
 });
 
-export const switchCompanySchema = z.object({
-  companyId: z.string().uuid(),
-});
-
 export const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1),

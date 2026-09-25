@@ -17,7 +17,6 @@ export interface SessionResponseDto {
 export interface MeResponseDto {
   user: PublicUser;
   company: Company;
-  companies: { id: string; name: string; subdomain: string }[];
   permissions: PermissionCode[];
   modules: string[];
 }

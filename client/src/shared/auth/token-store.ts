@@ -78,7 +78,6 @@ export interface CachedSession {
     vatEnabled: boolean;
     defaultVatRateBp: number;
   };
-  companies: { id: string; name: string; subdomain: string }[];
   permissions: string[];
   modules: string[];
   cachedAt: string;

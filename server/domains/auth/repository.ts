@@ -3,7 +3,6 @@
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
 import {
-  companies,
   permissions as permissionsTable,
   refreshTokens,
   rolePermissions,
@@ -96,21 +95,6 @@ export class AuthRepository {
       .update(users)
       .set({ passwordHash, updatedAt: new Date() })
       .where(eq(users.id, userId));
-  }
-
-  /** The user's companies with their identity — feeds the company switcher. */
-  async listUserCompanies(userId: string) {
-    return this.database
-      .select({
-        id: companies.id,
-        name: companies.name,
-        subdomain: companies.subdomain,
-        isDefault: userCompanies.isDefault,
-      })
-      .from(userCompanies)
-      .innerJoin(companies, eq(companies.id, userCompanies.companyId))
-      .where(and(eq(userCompanies.userId, userId), eq(companies.isActive, true)))
-      .orderBy(companies.name);
   }
 
   async insertRefreshToken(input: {

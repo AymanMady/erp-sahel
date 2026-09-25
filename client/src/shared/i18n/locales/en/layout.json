@@ -1,8 +1,6 @@
 {
-  "companySwitcher": {
-    "switched": "Company switched.",
-    "currency": "Currency {{currency}}",
-    "companies": "Companies"
+  "companyBrand": {
+    "currency": "Currency {{currency}}"
   },
   "moduleGate": {
     "title": "“{{module}}” is not enabled",

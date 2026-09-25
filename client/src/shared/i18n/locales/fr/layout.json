@@ -1,8 +1,6 @@
 {
-  "companySwitcher": {
-    "switched": "Société changée.",
-    "currency": "Devise {{currency}}",
-    "companies": "Sociétés"
+  "companyBrand": {
+    "currency": "Devise {{currency}}"
   },
   "moduleGate": {
     "title": "« {{module}} » n'est pas activé",

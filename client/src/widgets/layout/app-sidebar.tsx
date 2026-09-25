@@ -33,7 +33,7 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/shared/ui/sidebar";
-import { CompanySwitcher } from "./company-switcher";
+import { CompanyBrand } from "./company-brand";
 import { NavUser } from "./nav-user";
 
 export function AppSidebar() {
@@ -51,7 +51,7 @@ export function AppSidebar() {
       variant={config.sidebarVariant}
     >
       <SidebarHeader>
-        <CompanySwitcher />
+        <CompanyBrand />
       </SidebarHeader>
 
       <SidebarContent className="overscroll-contain">

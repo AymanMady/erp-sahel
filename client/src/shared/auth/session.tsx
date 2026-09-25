@@ -53,7 +53,6 @@ export interface SessionValue {
   status: "loading" | "authenticated" | "anonymous";
   user: SessionUser | null;
   company: SessionCompany | null;
-  companies: { id: string; name: string; subdomain: string }[];
   permissions: string[];
   modules: string[];
   /** True when the session comes from the local cache and has not been revalidated. */
@@ -62,7 +61,6 @@ export interface SessionValue {
   hasModule(code: string): boolean;
   login(input: { username: string; password: string }): Promise<void>;
   logout(): Promise<void>;
-  switchCompany(companyId: string): Promise<void>;
   refresh(): Promise<void>;
 }
 
@@ -80,7 +78,6 @@ interface AuthResponse {
 interface MeResponse {
   user: SessionUser;
   company: SessionCompany;
-  companies: { id: string; name: string; subdomain: string }[];
   permissions: string[];
   modules: string[];
 }
@@ -90,15 +87,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     status: SessionValue["status"];
     user: SessionUser | null;
     company: SessionCompany | null;
-    companies: { id: string; name: string; subdomain: string }[];
-    permissions: string[];
+      permissions: string[];
     modules: string[];
     isStale: boolean;
   }>({
     status: "loading",
     user: null,
     company: null,
-    companies: [],
     permissions: [],
     modules: [],
     isStale: false,
@@ -109,7 +104,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       status: "authenticated",
       user: cached.user,
       company: cached.company,
-      companies: cached.companies,
       permissions: cached.permissions,
       modules: cached.modules,
       isStale: true,
@@ -121,7 +115,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       status: "authenticated",
       user: me.user,
       company: me.company,
-      companies: me.companies,
       permissions: me.permissions,
       modules: me.modules,
       isStale: false,
@@ -129,7 +122,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setCachedSession({
       user: me.user,
       company: me.company,
-      companies: me.companies,
       permissions: me.permissions,
       modules: me.modules,
     });
@@ -155,7 +147,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         status: "anonymous",
         user: null,
         company: null,
-        companies: [],
         permissions: [],
         modules: [],
         isStale: false,
@@ -191,23 +182,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       status: "anonymous",
       user: null,
       company: null,
-      companies: [],
-      permissions: [],
+        permissions: [],
       modules: [],
       isStale: false,
     });
   }, []);
-
-  const switchCompany = useCallback(
-    async (companyId: string) => {
-      const session = await api.post<AuthResponse>("/api/auth/switch-company", { companyId });
-      setAccessToken(session.accessToken);
-      setRefreshToken(session.refreshToken);
-      const me = await api.get<MeResponse>("/api/auth/me");
-      applyFresh(me);
-    },
-    [applyFresh]
-  );
 
   const value = useMemo<SessionValue>(() => {
     const permissionSet = new Set(state.permissions);
@@ -222,10 +201,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       },
       login,
       logout,
-      switchCompany,
       refresh: loadSession,
     };
-  }, [state, login, logout, switchCompany, loadSession]);
+  }, [state, login, logout, loadSession]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
