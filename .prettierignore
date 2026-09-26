@@ -5,3 +5,6 @@ src-tauri/target/
 src-tauri/gen/
 client/public/
 package-lock.json
+
+# ArchitectUI template (vendored SCSS and its compiled CSS)
+client/src/styles/architectui/

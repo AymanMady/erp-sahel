@@ -1,0 +1,93 @@
+/*!
+ * ArchitectUI HTML Theme (free) — https://dashboardpack.com, MIT licence (see LICENSE).
+ *
+ * Entry point adapted from the template's `assets/base.scss`: same Bootstrap 5 and
+ * ArchitectUI layers, minus the demo-only parts (icon fonts, calendar, maps, toastr,
+ * theme options) — the ERP draws its icons with Tabler SVGs, which work offline.
+ */
+
+@use "sass:map";
+@use "sass:math";
+@use "sass:color";
+
+// Bootstrap 5 configuration
+
+@import "components/bootstrap5/functions";
+@import "themes/layout-variables";
+@import "components/bootstrap5/variables";
+@import "components/bootstrap5/variables-dark";
+@import "components/bootstrap5/maps";
+@import "components/bootstrap5/mixins";
+@import "components/bootstrap5/utilities";
+
+// Bootstrap 5
+
+@import "components/bootstrap5/root";
+@import "components/bootstrap5/reboot";
+@import "components/bootstrap5/type";
+@import "components/bootstrap5/images";
+@import "components/bootstrap5/containers";
+@import "components/bootstrap5/grid";
+@import "components/bootstrap5/tables";
+@import "components/bootstrap5/forms";
+@import "components/bootstrap5/buttons";
+@import "components/bootstrap5/transitions";
+@import "components/bootstrap5/dropdown";
+@import "components/bootstrap5/button-group";
+@import "components/bootstrap5/nav";
+@import "components/bootstrap5/navbar";
+@import "components/bootstrap5/card";
+@import "components/bootstrap5/accordion";
+@import "components/bootstrap5/breadcrumb";
+@import "components/bootstrap5/pagination";
+@import "components/bootstrap5/badge";
+@import "components/bootstrap5/alert";
+@import "components/bootstrap5/progress";
+@import "components/bootstrap5/list-group";
+@import "components/bootstrap5/close";
+@import "components/bootstrap5/modal";
+@import "components/bootstrap5/tooltip";
+@import "components/bootstrap5/popover";
+@import "components/bootstrap5/spinners";
+@import "components/bootstrap5/placeholders";
+@import "components/bootstrap5/helpers";
+@import "components/bootstrap5/utilities/api";
+
+// Layout
+
+@import "layout/layout";
+
+// Utils
+
+@import "utils/design-system";
+@import "utils/helpers";
+@import "utils/backgrounds";
+@import "utils/comps-animations";
+
+// Elements
+
+@import "elements/buttons";
+@import "elements/dropdown";
+@import "elements/badges";
+@import "elements/cards";
+@import "elements/tabs";
+@import "elements/accordions";
+@import "elements/modals";
+@import "elements/navs";
+@import "elements/listgroup";
+@import "elements/forms";
+@import "elements/pagination";
+
+// Dashboard boxes
+
+@import "widgets/content-boxes/content-boxes";
+
+// Components
+
+@import "components/hamburgers/hamburgers";
+@import "components/popovers-tooltips/popovers-tooltips";
+@import "components/tables/tables";
+
+// Responsive
+
+@import "layout/responsive/responsive-base";

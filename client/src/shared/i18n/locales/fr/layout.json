@@ -12,8 +12,6 @@
   "userMenu": {
     "profile": "Mon profil",
     "settings": "Paramètres",
-    "lightTheme": "Thème clair",
-    "darkTheme": "Thème sombre",
     "signOut": "Se déconnecter"
   },
   "sync": {
@@ -37,10 +35,11 @@
     "viewQueue": "Voir la file d'attente"
   },
   "offlineBanner": "Mode hors ligne — vos saisies sont enregistrées sur ce poste et seront synchronisées automatiquement.",
-  "theme": {
-    "toggle": "Changer de thème"
-  },
   "boot": {
     "loading": "Chargement de l'ERP…"
+  },
+  "header": {
+    "toggleSidebar": "Afficher ou réduire le menu",
+    "toggleMenu": "Afficher les raccourcis"
   }
 }

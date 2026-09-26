@@ -3,7 +3,6 @@ import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 
 import { currentIntlLocale } from "@/shared/i18n";
-import { Card, CardContent } from "@/shared/ui/card";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { cn } from "@/shared/lib/utils";
 
@@ -29,10 +28,11 @@ export interface StatCardProps {
 
 export type StatTone = "green" | "blue" | "gold" | "violet" | "red";
 
+/** Gradient backgrounds of the ArchitectUI template (`utils/_backgrounds.scss`). */
 const TONE_CLASS: Record<StatTone, string> = {
   green: "bg-grow-early",
-  blue: "bg-night-sky",
-  gold: "bg-sunny-morning",
+  blue: "bg-arielle-smile",
+  gold: "bg-premium-dark",
   violet: "bg-midnight-bloom",
   red: "bg-love-kiss",
 };
@@ -53,63 +53,60 @@ export function StatCard({
   const rising = hasChange && change > 0;
   const favourable = invertTrend ? !rising : rising;
 
+  const trend =
+    hasChange && change !== 0 ? (
+      <span
+        className={cn(
+          "badge ms-2 inline-flex items-center gap-1",
+          tone ? "bg-white/25" : favourable ? "bg-success" : "bg-danger"
+        )}
+      >
+        {rising ? <IconTrendingUp className="size-3" /> : <IconTrendingDown className="size-3" />}
+        {new Intl.NumberFormat(currentIntlLocale(), {
+          style: "percent",
+          minimumFractionDigits: 1,
+          maximumFractionDigits: 1,
+        }).format(Math.abs(change) / 100)}
+      </span>
+    ) : null;
+
+  // ArchitectUI dashboard widget (`dashboard-example-1.hbs`): heading and
+  // sub-heading on one side, the figure on the other.
   return (
-    <Card className={cn(tone && ["border-0 text-white", TONE_CLASS[tone]])}>
-      <CardContent className="space-y-2.5">
-        <div className="flex items-center justify-between gap-2">
-          <p
-            className={cn(
-              "text-sm font-semibold",
-              tone ? "text-white/85" : "text-muted-foreground"
-            )}
-          >
-            {label}
-          </p>
-          {icon ? (
+    <div className={cn("card mb-0 widget-content h-full", tone && TONE_CLASS[tone])}>
+      <div className={cn("widget-content-wrapper flex-wrap gap-3", tone && "text-white")}>
+        {icon ? (
+          <div className="widget-content-left me-1">
             <span
               className={cn(
-                "flex size-9 items-center justify-center rounded-full",
+                "flex size-11 items-center justify-center rounded-full",
                 tone ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
               )}
             >
               {icon}
             </span>
-          ) : null}
+          </div>
+        ) : null}
+        <div className="widget-content-left min-w-0">
+          <div className="widget-heading">{label}</div>
+          {hint ? <div className="widget-subheading">{hint}</div> : null}
         </div>
-        <div className="flex items-end justify-between gap-2">
+        <div className="widget-content-right ms-auto text-end">
           {loading ? (
-            <Skeleton className={cn("h-9 w-32", tone && "bg-white/25")} />
+            <Skeleton className={cn("h-8 w-28", tone && "bg-white/25")} />
           ) : (
-            <span className="tabular text-2xl font-bold tracking-tight sm:text-3xl">{value}</span>
-          )}
-          {hasChange && change !== 0 ? (
-            <span
+            <div
               className={cn(
-                "flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
-                tone
-                  ? "bg-white/20 text-white"
-                  : favourable
-                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                    : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                "widget-numbers tabular whitespace-nowrap",
+                tone === "gold" ? "text-warning" : tone ? "text-white" : "text-primary"
               )}
             >
-              {rising ? (
-                <IconTrendingUp className="size-3.5" />
-              ) : (
-                <IconTrendingDown className="size-3.5" />
-              )}
-              {new Intl.NumberFormat(currentIntlLocale(), {
-                style: "percent",
-                minimumFractionDigits: 1,
-                maximumFractionDigits: 1,
-              }).format(Math.abs(change) / 100)}
-            </span>
-          ) : null}
+              <span>{value}</span>
+            </div>
+          )}
+          {trend}
         </div>
-        {hint ? (
-          <p className={cn("text-xs", tone ? "text-white/75" : "text-muted-foreground")}>{hint}</p>
-        ) : null}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

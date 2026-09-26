@@ -1,5 +1,6 @@
 /**
- * Application shell: sidebar, header, offline banner and content.
+ * Application shell, with the ArchitectUI template markup (`layout/base.hbs`):
+ * fixed header, fixed sidebar, page and footer.
  *
  * This is where the sync engine is mounted: it runs as long as the user is signed
  * in, whatever screen is displayed.
@@ -8,10 +9,12 @@
 import type { ReactNode } from "react";
 
 import { useSyncEngine } from "@/shared/hooks/use-sync";
-import { SidebarInset, SidebarProvider } from "@/shared/ui/sidebar";
+import { cn } from "@/shared/lib/utils";
 import { TooltipProvider } from "@/shared/ui/tooltip";
+import { AppFooter } from "./app-footer";
 import { AppHeader } from "./app-header";
 import { AppSidebar } from "./app-sidebar";
+import { LayoutStateProvider, useLayoutState } from "./layout-state";
 import { OfflineBanner } from "./sync-indicator";
 
 export function AppLayout({ children }: { children: ReactNode }) {
@@ -19,15 +22,36 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <TooltipProvider delayDuration={0}>
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset className="min-w-0">
-          <OfflineBanner />
+      <LayoutStateProvider>
+        <AppContainer>
           <AppHeader syncStatus={syncStatus} />
-          <main className="app-main min-w-0 flex-1">{children}</main>
-        </SidebarInset>
-      </SidebarProvider>
+          <div className="app-main">
+            <AppSidebar />
+            <div className="app-main__outer min-w-0">
+              <OfflineBanner />
+              <main className="app-main__inner min-w-0">{children}</main>
+              <AppFooter syncStatus={syncStatus} />
+            </div>
+          </div>
+        </AppContainer>
+      </LayoutStateProvider>
     </TooltipProvider>
+  );
+}
+
+function AppContainer({ children }: { children: ReactNode }) {
+  const { closedSidebar, mobileSidebarOpen, closeMobileSidebar } = useLayoutState();
+  return (
+    <div
+      className={cn(
+        "app-container app-theme-white body-tabs-shadow fixed-sidebar fixed-header",
+        closedSidebar && "closed-sidebar",
+        mobileSidebarOpen && "sidebar-mobile-open"
+      )}
+    >
+      {children}
+      <div className="sidebar-mobile-overlay" onClick={closeMobileSidebar} aria-hidden />
+    </div>
   );
 }
 

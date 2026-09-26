@@ -1,0 +1,241 @@
+/**
+ * Adapter between the ArchitectUI template and the React application.
+ *
+ * Imported in the same `architectui` layer, right after the template, so it
+ * overrides it without beating Tailwind utilities. It only covers what the static
+ * template could not know about:
+ *  - screens written with Tailwind, which assume elements without margins;
+ *  - Tabler SVG icons in place of the template's icon fonts;
+ *  - the company brand in place of the ArchitectUI logo image;
+ *  - Arabic: the template is left-to-right only, its layout is mirrored here.
+ */
+
+/* --- Bootstrap reboot: spacing is carried by classes, not by elements. ----- */
+
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+ul,
+ol,
+dl,
+figure {
+  margin-bottom: 0;
+}
+ul,
+ol {
+  padding-inline-start: 0;
+}
+a {
+  text-decoration: none;
+}
+a:not([class]):hover {
+  text-decoration: underline;
+}
+label {
+  margin-bottom: 0;
+}
+
+/* --- Brand (replaces `.logo-src`). ----------------------------------------- */
+
+.app-brand {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.6rem;
+  color: #343a40;
+  font-weight: 700;
+}
+.app-brand__icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  overflow: hidden;
+  border-radius: 0.375rem;
+  background: var(--bs-primary, #3f6ad8);
+  color: #fff;
+}
+.app-brand__icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.app-brand__text {
+  display: grid;
+  min-width: 0;
+  line-height: 1.15;
+}
+.app-brand__text small {
+  color: #6c757d;
+  font-weight: 400;
+}
+.closed-sidebar .app-header__logo .app-brand {
+  display: none;
+}
+.closed-sidebar .app-header__logo .header__pane {
+  margin-inline: auto;
+}
+
+/* --- Sidebar: scrollable menu, SVG icons. ---------------------------------- */
+
+.fixed-sidebar .app-sidebar .scrollbar-sidebar {
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.vertical-nav-menu li a {
+  cursor: pointer;
+}
+.vertical-nav-menu i.metismenu-icon,
+.vertical-nav-menu i.metismenu-state-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.vertical-nav-menu i.metismenu-icon svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+.vertical-nav-menu i.metismenu-state-icon svg {
+  width: 1rem;
+  height: 1rem;
+}
+.vertical-nav-menu li a.mm-active i.metismenu-icon {
+  color: var(--bs-primary, #3f6ad8);
+  opacity: 0.9;
+}
+
+/* --- Header. -------------------------------------------------------------- */
+
+.header-btn-lg .header-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #e0f3ff;
+  color: #3f6ad8;
+  font-weight: 700;
+}
+.header-menu .nav-link .nav-link-icon {
+  margin: 0;
+}
+.app-header .search-wrapper .search-input {
+  cursor: pointer;
+}
+
+/* --- Page title icon: Tabler SVG instead of an icon-font glyph. ------------ */
+
+.app-page-title .page-title-icon svg {
+  margin: auto;
+  color: var(--bs-primary, #3f6ad8);
+}
+
+/* --- Buttons without a Bootstrap equivalent. ------------------------------ */
+
+.btn.btn-ghost {
+  border-color: transparent;
+  background: transparent;
+  color: inherit;
+}
+.btn.btn-ghost:hover,
+.btn.btn-ghost[aria-expanded="true"] {
+  background: #e0f3ff;
+  color: #3f6ad8;
+}
+
+/* --- Forms: invalid state set by react-hook-form through `aria-invalid`. --- */
+
+.form-control[aria-invalid="true"] {
+  border-color: var(--bs-danger, #d92550);
+}
+
+/* --- Arabic (RTL): mirror of the left-to-right layout. -------------------- */
+
+[dir="rtl"] .fixed-sidebar .app-main .app-main__outer {
+  padding-left: 0;
+  padding-right: 280px;
+}
+[dir="rtl"] .fixed-sidebar.closed-sidebar .app-main .app-main__outer {
+  padding-right: 80px;
+}
+[dir="rtl"] .app-sidebar.sidebar-shadow {
+  box-shadow: -7px 0 60px rgba(0, 0, 0, 0.05);
+}
+[dir="rtl"] .vertical-nav-menu li a {
+  padding: 0 45px 0 1.5rem;
+}
+[dir="rtl"] .vertical-nav-menu i.metismenu-icon {
+  left: auto;
+  right: 5px;
+}
+[dir="rtl"] .vertical-nav-menu i.metismenu-state-icon {
+  left: 0;
+  right: auto;
+}
+[dir="rtl"] .vertical-nav-menu ul {
+  padding: 0.5em 2rem 0 0;
+}
+[dir="rtl"] .vertical-nav-menu ul::before {
+  left: auto;
+  right: 20px;
+}
+[dir="rtl"] .vertical-nav-menu ul > li > a {
+  padding: 0 1.5rem;
+}
+[dir="rtl"] .closed-sidebar .app-sidebar:not(:hover) .vertical-nav-menu i.metismenu-icon {
+  right: 50%;
+  margin-right: -17px;
+  margin-left: 0;
+}
+[dir="rtl"] .closed-sidebar .app-sidebar:not(:hover) .vertical-nav-menu li a {
+  padding: 0;
+}
+[dir="rtl"] .closed-sidebar .app-sidebar:not(:hover) .vertical-nav-menu ul {
+  padding: 0;
+}
+[dir="rtl"] .app-header-right {
+  margin-left: 0;
+  margin-right: auto;
+}
+[dir="rtl"] .header-btn-lg {
+  padding: 0 1.5rem 0 0;
+  margin-left: 0;
+  margin-right: 1.5rem;
+}
+[dir="rtl"] .header-btn-lg::before {
+  left: auto;
+  right: -1px;
+}
+[dir="rtl"] .app-page-title .page-title-icon {
+  margin: 0 0 0 1.5rem;
+}
+[dir="rtl"] .app-page-title .page-title-actions {
+  margin-left: 0;
+  margin-right: auto;
+}
+[dir="rtl"] .widget-content .widget-content-right {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+@media (max-width: 767.98px) {
+  [dir="rtl"] .fixed-sidebar .app-main .app-main__outer,
+  [dir="rtl"] .fixed-sidebar.closed-sidebar .app-main .app-main__outer {
+    padding-right: 0;
+  }
+  [dir="rtl"] .app-sidebar {
+    transform: translateX(280px);
+  }
+  [dir="rtl"] .sidebar-mobile-open .app-sidebar {
+    transform: translateX(0);
+  }
+}

@@ -87,7 +87,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     status: SessionValue["status"];
     user: SessionUser | null;
     company: SessionCompany | null;
-      permissions: string[];
+    permissions: string[];
     modules: string[];
     isStale: boolean;
   }>({
@@ -182,7 +182,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       status: "anonymous",
       user: null,
       company: null,
-        permissions: [],
+      permissions: [],
       modules: [],
       isStale: false,
     });

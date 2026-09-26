@@ -11,10 +11,12 @@ import {
   IconAlertTriangle,
   IconBuildingBank,
   IconCashRegister,
+  IconDatabase,
   IconFileInvoice,
   IconPackages,
   IconPlus,
   IconReceipt2,
+  IconStar,
   IconTrendingUp,
   IconTruckDelivery,
   IconUserPlus,
@@ -48,7 +50,7 @@ import { Money, useMoneyFormatter } from "@/shared/components/money";
 import { StatCard } from "@/shared/components/stat-card";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
+import { Card, CardContent, CardHeaderBar } from "@/shared/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { Skeleton } from "@/shared/ui/skeleton";
 
@@ -169,19 +171,23 @@ export default function DashboardPage() {
       </PageHeader>
 
       {quickActions.length > 0 ? (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          {quickActions.map((action) => (
-            <Link
-              key={action.href}
-              href={action.href}
-              className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-(--radius) border bg-card p-4 text-center text-sm font-semibold shadow-(--shadow-card) transition-all hover:-translate-y-0.5 hover:border-primary hover:text-primary"
-            >
-              <span className="flex size-12 items-center justify-center rounded-full bg-accent text-primary">
-                <action.icon className="size-6" stroke={1.75} />
-              </span>
-              {t(action.labelKey)}
-            </Link>
-          ))}
+        <div className="main-card card">
+          <div className="grid-menu grid-menu-3col">
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6">
+              {quickActions.map((action) => (
+                <Link
+                  key={action.href}
+                  href={action.href}
+                  className="btn-icon-vertical btn-square btn-transition btn btn-outline-link flex flex-col items-center rounded-none border-0 fw-semibold"
+                >
+                  <span className="btn-icon-wrapper text-primary">
+                    <action.icon size={34} stroke={1.5} />
+                  </span>
+                  {t(action.labelKey)}
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
       ) : null}
 
@@ -191,7 +197,7 @@ export default function DashboardPage() {
         </Card>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 lg:grid-cols-2 min-[1700px]:grid-cols-4">
         <StatCard
           label={t("stats.revenue")}
           value={formatMoneyValue(data?.sales.totalHtCents ?? 0)}
@@ -232,16 +238,14 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>{t("revenueChart.title")}</CardTitle>
-            <CardDescription>
+          <CardHeaderBar icon={<IconTrendingUp />} title={t("revenueChart.title")} />
+          <CardContent>
+            <p className="mb-3 text-muted-foreground">
               {t("revenueChart.description", {
                 from: formatDate(period.fromDate),
                 to: formatDate(period.toDate),
               })}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+            </p>
             {isLoading ? (
               <Skeleton className="h-64 w-full" />
             ) : chartData.length === 0 ? (
@@ -308,11 +312,9 @@ export default function DashboardPage() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>{t("topSales.title")}</CardTitle>
-            <CardDescription>{t("topSales.description")}</CardDescription>
-          </CardHeader>
+          <CardHeaderBar icon={<IconStar />} title={t("topSales.title")} />
           <CardContent className="space-y-3">
+            <p className="text-muted-foreground">{t("topSales.description")}</p>
             {isLoading ? (
               Array.from({ length: 5 }).map((_, index) => (
                 <Skeleton key={index} className="h-10 w-full" />
@@ -344,21 +346,15 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader className="flex-row items-center justify-between space-y-0">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <IconAlertTriangle className="size-4 text-status-pending" />
-                {t("restock.title")}
-              </CardTitle>
-              <CardDescription>{t("restock.description")}</CardDescription>
-            </div>
+          <CardHeaderBar icon={<IconAlertTriangle />} title={t("restock.title")}>
             {hasModule("inventory") ? (
-              <Button variant="outline" size="sm" asChild>
+              <Button size="sm" asChild>
                 <Link href="/inventory">{t("restock.viewStock")}</Link>
               </Button>
             ) : null}
-          </CardHeader>
+          </CardHeaderBar>
           <CardContent className="space-y-2">
+            <p className="text-muted-foreground">{t("restock.description")}</p>
             {isLoading ? (
               Array.from({ length: 3 }).map((_, index) => (
                 <Skeleton key={index} className="h-9 w-full" />
@@ -369,13 +365,13 @@ export default function DashboardPage() {
               data?.lowStock.map((row) => (
                 <div
                   key={row.productId}
-                  className="flex items-center justify-between gap-3 rounded-md border px-3 py-2"
+                  className="flex items-center justify-between gap-3 border-bottom py-2"
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{row.name}</p>
                     <p className="text-xs text-muted-foreground">{row.sku}</p>
                   </div>
-                  <Badge variant="outline" className="tabular shrink-0">
+                  <Badge className="tabular shrink-0 bg-warning">
                     {Number(row.quantity)} / {Number(row.minStock)}
                   </Badge>
                 </div>
@@ -385,10 +381,7 @@ export default function DashboardPage() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>{t("counts.title")}</CardTitle>
-            <CardDescription>{t("counts.description")}</CardDescription>
-          </CardHeader>
+          <CardHeaderBar icon={<IconDatabase />} title={t("counts.title")} />
           <CardContent className="space-y-3">
             <CountRow
               icon={<IconUsers className="size-4" />}

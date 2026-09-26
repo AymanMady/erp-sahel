@@ -12,8 +12,6 @@
   "userMenu": {
     "profile": "My profile",
     "settings": "Settings",
-    "lightTheme": "Light theme",
-    "darkTheme": "Dark theme",
     "signOut": "Sign out"
   },
   "sync": {
@@ -37,10 +35,11 @@
     "viewQueue": "View the queue"
   },
   "offlineBanner": "Offline mode — your entries are saved on this device and will be synchronized automatically.",
-  "theme": {
-    "toggle": "Toggle theme"
-  },
   "boot": {
     "loading": "Loading the ERP…"
+  },
+  "header": {
+    "toggleSidebar": "Show or collapse the menu",
+    "toggleMenu": "Show shortcuts"
   }
 }
