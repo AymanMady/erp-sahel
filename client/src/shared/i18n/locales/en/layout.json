@@ -40,54 +40,6 @@
   "theme": {
     "toggle": "Toggle theme"
   },
-  "customizer": {
-    "open": "Customize appearance",
-    "title": "Appearance",
-    "description": "Adjust the interface theme. The setting applies to this device only.",
-    "mode": "Mode",
-    "light": "Light",
-    "dark": "Dark",
-    "system": "Auto",
-    "accent": "Accent color",
-    "radius": "Radius",
-    "font": "Font",
-    "sidebarStyle": "Sidebar style",
-    "sidebarCollapse": "Sidebar collapse",
-    "contentWidth": "Content width",
-    "copy": "Copy theme",
-    "copied": "Theme copied",
-    "copiedDescription": "Paste it into your stylesheet.",
-    "copyFailed": "Could not copy to the clipboard.",
-    "accents": {
-      "neutral": "Neutral",
-      "blue": "Blue",
-      "violet": "Violet",
-      "green": "Green",
-      "teal": "Teal",
-      "amber": "Amber",
-      "orange": "Orange",
-      "rose": "Rose"
-    },
-    "fonts": {
-      "geist": "Geist",
-      "system": "System",
-      "serif": "Serif",
-      "mono": "Mono"
-    },
-    "sidebarVariants": {
-      "inset": "Inset",
-      "sidebar": "Sidebar",
-      "floating": "Floating"
-    },
-    "collapsible": {
-      "icon": "Icons",
-      "offcanvas": "Off-canvas"
-    },
-    "contentLayouts": {
-      "full": "Full width",
-      "centered": "Centered"
-    }
-  },
   "boot": {
     "loading": "Loading the ERP…"
   }

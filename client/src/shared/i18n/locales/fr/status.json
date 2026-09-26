@@ -34,7 +34,7 @@
     "BANK_TRANSFER": "Virement",
     "CHECK": "Chèque",
     "CARD": "Carte",
-    "MOBILE_MONEY": "Mobile Money"
+    "MOBILE_MONEY": "Bankily / Masrvi / Sedad"
   },
   "movements": {
     "IN": "Entrée",

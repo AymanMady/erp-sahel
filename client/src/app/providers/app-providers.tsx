@@ -7,21 +7,18 @@ import { queryClient } from "@/shared/api/query-client";
 import { SessionProvider } from "@/shared/auth/session";
 import { DirectionProvider, useDirection } from "@/shared/i18n/direction-provider";
 import { ThemeProvider } from "@/shared/components/theme-provider";
-import { ThemeConfigProvider } from "@/shared/components/theme-customizer";
 import { Toaster } from "@/shared/ui/sonner";
 
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <DirectionProvider>
       <ThemeProvider>
-        <ThemeConfigProvider>
-          <QueryClientProvider client={queryClient}>
-            <SessionProvider>
-              {children}
-              <AppToaster />
-            </SessionProvider>
-          </QueryClientProvider>
-        </ThemeConfigProvider>
+        <QueryClientProvider client={queryClient}>
+          <SessionProvider>
+            {children}
+            <AppToaster />
+          </SessionProvider>
+        </QueryClientProvider>
       </ThemeProvider>
     </DirectionProvider>
   );

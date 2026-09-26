@@ -1,6 +1,6 @@
 /**
- * Application header: breadcrumb, global search (⌘K), sync status, language,
- * theme and point-of-sale shortcut.
+ * Application header (ArchitectUI `.app-header`): breadcrumb, screen search
+ * (Ctrl+K), point-of-sale shortcut, sync status, language and light/dark theme.
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -10,8 +10,6 @@ import { Link, useLocation } from "wouter";
 
 import { useSession } from "@/shared/auth/session";
 import { flattenNav, visibleNavGroups } from "@/shared/config/nav";
-import { useIsMac } from "@/shared/hooks/use-platform";
-import { CustomizerButton } from "@/shared/components/theme-customizer";
 import { LanguageSwitcher } from "@/shared/components/language-switcher";
 import { ThemeToggle } from "@/shared/components/theme-toggle";
 import { Button } from "@/shared/ui/button";
@@ -30,7 +28,6 @@ import {
   CommandItem,
   CommandList,
 } from "@/shared/ui/command";
-import { Kbd, KbdGroup } from "@/shared/ui/kbd";
 import { Separator } from "@/shared/ui/separator";
 import { SidebarTrigger } from "@/shared/ui/sidebar";
 import type { SyncStatus } from "@/shared/offline/sync-engine";
@@ -103,7 +100,6 @@ function useBreadcrumb(pathname: string): string[] {
 export function AppHeader({ syncStatus }: { syncStatus: SyncStatus }) {
   const [pathname, navigate] = useLocation();
   const crumbs = useBreadcrumb(pathname);
-  const isMac = useIsMac();
   const [open, setOpen] = useState(false);
   const { can, hasModule } = useSession();
   const { t } = useTranslation("nav");
@@ -145,7 +141,7 @@ export function AppHeader({ syncStatus }: { syncStatus: SyncStatus }) {
   return (
     <header
       data-app-header
-      className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+      className="sticky top-0 z-30 flex h-15 shrink-0 items-center gap-2 border-b bg-card px-4"
     >
       <SidebarTrigger className="-ms-1" />
       <Separator orientation="vertical" className="me-1 h-4" />
@@ -170,10 +166,6 @@ export function AppHeader({ syncStatus }: { syncStatus: SyncStatus }) {
         >
           <IconSearch className="size-4" />
           <span>{t("common:actions.searchEllipsis")}</span>
-          <KbdGroup className="ms-2">
-            <Kbd>{isMac ? "⌘" : "Ctrl"}</Kbd>
-            <Kbd>K</Kbd>
-          </KbdGroup>
         </Button>
         <Button
           variant="ghost"
@@ -185,8 +177,8 @@ export function AppHeader({ syncStatus }: { syncStatus: SyncStatus }) {
           <IconSearch className="size-4" />
         </Button>
 
-        {can("pos.use") ? (
-          <Button variant="ghost" size="sm" asChild className="gap-2">
+        {can("pos.use") && hasModule("pos") ? (
+          <Button size="sm" asChild className="gap-2">
             <Link href="/pos">
               <IconCashRegister className="size-4" />
               <span className="hidden lg:inline">{t("items.pos")}</span>
@@ -197,7 +189,6 @@ export function AppHeader({ syncStatus }: { syncStatus: SyncStatus }) {
         <SyncIndicator status={syncStatus} />
         <LanguageSwitcher />
         <ThemeToggle />
-        <CustomizerButton />
       </div>
 
       <CommandDialog

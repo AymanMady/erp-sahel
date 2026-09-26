@@ -2,9 +2,9 @@
 
 export const LANGUAGES = [
   { code: "fr", label: "Français", dir: "ltr", intl: "fr-FR" },
-  { code: "en", label: "English", dir: "ltr", intl: "en-GB" },
   // Latin digits: the usual convention for prices and quantities in the Maghreb/Sahel.
   { code: "ar", label: "العربية", dir: "rtl", intl: "ar-u-nu-latn" },
+  { code: "en", label: "English", dir: "ltr", intl: "en-GB" },
 ] as const;
 
 export type LanguageCode = (typeof LANGUAGES)[number]["code"];

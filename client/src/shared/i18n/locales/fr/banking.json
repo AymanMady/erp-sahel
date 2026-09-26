@@ -5,7 +5,7 @@
   "accountTypes": {
     "bank": "Compte bancaire",
     "cash": "Caisse",
-    "mobileMoney": "Mobile money"
+    "mobileMoney": "Bankily / Masrvi / Sedad"
   },
   "transactionTypes": {
     "deposit": "Dépôt",
@@ -26,7 +26,7 @@
     "total": "Trésorerie totale",
     "cash": "Caisse",
     "bank": "Banque",
-    "mobile": "Mobile money"
+    "mobile": "Bankily / Masrvi / Sedad"
   },
   "accounts": {
     "title": "Comptes",

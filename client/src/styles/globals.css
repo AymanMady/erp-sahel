@@ -12,11 +12,11 @@
      used — no font is downloaded, so rendering is identical offline. */
   --font-sans: var(
     --app-font-sans,
-    "Geist",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
     ui-sans-serif,
     system-ui,
-    -apple-system,
-    "Segoe UI",
     Roboto,
     Helvetica,
     Arial,
@@ -65,72 +65,79 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.55 0.22 264);
-  --chart-2: oklch(0.7 0.16 162);
-  --chart-3: oklch(0.72 0.17 65);
-  --chart-4: oklch(0.65 0.24 16);
-  --chart-5: oklch(0.62 0.21 305);
-  --radius: 0.65rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* ArchitectUI palette (light): grey page, white cards and chrome, grey-700 text.
+     The primary is the green of the Mauritanian flag, the gold serves as highlight. */
+  --background: #f1f4f6;
+  --foreground: #343a40;
+  --card: #ffffff;
+  --card-foreground: #343a40;
+  --popover: #ffffff;
+  --popover-foreground: #343a40;
+  --primary: #0a8a4e;
+  --primary-foreground: #ffffff;
+  --secondary: #e9ecef;
+  --secondary-foreground: #343a40;
+  --muted: #f1f4f6;
+  --muted-foreground: #6c757d;
+  --accent: #e3f4ea;
+  --accent-foreground: #07683a;
+  --destructive: #d92550;
+  --border: #e3e7eb;
+  --input: #ced4da;
+  --ring: #0a8a4e;
+  --chart-1: #0a8a4e;
+  --chart-2: #3f6ad8;
+  --chart-3: #f7b924;
+  --chart-4: #d92550;
+  --chart-5: #16aaff;
+  --radius: 0.35rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #343a40;
+  --sidebar-primary: #0a8a4e;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e3f4ea;
+  --sidebar-accent-foreground: #07683a;
+  --sidebar-border: #e3e7eb;
+  --sidebar-ring: #0a8a4e;
+  /* ArchitectUI layered card shadow. */
+  --shadow-card:
+    0 0.46875rem 2.1875rem rgb(4 9 20 / 3%), 0 0.9375rem 1.40625rem rgb(4 9 20 / 3%),
+    0 0.25rem 0.53125rem rgb(4 9 20 / 5%), 0 0.125rem 0.1875rem rgb(4 9 20 / 3%);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.62 0.2 264);
-  --chart-2: oklch(0.72 0.15 162);
-  --chart-3: oklch(0.77 0.16 65);
-  --chart-4: oklch(0.68 0.22 16);
-  --chart-5: oklch(0.67 0.2 305);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #16191d;
+  --foreground: #e9ecef;
+  --card: #1f2328;
+  --card-foreground: #e9ecef;
+  --popover: #1f2328;
+  --popover-foreground: #e9ecef;
+  --primary: #2bb673;
+  --primary-foreground: #06140d;
+  --secondary: #2a2f35;
+  --secondary-foreground: #e9ecef;
+  --muted: #2a2f35;
+  --muted-foreground: #adb5bd;
+  --accent: #1d3a2b;
+  --accent-foreground: #b9ebcf;
+  --destructive: #f0547a;
+  --border: rgb(255 255 255 / 9%);
+  --input: rgb(255 255 255 / 15%);
+  --ring: #2bb673;
+  --chart-1: #2bb673;
+  --chart-2: #7b9cf0;
+  --chart-3: #f7c64a;
+  --chart-4: #f0547a;
+  --chart-5: #4cc0ff;
+  --sidebar: #1f2328;
+  --sidebar-foreground: #e9ecef;
+  --sidebar-primary: #2bb673;
+  --sidebar-primary-foreground: #06140d;
+  --sidebar-accent: #1d3a2b;
+  --sidebar-accent-foreground: #b9ebcf;
+  --sidebar-border: rgb(255 255 255 / 9%);
+  --sidebar-ring: #2bb673;
+  --shadow-card: 0 0.25rem 1rem rgb(0 0 0 / 35%);
 }
 
 @layer base {
@@ -143,12 +150,6 @@
   html {
     @apply font-sans;
   }
-}
-
-/* Theme customizer: centered content layout */
-:root[data-content="centered"] .app-main > * {
-  margin-inline: auto;
-  max-width: 80rem;
 }
 
 /* Subtle, theme-aware scrollbars */

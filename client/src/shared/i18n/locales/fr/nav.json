@@ -10,6 +10,7 @@
   "items": {
     "dashboard": "Tableau de bord",
     "pos": "Caisse",
+    "salesDocuments": "Devis et commandes",
     "quotes": "Devis",
     "salesOrders": "Commandes clients",
     "invoices": "Factures",

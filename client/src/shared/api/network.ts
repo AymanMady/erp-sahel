@@ -7,6 +7,8 @@
  * `SYNC_STRATEGY.md` §8.
  */
 
+import { apiUrl } from "@/shared/desktop/desktop";
+
 const HEALTH_TIMEOUT_MS = 4000;
 /** Validity period of a ping result: avoids flooding the server. */
 const PROBE_TTL_MS = 10_000;
@@ -32,7 +34,7 @@ export async function probeServer(force = false): Promise<boolean> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), HEALTH_TIMEOUT_MS);
   try {
-    const response = await fetch("/api/health", {
+    const response = await fetch(apiUrl("/api/health"), {
       method: "GET",
       signal: controller.signal,
       cache: "no-store",

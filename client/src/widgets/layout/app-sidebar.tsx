@@ -1,9 +1,9 @@
 /**
  * Navigation sidebar.
  *
- * Ported from the OrbynAdmin design system to `wouter`: same visual structure
- * (groups, collapsible sub-menus, active states, collapsed mode), but driven by the
- * permissions and the modules actually enabled for the company.
+ * ArchitectUI layout (`.app-sidebar` + `.vertical-nav-menu`): white fixed sidebar,
+ * uppercase section headings, collapsible sub-menus; styled in `styles/erp.css`.
+ * Entries are driven by the permissions and the modules enabled for the company.
  */
 
 import { IconChevronRight } from "@tabler/icons-react";
@@ -12,7 +12,6 @@ import { Link, useLocation } from "wouter";
 
 import { useSession } from "@/shared/auth/session";
 import { visibleNavGroups, type NavItem } from "@/shared/config/nav";
-import { useThemeConfig } from "@/shared/components/theme-customizer";
 import { useDirection } from "@/shared/i18n/direction-provider";
 import { cn } from "@/shared/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/ui/collapsible";
@@ -38,18 +37,13 @@ import { NavUser } from "./nav-user";
 
 export function AppSidebar() {
   const [pathname] = useLocation();
-  const { config } = useThemeConfig();
   const { can, hasModule } = useSession();
   const groups = visibleNavGroups(can, hasModule);
   const direction = useDirection();
   const { t } = useTranslation("nav");
 
   return (
-    <Sidebar
-      side={direction === "rtl" ? "right" : "left"}
-      collapsible={config.sidebarCollapsible}
-      variant={config.sidebarVariant}
-    >
+    <Sidebar side={direction === "rtl" ? "right" : "left"} collapsible="icon" variant="sidebar">
       <SidebarHeader>
         <CompanyBrand />
       </SidebarHeader>

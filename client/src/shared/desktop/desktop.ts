@@ -8,13 +8,26 @@
 
 declare global {
   interface Window {
-    __TAURI_INTERNALS__?: unknown;
+    __TAURI_INTERNALS__?: {
+      invoke?: <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
+    };
     __TAURI__?: unknown;
   }
 }
 
 /** Static build targeting the desktop shell (defined by Vite). */
 declare const __DESKTOP_BUILD__: boolean;
+/** Server origin of the desktop build; empty on the web (same-origin API). */
+declare const __API_BASE_URL__: string;
+
+/**
+ * Absolute URL of an API path. The desktop shell is served from `tauri://localhost`,
+ * so its calls must target the configured server; on the web the path stays relative.
+ */
+export function apiUrl(path: string): string {
+  const base = typeof __API_BASE_URL__ !== "undefined" ? __API_BASE_URL__ : "";
+  return base ? `${base}${path}` : path;
+}
 
 export function isDesktopBuild(): boolean {
   return typeof __DESKTOP_BUILD__ !== "undefined" && __DESKTOP_BUILD__;
@@ -40,15 +53,10 @@ async function loadInvoke(): Promise<InvokeFn | null> {
     cachedInvoke = null;
     return null;
   }
-  try {
-    // Specifier built at runtime: the Tauri package is not a dependency of the
-    // web build, so it must not be resolved at compile time.
-    const specifier = ["@tauri-apps", "api", "core"].join("/");
-    const module = (await import(/* @vite-ignore */ specifier)) as { invoke: InvokeFn };
-    cachedInvoke = module.invoke;
-  } catch {
-    cachedInvoke = null;
-  }
+  // The shell always injects its IPC bridge: calling it directly avoids depending on
+  // `@tauri-apps/api`, which a static build could not resolve at runtime anyway.
+  const internals = window.__TAURI_INTERNALS__;
+  cachedInvoke = internals?.invoke ? internals.invoke.bind(internals) : null;
   return cachedInvoke;
 }
 

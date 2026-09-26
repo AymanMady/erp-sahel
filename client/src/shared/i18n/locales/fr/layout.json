@@ -40,54 +40,6 @@
   "theme": {
     "toggle": "Changer de thème"
   },
-  "customizer": {
-    "open": "Personnaliser l'apparence",
-    "title": "Apparence",
-    "description": "Ajustez le thème de l'interface. Le réglage est propre à ce poste.",
-    "mode": "Mode",
-    "light": "Clair",
-    "dark": "Sombre",
-    "system": "Auto",
-    "accent": "Couleur d'accent",
-    "radius": "Arrondi",
-    "font": "Police",
-    "sidebarStyle": "Style de la barre latérale",
-    "sidebarCollapse": "Réduction de la barre latérale",
-    "contentWidth": "Largeur du contenu",
-    "copy": "Copier le thème",
-    "copied": "Thème copié",
-    "copiedDescription": "Collez-le dans votre feuille de styles.",
-    "copyFailed": "Copie dans le presse-papiers impossible.",
-    "accents": {
-      "neutral": "Neutre",
-      "blue": "Bleu",
-      "violet": "Violet",
-      "green": "Vert",
-      "teal": "Sarcelle",
-      "amber": "Ambre",
-      "orange": "Orange",
-      "rose": "Rose"
-    },
-    "fonts": {
-      "geist": "Geist",
-      "system": "Système",
-      "serif": "Serif",
-      "mono": "Mono"
-    },
-    "sidebarVariants": {
-      "inset": "Encastrée",
-      "sidebar": "Classique",
-      "floating": "Flottante"
-    },
-    "collapsible": {
-      "icon": "Icônes",
-      "offcanvas": "Masquée"
-    },
-    "contentLayouts": {
-      "full": "Pleine largeur",
-      "centered": "Centré"
-    }
-  },
   "boot": {
     "loading": "Chargement de l'ERP…"
   }

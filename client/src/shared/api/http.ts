@@ -16,7 +16,7 @@ import {
   setAccessToken,
   setRefreshToken,
 } from "@/shared/auth/token-store";
-import { devicePlatform } from "@/shared/desktop/desktop";
+import { apiUrl, devicePlatform } from "@/shared/desktop/desktop";
 import { readCachedResponse, storeCachedResponse } from "@/shared/offline/http-cache";
 import { isQueueableWrite, queueHttpWrite } from "@/shared/offline/offline-http";
 import { currentLanguage, i18n } from "@/shared/i18n";
@@ -123,7 +123,7 @@ export async function refreshSession(): Promise<boolean> {
 
   refreshInFlight = (async () => {
     try {
-      const response = await fetch("/api/auth/refresh", {
+      const response = await fetch(apiUrl("/api/auth/refresh"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refreshToken }),
@@ -185,7 +185,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     signal?.addEventListener("abort", abort);
     const timer = setTimeout(abort, method === "GET" ? READ_TIMEOUT_MS : WRITE_TIMEOUT_MS);
     try {
-      return await fetch(url, {
+      return await fetch(apiUrl(url), {
         method,
         headers,
         body: body === undefined ? undefined : JSON.stringify(body),

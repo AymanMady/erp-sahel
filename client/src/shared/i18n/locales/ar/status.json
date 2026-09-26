@@ -34,7 +34,7 @@
     "BANK_TRANSFER": "تحويل بنكي",
     "CHECK": "شيك",
     "CARD": "بطاقة",
-    "MOBILE_MONEY": "الدفع عبر الهاتف"
+    "MOBILE_MONEY": "بنكيلي / مصرفي / سداد"
   },
   "movements": {
     "IN": "وارد",

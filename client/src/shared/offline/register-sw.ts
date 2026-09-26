@@ -7,10 +7,14 @@
  * (`SYNC_STRATEGY.md` §11).
  */
 
+import { isDesktopBuild } from "@/shared/desktop/desktop";
+
 export async function registerServiceWorker(): Promise<void> {
   if (!("serviceWorker" in navigator)) return;
   // In development, the Service Worker would hide Vite's hot reloads.
   if (import.meta.env.DEV) return;
+  // The desktop shell embeds its assets: there is no shell to cache, and no `/sw.js`.
+  if (isDesktopBuild()) return;
 
   try {
     const registration = await navigator.serviceWorker.register("/sw.js", { scope: "/" });

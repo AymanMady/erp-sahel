@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
@@ -14,6 +14,17 @@ export default defineConfig(({ mode }) => {
    * `asset://` and not by our Express server.
    */
   const isDesktop = mode === "desktop";
+  /**
+   * Server the desktop shell talks to (e.g. `https://erp.example.com`). Read from
+   * `DESKTOP_API_URL` in the environment or in `.env.desktop`. Empty on the web build:
+   * the API is then same-origin.
+   */
+  const desktopApiUrl = isDesktop
+    ? (process.env.DESKTOP_API_URL ?? loadEnv(mode, rootDir, "DESKTOP_").DESKTOP_API_URL ?? "")
+    : "";
+  if (isDesktop && !desktopApiUrl) {
+    throw new Error("Desktop build: set DESKTOP_API_URL (environment or .env.desktop).");
+  }
 
   return {
     base: isDesktop ? "./" : "/",
@@ -21,6 +32,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), tailwindcss()],
     define: {
       __DESKTOP_BUILD__: JSON.stringify(isDesktop),
+      __API_BASE_URL__: JSON.stringify(desktopApiUrl.replace(/\/+$/, "")),
     },
     resolve: {
       alias: {

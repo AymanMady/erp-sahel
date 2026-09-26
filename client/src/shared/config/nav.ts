@@ -25,14 +25,11 @@ import {
   IconFileInvoice,
   IconLayoutDashboard,
   IconPackages,
-  IconPuzzle,
   IconReceipt,
   IconRefresh,
   IconSettings,
-  IconShoppingCart,
   IconTool,
   IconTruckDelivery,
-  IconUsers,
   type Icon,
 } from "@tabler/icons-react";
 
@@ -81,18 +78,14 @@ export const navGroups: NavGroup[] = [
         permission: "pos.use",
       },
       {
-        titleKey: "items.quotes",
-        url: "/quotes",
+        titleKey: "items.salesDocuments",
         icon: IconClipboardList,
         module: "sales",
         permission: "sales.read",
-      },
-      {
-        titleKey: "items.salesOrders",
-        url: "/sales-orders",
-        icon: IconShoppingCart,
-        module: "sales",
-        permission: "sales.read",
+        items: [
+          { titleKey: "items.quotes", url: "/quotes" },
+          { titleKey: "items.salesOrders", url: "/sales-orders" },
+        ],
       },
       {
         titleKey: "items.invoices",
@@ -205,28 +198,20 @@ export const navGroups: NavGroup[] = [
     labelKey: "groups.settings",
     items: [
       {
-        titleKey: "items.modules",
-        url: "/settings/modules",
-        icon: IconPuzzle,
-        permission: "settings.read",
-      },
-      {
         titleKey: "items.settings",
         icon: IconSettings,
-        permission: "settings.read",
         items: [
-          { titleKey: "items.company", url: "/settings/company" },
-          { titleKey: "items.numbering", url: "/settings/numbering" },
-          { titleKey: "items.registers", url: "/settings/registers", module: "pos" },
-        ],
-      },
-      {
-        titleKey: "items.users",
-        icon: IconUsers,
-        permission: "users.read",
-        items: [
-          { titleKey: "items.accounts", url: "/settings/users" },
-          { titleKey: "items.roles", url: "/settings/roles" },
+          { titleKey: "items.company", url: "/settings/company", permission: "settings.read" },
+          { titleKey: "items.modules", url: "/settings/modules", permission: "settings.read" },
+          { titleKey: "items.users", url: "/settings/users", permission: "users.read" },
+          { titleKey: "items.roles", url: "/settings/roles", permission: "users.read" },
+          { titleKey: "items.numbering", url: "/settings/numbering", permission: "settings.read" },
+          {
+            titleKey: "items.registers",
+            url: "/settings/registers",
+            module: "pos",
+            permission: "settings.read",
+          },
         ],
       },
       { titleKey: "items.sync", url: "/sync", icon: IconRefresh },
@@ -252,6 +237,27 @@ export function moduleForPath(pathname: string): ModuleCode | undefined {
     }
   }
   return best?.module;
+}
+
+/**
+ * Icon of the menu entry matching a path (longest prefix wins), shown in the page
+ * title band. A sub-entry borrows its parent's icon.
+ */
+export function navIconForPath(pathname: string): Icon | undefined {
+  let best: { icon: Icon; length: number } | undefined;
+  const consider = (url: string | undefined, icon: Icon | undefined) => {
+    if (!url || !icon) return;
+    const matches =
+      url === "/" ? pathname === "/" : pathname === url || pathname.startsWith(`${url}/`);
+    if (matches && (!best || url.length > best.length)) best = { icon, length: url.length };
+  };
+  for (const group of navGroups) {
+    for (const item of group.items) {
+      consider(item.url, item.icon);
+      for (const child of item.items ?? []) consider(child.url, item.icon);
+    }
+  }
+  return best?.icon;
 }
 
 /** Brand icon shown in the sidebar header. */
@@ -286,7 +292,9 @@ export function visibleNavGroups(
                 ),
               }
             : item
-        ),
+        )
+        // A parent whose sub-entries are all hidden would open onto nothing.
+        .filter((item) => !item.items || item.items.length > 0),
     }))
     .filter((group) => group.items.length > 0);
 }

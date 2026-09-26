@@ -48,54 +48,6 @@
   "theme": {
     "toggle": "تبديل المظهر"
   },
-  "customizer": {
-    "open": "تخصيص المظهر",
-    "title": "المظهر",
-    "description": "اضبط مظهر الواجهة. يُطبَّق هذا الإعداد على هذا الجهاز فقط.",
-    "mode": "الوضع",
-    "light": "فاتح",
-    "dark": "داكن",
-    "system": "تلقائي",
-    "accent": "لون التمييز",
-    "radius": "استدارة الزوايا",
-    "font": "الخط",
-    "sidebarStyle": "نمط الشريط الجانبي",
-    "sidebarCollapse": "طيّ الشريط الجانبي",
-    "contentWidth": "عرض المحتوى",
-    "copy": "نسخ المظهر",
-    "copied": "تم نسخ المظهر",
-    "copiedDescription": "الصقه في ورقة الأنماط الخاصة بك.",
-    "copyFailed": "تعذّر النسخ إلى الحافظة.",
-    "accents": {
-      "neutral": "محايد",
-      "blue": "أزرق",
-      "violet": "بنفسجي",
-      "green": "أخضر",
-      "teal": "أزرق مخضر",
-      "amber": "كهرماني",
-      "orange": "برتقالي",
-      "rose": "وردي"
-    },
-    "fonts": {
-      "geist": "Geist",
-      "system": "النظام",
-      "serif": "مذيّل",
-      "mono": "أحادي المسافة"
-    },
-    "sidebarVariants": {
-      "inset": "مدمج",
-      "sidebar": "كلاسيكي",
-      "floating": "عائم"
-    },
-    "collapsible": {
-      "icon": "أيقونات",
-      "offcanvas": "مخفي"
-    },
-    "contentLayouts": {
-      "full": "عرض كامل",
-      "centered": "في الوسط"
-    }
-  },
   "boot": {
     "loading": "جارٍ تحميل نظام تخطيط الموارد…"
   }

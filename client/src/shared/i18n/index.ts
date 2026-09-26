@@ -56,10 +56,13 @@ function readStoredLanguage(): LanguageCode | null {
 function detectLanguage(): LanguageCode {
   const stored = readStoredLanguage();
   if (stored) return stored;
+  // Only Arabic and French are taken from the browser: in Mauritania many devices
+  // are set to English while work is done in French or Arabic. English remains
+  // available from the language switcher.
   if (typeof navigator !== "undefined") {
     for (const tag of navigator.languages ?? [navigator.language]) {
       const base = tag?.split("-")[0];
-      if (isLanguageCode(base)) return base;
+      if (base === "ar" || base === "fr") return base;
     }
   }
   return DEFAULT_LANGUAGE;

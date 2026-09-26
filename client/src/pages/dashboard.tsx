@@ -174,10 +174,10 @@ export default function DashboardPage() {
             <Link
               key={action.href}
               href={action.href}
-              className="flex flex-col items-center justify-center gap-2 rounded-xl border bg-card p-4 text-center text-sm font-medium shadow-xs transition-colors hover:border-primary hover:bg-primary/5"
+              className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-(--radius) border bg-card p-4 text-center text-sm font-semibold shadow-(--shadow-card) transition-all hover:-translate-y-0.5 hover:border-primary hover:text-primary"
             >
-              <span className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <action.icon className="size-6" />
+              <span className="flex size-12 items-center justify-center rounded-full bg-accent text-primary">
+                <action.icon className="size-6" stroke={1.75} />
               </span>
               {t(action.labelKey)}
             </Link>
@@ -196,15 +196,17 @@ export default function DashboardPage() {
           label={t("stats.revenue")}
           value={formatMoneyValue(data?.sales.totalHtCents ?? 0)}
           hint={t("stats.invoicesHint", { count: data?.sales.invoiceCount ?? 0 })}
-          icon={<IconTrendingUp className="size-4" />}
+          icon={<IconTrendingUp className="size-5" />}
           loading={isLoading}
+          tone="green"
         />
         <StatCard
           label={t("stats.outstanding")}
           value={formatMoneyValue(data?.sales.outstandingCents ?? 0)}
           hint={t("stats.outstandingHint")}
-          icon={<IconReceipt2 className="size-4" />}
+          icon={<IconReceipt2 className="size-5" />}
           loading={isLoading}
+          tone="gold"
           invertTrend
         />
         <StatCard
@@ -214,15 +216,17 @@ export default function DashboardPage() {
             cash: formatMoneyValue(data?.treasury.cashCents ?? 0),
             bank: formatMoneyValue(data?.treasury.bankCents ?? 0),
           })}
-          icon={<IconBuildingBank className="size-4" />}
+          icon={<IconBuildingBank className="size-5" />}
           loading={isLoading}
+          tone="blue"
         />
         <StatCard
           label={t("stats.stockValue")}
           value={formatMoneyValue(data?.stock.totalValueCents ?? 0)}
           hint={t("stats.skusHint", { count: data?.stock.skuCount ?? 0 })}
-          icon={<IconPackages className="size-4" />}
+          icon={<IconPackages className="size-5" />}
           loading={isLoading}
+          tone="violet"
         />
       </div>
 

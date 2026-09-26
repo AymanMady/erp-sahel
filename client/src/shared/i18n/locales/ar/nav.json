@@ -10,6 +10,7 @@
   "items": {
     "dashboard": "لوحة التحكم",
     "pos": "نقطة البيع",
+    "salesDocuments": "عروض الأسعار والطلبات",
     "quotes": "عروض الأسعار",
     "salesOrders": "طلبات العملاء",
     "invoices": "الفواتير",

@@ -8,7 +8,6 @@
 import type { ReactNode } from "react";
 
 import { useSyncEngine } from "@/shared/hooks/use-sync";
-import { ThemeCustomizer } from "@/shared/components/theme-customizer";
 import { SidebarInset, SidebarProvider } from "@/shared/ui/sidebar";
 import { TooltipProvider } from "@/shared/ui/tooltip";
 import { AppHeader } from "./app-header";
@@ -25,9 +24,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
         <SidebarInset className="min-w-0">
           <OfflineBanner />
           <AppHeader syncStatus={syncStatus} />
-          <main className="app-main min-w-0 flex-1 p-4 md:p-6">{children}</main>
+          <main className="app-main min-w-0 flex-1">{children}</main>
         </SidebarInset>
-        <ThemeCustomizer />
       </SidebarProvider>
     </TooltipProvider>
   );

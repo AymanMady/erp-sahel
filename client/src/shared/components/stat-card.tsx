@@ -20,7 +20,22 @@ export interface StatCardProps {
    * good news.
    */
   invertTrend?: boolean;
+  /**
+   * ArchitectUI gradient widget (white text on a colored background); without it,
+   * the card stays plain.
+   */
+  tone?: StatTone;
 }
+
+export type StatTone = "green" | "blue" | "gold" | "violet" | "red";
+
+const TONE_CLASS: Record<StatTone, string> = {
+  green: "bg-grow-early",
+  blue: "bg-night-sky",
+  gold: "bg-sunny-morning",
+  violet: "bg-midnight-bloom",
+  red: "bg-love-kiss",
+};
 
 export function StatCard({
   label,
@@ -30,6 +45,7 @@ export function StatCard({
   icon,
   loading,
   invertTrend,
+  tone,
 }: StatCardProps) {
   // Subscribes to language changes (percentage format).
   useTranslation();
@@ -38,25 +54,43 @@ export function StatCard({
   const favourable = invertTrend ? !rising : rising;
 
   return (
-    <Card>
+    <Card className={cn(tone && ["border-0 text-white", TONE_CLASS[tone]])}>
       <CardContent className="space-y-2.5">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-sm font-medium text-muted-foreground">{label}</p>
-          {icon ? <span className="text-muted-foreground">{icon}</span> : null}
+          <p
+            className={cn(
+              "text-sm font-semibold",
+              tone ? "text-white/85" : "text-muted-foreground"
+            )}
+          >
+            {label}
+          </p>
+          {icon ? (
+            <span
+              className={cn(
+                "flex size-9 items-center justify-center rounded-full",
+                tone ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
+              )}
+            >
+              {icon}
+            </span>
+          ) : null}
         </div>
         <div className="flex items-end justify-between gap-2">
           {loading ? (
-            <Skeleton className="h-9 w-32" />
+            <Skeleton className={cn("h-9 w-32", tone && "bg-white/25")} />
           ) : (
-            <span className="tabular text-3xl font-semibold tracking-tight">{value}</span>
+            <span className="tabular text-2xl font-bold tracking-tight sm:text-3xl">{value}</span>
           )}
           {hasChange && change !== 0 ? (
             <span
               className={cn(
                 "flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
-                favourable
-                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                  : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                tone
+                  ? "bg-white/20 text-white"
+                  : favourable
+                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                    : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
               )}
             >
               {rising ? (
@@ -72,7 +106,9 @@ export function StatCard({
             </span>
           ) : null}
         </div>
-        {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
+        {hint ? (
+          <p className={cn("text-xs", tone ? "text-white/75" : "text-muted-foreground")}>{hint}</p>
+        ) : null}
       </CardContent>
     </Card>
   );
