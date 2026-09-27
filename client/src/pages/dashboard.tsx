@@ -39,6 +39,7 @@ import {
 import { addDays, formatDate, todayInput } from "@shared/format";
 import { centsToMajor } from "@shared/money";
 import { reportsApi } from "@/entities/reports/api";
+import { ApiError } from "@/shared/api/api-error";
 import { queryKeys } from "@/shared/api/query-client";
 import { currentIntlLocale } from "@/shared/i18n";
 import { useDirection } from "@/shared/i18n/direction-provider";
@@ -125,7 +126,7 @@ export default function DashboardPage() {
     return { fromDate: addDays(toDate, -(Number(days) - 1)), toDate };
   }, [days]);
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: queryKeys.dashboard(period),
     queryFn: () => reportsApi.dashboard(period),
   });
@@ -193,7 +194,19 @@ export default function DashboardPage() {
 
       {error && !data ? (
         <Card>
-          <CardContent className="py-6 text-sm text-muted-foreground">{t("offline")}</CardContent>
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 py-6 text-sm text-muted-foreground">
+            <span>
+              {error instanceof ApiError && error.isNetworkError ? t("offline") : t("serverBusy")}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isFetching}
+              onClick={() => void refetch()}
+            >
+              {t("common:actions.retry")}
+            </Button>
+          </CardContent>
         </Card>
       ) : null}
 

@@ -35,18 +35,23 @@ import { registerUsersRoutes } from "./domains/users/routes";
 export function registerRoutes(app: Express): void {
   app.use(corsMiddleware);
   app.use(securityHeaders);
-  app.use("/api", apiRateLimit);
-  // Writes replayed by the offline queue: a given key is executed only once.
-  app.use("/api", idempotency);
 
   /**
    * Availability probe. The client also uses it to tell "the browser thinks it is
    * online" from "the server answers" (`SYNC_STRATEGY.md` §8): it must therefore stay
    * lightweight, unauthenticated and without database access by default.
+   *
+   * Mounted **before** rate limiting: a device that used up its quota (a large
+   * offline prefetch) is still online, and must not be told otherwise.
    */
   app.get("/api/health", (_req, res) => {
+    res.setHeader("Cache-Control", "no-store");
     res.json({ status: "ok", time: new Date().toISOString() });
   });
+
+  app.use("/api", apiRateLimit);
+  // Writes replayed by the offline queue: a given key is executed only once.
+  app.use("/api", idempotency);
 
   app.get("/api/health/db", async (_req, res) => {
     try {

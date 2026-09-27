@@ -22,7 +22,7 @@ import { isQueueableWrite, queueHttpWrite } from "@/shared/offline/offline-http"
 import { currentLanguage, i18n } from "@/shared/i18n";
 import { newUuid } from "@/shared/offline/outbox";
 import { ApiError } from "./api-error";
-import { reportNetworkResult } from "./network";
+import { isBrowserOnline, reportNetworkResult } from "./network";
 
 /**
  * Query parameters. Typed `object` rather than `Record<string, …>`: a declared
@@ -54,8 +54,26 @@ export interface RequestOptions {
  * on a Wi-Fi whose Internet link is down would hang for long minutes on every
  * request, instead of switching to offline mode.
  */
-const READ_TIMEOUT_MS = 15_000;
+const READ_TIMEOUT_MS = 20_000;
 const WRITE_TIMEOUT_MS = 30_000;
+
+/**
+ * Reads are retried once when the failure is likely temporary: server starting cold,
+ * database waking up, too many requests at once, connection dropped for a moment.
+ * Writes are never retried here: the offline queue replays them with their key.
+ */
+const MAX_READ_RETRIES = 1;
+const RETRYABLE_STATUSES = new Set([429, 502, 503, 504]);
+const MAX_RETRY_WAIT_MS = 5000;
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Waiting time before retrying: the server's `Retry-After` when given, capped. */
+function retryDelay(response: Response | null): number {
+  const header = Number(response?.headers.get("Retry-After"));
+  if (Number.isFinite(header) && header > 0) return Math.min(header * 1000, MAX_RETRY_WAIT_MS);
+  return 1000;
+}
 
 function buildUrl(path: string, query?: QueryParams): string {
   const url = path.startsWith("/") ? path : `/${path}`;
@@ -165,6 +183,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   const offlineQueueable =
     isWrite && options.queueOffline !== false && isQueueableWrite(method, url);
 
+  let timedOut = false;
   const send = async (): Promise<Response> => {
     const headers: Record<string, string> = {
       Accept: "application/json",
@@ -183,7 +202,14 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     const controller = new AbortController();
     const abort = () => controller.abort();
     signal?.addEventListener("abort", abort);
-    const timer = setTimeout(abort, method === "GET" ? READ_TIMEOUT_MS : WRITE_TIMEOUT_MS);
+    timedOut = false;
+    const timer = setTimeout(
+      () => {
+        timedOut = true;
+        abort();
+      },
+      method === "GET" ? READ_TIMEOUT_MS : WRITE_TIMEOUT_MS
+    );
     try {
       return await fetch(apiUrl(url), {
         method,
@@ -212,29 +238,54 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     return null;
   };
 
+  const canRetry = (attempt: number) =>
+    method === "GET" && attempt < MAX_READ_RETRIES && !signal?.aborted && isBrowserOnline();
+
   let response: Response;
-  try {
-    response = await send();
-    reportNetworkResult(true);
-  } catch (error) {
-    // Cancellation requested by the caller: not a network failure. (A timeout,
-    // however, is one.)
-    if (signal?.aborted) throw error;
-    reportNetworkResult(false);
-    const fallback = await offlineFallback();
-    if (fallback) return fallback.value;
-    throw new ApiError({
-      status: 0,
-      code: "NETWORK_ERROR",
-      message: i18n.t("offline:api.serverUnreachable"),
-      isNetworkError: true,
-    });
+  for (let attempt = 0; ; attempt++) {
+    try {
+      response = await send();
+    } catch (error) {
+      // Cancellation requested by the caller: not a network failure. (A timeout,
+      // however, is one.)
+      if (signal?.aborted) throw error;
+      // Only a hint: the connectivity detector confirms with a ping before
+      // switching the app to offline mode.
+      reportNetworkResult(false);
+      const fallback = await offlineFallback();
+      if (fallback) return fallback.value;
+      // Connection dropped for a moment: one more try. After a timeout, the user
+      // has already waited long enough.
+      if (!timedOut && canRetry(attempt)) {
+        await wait(retryDelay(null));
+        continue;
+      }
+      throw new ApiError({
+        status: 0,
+        code: "NETWORK_ERROR",
+        message: i18n.t("offline:api.serverUnreachable"),
+        isNetworkError: true,
+      });
+    }
+    // Server busy (429) or starting (502 to 504): worth one more try.
+    if (RETRYABLE_STATUSES.has(response.status) && canRetry(attempt)) {
+      await wait(retryDelay(response));
+      continue;
+    }
+    break;
   }
+  reportNetworkResult(!GATEWAY_ERRORS.has(response.status));
 
   // Gateway reachable but server unavailable: same fallback as without network.
   if (GATEWAY_ERRORS.has(response.status)) {
     const fallback = await offlineFallback();
     if (fallback) return fallback.value;
+  }
+
+  // Too many requests: a read already kept on this device beats an error screen.
+  if (response.status === 429 && offlineReadable) {
+    const cached = await readCachedResponse(url);
+    if (cached !== undefined) return cached as T;
   }
 
   if (response.status === 401 && !anonymous && !skipRefresh) {

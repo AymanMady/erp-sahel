@@ -15,6 +15,7 @@
     "newCustomer": "New customer"
   },
   "offline": "These numbers need internet. They will come back with the connection.",
+  "serverBusy": "The server did not answer in time. Try again in a moment.",
   "stats": {
     "revenue": "Total sales",
     "invoicesHint_one": "{{count}} invoice during this period",

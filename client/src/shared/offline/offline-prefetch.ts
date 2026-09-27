@@ -9,9 +9,12 @@
  *
  * **Every** page of the app is covered, administration included.
  *
- * Controlled cost: at most one pass every 30 minutes, limited concurrent requests,
- * details reloaded only if they changed since the previous pass, and every failure
- * (permissions, inactive module) is ignored.
+ * Controlled cost: at most one pass every 30 minutes, started only once the screen
+ * the user opened has loaded, at most two requests at a time with a short pause
+ * between them, details reloaded only if they changed since the previous pass, and
+ * every failure (permissions, inactive module) is ignored. A server that says it is
+ * busy (429) or unavailable (5xx) stops the pass: it resumes on the next cycle,
+ * instead of competing with what the user is doing.
  */
 
 import { addDays, todayInput } from "@shared/format";
@@ -27,6 +30,7 @@ import { reportsApi } from "@/entities/reports/api";
 import { salesApi } from "@/entities/sales/api";
 import { settingsApi } from "@/entities/settings/api";
 import { syncApi } from "@/entities/sync/api";
+import { ApiError } from "@/shared/api/api-error";
 import { lastKnownOnline } from "@/shared/api/network";
 import { cachedUpdatedAt } from "./http-cache";
 import { readMeta, writeMeta } from "./storage";
@@ -37,27 +41,43 @@ const MIN_INTERVAL_MS = 30 * 60 * 1000;
 const LIST_SIZE = 200;
 /** Details prefetched per document type: all those of the prefetched list. */
 const DETAIL_COUNT = LIST_SIZE;
-const CONCURRENCY = 4;
+/**
+ * Top-level workers. Nested lists (details of a list) run one request at a time
+ * inside their worker, so there are never more than this many requests in flight.
+ */
+const CONCURRENCY = 2;
+/** Pause between two requests of a worker: leaves room for the user's own screens. */
+const PAUSE_MS = 150;
+/** Delay before a pass starts: the screen just opened (dashboard) loads first. */
+const START_DELAY_MS = 20_000;
 
 type Task = () => Promise<unknown>;
 
 let running: Promise<void> | null = null;
+/** Set when the server says it is busy or unavailable: ends the current pass. */
+let serverStrained = false;
 
-async function runAll(tasks: Task[]): Promise<void> {
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function runAll(tasks: Task[], concurrency = 1): Promise<void> {
   let index = 0;
   const worker = async () => {
     while (index < tasks.length) {
       const task = tasks[index++];
-      // Server lost along the way: no point in chaining failures.
-      if (!lastKnownOnline()) return;
+      // Server lost or overloaded along the way: no point in chaining failures.
+      if (!lastKnownOnline() || serverStrained) return;
       try {
         await task();
-      } catch {
+      } catch (error) {
         // Missing permission, inactive module…: the corresponding page will stay empty.
+        if (error instanceof ApiError && (error.status === 429 || error.status >= 500)) {
+          serverStrained = true;
+        }
       }
+      await wait(PAUSE_MS);
     }
   };
-  await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+  await Promise.all(Array.from({ length: concurrency }, worker));
 }
 
 interface ListedRow {
@@ -209,7 +229,7 @@ async function prefetch(): Promise<void> {
     () => syncApi.journal(),
   ];
 
-  await runAll(tasks);
+  await runAll(tasks, CONCURRENCY);
 }
 
 /**
@@ -223,10 +243,13 @@ export async function prefetchForOffline(options: { force?: boolean } = {}): Pro
       if (!lastKnownOnline()) return;
       const lastRun = Number((await readMeta(LAST_RUN_KEY)) ?? 0);
       if (!options.force && Date.now() - lastRun < MIN_INTERVAL_MS) return;
+      await wait(START_DELAY_MS);
+      if (!lastKnownOnline()) return;
+      serverStrained = false;
       await prefetch();
       // Timestamped only once the pass is complete: an interrupted pass (tab closed,
-      // network lost) is resumed on the next cycle, not 30 minutes later.
-      if (lastKnownOnline()) await writeMeta(LAST_RUN_KEY, String(Date.now()));
+      // network lost, server busy) is resumed on the next cycle, not 30 minutes later.
+      if (lastKnownOnline() && !serverStrained) await writeMeta(LAST_RUN_KEY, String(Date.now()));
     } catch {
       // A failed prefetch will catch up on the next pass.
     } finally {

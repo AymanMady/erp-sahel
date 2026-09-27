@@ -15,6 +15,7 @@
     "newCustomer": "Nouveau client"
   },
   "offline": "Ces chiffres ont besoin d'internet. Ils reviendront avec la connexion.",
+  "serverBusy": "Le serveur n'a pas répondu à temps. Réessayez dans un instant.",
   "stats": {
     "revenue": "Total des ventes",
     "invoicesHint_one": "{{count}} facture pendant cette période",

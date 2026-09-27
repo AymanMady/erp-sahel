@@ -65,8 +65,18 @@ export async function createApp(): Promise<Express> {
     next();
   });
 
-  const purged = await authRepository.purgeExpiredTokens();
-  if (purged > 0) logger.info("Expired sessions purged", { count: purged });
+  // Housekeeping, not awaited: on a cold start (serverless instance, database waking
+  // up) the first requests — the health probe first of all — must not wait for it.
+  void authRepository
+    .purgeExpiredTokens()
+    .then((purged) => {
+      if (purged > 0) logger.info("Expired sessions purged", { count: purged });
+    })
+    .catch((error: unknown) => {
+      logger.warn("Expired sessions purge failed", {
+        message: error instanceof Error ? error.message : String(error),
+      });
+    });
 
   registerRoutes(app);
 

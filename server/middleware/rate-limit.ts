@@ -24,10 +24,15 @@ export const authRateLimit = rateLimit({
   limit: 20,
 });
 
+/**
+ * Whole API, per IP address. Several devices of the same shop usually share one
+ * public address (same Internet box), and each one fills its offline cache in the
+ * background: the quota must cover them all.
+ */
 export const apiRateLimit = rateLimit({
   ...baseOptions,
   windowMs: 60_000,
-  limit: 600,
+  limit: 1500,
 });
 
 /**
