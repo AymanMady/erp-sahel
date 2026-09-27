@@ -3,8 +3,15 @@
 import { api } from "@/shared/api/http";
 import type { BankAccount, BankTransaction } from "@/entities/types";
 
+/** Where a payment can land — readable by cashiers, so without the balance. */
+export type PaymentAccount = Pick<
+  BankAccount,
+  "id" | "code" | "name" | "accountType" | "isDefault"
+>;
+
 export const bankingApi = {
   listAccounts: () => api.get<BankAccount[]>("/api/banking/accounts"),
+  listPaymentAccounts: () => api.get<PaymentAccount[]>("/api/banking/payment-accounts"),
   createAccount: (body: unknown) => api.post<BankAccount>("/api/banking/accounts", body),
   updateAccount: (id: string, body: unknown) =>
     api.patch<BankAccount>(`/api/banking/accounts/${id}`, body),

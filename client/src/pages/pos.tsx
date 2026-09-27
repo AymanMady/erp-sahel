@@ -28,9 +28,9 @@ import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 import { toast } from "sonner";
 
-import { PAYMENT_METHODS, type PaymentMethod } from "@shared/schema";
 import { formatMoney } from "@shared/money";
 import { errorMessage } from "@/shared/api/api-error";
+import { bankingApi } from "@/entities/banking/api";
 import { catalogApi } from "@/entities/catalog/api";
 import { partyApi } from "@/entities/party/api";
 import { posApi } from "@/entities/pos/api";
@@ -40,7 +40,6 @@ import { useSession } from "@/shared/auth/session";
 import { Field } from "@/shared/components/field";
 import { Money } from "@/shared/components/money";
 import { MoneyInput } from "@/shared/components/money-input";
-import { paymentMethodLabel } from "@/shared/components/status-badge";
 import { useDebounced } from "@/shared/hooks/use-debounced";
 import { useOnline } from "@/shared/hooks/use-online";
 import { cn } from "@/shared/lib/utils";
@@ -60,6 +59,10 @@ import {
   type CartLine,
   type TicketPayment,
 } from "@/features/pos/checkout";
+import {
+  PaymentAccountPicker,
+  usePaymentChoices,
+} from "@/features/payment-account/payment-account-picker";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
@@ -732,14 +735,27 @@ function PaymentDialog({
   onConfirm: (payments: TicketPayment[]) => Promise<void>;
 }) {
   const { t } = useTranslation("pos");
-  const [method, setMethod] = useState<PaymentMethod>("CASH");
+  const { data: accounts } = useQuery({
+    queryKey: queryKeys.paymentAccounts,
+    queryFn: () => bankingApi.listPaymentAccounts(),
+    enabled: open,
+  });
+  const choices = usePaymentChoices(accounts, { registerCash: true });
+  const [choiceKey, setChoiceKey] = useState("CASH");
   const [receivedCents, setReceivedCents] = useState(0);
+  const [reference, setReference] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (open) setReceivedCents(totalCents);
+    if (open) {
+      setChoiceKey("CASH");
+      setReceivedCents(totalCents);
+      setReference("");
+    }
   }, [open, totalCents]);
 
+  const choice = choices.find((entry) => entry.key === choiceKey) ?? choices[0];
+  const isCash = choice.method === "CASH";
   const changeCents = Math.max(0, receivedCents - totalCents);
 
   return (
@@ -754,30 +770,34 @@ function PaymentDialog({
 
         <div className="space-y-4">
           <Field label={t("payment.method")}>
-            <div className="grid grid-cols-2 gap-2">
-              {PAYMENT_METHODS.map((entry) => (
-                <Button
-                  key={entry}
-                  type="button"
-                  variant={method === entry ? "default" : "outline"}
-                  onClick={() => setMethod(entry)}
-                >
-                  {paymentMethodLabel(entry)}
-                </Button>
-              ))}
-            </div>
+            <PaymentAccountPicker
+              choices={choices}
+              value={choice.key}
+              onChange={(entry) => setChoiceKey(entry.key)}
+            />
           </Field>
 
-          <Field label={t("payment.received")}>
-            <MoneyInput valueCents={receivedCents} onChange={setReceivedCents} />
-          </Field>
-
-          {method === "CASH" ? (
-            <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2">
-              <span className="text-sm text-muted-foreground">{t("payment.change")}</span>
-              <Money cents={changeCents} className="text-base font-semibold" />
-            </div>
-          ) : null}
+          {isCash ? (
+            <>
+              <Field label={t("payment.received")}>
+                <MoneyInput valueCents={receivedCents} onChange={setReceivedCents} />
+              </Field>
+              <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2">
+                <span className="text-sm text-muted-foreground">{t("payment.change")}</span>
+                <Money cents={changeCents} className="text-base font-semibold" />
+              </div>
+            </>
+          ) : (
+            <Field label={t("payment.transactionNumber")}>
+              <Input
+                value={reference}
+                onChange={(event) => setReference(event.target.value)}
+                placeholder={t("payment.transactionNumberHint")}
+                className="tabular"
+                dir="ltr"
+              />
+            </Field>
+          )}
 
           {!online ? (
             <p className="rounded-md bg-status-pending-bg px-3 py-2 text-xs text-status-pending">
@@ -791,13 +811,20 @@ function PaymentDialog({
             {t("common:actions.cancel")}
           </Button>
           <Button
-            disabled={submitting || receivedCents < totalCents || totalCents <= 0}
+            disabled={submitting || (isCash && receivedCents < totalCents) || totalCents <= 0}
             onClick={async () => {
               setSubmitting(true);
               try {
                 // The server requires strict equality: the change given back is never
                 // recorded, only the amount due.
-                await onConfirm([{ method, amountCents: totalCents }]);
+                await onConfirm([
+                  {
+                    method: choice.method,
+                    amountCents: totalCents,
+                    bankAccountId: choice.bankAccountId,
+                    reference: reference.trim() || undefined,
+                  },
+                ]);
               } finally {
                 setSubmitting(false);
               }

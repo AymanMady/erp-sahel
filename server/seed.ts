@@ -15,7 +15,7 @@
  */
 
 import "dotenv/config";
-import { eq, notInArray, sql } from "drizzle-orm";
+import { and, eq, notInArray, sql } from "drizzle-orm";
 
 import { MODULE_PRESETS } from "@shared/modules-catalog";
 import { computeDocumentTotals } from "@shared/pricing";
@@ -491,17 +491,11 @@ async function seedDemoData(company: Company, userId: string): Promise<void> {
   }
 
   // --- Cash and bank -------------------------------------------------------
+  // The company already has its bank account (created with it): give it a real name.
   await db
-    .insert(bankAccounts)
-    .values({
-      companyId: company.id,
-      code: "BMCI",
-      name: "BMCI — Compte courant",
-      accountType: "BANK",
-      accountNumber: "0001234567",
-      currency: company.currency,
-    })
-    .onConflictDoNothing();
+    .update(bankAccounts)
+    .set({ name: "BMCI — Compte courant", accountNumber: "0001234567" })
+    .where(and(eq(bankAccounts.companyId, company.id), eq(bankAccounts.code, "BANQUE")));
 
   logger.info("Demo data set installed", {
     products: createdProducts.length,

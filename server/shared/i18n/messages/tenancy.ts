@@ -11,6 +11,7 @@ export const tenancyMessages: MessageCatalog = {
     // Default names written when a company is created.
     "Main warehouse": "Magasin principal",
     "Main cash account": "Caisse principale",
+    "Bank account": "Compte bancaire",
     "Register {number}": "Caisse {number}",
   },
   ar: {
@@ -20,6 +21,7 @@ export const tenancyMessages: MessageCatalog = {
       "النطاق الفرعي: أحرف صغيرة وأرقام وشرطات فقط",
     "Main warehouse": "المخزن الرئيسي",
     "Main cash account": "الصندوق الرئيسي",
+    "Bank account": "الحساب البنكي",
     "Register {number}": "الصندوق {number}",
   },
 };

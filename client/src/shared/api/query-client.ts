@@ -61,6 +61,7 @@ export const queryKeys = {
   goodsReceipts: (filters?: unknown) => ["goods-receipts", filters ?? null] as const,
   supplierInvoices: (filters?: unknown) => ["supplier-invoices", filters ?? null] as const,
   bankAccounts: ["bank-accounts"] as const,
+  paymentAccounts: ["bank-accounts", "payment"] as const,
   bankTransactions: (filters?: unknown) => ["bank-transactions", filters ?? null] as const,
   treasury: ["treasury"] as const,
   posRegisters: ["pos-registers"] as const,

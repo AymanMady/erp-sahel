@@ -26,9 +26,7 @@
   "payment": {
     "title": "Recevoir un paiement",
     "remaining": "Reste à payer :",
-    "method": "Payé comment ?",
-    "account": "Argent reçu dans",
-    "defaultAccount": "Caisse ou compte habituel",
+    "account": "Où arrive l'argent ?",
     "referencePlaceholder": "Numéro du chèque, du virement ou de la transaction…",
     "submit": "Enregistrer le paiement",
     "savedOffline": "Paiement gardé sur cet appareil (pas d'internet).",

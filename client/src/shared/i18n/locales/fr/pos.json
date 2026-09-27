@@ -42,11 +42,13 @@
   "payment": {
     "title": "Paiement",
     "amountDue": "Le client doit payer :",
-    "method": "Payé comment ?",
+    "method": "Où arrive l'argent ?",
     "received": "Argent donné par le client",
     "change": "Monnaie à rendre",
     "offlineNotice": "Pas d'internet : la vente reçoit un numéro provisoire. Le vrai numéro arrive quand internet revient.",
-    "processing": "Paiement en cours…"
+    "processing": "Paiement en cours…",
+    "transactionNumber": "Numéro de la transaction (si vous l'avez)",
+    "transactionNumberHint": "Écrit dans le message reçu sur le téléphone"
   },
   "closeSession": {
     "title": "Fermer la caisse",

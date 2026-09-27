@@ -26,9 +26,7 @@
   "payment": {
     "title": "Receive a payment",
     "remaining": "Amount due:",
-    "method": "Paid how?",
-    "account": "Money received in",
-    "defaultAccount": "Usual cash box or account",
+    "account": "Where does the money go?",
     "referencePlaceholder": "Number of the cheque, bank transfer or transaction…",
     "submit": "Save the payment",
     "savedOffline": "Payment kept on this device (no internet).",

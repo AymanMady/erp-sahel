@@ -1,27 +1,34 @@
-/** Treasury: accounts (bank, cash, mobile money), transactions and reconciliation. */
+/**
+ * Cash and bank: one card per place where money is kept (register, bank, Bankily, Masrvi,
+ * Sedad), then the history of money in and out. Tapping a card shows only its history.
+ */
 
-import { useState } from "react";
-import { IconArrowsExchange, IconPlus } from "@tabler/icons-react";
+import { useEffect, useState } from "react";
+import {
+  IconArrowsExchange,
+  IconBuildingBank,
+  IconCash,
+  IconDeviceMobile,
+  IconPlus,
+} from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
-import { BANK_ACCOUNT_TYPES, BANK_TRANSACTION_TYPES } from "@shared/schema";
-import { formatDate, todayInput } from "@shared/format";
+import { BANK_TRANSACTION_TYPES, type BankAccountType } from "@shared/schema";
+import { formatDate, slugify, todayInput } from "@shared/format";
 import { errorMessage } from "@/shared/api/api-error";
 import { bankingApi } from "@/entities/banking/api";
 import type { BankAccount, BankTransaction } from "@/entities/types";
 import { queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
 import { Field, FieldGrid } from "@/shared/components/field";
-import { Money, useMoneyFormatter } from "@/shared/components/money";
+import { Money } from "@/shared/components/money";
 import { MoneyInput } from "@/shared/components/money-input";
 import { PageHeader } from "@/shared/components/page-header";
 import { ResourceTable, type Column } from "@/shared/components/resource-table";
-import { StatCard } from "@/shared/components/stat-card";
-import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
+import { cn } from "@/shared/lib/utils";
 import { Checkbox } from "@/shared/ui/checkbox";
 import {
   Dialog,
@@ -34,42 +41,49 @@ import {
 import { Input } from "@/shared/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 
-const ALL = "ALL";
-
 /** Translation keys (in the `banking` namespace) for each account type. */
-const ACCOUNT_TYPE_KEYS: Record<string, string> = {
-  BANK: "accountTypes.bank",
+const ACCOUNT_TYPE_KEYS: Record<BankAccountType, string> = {
   CASH: "accountTypes.cash",
   MOBILE_MONEY: "accountTypes.mobileMoney",
+  BANK: "accountTypes.bank",
 };
 
-/** Translation keys (in the `banking` namespace) for each transaction type. */
-const TRANSACTION_TYPE_KEYS: Record<string, string> = {
-  DEPOSIT: "transactionTypes.deposit",
-  WITHDRAWAL: "transactionTypes.withdrawal",
-  TRANSFER: "transactionTypes.transfer",
+const ACCOUNT_ICONS: Record<BankAccountType, typeof IconCash> = {
+  CASH: IconCash,
+  MOBILE_MONEY: IconDeviceMobile,
+  BANK: IconBuildingBank,
 };
+
+/** Register first, then phone payments, then banks — the order a shop thinks in. */
+const TYPE_ORDER: BankAccountType[] = ["CASH", "MOBILE_MONEY", "BANK"];
+
+/** The code the server needs, made from the name so nobody has to invent one. */
+function codeFromName(name: string, taken: Set<string>): string {
+  const base = slugify(name).toUpperCase().slice(0, 20) || "COMPTE";
+  let code = base;
+  for (let index = 2; taken.has(code); index += 1) code = `${base}-${index}`;
+  return code;
+}
 
 export default function BankingPage() {
   const { t } = useTranslation("banking");
   const queryClient = useQueryClient();
   const { can } = useSession();
-  const formatMoneyValue = useMoneyFormatter();
-  const [accountId, setAccountId] = useState(ALL);
+  const [accountId, setAccountId] = useState<string | null>(null);
   const [page, setPage] = useState({ limit: 25, offset: 0 });
   const [accountOpen, setAccountOpen] = useState(false);
   const [movementOpen, setMovementOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
 
-  const { data: accounts } = useQuery({
+  const { data: accountList } = useQuery({
     queryKey: queryKeys.bankAccounts,
     queryFn: () => bankingApi.listAccounts(),
   });
-  const { data: totals } = useQuery({
-    queryKey: queryKeys.treasury,
-    queryFn: () => bankingApi.totals(),
-  });
-  const filters = { bankAccountId: accountId === ALL ? null : accountId, ...page };
+  const accounts = [...(accountList ?? [])].sort(
+    (a, b) => TYPE_ORDER.indexOf(a.accountType) - TYPE_ORDER.indexOf(b.accountType)
+  );
+  const totalCents = accounts.reduce((sum, account) => sum + account.balanceCents, 0);
+  const filters = { bankAccountId: accountId, ...page };
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.bankTransactions(filters),
     queryFn: () => bankingApi.listTransactions(filters),
@@ -84,7 +98,13 @@ export default function BankingPage() {
     onError: (mutationError) => toast.error(errorMessage(mutationError)),
   });
 
-  const accountName = new Map((accounts ?? []).map((account) => [account.id, account.name]));
+  const accountName = new Map(accounts.map((account) => [account.id, account.name]));
+  const selectedAccount = accounts.find((account) => account.id === accountId) ?? null;
+
+  const selectAccount = (id: string | null) => {
+    setAccountId(id);
+    setPage((current) => ({ ...current, offset: 0 }));
+  };
 
   const columns: Column<BankTransaction>[] = [
     { id: "date", header: t("common:labels.date"), cell: (row) => formatDate(row.date) },
@@ -97,29 +117,33 @@ export default function BankingPage() {
     {
       id: "description",
       header: t("columns.label"),
-      cell: (row) => <span className="font-medium">{row.description}</span>,
-    },
-    {
-      id: "type",
-      header: t("common:labels.type"),
       cell: (row) => (
-        <Badge variant="outline">
-          {TRANSACTION_TYPE_KEYS[row.transactionType]
-            ? t(TRANSACTION_TYPE_KEYS[row.transactionType])
-            : row.transactionType}
-        </Badge>
+        <div className="min-w-0">
+          <p className="font-medium">{row.description}</p>
+          {row.reference ? (
+            <p className="tabular text-xs text-muted-foreground" dir="ltr">
+              {row.reference}
+            </p>
+          ) : null}
+        </div>
       ),
     },
     {
-      id: "reference",
-      header: t("common:labels.reference"),
-      hideOnMobile: true,
-      cell: (row) => <span className="tabular text-sm">{row.reference || "—"}</span>,
+      id: "amount",
+      header: t("columns.amount"),
+      align: "end",
+      cell: (row) => (
+        <Money
+          cents={row.transactionType === "WITHDRAWAL" ? -row.amountCents : row.amountCents}
+          tone="auto"
+        />
+      ),
     },
     {
       id: "reconciled",
       header: t("columns.reconciled"),
       align: "center",
+      hideOnMobile: true,
       cell: (row) =>
         can("banking.write") ? (
           <Checkbox
@@ -134,17 +158,6 @@ export default function BankingPage() {
         ) : (
           t("common:states.no")
         ),
-    },
-    {
-      id: "amount",
-      header: t("common:labels.amount"),
-      align: "end",
-      cell: (row) => (
-        <Money
-          cents={row.transactionType === "WITHDRAWAL" ? -row.amountCents : row.amountCents}
-          tone="auto"
-        />
-      ),
     },
   ];
 
@@ -168,58 +181,67 @@ export default function BankingPage() {
         ) : null}
       </PageHeader>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label={t("stats.total")} value={formatMoneyValue(totals?.totalCents ?? 0)} />
-        <StatCard label={t("stats.cash")} value={formatMoneyValue(totals?.cashCents ?? 0)} />
-        <StatCard label={t("stats.bank")} value={formatMoneyValue(totals?.bankCents ?? 0)} />
-        <StatCard label={t("stats.mobile")} value={formatMoneyValue(totals?.mobileCents ?? 0)} />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <button
+          type="button"
+          onClick={() => selectAccount(null)}
+          aria-pressed={accountId === null}
+          className={cn(
+            "rounded-lg border p-4 text-start transition-colors hover:bg-muted sm:col-span-2 lg:col-span-3",
+            accountId === null && "border-primary ring-1 ring-primary"
+          )}
+        >
+          <p className="text-sm text-muted-foreground">{t("stats.total")}</p>
+          <p className="mt-1 text-2xl font-semibold">
+            <Money cents={totalCents} />
+          </p>
+        </button>
+        {accounts.map((account) => {
+          const Icon = ACCOUNT_ICONS[account.accountType];
+          const selected = account.id === accountId;
+          return (
+            <button
+              key={account.id}
+              type="button"
+              onClick={() => selectAccount(selected ? null : account.id)}
+              aria-pressed={selected}
+              className={cn(
+                "flex items-center gap-3 rounded-lg border p-4 text-start transition-colors hover:bg-muted",
+                selected && "border-primary ring-1 ring-primary"
+              )}
+            >
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
+                <Icon className="size-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium">{account.name}</span>
+                <span className="block text-lg font-semibold">
+                  <Money cents={account.balanceCents} />
+                </span>
+              </span>
+            </button>
+          );
+        })}
+        {accounts.length === 0 ? (
+          <p className="col-span-full py-6 text-center text-sm text-muted-foreground">
+            {t("accounts.empty")}
+          </p>
+        ) : null}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("accounts.title")}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {(accounts ?? []).map((account) => (
-            <div key={account.id} className="rounded-lg border p-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{account.name}</p>
-                  <p className="tabular text-xs text-muted-foreground">{account.code}</p>
-                </div>
-                <Badge variant="outline">
-                  {ACCOUNT_TYPE_KEYS[account.accountType]
-                    ? t(ACCOUNT_TYPE_KEYS[account.accountType])
-                    : account.accountType}
-                </Badge>
-              </div>
-              <p className="mt-2 text-lg font-semibold">
-                <Money cents={account.balanceCents} />
-              </p>
-            </div>
-          ))}
-          {(accounts?.length ?? 0) === 0 ? (
-            <p className="col-span-full py-6 text-center text-sm text-muted-foreground">
-              {t("accounts.empty")}
-            </p>
-          ) : null}
-        </CardContent>
-      </Card>
-
       <div className="space-y-3">
-        <Select value={accountId} onValueChange={setAccountId}>
-          <SelectTrigger className="sm:w-[260px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>{t("filters.allAccounts")}</SelectItem>
-            {(accounts ?? []).map((account) => (
-              <SelectItem key={account.id} value={account.id}>
-                {account.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-base font-semibold">
+            {selectedAccount
+              ? t("history.ofAccount", { name: selectedAccount.name })
+              : t("history.all")}
+          </h2>
+          {selectedAccount ? (
+            <Button variant="ghost" size="sm" onClick={() => selectAccount(null)}>
+              {t("history.showAll")}
+            </Button>
+          ) : null}
+        </div>
 
         <ResourceTable
           columns={columns}
@@ -235,21 +257,18 @@ export default function BankingPage() {
             offset: page.offset,
             onChange: setPage,
           }}
-          minWidthClassName="min-w-[900px]"
+          minWidthClassName="min-w-[640px]"
         />
       </div>
 
-      <AccountDialog open={accountOpen} onOpenChange={setAccountOpen} />
+      <AccountDialog open={accountOpen} onOpenChange={setAccountOpen} accounts={accounts} />
       <MovementDialog
         open={movementOpen}
         onOpenChange={setMovementOpen}
-        accounts={accounts ?? []}
+        accounts={accounts}
+        defaultAccountId={accountId}
       />
-      <TransferDialog
-        open={transferOpen}
-        onOpenChange={setTransferOpen}
-        accounts={accounts ?? []}
-      />
+      <TransferDialog open={transferOpen} onOpenChange={setTransferOpen} accounts={accounts} />
     </div>
   );
 }
@@ -257,27 +276,34 @@ export default function BankingPage() {
 function AccountDialog({
   open,
   onOpenChange,
+  accounts,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  accounts: BankAccount[];
 }) {
   const { t } = useTranslation("banking");
   const queryClient = useQueryClient();
-  const [form, setForm] = useState({
-    code: "",
+  const emptyForm = {
     name: "",
-    accountType: "BANK" as (typeof BANK_ACCOUNT_TYPES)[number],
+    accountType: "MOBILE_MONEY" as BankAccountType,
     accountNumber: "",
-    iban: "",
     isDefault: false,
-  });
+  };
+  const [form, setForm] = useState(emptyForm);
 
   const mutation = useMutation({
-    mutationFn: () => bankingApi.createAccount(form),
+    mutationFn: () =>
+      bankingApi.createAccount({
+        ...form,
+        name: form.name.trim(),
+        code: codeFromName(form.name, new Set(accounts.map((account) => account.code))),
+      }),
     onSuccess: () => {
       toast.success(t("toasts.accountCreated"));
       void queryClient.invalidateQueries({ queryKey: queryKeys.bankAccounts });
       void queryClient.invalidateQueries({ queryKey: queryKeys.treasury });
+      setForm(emptyForm);
       onOpenChange(false);
     },
     onError: (error) => toast.error(errorMessage(error)),
@@ -296,60 +322,47 @@ function AccountDialog({
             mutation.mutate();
           }}
         >
-          <FieldGrid>
-            <Field label={t("common:labels.code")} required>
-              <Input
-                value={form.code}
-                onChange={(event) => setForm({ ...form, code: event.target.value.toUpperCase() })}
-                required
-                className="tabular"
-              />
-            </Field>
-            <Field label={t("common:labels.type")}>
-              <Select
-                value={form.accountType}
-                onValueChange={(value) =>
-                  setForm({ ...form, accountType: value as (typeof BANK_ACCOUNT_TYPES)[number] })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {BANK_ACCOUNT_TYPES.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {t(ACCOUNT_TYPE_KEYS[type])}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-          </FieldGrid>
+          <Field label={t("accountDialog.kind")}>
+            <div className="grid grid-cols-3 gap-2">
+              {TYPE_ORDER.map((type) => {
+                const Icon = ACCOUNT_ICONS[type];
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    aria-pressed={form.accountType === type}
+                    onClick={() => setForm({ ...form, accountType: type })}
+                    className={cn(
+                      "flex flex-col items-center gap-1 rounded-md border p-3 text-center text-xs font-medium transition-colors",
+                      form.accountType === type
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "hover:bg-muted"
+                    )}
+                  >
+                    <Icon className="size-5" />
+                    {t(ACCOUNT_TYPE_KEYS[type])}
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
           <Field label={t("common:labels.name")} required>
             <Input
               value={form.name}
               onChange={(event) => setForm({ ...form, name: event.target.value })}
+              placeholder={t(`accountDialog.namePlaceholder.${form.accountType}`)}
               required
             />
           </Field>
           {form.accountType === "BANK" ? (
-            <FieldGrid>
-              <Field label={t("accountDialog.accountNumber")}>
-                <Input
-                  value={form.accountNumber}
-                  onChange={(event) => setForm({ ...form, accountNumber: event.target.value })}
-                  className="tabular"
-                />
-              </Field>
-              <Field label={t("accountDialog.iban")}>
-                <Input
-                  value={form.iban}
-                  onChange={(event) => setForm({ ...form, iban: event.target.value })}
-                  className="tabular"
-                  dir="ltr"
-                />
-              </Field>
-            </FieldGrid>
+            <Field label={t("accountDialog.accountNumber")}>
+              <Input
+                value={form.accountNumber}
+                onChange={(event) => setForm({ ...form, accountNumber: event.target.value })}
+                className="tabular"
+                dir="ltr"
+              />
+            </Field>
           ) : null}
           <label className="flex items-center gap-2 text-sm">
             <Checkbox
@@ -362,7 +375,7 @@ function AccountDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t("common:actions.cancel")}
             </Button>
-            <Button type="submit" disabled={mutation.isPending}>
+            <Button type="submit" disabled={mutation.isPending || !form.name.trim()}>
               {t("common:actions.create")}
             </Button>
           </DialogFooter>
@@ -376,10 +389,12 @@ function MovementDialog({
   open,
   onOpenChange,
   accounts,
+  defaultAccountId,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   accounts: BankAccount[];
+  defaultAccountId: string | null;
 }) {
   const { t } = useTranslation("banking");
   const queryClient = useQueryClient();
@@ -403,6 +418,10 @@ function MovementDialog({
     },
     onError: (error) => toast.error(errorMessage(error)),
   });
+
+  useEffect(() => {
+    if (open) setForm((current) => ({ ...current, bankAccountId: defaultAccountId ?? "" }));
+  }, [open, defaultAccountId]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

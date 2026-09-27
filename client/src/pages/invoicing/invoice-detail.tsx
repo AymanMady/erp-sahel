@@ -13,7 +13,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "wouter";
 import { toast } from "sonner";
 
-import { PAYMENT_METHODS, type PaymentMethod } from "@shared/schema";
 import { todayInput } from "@shared/format";
 import { errorMessage } from "@/shared/api/api-error";
 import { bankingApi } from "@/entities/banking/api";
@@ -23,6 +22,10 @@ import { onlineOrQueued, queuePaymentCreate } from "@/shared/offline/offline-wri
 import { queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
 import { DocumentView } from "@/features/documents/document-view";
+import {
+  PaymentAccountPicker,
+  usePaymentChoices,
+} from "@/features/payment-account/payment-account-picker";
 import { Field, FieldGrid } from "@/shared/components/field";
 import { Money } from "@/shared/components/money";
 import { MoneyInput } from "@/shared/components/money-input";
@@ -40,11 +43,8 @@ import {
   DialogTitle,
 } from "@/shared/ui/dialog";
 import { Input } from "@/shared/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { Textarea } from "@/shared/ui/textarea";
-
-const DEFAULT_ACCOUNT = "DEFAULT";
 
 export default function InvoiceDetailPage() {
   const { t } = useTranslation("invoicing");
@@ -222,16 +222,17 @@ function PaymentDialog({
 }) {
   const { t } = useTranslation("invoicing");
   const [amountCents, setAmountCents] = useState(remainingCents);
-  const [method, setMethod] = useState<PaymentMethod>("CASH");
-  const [bankAccountId, setBankAccountId] = useState(DEFAULT_ACCOUNT);
+  const [choiceKey, setChoiceKey] = useState<string | null>(null);
   const [reference, setReference] = useState("");
   const [paymentDate, setPaymentDate] = useState(todayInput());
 
   const { data: accounts } = useQuery({
-    queryKey: queryKeys.bankAccounts,
-    queryFn: () => bankingApi.listAccounts(),
+    queryKey: queryKeys.paymentAccounts,
+    queryFn: () => bankingApi.listPaymentAccounts(),
     enabled: open,
   });
+  const choices = usePaymentChoices(accounts);
+  const choice = choices.find((entry) => entry.key === choiceKey) ?? choices[0];
 
   const mutation = useMutation({
     mutationFn: () => {
@@ -239,8 +240,8 @@ function PaymentDialog({
         partyId,
         invoiceId,
         amountCents,
-        paymentMethod: method,
-        bankAccountId: bankAccountId === DEFAULT_ACCOUNT ? null : bankAccountId,
+        paymentMethod: choice.method,
+        bankAccountId: choice.bankAccountId,
         reference,
         paymentDate,
       };
@@ -284,36 +285,14 @@ function PaymentDialog({
                 onChange={(event) => setPaymentDate(event.target.value)}
               />
             </Field>
-            <Field label={t("payment.method")}>
-              <Select value={method} onValueChange={(value) => setMethod(value as PaymentMethod)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PAYMENT_METHODS.map((entry) => (
-                    <SelectItem key={entry} value={entry}>
-                      {paymentMethodLabel(entry)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label={t("payment.account")}>
-              <Select value={bankAccountId} onValueChange={setBankAccountId}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={DEFAULT_ACCOUNT}>{t("payment.defaultAccount")}</SelectItem>
-                  {(accounts ?? []).map((account) => (
-                    <SelectItem key={account.id} value={account.id}>
-                      {account.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
           </FieldGrid>
+          <Field label={t("payment.account")}>
+            <PaymentAccountPicker
+              choices={choices}
+              value={choice.key}
+              onChange={(entry) => setChoiceKey(entry.key)}
+            />
+          </Field>
           <Field label={t("common:labels.reference")}>
             <Input
               value={reference}

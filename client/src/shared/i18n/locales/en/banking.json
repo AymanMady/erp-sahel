@@ -15,7 +15,8 @@
   "columns": {
     "account": "Cash box or account",
     "label": "Description",
-    "reconciled": "Checked"
+    "reconciled": "Checked",
+    "amount": "Money in (+) or out (−)"
   },
   "actions": {
     "transfer": "Move money",
@@ -23,17 +24,10 @@
     "newAccount": "New cash box or new account"
   },
   "stats": {
-    "total": "All the money",
-    "cash": "Cash",
-    "bank": "Bank",
-    "mobile": "Bankily, Masrvi, Sedad"
+    "total": "All the money"
   },
   "accounts": {
-    "title": "Cash boxes and accounts",
     "empty": "No cash box or account. Add one to record payments."
-  },
-  "filters": {
-    "allAccounts": "All cash boxes and all accounts"
   },
   "empty": {
     "title": "No money in or out",
@@ -42,8 +36,13 @@
   "accountDialog": {
     "title": "New cash box or new account",
     "accountNumber": "Account number",
-    "iban": "International account number (if the bank gives one)",
-    "isDefault": "Use by default for this type of payment"
+    "isDefault": "Use by default for this type of payment",
+    "kind": "What is it?",
+    "namePlaceholder": {
+      "CASH": "For example: Second shop cash box",
+      "MOBILE_MONEY": "For example: Owner's Bankily",
+      "BANK": "For example: BMCI, BNM, Attijari…"
+    }
   },
   "movementDialog": {
     "title": "Money in or money out",
@@ -64,5 +63,13 @@
     "accountCreated": "Added.",
     "movementSaved": "Saved.",
     "transferDone": "Money moved."
+  },
+  "picker": {
+    "cash": "Cash"
+  },
+  "history": {
+    "all": "All money in and out",
+    "ofAccount": "Money in and out: {{name}}",
+    "showAll": "Show all"
   }
 }

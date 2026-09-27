@@ -22,6 +22,10 @@ export class BankingService {
     return bankAccountsRepository.listAll(companyId, { orderBy: [asc(bankAccounts.name)] });
   }
 
+  async listPaymentAccounts(companyId: string) {
+    return bankingRepository.listPaymentAccounts(companyId);
+  }
+
   async getAccount(companyId: string, id: unknown) {
     const { id: accountId } = idParamSchema.parse({ id });
     return bankAccountsRepository.requireById(companyId, accountId);

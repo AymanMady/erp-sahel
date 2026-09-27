@@ -42,11 +42,13 @@
   "payment": {
     "title": "Payment",
     "amountDue": "The customer must pay:",
-    "method": "Paid how?",
+    "method": "Where does the money go?",
     "received": "Money given by the customer",
     "change": "Change due",
     "offlineNotice": "No internet: the sale gets a temporary number. The real number comes when internet comes back.",
-    "processing": "Paying…"
+    "processing": "Paying…",
+    "transactionNumber": "Transaction number (if you have it)",
+    "transactionNumberHint": "Written in the message received on the phone"
   },
   "closeSession": {
     "title": "Close the cash register",

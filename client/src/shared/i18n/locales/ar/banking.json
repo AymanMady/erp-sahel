@@ -15,7 +15,8 @@
   "columns": {
     "account": "الصندوق أو الحساب",
     "label": "الوصف",
-    "reconciled": "تم التحقق"
+    "reconciled": "تم التحقق",
+    "amount": "مال داخل (+) أو خارج (−)"
   },
   "actions": {
     "transfer": "نقل المال",
@@ -23,17 +24,10 @@
     "newAccount": "صندوق جديد أو حساب جديد"
   },
   "stats": {
-    "total": "كل المال",
-    "cash": "الصندوق",
-    "bank": "البنك",
-    "mobile": "Bankily، Masrvi، Sedad"
+    "total": "كل المال"
   },
   "accounts": {
-    "title": "الصناديق والحسابات",
     "empty": "لا يوجد صندوق ولا حساب. أضف واحدًا لتسجيل المدفوعات."
-  },
-  "filters": {
-    "allAccounts": "كل الصناديق وكل الحسابات"
   },
   "empty": {
     "title": "لا يوجد دخول ولا خروج",
@@ -42,8 +36,13 @@
   "accountDialog": {
     "title": "صندوق جديد أو حساب جديد",
     "accountNumber": "رقم الحساب",
-    "iban": "رقم الحساب الدولي (إذا أعطاه البنك)",
-    "isDefault": "يُستعمل دائمًا لهذا النوع من الدفع"
+    "isDefault": "يُستعمل دائمًا لهذا النوع من الدفع",
+    "kind": "ما هو؟",
+    "namePlaceholder": {
+      "CASH": "مثال: صندوق المحل الثاني",
+      "MOBILE_MONEY": "مثال: Bankily صاحب المحل",
+      "BANK": "مثال: BMCI، BNM، التجاري…"
+    }
   },
   "movementDialog": {
     "title": "دخول أو خروج مال",
@@ -64,5 +63,13 @@
     "accountCreated": "تمت الإضافة.",
     "movementSaved": "تم الحفظ.",
     "transferDone": "تم نقل المال."
+  },
+  "picker": {
+    "cash": "نقدًا"
+  },
+  "history": {
+    "all": "كل المال الداخل والخارج",
+    "ofAccount": "المال الداخل والخارج: {{name}}",
+    "showAll": "عرض الكل"
   }
 }

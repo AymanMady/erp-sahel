@@ -8,11 +8,21 @@ import { BankingController } from "./controller";
 
 const canRead = authorize({ anyPermission: ["banking.read"] });
 const canWrite = authorize({ anyPermission: ["banking.write"] });
+/** Whoever takes a payment must be able to say where the money went, without seeing balances. */
+const canTakePayment = authorize({
+  anyPermission: ["banking.read", "payments.write", "pos.use"],
+});
 
 export function registerBankingRoutes(app: Express): void {
   const controller = new BankingController();
 
   app.get("/api/banking/totals", requireAuth, canRead, asyncHandler(controller.totals));
+  app.get(
+    "/api/banking/payment-accounts",
+    requireAuth,
+    canTakePayment,
+    asyncHandler(controller.listPaymentAccounts)
+  );
   app.get("/api/banking/accounts", requireAuth, canRead, asyncHandler(controller.listAccounts));
   app.get("/api/banking/accounts/:id", requireAuth, canRead, asyncHandler(controller.getAccount));
   app.post("/api/banking/accounts", requireAuth, canWrite, asyncHandler(controller.createAccount));

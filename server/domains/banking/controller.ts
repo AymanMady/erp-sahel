@@ -12,6 +12,10 @@ export class BankingController {
     res.json(await this.service.listAccounts(authOf(req).companyId));
   };
 
+  listPaymentAccounts = async (req: Request, res: Response): Promise<void> => {
+    res.json(await this.service.listPaymentAccounts(authOf(req).companyId));
+  };
+
   getAccount = async (req: Request, res: Response): Promise<void> => {
     res.json(await this.service.getAccount(authOf(req).companyId, req.params.id));
   };

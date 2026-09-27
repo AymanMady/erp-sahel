@@ -34,6 +34,8 @@ export interface TicketPayment {
   method: PaymentMethod;
   amountCents: number;
   reference?: string;
+  /** Cash, bank or phone payment account chosen by the cashier; `null` = register cash. */
+  bankAccountId?: string | null;
 }
 
 export interface CheckoutInput {
@@ -98,6 +100,7 @@ async function checkoutOnline(input: CheckoutInput): Promise<CheckoutResult> {
       method: payment.method,
       amountCents: payment.amountCents,
       reference: payment.reference,
+      bankAccountId: payment.bankAccountId ?? null,
     })),
   });
   return {
@@ -150,6 +153,7 @@ async function checkoutOffline(input: CheckoutInput): Promise<CheckoutResult> {
         invoiceClientUuid,
         posSessionId: input.sessionClientUuid ? null : input.sessionId,
         posSessionClientUuid: input.sessionClientUuid ?? null,
+        bankAccountId: payment.bankAccountId ?? null,
         amountCents: payment.amountCents,
         paymentDate: todayInput(),
         paymentMethod: payment.method,

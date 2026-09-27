@@ -198,6 +198,7 @@ async function prefetch(): Promise<void> {
 
     // Treasury and accounting.
     () => bankingApi.listAccounts(),
+    () => bankingApi.listPaymentAccounts(),
     ...when("banking", [() => bankingApi.totals(), () => bankingApi.listTransactions(page)]),
     ...when("accounting", [
       () => accountingApi.listAccounts(),

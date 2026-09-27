@@ -3,14 +3,15 @@
  *
  * Creating a company is not a plain `INSERT`: without a chart of accounts, a warehouse
  * and journals, no invoice can be validated. Bootstrapping is therefore part of the use
- * case, in the same transaction. Default names (warehouse, cash account, register,
- * accounts, journals) are written in the company's language, or the creator's.
+ * case, in the same transaction. Default names (warehouse, cash and bank accounts,
+ * register, accounts, journals) are written in the company's language, or the creator's.
  */
 
 import {
   bankAccounts,
   posRegisters,
   warehouses,
+  type BankAccountType,
   type Company,
   type InsertCompany,
 } from "@shared/schema";
@@ -24,6 +25,39 @@ import { moduleRegistry } from "../plugins/registry";
 import { companiesRepository } from "./repository";
 
 const SIMPLE_PRESET = MODULE_PRESETS.find((preset) => preset.code === "simple")!;
+
+/** Cash and bank accounts every new company starts with. Brand names are never translated. */
+const DEFAULT_TREASURY_ACCOUNTS: {
+  code: string;
+  name: string;
+  translate: boolean;
+  accountType: BankAccountType;
+  isDefault: boolean;
+}[] = [
+  {
+    code: "CAISSE",
+    name: "Main cash account",
+    translate: true,
+    accountType: "CASH",
+    isDefault: true,
+  },
+  { code: "BANQUE", name: "Bank account", translate: true, accountType: "BANK", isDefault: true },
+  {
+    code: "BANKILY",
+    name: "Bankily",
+    translate: false,
+    accountType: "MOBILE_MONEY",
+    isDefault: true,
+  },
+  {
+    code: "MASRVI",
+    name: "Masrvi",
+    translate: false,
+    accountType: "MOBILE_MONEY",
+    isDefault: false,
+  },
+  { code: "SEDAD", name: "Sedad", translate: false, accountType: "MOBILE_MONEY", isDefault: false },
+];
 
 /** `language` as a supported locale, or `null` when it is missing or unsupported. */
 function asLocale(language: string | null | undefined): Locale | null {
@@ -79,18 +113,24 @@ class TenancyApplication {
       .onConflictDoNothing()
       .returning();
 
-    const [cashAccount] = await tx
+    // The places where a Mauritanian shop receives money, ready from day one: the
+    // register, a bank account and the three phone payment services. The first of each
+    // type is the default one used when a payment does not name its account.
+    const treasuryAccounts = await tx
       .insert(bankAccounts)
-      .values({
-        companyId: company.id,
-        code: "CAISSE",
-        name: tr("Main cash account", undefined, locale),
-        accountType: "CASH",
-        currency: CURRENCY,
-        isDefault: true,
-      })
+      .values(
+        DEFAULT_TREASURY_ACCOUNTS.map((account) => ({
+          companyId: company.id,
+          code: account.code,
+          name: account.translate ? tr(account.name, undefined, locale) : account.name,
+          accountType: account.accountType,
+          currency: CURRENCY,
+          isDefault: account.isDefault,
+        }))
+      )
       .onConflictDoNothing()
       .returning();
+    const cashAccount = treasuryAccounts.find((account) => account.code === "CAISSE");
 
     if (warehouse) {
       await tx

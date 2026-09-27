@@ -1,6 +1,6 @@
 /** Treasury persistence: accounts and transactions. */
 
-import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lte, sql } from "drizzle-orm";
 
 import {
   bankAccounts,
@@ -41,6 +41,21 @@ export class BankingRepository {
       .orderBy(desc(bankAccounts.isDefault))
       .limit(1);
     return row ?? null;
+  }
+
+  /** Active accounts a payment can be recorded on — no balance, safe for cashiers. */
+  async listPaymentAccounts(companyId: string) {
+    return this.database
+      .select({
+        id: bankAccounts.id,
+        code: bankAccounts.code,
+        name: bankAccounts.name,
+        accountType: bankAccounts.accountType,
+        isDefault: bankAccounts.isDefault,
+      })
+      .from(bankAccounts)
+      .where(and(eq(bankAccounts.companyId, companyId), eq(bankAccounts.isActive, true)))
+      .orderBy(asc(bankAccounts.name));
   }
 
   async insertTransaction(values: typeof bankTransactions.$inferInsert): Promise<BankTransaction> {

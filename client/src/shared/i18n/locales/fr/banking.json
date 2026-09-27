@@ -15,7 +15,8 @@
   "columns": {
     "account": "Caisse ou compte",
     "label": "Description",
-    "reconciled": "Vérifié"
+    "reconciled": "Vérifié",
+    "amount": "Argent entré (+) ou sorti (−)"
   },
   "actions": {
     "transfer": "Déplacer de l'argent",
@@ -23,17 +24,10 @@
     "newAccount": "Nouvelle caisse ou nouveau compte"
   },
   "stats": {
-    "total": "Tout l'argent",
-    "cash": "Caisse",
-    "bank": "Banque",
-    "mobile": "Bankily, Masrvi, Sedad"
+    "total": "Tout l'argent"
   },
   "accounts": {
-    "title": "Caisses et comptes",
     "empty": "Aucune caisse ni compte. Ajoutez-en un pour enregistrer les paiements."
-  },
-  "filters": {
-    "allAccounts": "Toutes les caisses et tous les comptes"
   },
   "empty": {
     "title": "Aucune entrée ni sortie",
@@ -42,8 +36,13 @@
   "accountDialog": {
     "title": "Nouvelle caisse ou nouveau compte",
     "accountNumber": "Numéro de compte",
-    "iban": "Numéro international du compte (si la banque le donne)",
-    "isDefault": "À utiliser par défaut pour ce type de paiement"
+    "isDefault": "À utiliser par défaut pour ce type de paiement",
+    "kind": "C'est quoi ?",
+    "namePlaceholder": {
+      "CASH": "Par exemple : Caisse du deuxième magasin",
+      "MOBILE_MONEY": "Par exemple : Bankily du patron",
+      "BANK": "Par exemple : BMCI, BNM, Attijari…"
+    }
   },
   "movementDialog": {
     "title": "Entrée ou sortie d'argent",
@@ -64,5 +63,13 @@
     "accountCreated": "Ajouté.",
     "movementSaved": "Enregistré.",
     "transferDone": "Argent déplacé."
+  },
+  "picker": {
+    "cash": "Espèces"
+  },
+  "history": {
+    "all": "Tout l'argent entré et sorti",
+    "ofAccount": "Argent entré et sorti : {{name}}",
+    "showAll": "Voir tout"
   }
 }
