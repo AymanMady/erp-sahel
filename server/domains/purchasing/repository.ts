@@ -244,8 +244,7 @@ export class PurchasingRepository {
     const [row] = await this.database
       .select({
         orderCount: sql<number>`count(*)::int`,
-        totalHtCents: sql<number>`coalesce(sum(${purchaseOrders.totalHtCents}), 0)::int`,
-        totalTtcCents: sql<number>`coalesce(sum(${purchaseOrders.totalTtcCents}), 0)::int`,
+        totalCents: sql<number>`coalesce(sum(${purchaseOrders.totalCents}), 0)::int`,
       })
       .from(purchaseOrders)
       .where(
@@ -257,8 +256,7 @@ export class PurchasingRepository {
       );
     return {
       orderCount: row?.orderCount ?? 0,
-      totalHtCents: row?.totalHtCents ?? 0,
-      totalTtcCents: row?.totalTtcCents ?? 0,
+      totalCents: row?.totalCents ?? 0,
     };
   }
 }

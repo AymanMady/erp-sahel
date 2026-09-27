@@ -4,9 +4,8 @@
     "description": "Identity, taxation and accounting framework.",
     "saved": "Settings saved.",
     "identity": "Identity",
-    "taxAccounting": "Taxation and accounting",
-    "taxAccountingDescription": "The accounting framework determines the chart installed; the accounts used by automatic postings remain editable in the chart of accounts.",
-    "vatEnabled": "Company subject to VAT",
+    "accounting": "Accounting",
+    "accountingDescription": "The accounting framework determines the chart installed; the accounts used by automatic postings remain editable in the chart of accounts.",
     "fields": {
       "name": "Trade name",
       "legalName": "Legal name",
@@ -16,7 +15,6 @@
       "country": "Country",
       "currencyHint": "Three-letter ISO code.",
       "accountingStandard": "Accounting framework",
-      "defaultVatRate": "Default VAT rate",
       "fiscalYearStart": "Fiscal year start"
     },
     "logo": {

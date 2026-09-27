@@ -24,7 +24,7 @@ export const parties = pgTable(
     email: text("email").default("").notNull(),
     phone: text("phone").default("").notNull(),
     /** Tax identification number (NIF) — search criterion [FR-TIERS-4]. */
-    vatNumber: text("vat_number").default("").notNull(),
+    taxId: text("tax_id").default("").notNull(),
     creditLimitCents: moneyCents("credit_limit_cents").default(0).notNull(),
     /** Payment terms in days (due date = document date + N days). */
     paymentTermsDays: integer("payment_terms_days").default(0).notNull(),

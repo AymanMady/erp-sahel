@@ -4,7 +4,7 @@ import { pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { baseColumns, moneyCents, rateBp } from "./_base";
+import { baseColumns, moneyCents } from "./_base";
 import { companies } from "./tenancy";
 
 export const BILLING_TYPES = ["HOURLY", "DAILY", "FLAT"] as const;
@@ -22,7 +22,6 @@ export const services = pgTable(
     description: text("description").default("").notNull(),
     billingType: text("billing_type").$type<BillingType>().default("HOURLY").notNull(),
     priceCents: moneyCents("price_cents").default(0).notNull(),
-    vatRateBp: rateBp("vat_rate_bp").default(0).notNull(),
   },
   (table) => [uniqueIndex("uq_services_company_code").on(table.companyId, table.code)]
 );

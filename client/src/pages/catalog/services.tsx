@@ -13,8 +13,8 @@ import type { Service } from "@/entities/types";
 import { queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
 import { Field, FieldGrid } from "@/shared/components/field";
-import { Money, Rate } from "@/shared/components/money";
-import { MoneyInput, RateInput } from "@/shared/components/money-input";
+import { Money } from "@/shared/components/money";
+import { MoneyInput } from "@/shared/components/money-input";
 import { PageHeader } from "@/shared/components/page-header";
 import { ResourceTable, type Column } from "@/shared/components/resource-table";
 import { SearchInput } from "@/shared/components/search-input";
@@ -36,7 +36,7 @@ const BILLING_LABEL_KEYS: Record<string, string> = {
 export default function ServicesPage() {
   const { t } = useTranslation("catalog");
   const queryClient = useQueryClient();
-  const { can, company } = useSession();
+  const { can } = useSession();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState({ limit: 25, offset: 0 });
   const [editing, setEditing] = useState<Service | null>(null);
@@ -89,15 +89,8 @@ export default function ServicesPage() {
       ),
     },
     {
-      id: "vat",
-      header: t("services.vat"),
-      align: "end",
-      hideOnMobile: true,
-      cell: (row) => <Rate bp={row.vatRateBp} />,
-    },
-    {
       id: "price",
-      header: t("services.priceExclTax"),
+      header: t("services.price"),
       align: "end",
       cell: (row) => <Money cents={row.priceCents} />,
     },
@@ -170,7 +163,6 @@ export default function ServicesPage() {
           }
         }}
         service={editing}
-        defaultVatRateBp={company?.defaultVatRateBp ?? 0}
       />
     </div>
   );
@@ -180,12 +172,10 @@ function ServiceDialog({
   open,
   onOpenChange,
   service,
-  defaultVatRateBp,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   service: Service | null;
-  defaultVatRateBp: number;
 }) {
   const { t } = useTranslation("catalog");
   const queryClient = useQueryClient();
@@ -195,7 +185,6 @@ function ServiceDialog({
     description: "",
     billingType: "HOURLY" as (typeof BILLING_TYPES)[number],
     priceCents: 0,
-    vatRateBp: defaultVatRateBp,
   });
 
   const key = service?.id ?? "new";
@@ -208,7 +197,6 @@ function ServiceDialog({
       description: service?.description ?? "",
       billingType: (service?.billingType ?? "HOURLY") as (typeof BILLING_TYPES)[number],
       priceCents: service?.priceCents ?? 0,
-      vatRateBp: service?.vatRateBp ?? defaultVatRateBp,
     });
   }
 
@@ -273,16 +261,10 @@ function ServiceDialog({
             />
           </Field>
           <FieldGrid>
-            <Field label={t("services.priceExclTax")}>
+            <Field label={t("services.price")}>
               <MoneyInput
                 valueCents={form.priceCents}
                 onChange={(cents) => setForm({ ...form, priceCents: cents })}
-              />
-            </Field>
-            <Field label={t("productForm.vatRate")}>
-              <RateInput
-                valueBp={form.vatRateBp}
-                onChange={(bp) => setForm({ ...form, vatRateBp: bp })}
               />
             </Field>
           </FieldGrid>

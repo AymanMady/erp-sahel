@@ -19,7 +19,6 @@
     "empty": "The cart is empty.",
     "decrease": "Decrease",
     "increase": "Increase",
-    "vat": "VAT",
     "lastTicket": "Ticket {{number}} paid.",
     "lastTicketOffline": "Ticket {{number}} paid (offline, awaiting synchronization).",
     "checkout": "Charge {{amount}}"

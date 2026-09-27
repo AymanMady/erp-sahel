@@ -14,13 +14,11 @@ import { useSession } from "@/shared/auth/session";
 import { currentIntlLocale } from "@/shared/i18n";
 import { Field, FieldGrid } from "@/shared/components/field";
 import { PageHeader } from "@/shared/components/page-header";
-import { RateInput } from "@/shared/components/money-input";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Input } from "@/shared/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { Skeleton } from "@/shared/ui/skeleton";
-import { Switch } from "@/shared/ui/switch";
 import { Textarea } from "@/shared/ui/textarea";
 
 /** Month names of the UI language (January first), for the fiscal-year start. */
@@ -52,8 +50,6 @@ export default function CompanySettingsPage() {
     logo: "" as string | null,
     currency: "MRU",
     accountingStandard: "OHADA" as (typeof ACCOUNTING_STANDARDS)[number],
-    vatEnabled: true,
-    defaultVatRateBp: 1600,
     fiscalYearStartMonth: 1,
   });
 
@@ -77,8 +73,6 @@ export default function CompanySettingsPage() {
       logo: data.logo,
       currency: data.currency,
       accountingStandard: data.accountingStandard,
-      vatEnabled: data.vatEnabled,
-      defaultVatRateBp: data.defaultVatRateBp,
       fiscalYearStartMonth: data.fiscalYearStartMonth,
     });
   }, [data]);
@@ -200,8 +194,8 @@ export default function CompanySettingsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>{t("company.taxAccounting")}</CardTitle>
-              <CardDescription>{t("company.taxAccountingDescription")}</CardDescription>
+              <CardTitle>{t("company.accounting")}</CardTitle>
+              <CardDescription>{t("company.accountingDescription")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <FieldGrid>
@@ -238,13 +232,6 @@ export default function CompanySettingsPage() {
                     </SelectContent>
                   </Select>
                 </Field>
-                <Field label={t("company.fields.defaultVatRate")}>
-                  <RateInput
-                    valueBp={form.defaultVatRateBp}
-                    onChange={(bp) => setForm({ ...form, defaultVatRateBp: bp })}
-                    disabled={readOnly}
-                  />
-                </Field>
                 <Field label={t("company.fields.fiscalYearStart")}>
                   <Select
                     value={String(form.fiscalYearStartMonth)}
@@ -266,17 +253,6 @@ export default function CompanySettingsPage() {
                   </Select>
                 </Field>
               </FieldGrid>
-              <div className="flex items-center gap-3">
-                <Switch
-                  id="vat"
-                  checked={form.vatEnabled}
-                  onCheckedChange={(checked) => setForm({ ...form, vatEnabled: checked })}
-                  disabled={readOnly}
-                />
-                <label htmlFor="vat" className="text-sm">
-                  {t("company.vatEnabled")}
-                </label>
-              </div>
             </CardContent>
           </Card>
         </div>

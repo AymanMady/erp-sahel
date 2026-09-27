@@ -54,7 +54,7 @@
   },
   "supplierInvoices": {
     "title": "Factures fournisseurs",
-    "description": "Dettes enregistrées et TVA déductible associée.",
+    "description": "Dettes fournisseurs enregistrées.",
     "supplierReference": "Réf. fournisseur",
     "emptyTitle": "Aucune facture fournisseur",
     "emptyDescription": "Elles se créent depuis une commande d'achat réceptionnée."

@@ -125,7 +125,7 @@ describe("sales invoice", () => {
     );
     expect(entry).not.toBeNull();
     expect(entry?.totalDebitCents).toBe(entry?.totalCreditCents);
-    expect(entry?.totalDebitCents).toBe(validated.totalTtcCents);
+    expect(entry?.totalDebitCents).toBe(validated.totalCents);
   });
 
   it("rejects any change after validation", async () => {
@@ -174,7 +174,7 @@ describe("payment", () => {
       {
         partyId: customerId,
         invoiceId: invoice.id,
-        amountCents: invoice.totalTtcCents,
+        amountCents: invoice.totalCents,
         paymentMethod: "CASH",
       },
       context.userId
@@ -182,14 +182,14 @@ describe("payment", () => {
 
     const refreshed = await invoicingApplication.get(context.company.id, invoice.id);
     expect(refreshed.status).toBe("PAID");
-    expect(refreshed.paidAmountCents).toBe(invoice.totalTtcCents);
+    expect(refreshed.paidAmountCents).toBe(invoice.totalCents);
 
     const entry = await accountingRepository.findEntryByOrigin(
       context.company.id,
       "payment",
       payment.id
     );
-    expect(entry?.totalDebitCents).toBe(invoice.totalTtcCents);
+    expect(entry?.totalDebitCents).toBe(invoice.totalCents);
   });
 
   it("rejects a payment greater than the amount due", async () => {
@@ -206,7 +206,7 @@ describe("payment", () => {
         {
           partyId: customerId,
           invoiceId: invoice.id,
-          amountCents: invoice.totalTtcCents + 1,
+          amountCents: invoice.totalCents + 1,
           paymentMethod: "CASH",
         },
         context.userId
@@ -227,7 +227,7 @@ describe("payment", () => {
       {
         partyId: customerId,
         invoiceId: invoice.id,
-        amountCents: Math.floor(invoice.totalTtcCents / 2),
+        amountCents: Math.floor(invoice.totalCents / 2),
         paymentMethod: "CASH",
       },
       context.userId
@@ -263,7 +263,7 @@ describe("credit note", () => {
       creditNote!.id
     );
     expect(entry?.totalDebitCents).toBe(entry?.totalCreditCents);
-    expect(entry?.totalDebitCents).toBe(invoice.totalTtcCents);
+    expect(entry?.totalDebitCents).toBe(invoice.totalCents);
   });
 
   it("rejects a credit note on a draft", async () => {
@@ -299,10 +299,10 @@ describe("quote → order → invoice chain", () => {
       quote.id,
       context.userId
     );
-    expect(order.totalTtcCents).toBe(quote.totalTtcCents);
+    expect(order.totalCents).toBe(quote.totalCents);
 
     const invoice = await salesApplication.invoiceOrder(context.company, order.id, context.userId);
-    expect(invoice.totalTtcCents).toBe(quote.totalTtcCents);
+    expect(invoice.totalCents).toBe(quote.totalCents);
     // An invoice created from an order starts as a draft: it must be validated.
     expect(invoice.status).toBe("DRAFT");
 
@@ -366,10 +366,7 @@ describe("point of sale", () => {
       openingBalanceCents: 100_000,
     });
 
-    const totals = computeDocumentTotals(
-      [{ quantity: 2, unitPriceCents: 10_000, vatRateBp: 1600 }],
-      { vatEnabled: true }
-    );
+    const totals = computeDocumentTotals([{ quantity: 2, unitPriceCents: 10_000 }]);
 
     const { invoice, session: updated } = await posApplication.createTicket(
       context.company,
@@ -377,18 +374,18 @@ describe("point of sale", () => {
       {
         sessionId: session.id,
         lines: [{ productId, quantity: 2, description: "Article", unitPriceCents: 10_000 }],
-        payments: [{ method: "CASH", amountCents: totals.totalTtcCents }],
+        payments: [{ method: "CASH", amountCents: totals.totalCents }],
       }
     );
 
     expect(invoice.source).toBe("POS");
     expect(invoice.status).toBe("PAID");
     expect(updated.ticketCount).toBe(1);
-    expect(updated.totalCashCents).toBe(totals.totalTtcCents);
+    expect(updated.totalCashCents).toBe(totals.totalCents);
 
     const closed = await posApplication.closeSession(context.company, {
       sessionId: session.id,
-      closingBalanceCents: 100_000 + totals.totalTtcCents,
+      closingBalanceCents: 100_000 + totals.totalCents,
     });
     // Counted = opening float + cash collections ⇒ no difference.
     expect(closed.differenceCents).toBe(0);

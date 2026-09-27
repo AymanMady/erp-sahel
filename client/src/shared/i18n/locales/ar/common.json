@@ -59,11 +59,8 @@
     "reference": "المرجع",
     "status": "الحالة",
     "supplier": "المورّد",
-    "tax": "الضريبة",
     "to": "إلى",
     "total": "المجموع",
-    "totalExclTax": "المجموع دون ضريبة",
-    "totalInclTax": "المجموع شامل الضريبة",
     "type": "النوع",
     "unitPrice": "سعر الوحدة",
     "warehouse": "المخزن"

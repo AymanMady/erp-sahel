@@ -10,7 +10,7 @@ import { boolean, index, jsonb, pgTable, text, uniqueIndex, uuid } from "drizzle
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { baseColumns, clientUuid, moneyCents, quantity, rateBp } from "./_base";
+import { baseColumns, clientUuid, moneyCents, quantity } from "./_base";
 import { companies } from "./tenancy";
 
 export const categories = pgTable(
@@ -53,7 +53,6 @@ export const products = pgTable(
     barcode: text("barcode").default("").notNull(),
     purchasePriceCents: moneyCents("purchase_price_cents").default(0).notNull(),
     salePriceCents: moneyCents("sale_price_cents").default(0).notNull(),
-    vatRateBp: rateBp("vat_rate_bp").default(0).notNull(),
     /** Non-stock item (labor, service) [FR-PROD-5]. */
     isService: boolean("is_service").default(false).notNull(),
     /** Main photo, shown first in search results [FR-PROD-6]. */

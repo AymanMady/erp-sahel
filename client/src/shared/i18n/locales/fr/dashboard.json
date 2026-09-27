@@ -16,7 +16,7 @@
   },
   "offline": "Les indicateurs ne sont pas disponibles hors ligne. Ils réapparaîtront dès le retour du réseau.",
   "stats": {
-    "revenue": "Chiffre d'affaires HT",
+    "revenue": "Chiffre d'affaires",
     "invoicesHint_one": "{{count}} facture sur la période",
     "invoicesHint_other": "{{count}} factures sur la période",
     "outstanding": "Restant à encaisser",
@@ -29,9 +29,9 @@
   },
   "revenueChart": {
     "title": "Évolution du chiffre d'affaires",
-    "description": "Montants hors taxes des factures validées, du {{from}} au {{to}}.",
+    "description": "Montants des factures validées, du {{from}} au {{to}}.",
     "empty": "Aucune vente enregistrée sur la période.",
-    "series": "CA HT"
+    "series": "CA"
   },
   "topSales": {
     "title": "Meilleures ventes",

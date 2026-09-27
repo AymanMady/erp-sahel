@@ -35,8 +35,6 @@ export interface OfflineSnapshot {
     legalName: string;
     currency: string;
     language: string;
-    vatEnabled: boolean;
-    defaultVatRateBp: number;
     logo: string | null;
     address: string;
     phone: string;

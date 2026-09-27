@@ -113,7 +113,6 @@ function buildOfflineBatch(): {
               unit: "piece",
               unitPriceCents: 10_000,
               discountBp: 0,
-              vatRateBp: 1600,
               originCountry: "",
             },
           ],
@@ -159,7 +158,7 @@ describe("offline batch ingestion", () => {
       .from(salesInvoices)
       .where(eq(salesInvoices.clientUuid, batch.invoiceUuid));
     expect(invoice.status).toBe("PAID");
-    expect(invoice.totalTtcCents).toBe(34_800);
+    expect(invoice.totalCents).toBe(34_800);
     expect(invoice.provisionalNumber).toBe("OFFLINE-TKT-0001");
     expect(invoice.isLocked).toBe(true);
   });
@@ -296,7 +295,6 @@ describe("offline batch ingestion", () => {
                 unit: "piece",
                 unitPriceCents: 10_000,
                 discountBp: 0,
-                vatRateBp: 1600,
               },
             ],
           },
@@ -352,7 +350,6 @@ describe("offline batch ingestion", () => {
                 unit: "piece",
                 unitPriceCents: 10_000,
                 discountBp: 0,
-                vatRateBp: 1600,
               },
             ],
           },

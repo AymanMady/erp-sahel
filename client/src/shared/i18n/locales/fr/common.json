@@ -59,11 +59,8 @@
     "reference": "Référence",
     "status": "Statut",
     "supplier": "Fournisseur",
-    "tax": "Taxe",
     "to": "Au",
     "total": "Total",
-    "totalExclTax": "Total HT",
-    "totalInclTax": "Total TTC",
     "type": "Type",
     "unitPrice": "Prix unitaire",
     "warehouse": "Magasin"

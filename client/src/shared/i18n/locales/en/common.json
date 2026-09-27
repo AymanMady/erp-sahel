@@ -59,11 +59,8 @@
     "reference": "Reference",
     "status": "Status",
     "supplier": "Supplier",
-    "tax": "Tax",
     "to": "To",
     "total": "Total",
-    "totalExclTax": "Total excl. tax",
-    "totalInclTax": "Total incl. tax",
     "type": "Type",
     "unitPrice": "Unit price",
     "warehouse": "Warehouse"

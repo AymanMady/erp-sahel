@@ -14,7 +14,6 @@ export const documentLineSchema = z.object({
   unit: z.string().max(32).optional(),
   unitPriceCents: z.number().int().nullish(),
   discountBp: z.number().int().min(0).max(10_000).default(0),
-  vatRateBp: z.number().int().min(0).max(10_000).nullish(),
   originCountry: z.string().max(100).optional(),
 });
 

@@ -21,21 +21,18 @@ mécanisme d'isolation des tests, ce qui vérifie l'invariant en même temps.
 
 ## 2. Couverture par exigence
 
-### Calculs (`pricing.test.ts`, 12 tests)
+### Calculs (`pricing.test.ts`, 10 tests)
 
 - Arrondi symétrique autour de zéro
-- Taux et remises en points de base, sans dérive flottante
+- Remises en points de base, sans dérive flottante
 - Saisie française (`1 250,50`, espace fine insécable comprise)
 - **Somme des lignes = total du document** après répartition d'une remise globale
-- TVA annulée pour une société non assujettie
-- Ventilation de la TVA par taux
 - Statut de règlement déduit des montants, jamais saisi
 
-### Comptabilité (`accounting.test.ts`, 12 tests)
+### Comptabilité (`accounting.test.ts`, 11 tests)
 
 - Écritures de facture, d'avoir, de facture fournisseur, de règlement
 - Avoir strictement miroir de la facture
-- Ligne de TVA omise quand la société n'est pas assujettie
 - Refus d'une écriture déséquilibrée
 - Sens naturel des comptes, plans OHADA et PCG
 

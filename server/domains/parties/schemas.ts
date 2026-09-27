@@ -23,7 +23,7 @@ export const createPartySchema = z.object({
   partyType: z.enum(PARTY_TYPES).default("CUSTOMER"),
   email: z.string().email("Invalid email address").or(z.literal("")).default(""),
   phone: z.string().max(64).default(""),
-  vatNumber: z.string().max(64).default(""),
+  taxId: z.string().max(64).default(""),
   creditLimitCents: z.number().int().min(0).default(0),
   paymentTermsDays: z.number().int().min(0).max(365).default(0),
   defaultLeadTimeDays: z.number().int().min(0).max(365).default(0),

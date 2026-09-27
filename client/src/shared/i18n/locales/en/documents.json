@@ -8,13 +8,11 @@
       "description": "Description",
       "origin": "Origin",
       "quantity": "Qty",
-      "unitPriceExclTax": "Unit price excl. tax"
+      "unitPrice": "Unit price"
     },
     "alreadyPaid": "Already paid",
     "amountDue": "Amount due"
   },
-  "vat": "VAT",
-  "vatRate": "VAT {{rate}} %",
   "lineEditor": {
     "columns": {
       "description": "Description"
@@ -28,7 +26,7 @@
   },
   "productPicker": {
     "title": "Add a line",
-    "description": "Price and VAT rate are taken from the catalog; you can still change them.",
+    "description": "The price is taken from the catalog; you can still change it.",
     "searchPlaceholder": "Item or service…",
     "service": "service",
     "stock": "stock {{quantity}}"

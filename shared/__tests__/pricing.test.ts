@@ -43,23 +43,22 @@ describe("money arithmetic", () => {
 });
 
 describe("document totals", () => {
-  it("computes excl. tax, VAT and incl. tax line by line", () => {
+  it("computes the total line by line", () => {
     const result = computeDocumentTotals([
-      { quantity: 2, unitPriceCents: 52_000, vatRateBp: 1600 },
-      { quantity: 1, unitPriceCents: 16_500, vatRateBp: 1600 },
+      { quantity: 2, unitPriceCents: 52_000 },
+      { quantity: 1, unitPriceCents: 16_500 },
     ]);
 
-    expect(result.totalHtCents).toBe(120_500);
-    expect(result.totalVatCents).toBe(19_280);
-    expect(result.totalTtcCents).toBe(139_780);
+    expect(result.lines.map((line) => line.totalCents)).toEqual([104_000, 16_500]);
+    expect(result.totalCents).toBe(120_500);
   });
 
-  it("applies the line discount before VAT", () => {
+  it("applies the line discount", () => {
     const result = computeDocumentTotals([
-      { quantity: 1, unitPriceCents: 100_000, discountBp: 1000, vatRateBp: 1600 },
+      { quantity: 1, unitPriceCents: 100_000, discountBp: 1000 },
     ]);
-    expect(result.totalHtCents).toBe(90_000);
-    expect(result.totalVatCents).toBe(14_400);
+    expect(result.totalCents).toBe(90_000);
+    expect(result.totalDiscountCents).toBe(10_000);
   });
 
   /**
@@ -70,48 +69,25 @@ describe("document totals", () => {
   it("spreads the global discount without losing a cent", () => {
     const result = computeDocumentTotals(
       [
-        { quantity: 1, unitPriceCents: 3_333, vatRateBp: 1600 },
-        { quantity: 1, unitPriceCents: 3_333, vatRateBp: 1600 },
-        { quantity: 1, unitPriceCents: 3_334, vatRateBp: 1600 },
+        { quantity: 1, unitPriceCents: 3_333 },
+        { quantity: 1, unitPriceCents: 3_333 },
+        { quantity: 1, unitPriceCents: 3_334 },
       ],
       { globalDiscountBp: 777 }
     );
 
-    const sumOfLines = result.lines.reduce((sum, line) => sum + line.totalHtCents, 0);
-    expect(sumOfLines).toBe(result.totalHtCents);
+    const sumOfLines = result.lines.reduce((sum, line) => sum + line.totalCents, 0);
+    expect(sumOfLines).toBe(result.totalCents);
 
     const expectedDiscount = applyRate(10_000, 777);
-    expect(result.totalHtCents).toBe(10_000 - expectedDiscount);
-  });
-
-  it("zeroes VAT when the company is not subject to VAT", () => {
-    const result = computeDocumentTotals(
-      [{ quantity: 3, unitPriceCents: 10_000, vatRateBp: 1600 }],
-      {
-        vatEnabled: false,
-      }
-    );
-    expect(result.totalVatCents).toBe(0);
-    expect(result.totalTtcCents).toBe(result.totalHtCents);
-  });
-
-  it("breaks VAT down by rate", () => {
-    const result = computeDocumentTotals([
-      { quantity: 1, unitPriceCents: 10_000, vatRateBp: 1600 },
-      { quantity: 1, unitPriceCents: 10_000, vatRateBp: 0 },
-      { quantity: 1, unitPriceCents: 20_000, vatRateBp: 1600 },
-    ]);
-    expect(result.vatBreakdown).toEqual([
-      { vatRateBp: 0, baseCents: 10_000, vatCents: 0 },
-      { vatRateBp: 1600, baseCents: 30_000, vatCents: 4_800 },
-    ]);
+    expect(result.totalCents).toBe(10_000 - expectedDiscount);
   });
 
   it("caps the global discount at the subtotal", () => {
     const result = computeDocumentTotals([{ quantity: 1, unitPriceCents: 5_000 }], {
       globalDiscountCents: 999_999,
     });
-    expect(result.totalHtCents).toBe(0);
+    expect(result.totalCents).toBe(0);
   });
 });
 

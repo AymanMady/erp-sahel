@@ -30,7 +30,6 @@ export const accountingMessages: MessageCatalog = {
     "An entry has at least two lines": "Une écriture comporte au moins deux lignes",
     "Invalid identifier": "Identifiant invalide",
     // Automatic entry labels
-    "VAT — {label}": "TVA — {label}",
     // Default chart of accounts
     Capital: "Capital",
     "Share capital": "Capital social",
@@ -44,8 +43,6 @@ export const accountingMessages: MessageCatalog = {
     "Suppliers, trade payables": "Fournisseurs, dettes en compte",
     Customers: "Clients",
     "State and public authorities": "État et collectivités",
-    "VAT charged on sales": "TVA facturée sur ventes",
-    "Recoverable VAT on purchases": "TVA récupérable sur achats",
     Banks: "Banques",
     "Local banks": "Banques locales",
     "Financial institutions": "Établissements financiers",
@@ -64,8 +61,6 @@ export const accountingMessages: MessageCatalog = {
     "Opening entries": "À-nouveaux",
     "Opening balance sheet": "Bilan d'ouverture",
     "Goods inventories": "Stocks de marchandises",
-    "VAT collected": "TVA collectée",
-    "Deductible VAT": "TVA déductible",
     "Change in inventories": "Variation des stocks",
     "Miscellaneous operating expenses": "Charges diverses de gestion",
     // Default journals
@@ -101,7 +96,6 @@ export const accountingMessages: MessageCatalog = {
     "An entry has at least two lines": "يتضمن القيد سطرين على الأقل",
     "Invalid identifier": "معرّف غير صالح",
     // Automatic entry labels
-    "VAT — {label}": "ض.ق.م — {label}",
     // Default chart of accounts
     Capital: "رأس المال",
     "Share capital": "رأس المال الاجتماعي",
@@ -115,8 +109,6 @@ export const accountingMessages: MessageCatalog = {
     "Suppliers, trade payables": "الموردون، ديون تجارية",
     Customers: "العملاء",
     "State and public authorities": "الدولة والجماعات العمومية",
-    "VAT charged on sales": "الضريبة على القيمة المضافة المفوترة على المبيعات",
-    "Recoverable VAT on purchases": "الضريبة على القيمة المضافة القابلة للاسترداد على المشتريات",
     Banks: "البنوك",
     "Local banks": "البنوك المحلية",
     "Financial institutions": "المؤسسات المالية",
@@ -135,8 +127,6 @@ export const accountingMessages: MessageCatalog = {
     "Opening entries": "قيود الافتتاح",
     "Opening balance sheet": "الميزانية الافتتاحية",
     "Goods inventories": "مخزونات البضائع",
-    "VAT collected": "الضريبة على القيمة المضافة المحصّلة",
-    "Deductible VAT": "الضريبة على القيمة المضافة القابلة للخصم",
     "Change in inventories": "تغير المخزونات",
     "Miscellaneous operating expenses": "أعباء تسيير متنوعة",
     // Default journals

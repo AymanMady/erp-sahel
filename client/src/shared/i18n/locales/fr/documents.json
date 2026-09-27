@@ -8,13 +8,11 @@
       "description": "Désignation",
       "origin": "Origine",
       "quantity": "Qté",
-      "unitPriceExclTax": "P.U. HT"
+      "unitPrice": "P.U."
     },
     "alreadyPaid": "Déjà réglé",
     "amountDue": "Reste à payer"
   },
-  "vat": "TVA",
-  "vatRate": "TVA {{rate}} %",
   "lineEditor": {
     "columns": {
       "description": "Désignation"
@@ -28,7 +26,7 @@
   },
   "productPicker": {
     "title": "Ajouter une ligne",
-    "description": "Le prix et le taux de TVA sont repris du catalogue ; ils restent modifiables.",
+    "description": "Le prix est repris du catalogue ; il reste modifiable.",
     "searchPlaceholder": "Article ou prestation…",
     "service": "prestation",
     "stock": "stock {{quantity}}"

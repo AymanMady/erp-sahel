@@ -17,7 +17,7 @@ caisse et le stock n'a qu'un menu de quelques lignes.
 | **Catalogue**      | Produits génériques, variantes, catégories, code-barres, prix, fournisseurs référencés  |
 | **Stock**          | Multi-magasin, lots, mouvements tracés, coût moyen pondéré, transferts, seuils d'alerte |
 | **Achats**         | Commande fournisseur → réception (entrée en stock) → facture fournisseur                |
-| **Ventes**         | Devis → commande → facture, avoirs, remises ligne et globale, TVA multi-taux            |
+| **Ventes**         | Devis → commande → facture, avoirs, remises ligne et globale                            |
 | **Caisse (POS)**   | Écran plein cadre, scanner, sessions avec fond de caisse et contrôle d'écart            |
 | **Règlements**     | Encaissements/décaissements multi-modes, imputation sur facture, trésorerie             |
 | **Comptabilité**   | Plan OHADA configurable, journal, grand livre, balance, exercices                       |

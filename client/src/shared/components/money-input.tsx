@@ -76,7 +76,7 @@ function formatPercentForEdit(bp: number): string {
   return bp ? String(bpToPercent(bp)).replace(".", decimalSeparator()) : "";
 }
 
-/** Rate input (VAT, discount) expressed as a percentage, reported in basis points. */
+/** Rate input (discount) expressed as a percentage, reported in basis points. */
 export function RateInput({
   valueBp,
   onChange,

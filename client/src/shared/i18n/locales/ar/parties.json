@@ -1,7 +1,7 @@
 {
   "offlineUnavailable": "هذا الطرف غير متاح دون اتصال.",
   "fields": {
-    "vatNumber": "الرقم الضريبي",
+    "taxId": "الرقم الضريبي",
     "creditLimit": "سقف الائتمان",
     "creditLimitHint": "0 = بدون سقف",
     "paymentTermsDays": "أجل السداد (بالأيام)"
@@ -17,7 +17,7 @@
     "new": "طرف جديد",
     "searchPlaceholder": "الاسم، الرمز، الهاتف، الرقم الضريبي…",
     "allTypes": "كل الأطراف",
-    "vatNumberShort": "الرقم الضريبي {{number}}",
+    "taxIdShort": "الرقم الضريبي {{number}}",
     "unlimited": "غير محدود",
     "termsDays": "{{days}} يوم",
     "cash": "نقدًا",
@@ -61,7 +61,7 @@
     "noLeadTime": "لا توجد مهلة توريد افتراضية.",
     "contactInfo": "بيانات الاتصال",
     "noEmail": "لا يوجد بريد إلكتروني",
-    "noVatNumber": "لا يوجد رقم ضريبي",
+    "noTaxId": "لا يوجد رقم ضريبي",
     "tabs": {
       "history": "السجل",
       "contacts": "جهات الاتصال ({{n}})",

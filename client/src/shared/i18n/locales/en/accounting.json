@@ -16,8 +16,6 @@
   "mappingKeys": {
     "SALES_REVENUE": "Sales of goods",
     "SALES_DISCOUNT": "Discounts granted",
-    "VAT_COLLECTED": "Output VAT (collected)",
-    "VAT_DEDUCTIBLE": "Input VAT (deductible)",
     "CUSTOMER_RECEIVABLE": "Accounts receivable",
     "SUPPLIER_PAYABLE": "Accounts payable",
     "PURCHASES": "Purchases of goods",

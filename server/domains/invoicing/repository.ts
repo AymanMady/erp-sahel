@@ -57,7 +57,7 @@ export class InvoicingRepository {
       options.unpaidOnly
         ? and(
             inArray(salesInvoices.status, ["VALIDATED", "PARTIALLY_PAID"]),
-            sql`${salesInvoices.totalTtcCents} > ${salesInvoices.paidAmountCents}`
+            sql`${salesInvoices.totalCents} > ${salesInvoices.paidAmountCents}`
           )
         : undefined,
       options.search
@@ -248,8 +248,7 @@ export class InvoicingRepository {
     const [row] = await this.database
       .select({
         invoiceCount: sql<number>`count(*)::int`,
-        totalHtCents: sql<number>`coalesce(sum(${salesInvoices.totalHtCents}), 0)::int`,
-        totalTtcCents: sql<number>`coalesce(sum(${salesInvoices.totalTtcCents}), 0)::int`,
+        totalCents: sql<number>`coalesce(sum(${salesInvoices.totalCents}), 0)::int`,
         paidCents: sql<number>`coalesce(sum(${salesInvoices.paidAmountCents}), 0)::int`,
       })
       .from(salesInvoices)
@@ -263,10 +262,9 @@ export class InvoicingRepository {
       );
     return {
       invoiceCount: row?.invoiceCount ?? 0,
-      totalHtCents: row?.totalHtCents ?? 0,
-      totalTtcCents: row?.totalTtcCents ?? 0,
+      totalCents: row?.totalCents ?? 0,
       paidCents: row?.paidCents ?? 0,
-      outstandingCents: (row?.totalTtcCents ?? 0) - (row?.paidCents ?? 0),
+      outstandingCents: (row?.totalCents ?? 0) - (row?.paidCents ?? 0),
     };
   }
 
@@ -275,8 +273,7 @@ export class InvoicingRepository {
     return this.database
       .select({
         date: salesInvoices.date,
-        totalHtCents: sql<number>`coalesce(sum(${salesInvoices.totalHtCents}), 0)::int`,
-        totalTtcCents: sql<number>`coalesce(sum(${salesInvoices.totalTtcCents}), 0)::int`,
+        totalCents: sql<number>`coalesce(sum(${salesInvoices.totalCents}), 0)::int`,
         invoiceCount: sql<number>`count(*)::int`,
       })
       .from(salesInvoices)
@@ -300,7 +297,7 @@ export class InvoicingRepository {
         productSku: salesInvoiceLines.productSku,
         description: salesInvoiceLines.description,
         quantity: sql<string>`coalesce(sum(${salesInvoiceLines.quantity}), 0)`,
-        revenueCents: sql<number>`coalesce(sum(${salesInvoiceLines.totalHtCents}), 0)::int`,
+        revenueCents: sql<number>`coalesce(sum(${salesInvoiceLines.totalCents}), 0)::int`,
       })
       .from(salesInvoiceLines)
       .innerJoin(salesInvoices, eq(salesInvoices.id, salesInvoiceLines.invoiceId))
@@ -317,7 +314,7 @@ export class InvoicingRepository {
         salesInvoiceLines.productSku,
         salesInvoiceLines.description
       )
-      .orderBy(desc(sql`coalesce(sum(${salesInvoiceLines.totalHtCents}), 0)`))
+      .orderBy(desc(sql`coalesce(sum(${salesInvoiceLines.totalCents}), 0)`))
       .limit(limit);
   }
 }

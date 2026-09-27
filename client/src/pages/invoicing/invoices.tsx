@@ -86,13 +86,13 @@ export default function InvoicesPage() {
       header: t("invoices.columns.remaining"),
       align: "end",
       hideOnMobile: true,
-      cell: (row) => <Money cents={Math.max(0, row.totalTtcCents - row.paidAmountCents)} />,
+      cell: (row) => <Money cents={Math.max(0, row.totalCents - row.paidAmountCents)} />,
     },
     {
       id: "total",
-      header: t("common:labels.totalInclTax"),
+      header: t("common:labels.total"),
       align: "end",
-      cell: (row) => <Money cents={row.totalTtcCents} />,
+      cell: (row) => <Money cents={row.totalCents} />,
     },
   ];
 

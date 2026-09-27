@@ -13,7 +13,6 @@ import { inventoryApi } from "@/entities/inventory/api";
 import { purchasingApi } from "@/entities/purchasing/api";
 import type { Party } from "@/entities/types";
 import { queryKeys } from "@/shared/api/query-client";
-import { useSession } from "@/shared/auth/session";
 import { Field, FieldGrid } from "@/shared/components/field";
 import { PageHeader } from "@/shared/components/page-header";
 import {
@@ -35,14 +34,13 @@ export default function PurchaseOrderFormPage() {
   const { t } = useTranslation("purchasing");
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
-  const { company } = useSession();
 
   const [supplier, setSupplier] = useState<Party | null>(null);
   const [date, setDate] = useState(todayInput());
   const [expectedDate, setExpectedDate] = useState("");
   const [warehouseId, setWarehouseId] = useState(DEFAULT_WAREHOUSE);
   const [notes, setNotes] = useState("");
-  const [lines, setLines] = useState<DocumentLine[]>([emptyLine(company?.defaultVatRateBp ?? 0)]);
+  const [lines, setLines] = useState<DocumentLine[]>([emptyLine()]);
 
   const { data: warehouses } = useQuery({
     queryKey: queryKeys.warehouses,

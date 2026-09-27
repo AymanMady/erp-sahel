@@ -16,8 +16,6 @@
   "mappingKeys": {
     "SALES_REVENUE": "مبيعات البضائع",
     "SALES_DISCOUNT": "الخصومات الممنوحة",
-    "VAT_COLLECTED": "ضريبة القيمة المضافة المفوترة (المحصلة)",
-    "VAT_DEDUCTIBLE": "ضريبة القيمة المضافة القابلة للاسترداد (للخصم)",
     "CUSTOMER_RECEIVABLE": "ذمم العملاء",
     "SUPPLIER_PAYABLE": "ديون الموردين",
     "PURCHASES": "مشتريات البضائع",

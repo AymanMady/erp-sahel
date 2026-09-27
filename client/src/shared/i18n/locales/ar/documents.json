@@ -8,13 +8,11 @@
       "description": "البيان",
       "origin": "المنشأ",
       "quantity": "الكمية",
-      "unitPriceExclTax": "سعر الوحدة دون ضريبة"
+      "unitPrice": "سعر الوحدة"
     },
     "alreadyPaid": "المبلغ المدفوع",
     "amountDue": "المبلغ المتبقي"
   },
-  "vat": "ض.ق.م",
-  "vatRate": "ض.ق.م {{rate}} %",
   "lineEditor": {
     "columns": {
       "description": "البيان"
@@ -28,7 +26,7 @@
   },
   "productPicker": {
     "title": "إضافة سطر",
-    "description": "يُؤخذ السعر ونسبة ض.ق.م من الكتالوج، ويمكن تعديلهما.",
+    "description": "يُؤخذ السعر من الكتالوج، ويمكن تعديله.",
     "searchPlaceholder": "صنف أو خدمة…",
     "service": "خدمة",
     "stock": "المخزون {{quantity}}"

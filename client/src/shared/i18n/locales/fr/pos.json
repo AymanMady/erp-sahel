@@ -19,7 +19,6 @@
     "empty": "Le panier est vide.",
     "decrease": "Diminuer",
     "increase": "Augmenter",
-    "vat": "TVA",
     "lastTicket": "Ticket {{number}} encaissé.",
     "lastTicketOffline": "Ticket {{number}} encaissé (hors ligne, en attente de synchronisation).",
     "checkout": "Encaisser {{amount}}"

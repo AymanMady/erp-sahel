@@ -18,7 +18,7 @@ export const partiesRepository = new TenantRepository(parties, [
   parties.name,
   parties.email,
   parties.phone,
-  parties.vatNumber,
+  parties.taxId,
 ]);
 
 export const contactsRepository = new TenantRepository(contacts, [
@@ -122,7 +122,7 @@ export class PartiesExtraRepository {
           number: salesInvoices.number,
           date: salesInvoices.date,
           status: salesInvoices.status,
-          totalTtcCents: salesInvoices.totalTtcCents,
+          totalCents: salesInvoices.totalCents,
           paidAmountCents: salesInvoices.paidAmountCents,
         })
         .from(salesInvoices)
@@ -151,7 +151,7 @@ export class PartiesExtraRepository {
   async outstandingBalanceCents(companyId: string, partyId: string): Promise<number> {
     const [row] = await this.database
       .select({
-        value: sql<number>`coalesce(sum(${salesInvoices.totalTtcCents} - ${salesInvoices.paidAmountCents}), 0)::int`,
+        value: sql<number>`coalesce(sum(${salesInvoices.totalCents} - ${salesInvoices.paidAmountCents}), 0)::int`,
       })
       .from(salesInvoices)
       .where(

@@ -2,7 +2,7 @@
  * Accounting: **configurable** chart of accounts (OHADA by default), journals, entries.
  *
  * The accounting framework is not hard-coded ([BR-21], Q1): the chart is a data table
- * and the accounts used by automated postings (sales, VAT, customer, cash…) are resolved
+ * and the accounts used by automated postings (sales, customer, cash…) are resolved
  * through `account_mappings`. Switching from OHADA to PCG/CGNC/IFRS only requires a new
  * dataset + mappings, with no model redesign.
  */
@@ -50,13 +50,11 @@ export type Account = typeof accounts.$inferSelect;
 
 /**
  * Accounts used by automated accounting postings.
- * One logical key (`SALES_REVENUE`, `VAT_COLLECTED`…) → one account of the company's chart.
+ * One logical key (`SALES_REVENUE`, `CUSTOMER_RECEIVABLE`…) → one account of the company's chart.
  */
 export const ACCOUNT_MAPPING_KEYS = [
   "SALES_REVENUE",
   "SALES_DISCOUNT",
-  "VAT_COLLECTED",
-  "VAT_DEDUCTIBLE",
   "CUSTOMER_RECEIVABLE",
   "SUPPLIER_PAYABLE",
   "PURCHASES",

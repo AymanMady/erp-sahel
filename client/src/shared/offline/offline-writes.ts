@@ -109,7 +109,7 @@ export async function pendingParties(): Promise<Party[]> {
       partyType: payload.partyType ?? "CUSTOMER",
       email: payload.email ?? "",
       phone: payload.phone ?? "",
-      vatNumber: payload.vatNumber ?? "",
+      taxId: payload.taxId ?? "",
       creditLimitCents: payload.creditLimitCents ?? 0,
       paymentTermsDays: payload.paymentTermsDays ?? 0,
       notes: payload.notes ?? "",
@@ -145,7 +145,7 @@ export async function queuePartyCreate(input: {
   partyType: string;
   email?: string;
   phone?: string;
-  vatNumber?: string;
+  taxId?: string;
   creditLimitCents?: number;
   paymentTermsDays?: number;
   notes?: string;
@@ -158,7 +158,7 @@ export async function queuePartyCreate(input: {
       partyType: input.partyType,
       email: input.email ?? "",
       phone: input.phone ?? "",
-      vatNumber: input.vatNumber ?? "",
+      taxId: input.taxId ?? "",
       creditLimitCents: input.creditLimitCents ?? 0,
       paymentTermsDays: input.paymentTermsDays ?? 0,
       notes: input.notes ?? "",
@@ -175,7 +175,6 @@ export async function queueProductCreate(input: {
   barcode?: string;
   salePriceCents?: number;
   purchasePriceCents?: number;
-  vatRateBp?: number;
   isService?: boolean;
   categoryId?: string | null;
   minStock?: string | number;
@@ -194,7 +193,6 @@ export async function queueProductCreate(input: {
       barcode: input.barcode ?? "",
       salePriceCents: input.salePriceCents ?? 0,
       purchasePriceCents: input.purchasePriceCents ?? 0,
-      vatRateBp: input.vatRateBp ?? 0,
       isService: input.isService ?? false,
       categoryId: input.categoryId ?? null,
       minStock: String(input.minStock ?? "0"),
@@ -215,7 +213,6 @@ export interface OfflineDocumentLine {
   unit?: string;
   unitPriceCents: number;
   discountBp?: number;
-  vatRateBp?: number;
 }
 
 async function toSyncLines(lines: OfflineDocumentLine[]) {
@@ -234,7 +231,6 @@ async function toSyncLines(lines: OfflineDocumentLine[]) {
       unit: line.unit ?? "unité",
       unitPriceCents: line.unitPriceCents,
       discountBp: line.discountBp ?? 0,
-      vatRateBp: line.vatRateBp ?? 0,
     });
   }
   return { lines: mapped, refs };
@@ -246,10 +242,9 @@ function totalOf(lines: OfflineDocumentLine[], globalDiscountBp = 0): number {
       quantity: Number(line.quantity),
       unitPriceCents: line.unitPriceCents,
       discountBp: line.discountBp ?? 0,
-      vatRateBp: line.vatRateBp ?? 0,
     })),
-    { globalDiscountBp, vatEnabled: true }
-  ).totalTtcCents;
+    { globalDiscountBp }
+  ).totalCents;
 }
 
 export async function queueQuoteCreate(input: {

@@ -6,7 +6,7 @@
  *    server is unreachable, and checkout falls back to the outbox ([FR-POS-3]);
  *  - **keyboard and scanner input**: the search field keeps focus, and a complete
  *    barcode directly adds the item to the cart;
- *  - **no ambiguity at checkout**: the amount paid must equal the total incl. tax, and
+ *  - **no ambiguity at checkout**: the amount paid must equal the total, and
  *    the change due is always displayed.
  */
 
@@ -90,7 +90,7 @@ export default function PosPage() {
   const { t } = useTranslation("pos");
   const online = useOnline();
   const queryClient = useQueryClient();
-  const { company, can } = useSession();
+  const { can } = useSession();
   const currency = useCurrency();
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -104,7 +104,7 @@ export default function PosPage() {
   const [lastTicket, setLastTicket] = useState<{
     number: string;
     mode: string;
-    totalTtcCents: number;
+    totalCents: number;
   } | null>(null);
   const debouncedSearch = useDebounced(search, 200);
 
@@ -170,7 +170,7 @@ export default function PosPage() {
   const products: ProductListItem[] =
     online && onlineResults ? onlineResults.items : (offlineResults as ProductListItem[]);
 
-  const totals = cartTotals(cart, { vatEnabled: company?.vatEnabled ?? true });
+  const totals = cartTotals(cart);
 
   const addToCart = useCallback((product: ProductListItem) => {
     setCart((current) => {
@@ -189,7 +189,6 @@ export default function PosPage() {
           unit: product.unit,
           quantity: 1,
           unitPriceCents: product.salePriceCents,
-          vatRateBp: product.vatRateBp,
           discountBp: 0,
         },
       ];
@@ -441,15 +440,9 @@ export default function PosPage() {
 
         <div className="space-y-3 border-t p-3">
           <div className="space-y-1 text-sm">
-            <Row
-              label={t("common:labels.totalExclTax")}
-              value={<Money cents={totals.totalHtCents} />}
-            />
-            <Row label={t("cart.vat")} value={<Money cents={totals.totalVatCents} />} />
-            <Separator className="my-2" />
             <div className="flex items-center justify-between text-lg font-semibold">
-              <span>{t("common:labels.totalInclTax")}</span>
-              <Money cents={totals.totalTtcCents} />
+              <span>{t("common:labels.total")}</span>
+              <Money cents={totals.totalCents} />
             </div>
           </div>
 
@@ -468,7 +461,7 @@ export default function PosPage() {
             onClick={() => setPayOpen(true)}
           >
             <IconCash className="size-5" />
-            {t("cart.checkout", { amount: formatMoney(totals.totalTtcCents, currency) })}
+            {t("cart.checkout", { amount: formatMoney(totals.totalCents, currency) })}
           </Button>
         </div>
       </aside>
@@ -486,7 +479,7 @@ export default function PosPage() {
       <PaymentDialog
         open={payOpen}
         onOpenChange={setPayOpen}
-        totalTtcCents={totals.totalTtcCents}
+        totalCents={totals.totalCents}
         online={online}
         onConfirm={async (payments) => {
           const seq = Number.parseInt((await readMeta(TICKET_SEQ_KEY)) ?? "0", 10) + 1;
@@ -498,7 +491,6 @@ export default function PosPage() {
                 partyId: customer?.id ?? null,
                 lines: cart,
                 payments,
-                vatEnabled: company?.vatEnabled ?? true,
                 localTicketSeq: seq,
               },
               { online }
@@ -507,7 +499,7 @@ export default function PosPage() {
             setLastTicket({
               number: result.number,
               mode: result.mode,
-              totalTtcCents: result.totalTtcCents,
+              totalCents: result.totalCents,
             });
             setCart([]);
             setCustomer(null);
@@ -730,13 +722,13 @@ function CustomerDialog({
 function PaymentDialog({
   open,
   onOpenChange,
-  totalTtcCents,
+  totalCents,
   online,
   onConfirm,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  totalTtcCents: number;
+  totalCents: number;
   online: boolean;
   onConfirm: (payments: TicketPayment[]) => Promise<void>;
 }) {
@@ -747,10 +739,10 @@ function PaymentDialog({
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (open) setReceivedCents(totalTtcCents);
-  }, [open, totalTtcCents]);
+    if (open) setReceivedCents(totalCents);
+  }, [open, totalCents]);
 
-  const changeCents = Math.max(0, receivedCents - totalTtcCents);
+  const changeCents = Math.max(0, receivedCents - totalCents);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -758,7 +750,7 @@ function PaymentDialog({
         <DialogHeader>
           <DialogTitle>{t("payment.title")}</DialogTitle>
           <DialogDescription>
-            {t("payment.amountDue")} <strong>{formatMoney(totalTtcCents, currency)}</strong>
+            {t("payment.amountDue")} <strong>{formatMoney(totalCents, currency)}</strong>
           </DialogDescription>
         </DialogHeader>
 
@@ -801,13 +793,13 @@ function PaymentDialog({
             {t("common:actions.cancel")}
           </Button>
           <Button
-            disabled={submitting || receivedCents < totalTtcCents || totalTtcCents <= 0}
+            disabled={submitting || receivedCents < totalCents || totalCents <= 0}
             onClick={async () => {
               setSubmitting(true);
               try {
                 // The server requires strict equality: the change given back is never
                 // recorded, only the amount due.
-                await onConfirm([{ method, amountCents: totalTtcCents }]);
+                await onConfirm([{ method, amountCents: totalCents }]);
               } finally {
                 setSubmitting(false);
               }

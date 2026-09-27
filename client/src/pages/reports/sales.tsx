@@ -38,7 +38,7 @@ export default function SalesReportPage() {
     () =>
       (data?.daily ?? []).map((row) => ({
         label: formatDate(row.date),
-        revenue: centsToMajor(row.totalHtCents),
+        revenue: centsToMajor(row.totalCents),
       })),
     // The language is a dependency: date labels follow the UI locale.
     [data, i18n.language]
@@ -64,7 +64,7 @@ export default function SalesReportPage() {
     },
     {
       id: "revenue",
-      header: t("sales.revenueExclTax"),
+      header: t("sales.revenue"),
       align: "end",
       cell: (row) => <Money cents={row.revenueCents} />,
     },
@@ -89,15 +89,10 @@ export default function SalesReportPage() {
         />
       </PageHeader>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-3">
         <StatCard
-          label={t("sales.revenueExclTax")}
-          value={formatMoneyValue(data?.summary.totalHtCents ?? 0)}
-          loading={isLoading}
-        />
-        <StatCard
-          label={t("sales.revenueInclTax")}
-          value={formatMoneyValue(data?.summary.totalTtcCents ?? 0)}
+          label={t("sales.revenue")}
+          value={formatMoneyValue(data?.summary.totalCents ?? 0)}
           loading={isLoading}
         />
         <StatCard
@@ -156,7 +151,7 @@ export default function SalesReportPage() {
                     }}
                     formatter={(value) => [
                       formatMoneyValue(Math.round(Number(value ?? 0) * 100)),
-                      t("sales.revenueExclTax"),
+                      t("sales.revenue"),
                     ]}
                   />
                   <Bar dataKey="revenue" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />

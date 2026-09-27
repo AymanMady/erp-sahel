@@ -73,7 +73,7 @@ class PaymentsApplication {
           "INVOICE_NOT_VALIDATED"
         );
       }
-      const remaining = invoice.totalTtcCents - invoice.paidAmountCents;
+      const remaining = invoice.totalCents - invoice.paidAmountCents;
       if (input.amountCents > remaining) {
         throw new BusinessRuleError(
           tr("The payment exceeds the amount due ({amount}).", {

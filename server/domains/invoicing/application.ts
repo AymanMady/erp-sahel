@@ -102,7 +102,7 @@ class InvoicingApplication {
 
     const shouldValidate = input.validate ?? false;
     if (shouldValidate) {
-      await this.assertCreditLimit(tx, company, input.partyId, built.totalTtcCents);
+      await this.assertCreditLimit(tx, company, input.partyId, built.totalCents);
     }
 
     // A draft does not consume a legal number: the sequence would have a gap if the
@@ -128,9 +128,7 @@ class InvoicingApplication {
         (party.paymentTermsDays > 0 ? addDays(date, party.paymentTermsDays) : date),
       status: shouldValidate ? "VALIDATED" : "DRAFT",
       globalDiscountBp: input.globalDiscountBp ?? 0,
-      totalHtCents: built.totalHtCents,
-      totalVatCents: built.totalVatCents,
-      totalTtcCents: built.totalTtcCents,
+      totalCents: built.totalCents,
       currency: company.currency,
       notes: input.notes ?? "",
       isLocked: shouldValidate,
@@ -179,12 +177,9 @@ class InvoicingApplication {
       originType: "sales_invoice",
       originId: invoice.id,
       lines: buildSalesInvoicePosting({
-        totalHtCents: invoice.totalHtCents,
-        totalVatCents: invoice.totalVatCents,
-        totalTtcCents: invoice.totalTtcCents,
+        totalCents: invoice.totalCents,
         partyId: invoice.partyId,
         label,
-        vatLabel: tr("VAT — {label}", { label }),
       }),
     });
   }
@@ -211,7 +206,7 @@ class InvoicingApplication {
         throw new BusinessRuleError("An invoice without lines cannot be validated.");
       }
 
-      await this.assertCreditLimit(tx, company, invoice.partyId, invoice.totalTtcCents);
+      await this.assertCreditLimit(tx, company, invoice.partyId, invoice.totalCents);
 
       const number = await numberingApplication.allocateForCompany(
         tx,
@@ -261,9 +256,7 @@ class InvoicingApplication {
           globalDiscountBp: (patch.globalDiscountBp as number) ?? 0,
         });
         await repository.replaceLines(company.id, invoiceId, built.lines);
-        patch.totalHtCents = built.totalHtCents;
-        patch.totalVatCents = built.totalVatCents;
-        patch.totalTtcCents = built.totalTtcCents;
+        patch.totalCents = built.totalCents;
       }
 
       await repository.update(company.id, invoiceId, patch);
@@ -324,12 +317,11 @@ class InvoicingApplication {
           unit: line.unit,
           unitPriceCents: line.unitPriceCents,
           discountBp: line.discountBp,
-          vatRateBp: line.vatRateBp,
           originCountry: line.originCountry,
         }));
 
       const built = await buildDocumentLines(tx, company, sourceLines);
-      if (built.totalTtcCents > invoice.totalTtcCents) {
+      if (built.totalCents > invoice.totalCents) {
         throw new BusinessRuleError(
           "The credit note amount exceeds that of the original invoice.",
           "CREDIT_NOTE_TOO_LARGE"
@@ -352,9 +344,7 @@ class InvoicingApplication {
         status: "VALIDATED",
         reason: input.reason ?? "",
         restock,
-        totalHtCents: built.totalHtCents,
-        totalVatCents: built.totalVatCents,
-        totalTtcCents: built.totalTtcCents,
+        totalCents: built.totalCents,
         currency: company.currency,
         isLocked: true,
         userId: userId ?? null,
@@ -397,17 +387,14 @@ class InvoicingApplication {
         originType: "credit_note",
         originId: creditNote.id,
         lines: buildCreditNotePosting({
-          totalHtCents: creditNote.totalHtCents,
-          totalVatCents: creditNote.totalVatCents,
-          totalTtcCents: creditNote.totalTtcCents,
+          totalCents: creditNote.totalCents,
           partyId: invoice.partyId,
           label: creditNoteLabel,
-          vatLabel: tr("VAT — {label}", { label: creditNoteLabel }),
         }),
       });
 
       // A full credit note settles the invoice: it must no longer show as unpaid.
-      if (built.totalTtcCents >= invoice.totalTtcCents - invoice.paidAmountCents) {
+      if (built.totalCents >= invoice.totalCents - invoice.paidAmountCents) {
         await repository.update(company.id, invoice.id, { status: "CANCELLED" });
       }
 
@@ -428,10 +415,10 @@ class InvoicingApplication {
     const repository = invoicingRepository.withTransaction(tx);
     const invoice = await repository.addPaidAmount(companyId, invoiceId, amountCents);
     if (!invoice) throw new NotFoundError("Invoice not found.");
-    if (invoice.paidAmountCents > invoice.totalTtcCents) {
+    if (invoice.paidAmountCents > invoice.totalCents) {
       throw new BusinessRuleError("The total paid would exceed the invoice amount.", "OVERPAYMENT");
     }
-    const status = derivePaymentStatus(invoice.totalTtcCents, invoice.paidAmountCents);
+    const status = derivePaymentStatus(invoice.totalCents, invoice.paidAmountCents);
     const updated = await repository.update(companyId, invoiceId, { status });
     return updated ?? invoice;
   }

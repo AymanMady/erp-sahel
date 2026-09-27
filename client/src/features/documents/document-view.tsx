@@ -10,7 +10,6 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { formatDate } from "@shared/format";
-import { computeDocumentTotals } from "@shared/pricing";
 import { useSession } from "@/shared/auth/session";
 import { Money, Quantity, Rate } from "@/shared/components/money";
 import { Separator } from "@/shared/ui/separator";
@@ -24,8 +23,7 @@ export interface DocumentViewLine {
   unit: string;
   unitPriceCents: number;
   discountBp: number;
-  vatRateBp: number;
-  totalHtCents: number;
+  totalCents: number;
   originCountry?: string;
 }
 
@@ -37,9 +35,7 @@ export function DocumentView({
   partyName,
   partyDetails,
   lines,
-  totalHtCents,
-  totalVatCents,
-  totalTtcCents,
+  totalCents,
   paidAmountCents,
   notes,
   badge,
@@ -52,9 +48,7 @@ export function DocumentView({
   partyName: string;
   partyDetails?: ReactNode;
   lines: DocumentViewLine[];
-  totalHtCents: number;
-  totalVatCents: number;
-  totalTtcCents: number;
+  totalCents: number;
   paidAmountCents?: number;
   notes?: string;
   badge?: ReactNode;
@@ -62,15 +56,6 @@ export function DocumentView({
 }) {
   const { t } = useTranslation("documents");
   const { company } = useSession();
-  const vatBreakdown = computeDocumentTotals(
-    lines.map((line) => ({
-      quantity: line.quantity,
-      unitPriceCents: line.unitPriceCents,
-      discountBp: line.discountBp,
-      vatRateBp: line.vatRateBp,
-    })),
-    { vatEnabled: company?.vatEnabled ?? true }
-  ).vatBreakdown;
 
   // The country of origin is only shown when at least one line has it:
   // no need to clutter the document otherwise ([FR-VNT-5]).
@@ -124,10 +109,9 @@ export function DocumentView({
               <TableHead>{t("view.columns.description")}</TableHead>
               {showOrigin ? <TableHead>{t("view.columns.origin")}</TableHead> : null}
               <TableHead className="text-end">{t("view.columns.quantity")}</TableHead>
-              <TableHead className="text-end">{t("view.columns.unitPriceExclTax")}</TableHead>
+              <TableHead className="text-end">{t("view.columns.unitPrice")}</TableHead>
               <TableHead className="text-end">{t("common:labels.discount")}</TableHead>
-              <TableHead className="text-end">{t("vat")}</TableHead>
-              <TableHead className="text-end">{t("common:labels.totalExclTax")}</TableHead>
+              <TableHead className="text-end">{t("common:labels.total")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -151,11 +135,8 @@ export function DocumentView({
                 <TableCell className="text-end">
                   {line.discountBp ? <Rate bp={line.discountBp} /> : "—"}
                 </TableCell>
-                <TableCell className="text-end">
-                  <Rate bp={line.vatRateBp} />
-                </TableCell>
                 <TableCell className="text-end font-medium">
-                  <Money cents={line.totalHtCents} withSymbol={false} />
+                  <Money cents={line.totalCents} withSymbol={false} />
                 </TableCell>
               </TableRow>
             ))}
@@ -165,30 +146,9 @@ export function DocumentView({
 
       <div className="mt-6 flex justify-end">
         <div className="w-full max-w-xs space-y-1 text-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">{t("common:labels.totalExclTax")}</span>
-            <Money cents={totalHtCents} />
-          </div>
-          {vatBreakdown
-            .filter((entry) => entry.vatCents !== 0)
-            .map((entry) => (
-              <div key={entry.vatRateBp} className="flex items-center justify-between">
-                <span className="text-muted-foreground">
-                  {t("vatRate", { rate: entry.vatRateBp / 100 })}
-                </span>
-                <Money cents={entry.vatCents} />
-              </div>
-            ))}
-          {vatBreakdown.length === 0 || totalVatCents === 0 ? (
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">{t("vat")}</span>
-              <Money cents={totalVatCents} />
-            </div>
-          ) : null}
-          <Separator className="my-2" />
           <div className="flex items-center justify-between text-base font-semibold">
-            <span>{t("common:labels.totalInclTax")}</span>
-            <Money cents={totalTtcCents} />
+            <span>{t("common:labels.total")}</span>
+            <Money cents={totalCents} />
           </div>
           {paidAmountCents !== undefined ? (
             <>
@@ -198,7 +158,7 @@ export function DocumentView({
               </div>
               <div className="flex items-center justify-between font-medium">
                 <span>{t("view.amountDue")}</span>
-                <Money cents={Math.max(0, totalTtcCents - paidAmountCents)} />
+                <Money cents={Math.max(0, totalCents - paidAmountCents)} />
               </div>
             </>
           ) : null}

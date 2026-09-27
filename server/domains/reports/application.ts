@@ -57,8 +57,8 @@ class ReportsApplication {
       dailyRevenue: daily,
       topProducts,
       lowStock,
-      /** Approximate gross margin: revenue excl. tax − purchases excl. tax over the period. */
-      grossMarginCents: sales.totalHtCents - purchases.totalHtCents,
+      /** Approximate gross margin: revenue − purchases over the period. */
+      grossMarginCents: sales.totalCents - purchases.totalCents,
     };
   }
 

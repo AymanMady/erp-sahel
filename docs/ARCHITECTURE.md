@@ -55,7 +55,7 @@ Un domaine appelle un autre domaine **par son `application` uniquement**. Import
   `stock_items` ni `stock_movements` ; ventes, achats et POS passent par
   `inventoryApplication`.
 - **`accounting` est seul propriétaire des écritures.** Les autres domaines fournissent des
-  lignes exprimées en **clés logiques** (`SALES_REVENUE`, `VAT_COLLECTED`…), jamais des
+  lignes exprimées en **clés logiques** (`SALES_REVENUE`, `CUSTOMER_RECEIVABLE`…), jamais des
   numéros de compte.
 - **`numbering` est seul propriétaire des séquences légales.**
 

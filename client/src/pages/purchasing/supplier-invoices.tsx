@@ -1,4 +1,4 @@
-/** Supplier invoices: payables and recoverable VAT. */
+/** Supplier invoices: payables. */
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -54,9 +54,9 @@ export default function SupplierInvoicesPage() {
     },
     {
       id: "total",
-      header: t("common:labels.totalInclTax"),
+      header: t("common:labels.total"),
       align: "end",
-      cell: (row) => <Money cents={row.totalTtcCents} />,
+      cell: (row) => <Money cents={row.totalCents} />,
     },
   ];
 

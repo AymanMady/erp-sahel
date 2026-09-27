@@ -58,7 +58,6 @@ async function resolveLines(
       unit: line.unit,
       unitPriceCents: line.unitPriceCents,
       discountBp: line.discountBp,
-      vatRateBp: line.vatRateBp,
       originCountry: line.originCountry,
     });
   }

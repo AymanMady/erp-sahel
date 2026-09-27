@@ -75,8 +75,6 @@ export interface CachedSession {
     name: string;
     currency: string;
     logo?: string | null;
-    vatEnabled: boolean;
-    defaultVatRateBp: number;
   };
   permissions: string[];
   modules: string[];

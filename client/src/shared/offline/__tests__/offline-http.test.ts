@@ -109,17 +109,15 @@ describe("offline writes", () => {
     const order = (await api.post("/api/purchase-orders", {
       supplierId: "7c9e6679-7425-40de-944b-e07fc1f90ae7",
       date: "2026-09-24",
-      lines: [{ description: "Filter", quantity: 2, unitPriceCents: 1500, vatRateBp: 1600 }],
+      lines: [{ description: "Filter", quantity: 2, unitPriceCents: 1500 }],
     })) as {
       id: string;
       number: string;
-      totalHtCents: number;
-      totalTtcCents: number;
+      totalCents: number;
       lines: { id: string; receivedQuantity: string }[];
     };
     expect(order.number).toBe(i18n.t("offline:write.pendingNumber"));
-    expect(order.totalHtCents).toBe(3000);
-    expect(order.totalTtcCents).toBe(3480);
+    expect(order.totalCents).toBe(3000);
     expect(order.lines[0].receivedQuantity).toBe("0");
     expect(await readCachedResponse(`/api/purchase-orders/${order.id}`)).toMatchObject({
       id: order.id,

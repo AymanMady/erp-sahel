@@ -45,8 +45,6 @@ export interface SessionCompany {
   name: string;
   currency: string;
   logo?: string | null;
-  vatEnabled: boolean;
-  defaultVatRateBp: number;
 }
 
 export interface SessionValue {

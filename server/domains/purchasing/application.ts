@@ -2,7 +2,7 @@
  * Purchasing orchestration: order → goods receipt → supplier invoice.
  *
  * The **goods receipt** is the only moment stock comes in ([FR-ACH-3]); the **supplier
- * invoice** is the only moment the payable and the recoverable VAT are posted. The two
+ * invoice** is the only moment the payable is posted. The two
  * remain separate: goods may arrive before their invoice and vice versa — the ERP must
  * reflect that without forcing an artificial order.
  */
@@ -80,9 +80,7 @@ class PurchasingApplication {
           (supplier.defaultLeadTimeDays > 0 ? addDays(date, supplier.defaultLeadTimeDays) : null),
         status: "DRAFT",
         globalDiscountBp: input.globalDiscountBp ?? 0,
-        totalHtCents: built.totalHtCents,
-        totalVatCents: built.totalVatCents,
-        totalTtcCents: built.totalTtcCents,
+        totalCents: built.totalCents,
         currency: company.currency,
         notes: input.notes ?? "",
         userId: userId ?? null,
@@ -131,9 +129,7 @@ class PurchasingApplication {
           orderId,
           built.lines.map((line) => ({ ...line, receivedQuantity: "0" }))
         );
-        patch.totalHtCents = built.totalHtCents;
-        patch.totalVatCents = built.totalVatCents;
-        patch.totalTtcCents = built.totalTtcCents;
+        patch.totalCents = built.totalCents;
       }
 
       await repository.updateOrder(company.id, orderId, patch);
@@ -245,7 +241,7 @@ class PurchasingApplication {
     });
   }
 
-  /** Supplier invoice: payable and recoverable VAT ([FR-ACH-4], [BR-7]). */
+  /** Supplier invoice: purchases and payable ([FR-ACH-4], [BR-7]). */
   async createSupplierInvoice(
     company: Company,
     input: {
@@ -283,9 +279,7 @@ class PurchasingApplication {
           input.dueDate ??
           (supplier.paymentTermsDays > 0 ? addDays(date, supplier.paymentTermsDays) : date),
         status: "VALIDATED",
-        totalHtCents: built.totalHtCents,
-        totalVatCents: built.totalVatCents,
-        totalTtcCents: built.totalTtcCents,
+        totalCents: built.totalCents,
         currency: company.currency,
         notes: input.notes ?? "",
       });
@@ -301,10 +295,7 @@ class PurchasingApplication {
           unit: line.unit,
           unitPriceCents: line.unitPriceCents,
           discountBp: line.discountBp,
-          vatRateBp: line.vatRateBp,
-          totalHtCents: line.totalHtCents,
-          totalVatCents: line.totalVatCents,
-          totalTtcCents: line.totalTtcCents,
+          totalCents: line.totalCents,
           position: line.position,
           originCountry: line.originCountry,
         }))
@@ -320,12 +311,9 @@ class PurchasingApplication {
         originType: "supplier_invoice",
         originId: invoice.id,
         lines: buildSupplierInvoicePosting({
-          totalHtCents: invoice.totalHtCents,
-          totalVatCents: invoice.totalVatCents,
-          totalTtcCents: invoice.totalTtcCents,
+          totalCents: invoice.totalCents,
           partyId: supplier.id,
           label,
-          vatLabel: tr("VAT — {label}", { label }),
         }),
       });
 

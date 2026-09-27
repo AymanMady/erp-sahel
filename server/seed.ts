@@ -126,8 +126,6 @@ async function seedCompany(): Promise<Company> {
     currency: "MRU",
     language: "fr",
     accountingStandard: "OHADA",
-    vatEnabled: true,
-    defaultVatRateBp: 1600,
     city: "Nouakchott",
     country: "Mauritanie",
   });
@@ -310,7 +308,6 @@ async function seedDemoData(company: Company, userId: string): Promise<void> {
         barcode: "",
         purchasePriceCents: item.purchase,
         salePriceCents: item.sale,
-        vatRateBp: company.defaultVatRateBp,
         isService: false,
         imageUrls: [],
         minStock: "5",
@@ -345,7 +342,6 @@ async function seedDemoData(company: Company, userId: string): Promise<void> {
         name: service.name,
         priceCents: service.priceCents,
         billingType: service.billingType,
-        vatRateBp: company.defaultVatRateBp,
       })
       .onConflictDoNothing();
   }
@@ -445,7 +441,7 @@ async function seedDemoData(company: Company, userId: string): Promise<void> {
     {
       partyId: customerId,
       invoiceId: invoice.id,
-      amountCents: Math.round(invoice.totalTtcCents / 2),
+      amountCents: Math.round(invoice.totalCents / 2),
       paymentMethod: "CASH",
       reference: "Acompte 50 %",
       paymentDate: addDays(todayInput(), -2),
@@ -478,21 +474,19 @@ async function seedDemoData(company: Company, userId: string): Promise<void> {
         unitPriceCents: createdProducts[3].salePriceCents,
       },
     ];
-    // The POS requires the amount collected to equal the total incl. tax exactly: we
+    // The POS requires the amount collected to equal the total exactly: we
     // apply the **same** calculation function as the server, so no gap is possible.
     const totals = computeDocumentTotals(
       ticketLines.map((line) => ({
         quantity: line.quantity,
         unitPriceCents: line.unitPriceCents,
-        vatRateBp: company.defaultVatRateBp,
-      })),
-      { vatEnabled: company.vatEnabled }
+      }))
     );
 
     await posApplication.createTicket(company, userId, {
       sessionId: session.id,
       lines: ticketLines,
-      payments: [{ method: "CASH", amountCents: totals.totalTtcCents }],
+      payments: [{ method: "CASH", amountCents: totals.totalCents }],
     });
   }
 

@@ -12,7 +12,6 @@ import { errorMessage } from "@/shared/api/api-error";
 import { salesApi } from "@/entities/sales/api";
 import { onlineOrQueued, queueQuoteCreate } from "@/shared/offline/offline-writes";
 import type { Party } from "@/entities/types";
-import { useSession } from "@/shared/auth/session";
 import { Field, FieldGrid } from "@/shared/components/field";
 import { PageHeader } from "@/shared/components/page-header";
 import {
@@ -31,14 +30,13 @@ export default function QuoteFormPage() {
   const { t } = useTranslation("sales");
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
-  const { company } = useSession();
 
   const [party, setParty] = useState<Party | null>(null);
   const [date, setDate] = useState(todayInput());
   const [expiryDate, setExpiryDate] = useState(addDays(todayInput(), 30));
   const [notes, setNotes] = useState("");
   const [globalDiscountBp, setGlobalDiscountBp] = useState(0);
-  const [lines, setLines] = useState<DocumentLine[]>([emptyLine(company?.defaultVatRateBp ?? 0)]);
+  const [lines, setLines] = useState<DocumentLine[]>([emptyLine()]);
 
   const mutation = useMutation({
     mutationFn: () => {

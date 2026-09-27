@@ -4,9 +4,8 @@
     "description": "Identité, fiscalité et référentiel comptable.",
     "saved": "Paramètres enregistrés.",
     "identity": "Identité",
-    "taxAccounting": "Fiscalité et comptabilité",
-    "taxAccountingDescription": "Le référentiel comptable détermine le plan installé ; les comptes utilisés par les automatismes restent modifiables dans le plan comptable.",
-    "vatEnabled": "Société assujettie à la TVA",
+    "accounting": "Comptabilité",
+    "accountingDescription": "Le référentiel comptable détermine le plan installé ; les comptes utilisés par les automatismes restent modifiables dans le plan comptable.",
     "fields": {
       "name": "Nom commercial",
       "legalName": "Raison sociale",
@@ -16,7 +15,6 @@
       "country": "Pays",
       "currencyHint": "Code ISO à trois lettres.",
       "accountingStandard": "Référentiel comptable",
-      "defaultVatRate": "Taux de TVA par défaut",
       "fiscalYearStart": "Début d'exercice"
     },
     "logo": {

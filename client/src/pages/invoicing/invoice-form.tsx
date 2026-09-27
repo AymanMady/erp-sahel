@@ -21,7 +21,6 @@ import { queueHttpWrite } from "@/shared/offline/offline-http";
 import { newUuid, onlineOrQueued, queueInvoiceCreate } from "@/shared/offline/offline-writes";
 import type { Party } from "@/entities/types";
 import { queryKeys } from "@/shared/api/query-client";
-import { useSession } from "@/shared/auth/session";
 import { Field, FieldGrid } from "@/shared/components/field";
 import { PageHeader } from "@/shared/components/page-header";
 import {
@@ -43,7 +42,6 @@ export default function InvoiceFormPage() {
   const { t } = useTranslation("invoicing");
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
-  const { company } = useSession();
 
   const [party, setParty] = useState<Party | null>(null);
   const [date, setDate] = useState(todayInput());
@@ -51,7 +49,7 @@ export default function InvoiceFormPage() {
   const [warehouseId, setWarehouseId] = useState(DEFAULT_WAREHOUSE);
   const [notes, setNotes] = useState("");
   const [globalDiscountBp, setGlobalDiscountBp] = useState(0);
-  const [lines, setLines] = useState<DocumentLine[]>([emptyLine(company?.defaultVatRateBp ?? 0)]);
+  const [lines, setLines] = useState<DocumentLine[]>([emptyLine()]);
 
   const { data: warehouses } = useQuery({
     queryKey: queryKeys.warehouses,

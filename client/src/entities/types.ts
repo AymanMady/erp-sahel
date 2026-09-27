@@ -106,7 +106,7 @@ export interface PartyDetail extends Party {
       number: string;
       date: string;
       status: string;
-      totalTtcCents: number;
+      totalCents: number;
       paidAmountCents: number;
     }[];
     payments: {
@@ -204,19 +204,17 @@ export interface DashboardData {
   period: { fromDate: string; toDate: string };
   sales: {
     invoiceCount: number;
-    totalHtCents: number;
-    totalTtcCents: number;
+    totalCents: number;
     paidCents: number;
     outstandingCents: number;
   };
-  purchases: { orderCount: number; totalHtCents: number; totalTtcCents: number };
+  purchases: { orderCount: number; totalCents: number };
   treasury: { cashCents: number; bankCents: number; mobileCents: number; totalCents: number };
   stock: { totalQuantity: number; totalValueCents: number; skuCount: number };
   counts: { customers: number; suppliers: number; products: number; services: number };
   dailyRevenue: {
     date: string;
-    totalHtCents: number;
-    totalTtcCents: number;
+    totalCents: number;
     invoiceCount: number;
   }[];
   topProducts: {

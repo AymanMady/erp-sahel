@@ -122,13 +122,10 @@ export default function SalesOrderDetailPage() {
           unit: line.unit,
           unitPriceCents: line.unitPriceCents,
           discountBp: line.discountBp,
-          vatRateBp: line.vatRateBp,
-          totalHtCents: line.totalHtCents,
+          totalCents: line.totalCents,
           originCountry: line.originCountry,
         }))}
-        totalHtCents={data.totalHtCents}
-        totalVatCents={data.totalVatCents}
-        totalTtcCents={data.totalTtcCents}
+        totalCents={data.totalCents}
         notes={data.notes}
       />
     </div>

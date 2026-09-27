@@ -16,7 +16,7 @@
   },
   "offline": "Indicators are not available offline. They will reappear as soon as the network is back.",
   "stats": {
-    "revenue": "Revenue excl. tax",
+    "revenue": "Revenue",
     "invoicesHint_one": "{{count}} invoice in the period",
     "invoicesHint_other": "{{count}} invoices in the period",
     "outstanding": "Outstanding receivables",
@@ -29,9 +29,9 @@
   },
   "revenueChart": {
     "title": "Revenue trend",
-    "description": "Amounts excluding tax of validated invoices, from {{from}} to {{to}}.",
+    "description": "Amounts of validated invoices, from {{from}} to {{to}}.",
     "empty": "No sales recorded in this period.",
-    "series": "Revenue excl. tax"
+    "series": "Revenue"
   },
   "topSales": {
     "title": "Best sellers",

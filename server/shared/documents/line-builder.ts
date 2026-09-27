@@ -1,8 +1,8 @@
 /**
  * Building the lines of a commercial document.
  *
- * Single entry point for quotes, orders, invoices, credit notes and POS tickets: prices,
- * rates and countries of origin are **resolved server-side** from the catalog, never
+ * Single entry point for quotes, orders, invoices, credit notes and POS tickets: prices
+ * and countries of origin are **resolved server-side** from the catalog, never
  * taken as-is from the client. An offline terminal may therefore propose a price, but
  * the server has the final say — exactly the asymmetry described in `SYNC_STRATEGY.md`
  * §1 ("the client produces intents").
@@ -28,8 +28,6 @@ export interface RawDocumentLine {
   /** Proposed price; the catalog price applies when omitted. */
   unitPriceCents?: number | null;
   discountBp?: number;
-  /** Proposed rate; the product rate applies when omitted. */
-  vatRateBp?: number | null;
   originCountry?: string;
 }
 
@@ -43,20 +41,14 @@ export interface BuiltDocumentLine {
   unit: string;
   unitPriceCents: number;
   discountBp: number;
-  vatRateBp: number;
-  totalHtCents: number;
-  totalVatCents: number;
-  totalTtcCents: number;
+  totalCents: number;
   position: number;
   originCountry: string;
 }
 
 export interface BuiltDocument {
   lines: BuiltDocumentLine[];
-  totalHtCents: number;
-  totalVatCents: number;
-  totalTtcCents: number;
-  vatBreakdown: { vatRateBp: number; baseCents: number; vatCents: number }[];
+  totalCents: number;
 }
 
 export interface BuildDocumentOptions {
@@ -70,7 +62,7 @@ export interface BuildDocumentOptions {
  */
 export async function buildDocumentLines(
   tx: Database,
-  company: Pick<Company, "id" | "vatEnabled">,
+  company: Pick<Company, "id">,
   rawLines: RawDocumentLine[],
   options: BuildDocumentOptions = {}
 ): Promise<BuiltDocument> {
@@ -124,9 +116,6 @@ export async function buildDocumentLines(
 
     const unitPriceCents =
       line.unitPriceCents ?? product?.salePriceCents ?? service?.priceCents ?? 0;
-    const vatRateBp = company.vatEnabled
-      ? (line.vatRateBp ?? product?.vatRateBp ?? service?.vatRateBp ?? 0)
-      : 0;
 
     return {
       raw: line,
@@ -134,7 +123,6 @@ export async function buildDocumentLines(
       service,
       description,
       unitPriceCents,
-      vatRateBp,
     };
   });
 
@@ -143,9 +131,8 @@ export async function buildDocumentLines(
       quantity: entry.raw.quantity,
       unitPriceCents: entry.unitPriceCents,
       discountBp: entry.raw.discountBp ?? 0,
-      vatRateBp: entry.vatRateBp,
     })),
-    { globalDiscountBp: options.globalDiscountBp, vatEnabled: company.vatEnabled }
+    { globalDiscountBp: options.globalDiscountBp }
   );
 
   const lines: BuiltDocumentLine[] = resolved.map((entry, index) => {
@@ -160,10 +147,7 @@ export async function buildDocumentLines(
       unit: entry.raw.unit || entry.product?.unit || tr("unit"),
       unitPriceCents: computed.unitPriceCents,
       discountBp: computed.discountBp,
-      vatRateBp: computed.vatRateBp,
-      totalHtCents: computed.totalHtCents,
-      totalVatCents: computed.totalVatCents,
-      totalTtcCents: computed.totalTtcCents,
+      totalCents: computed.totalCents,
       position: index,
       originCountry: entry.raw.originCountry ?? "",
     };
@@ -171,9 +155,6 @@ export async function buildDocumentLines(
 
   return {
     lines,
-    totalHtCents: totals.totalHtCents,
-    totalVatCents: totals.totalVatCents,
-    totalTtcCents: totals.totalTtcCents,
-    vatBreakdown: totals.vatBreakdown,
+    totalCents: totals.totalCents,
   };
 }

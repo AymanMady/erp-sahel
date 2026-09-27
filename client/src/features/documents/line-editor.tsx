@@ -16,7 +16,6 @@ import { catalogApi } from "@/entities/catalog/api";
 import { settingsApi } from "@/entities/settings/api";
 import { i18n } from "@/shared/i18n";
 import { queryKeys } from "@/shared/api/query-client";
-import { useSession } from "@/shared/auth/session";
 import { Money } from "@/shared/components/money";
 import { MoneyInput, QuantityInput, RateInput } from "@/shared/components/money-input";
 import { SearchInput } from "@/shared/components/search-input";
@@ -31,7 +30,6 @@ import {
 } from "@/shared/ui/dialog";
 import { Input } from "@/shared/ui/input";
 import { ScrollArea } from "@/shared/ui/scroll-area";
-import { Separator } from "@/shared/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
 
 export interface DocumentLine {
@@ -45,10 +43,9 @@ export interface DocumentLine {
   unit: string;
   unitPriceCents: number;
   discountBp: number;
-  vatRateBp: number;
 }
 
-export function emptyLine(vatRateBp = 0): DocumentLine {
+export function emptyLine(): DocumentLine {
   return {
     key: Math.random().toString(36).slice(2),
     productId: null,
@@ -60,7 +57,6 @@ export function emptyLine(vatRateBp = 0): DocumentLine {
     unit: i18n.t("documents:units.unit"),
     unitPriceCents: 0,
     discountBp: 0,
-    vatRateBp,
   };
 }
 
@@ -77,7 +73,6 @@ export function toApiLines(lines: DocumentLine[]) {
       unit: line.unit,
       unitPriceCents: line.unitPriceCents,
       discountBp: line.discountBp,
-      vatRateBp: line.vatRateBp,
     }));
 }
 
@@ -98,7 +93,6 @@ export function LineEditor({
   readOnly?: boolean;
 }) {
   const { t } = useTranslation("documents");
-  const { company } = useSession();
   const [pickerOpen, setPickerOpen] = useState(false);
 
   const totals = computeDocumentTotals(
@@ -106,9 +100,8 @@ export function LineEditor({
       quantity: line.quantity,
       unitPriceCents: line.unitPriceCents,
       discountBp: line.discountBp,
-      vatRateBp: line.vatRateBp,
     })),
-    { globalDiscountBp, vatEnabled: company?.vatEnabled ?? true }
+    { globalDiscountBp }
   );
 
   const update = (key: string, patch: Partial<DocumentLine>) =>
@@ -126,8 +119,7 @@ export function LineEditor({
               <TableHead className="w-24 text-end">{t("common:labels.quantity")}</TableHead>
               <TableHead className="w-32 text-end">{t("common:labels.unitPrice")}</TableHead>
               <TableHead className="w-24 text-end">{t("common:labels.discount")}</TableHead>
-              <TableHead className="w-24 text-end">{t("vat")}</TableHead>
-              <TableHead className="w-32 text-end">{t("common:labels.totalExclTax")}</TableHead>
+              <TableHead className="w-32 text-end">{t("common:labels.total")}</TableHead>
               {!readOnly ? <TableHead className="w-12" /> : null}
             </TableRow>
           </TableHeader>
@@ -135,7 +127,7 @@ export function LineEditor({
             {lines.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={readOnly ? 6 : 7}
+                  colSpan={readOnly ? 5 : 6}
                   className="h-24 text-center text-muted-foreground"
                 >
                   {t("lineEditor.empty")}
@@ -178,15 +170,8 @@ export function LineEditor({
                       disabled={readOnly}
                     />
                   </TableCell>
-                  <TableCell>
-                    <RateInput
-                      valueBp={line.vatRateBp}
-                      onChange={(bp) => update(line.key, { vatRateBp: bp })}
-                      disabled={readOnly}
-                    />
-                  </TableCell>
                   <TableCell className="text-end">
-                    <Money cents={totals.lines[index]?.totalHtCents ?? 0} />
+                    <Money cents={totals.lines[index]?.totalCents ?? 0} />
                   </TableCell>
                   {!readOnly ? (
                     <TableCell className="text-end">
@@ -213,11 +198,7 @@ export function LineEditor({
             <IconPlus className="size-4" />
             {t("lineEditor.addItem")}
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => onChange([...lines, emptyLine(company?.defaultVatRateBp ?? 0)])}
-          >
+          <Button type="button" variant="ghost" onClick={() => onChange([...lines, emptyLine()])}>
             {t("lineEditor.freeLine")}
           </Button>
         </div>
@@ -233,24 +214,9 @@ export function LineEditor({
               </div>
             </div>
           ) : null}
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">{t("common:labels.totalExclTax")}</span>
-            <Money cents={totals.totalHtCents} />
-          </div>
-          {totals.vatBreakdown
-            .filter((entry) => entry.vatCents !== 0)
-            .map((entry) => (
-              <div key={entry.vatRateBp} className="flex items-center justify-between">
-                <span className="text-muted-foreground">
-                  {t("vatRate", { rate: entry.vatRateBp / 100 })}
-                </span>
-                <Money cents={entry.vatCents} />
-              </div>
-            ))}
-          <Separator className="my-2" />
           <div className="flex items-center justify-between text-base font-semibold">
-            <span>{t("common:labels.totalInclTax")}</span>
-            <Money cents={totals.totalTtcCents} />
+            <span>{t("common:labels.total")}</span>
+            <Money cents={totals.totalCents} />
           </div>
         </div>
       </div>
@@ -320,7 +286,7 @@ function ProductPicker({
                 className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-start transition-colors hover:bg-muted"
                 onClick={() =>
                   onPick({
-                    ...emptyLine(product.vatRateBp),
+                    ...emptyLine(),
                     productId: product.id,
                     productSku: product.sku,
                     description: product.name,
@@ -354,7 +320,7 @@ function ProductPicker({
                 className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-start transition-colors hover:bg-muted"
                 onClick={() =>
                   onPick({
-                    ...emptyLine(service.vatRateBp),
+                    ...emptyLine(),
                     serviceId: service.id,
                     productSku: service.code,
                     description: service.name,

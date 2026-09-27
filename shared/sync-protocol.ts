@@ -47,7 +47,6 @@ export const syncDocumentLineSchema = z.object({
   unit: z.string().default("unité"),
   unitPriceCents: z.number().int(),
   discountBp: z.number().int().min(0).max(10_000).default(0),
-  vatRateBp: z.number().int().min(0).max(10_000).default(0),
   originCountry: z.string().default(""),
 });
 export type SyncDocumentLine = z.infer<typeof syncDocumentLineSchema>;
@@ -57,7 +56,7 @@ export const syncPartyPayloadSchema = z.object({
   partyType: z.enum(["CUSTOMER", "SUPPLIER", "BOTH", "PROSPECT"]).default("CUSTOMER"),
   email: z.string().default(""),
   phone: z.string().default(""),
-  vatNumber: z.string().default(""),
+  taxId: z.string().default(""),
   creditLimitCents: z.number().int().min(0).default(0),
   paymentTermsDays: z.number().int().min(0).default(0),
   notes: z.string().default(""),
@@ -71,7 +70,6 @@ export const syncProductPayloadSchema = z.object({
   barcode: z.string().default(""),
   salePriceCents: z.number().int().default(0),
   purchasePriceCents: z.number().int().default(0),
-  vatRateBp: z.number().int().default(0),
   isService: z.boolean().default(false),
   categoryId: z.string().uuid().nullish(),
   minStock: z.union([z.number(), z.string()]).default("0"),

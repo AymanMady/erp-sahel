@@ -17,9 +17,8 @@ import { catalogApi } from "@/entities/catalog/api";
 import { onlineOrQueued, queueProductCreate } from "@/shared/offline/offline-writes";
 import { inventoryApi } from "@/entities/inventory/api";
 import { queryKeys } from "@/shared/api/query-client";
-import { useSession } from "@/shared/auth/session";
 import { Field, FieldGrid } from "@/shared/components/field";
-import { MoneyInput, QuantityInput, RateInput } from "@/shared/components/money-input";
+import { MoneyInput, QuantityInput } from "@/shared/components/money-input";
 import { PageHeader } from "@/shared/components/page-header";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
@@ -40,7 +39,6 @@ interface ProductForm {
   barcode: string;
   purchasePriceCents: number;
   salePriceCents: number;
-  vatRateBp: number;
   isService: boolean;
   minStock: string;
 }
@@ -52,7 +50,6 @@ export default function ProductFormPage() {
   const isEdit = Boolean(productId);
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
-  const { company } = useSession();
 
   const [form, setForm] = useState<ProductForm>({
     sku: "",
@@ -63,7 +60,6 @@ export default function ProductFormPage() {
     barcode: "",
     purchasePriceCents: 0,
     salePriceCents: 0,
-    vatRateBp: company?.defaultVatRateBp ?? 0,
     isService: false,
     minStock: "0",
   });
@@ -100,7 +96,6 @@ export default function ProductFormPage() {
       barcode: existing.barcode,
       purchasePriceCents: existing.purchasePriceCents,
       salePriceCents: existing.salePriceCents,
-      vatRateBp: existing.vatRateBp,
       isService: existing.isService,
       minStock: existing.minStock,
     });
@@ -271,22 +266,16 @@ export default function ProductFormPage() {
               <CardTitle>{t("productForm.pricing")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Field label={t("productForm.purchasePriceExclTax")}>
+              <Field label={t("productForm.purchasePrice")}>
                 <MoneyInput
                   valueCents={form.purchasePriceCents}
                   onChange={(cents) => setForm({ ...form, purchasePriceCents: cents })}
                 />
               </Field>
-              <Field label={t("productForm.salePriceExclTax")}>
+              <Field label={t("productForm.salePrice")}>
                 <MoneyInput
                   valueCents={form.salePriceCents}
                   onChange={(cents) => setForm({ ...form, salePriceCents: cents })}
-                />
-              </Field>
-              <Field label={t("productForm.vatRate")}>
-                <RateInput
-                  valueBp={form.vatRateBp}
-                  onChange={(bp) => setForm({ ...form, vatRateBp: bp })}
                 />
               </Field>
               {form.salePriceCents > 0 && form.purchasePriceCents > 0 ? (

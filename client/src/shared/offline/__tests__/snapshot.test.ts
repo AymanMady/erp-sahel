@@ -31,7 +31,6 @@ function buildSnapshot(): OfflineSnapshot {
       barcode,
       purchasePriceCents: 0,
       salePriceCents: 10_000,
-      vatRateBp: 1600,
       isService: false,
       imageUrl: null,
       imageUrls: [],

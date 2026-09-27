@@ -135,7 +135,7 @@ export default function DashboardPage() {
       (data?.dailyRevenue ?? []).map((row) => ({
         date: row.date,
         label: formatDate(row.date),
-        revenue: centsToMajor(row.totalHtCents),
+        revenue: centsToMajor(row.totalCents),
       })),
     // The language is a dependency: date labels follow the UI locale.
     [data, i18n.language]
@@ -200,7 +200,7 @@ export default function DashboardPage() {
       <div className="grid gap-4 lg:grid-cols-2 min-[1700px]:grid-cols-4">
         <StatCard
           label={t("stats.revenue")}
-          value={formatMoneyValue(data?.sales.totalHtCents ?? 0)}
+          value={formatMoneyValue(data?.sales.totalCents ?? 0)}
           hint={t("stats.invoicesHint", { count: data?.sales.invoiceCount ?? 0 })}
           icon={<IconTrendingUp className="size-5" />}
           loading={isLoading}

@@ -6,8 +6,7 @@
   "sales": {
     "title": "Sales report",
     "description": "Revenue, items and collections.",
-    "revenueExclTax": "Revenue excl. tax",
-    "revenueInclTax": "Revenue incl. tax",
+    "revenue": "Revenue",
     "collected": "Collected",
     "outstanding": "Outstanding",
     "dailyRevenue": "Daily revenue",
@@ -44,8 +43,7 @@
     "title": "Purchases report",
     "description": "Procurement volume over the period.",
     "ordersPlaced": "Orders placed",
-    "amountExclTax": "Amount excl. tax",
-    "amountInclTax": "Amount incl. tax",
+    "amount": "Amount",
     "periodNote": "Period analysed: {{from}} to {{to}}. Amounts include all purchase orders, including those not yet received."
   }
 }

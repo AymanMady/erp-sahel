@@ -2,8 +2,8 @@
  * Exact money arithmetic.
  *
  * Every amount persisted and carried by the API is an **integer in minor units**
- * (cents / khoums) — never a float. Rates (VAT, discount) are **basis points** (`bp`):
- * 16 % ⇒ `1600`. This satisfies [BR-7] (entries balanced to the cent) without relying
+ * (cents / khoums) — never a float. Rates (discounts) are **basis points** (`bp`):
+ * 10 % ⇒ `1000`. This satisfies [BR-7] (entries balanced to the cent) without relying
  * on a decimal library on the client, and stays exact through a JSON round-trip
  * (unlike `numeric` → `string`).
  *

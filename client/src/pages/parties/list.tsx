@@ -69,9 +69,9 @@ export default function PartiesPage() {
       cell: (row) => (
         <div className="min-w-0">
           <p className="truncate font-medium">{row.name}</p>
-          {row.vatNumber ? (
+          {row.taxId ? (
             <p className="text-xs text-muted-foreground">
-              {t("list.vatNumberShort", { number: row.vatNumber })}
+              {t("list.taxIdShort", { number: row.taxId })}
             </p>
           ) : null}
         </div>
@@ -205,7 +205,7 @@ export function PartyDialog({
     partyType: defaultType as PartyType,
     email: "",
     phone: "",
-    vatNumber: "",
+    taxId: "",
     creditLimitCents: 0,
     paymentTermsDays: 0,
     notes: "",
@@ -236,7 +236,7 @@ export function PartyDialog({
         partyType: defaultType,
         email: "",
         phone: "",
-        vatNumber: "",
+        taxId: "",
         creditLimitCents: 0,
         paymentTermsDays: 0,
         notes: "",
@@ -304,11 +304,11 @@ export function PartyDialog({
                 onChange={(event) => setForm({ ...form, email: event.target.value })}
               />
             </Field>
-            <Field label={t("fields.vatNumber")} htmlFor="party-vat">
+            <Field label={t("fields.taxId")} htmlFor="party-tax-id">
               <Input
-                id="party-vat"
-                value={form.vatNumber}
-                onChange={(event) => setForm({ ...form, vatNumber: event.target.value })}
+                id="party-tax-id"
+                value={form.taxId}
+                onChange={(event) => setForm({ ...form, taxId: event.target.value })}
               />
             </Field>
             <Field

@@ -104,7 +104,7 @@ Une caisse n'accepte qu'une session ouverte à la fois. La clôture recalcule l'
 `fiscal_years`
 
 `account_mappings` est la clé de l'interchangeabilité du référentiel : les automatismes
-désignent une **clé logique** (`SALES_REVENUE`, `VAT_COLLECTED`…), et cette table dit quel
+désignent une **clé logique** (`SALES_REVENUE`, `CUSTOMER_RECEIVABLE`…), et cette table dit quel
 compte la sert. Passer d'OHADA à PCG revient à fournir un autre plan et d'autres
 associations — le moteur d'écritures ne change pas.
 

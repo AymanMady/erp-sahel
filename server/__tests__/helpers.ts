@@ -35,8 +35,6 @@ export async function createTestCompany(label = "test"): Promise<TestContext> {
     subdomain: `t-${label}-${suffix}`.toLowerCase().slice(0, 60),
     currency: "MRU",
     accountingStandard: "OHADA",
-    vatEnabled: true,
-    defaultVatRateBp: 1600,
   });
 
   // Tests cover every domain: every module is enabled.
@@ -76,7 +74,7 @@ export async function createTestCompany(label = "test"): Promise<TestContext> {
 /** Creates a product with initial stock. */
 export async function createStockedProduct(
   context: TestContext,
-  options: { sku?: string; salePriceCents?: number; quantity?: number; vatRateBp?: number } = {}
+  options: { sku?: string; salePriceCents?: number; quantity?: number } = {}
 ) {
   return catalogApplication.create(
     context.company.id,
@@ -89,7 +87,6 @@ export async function createStockedProduct(
       barcode: "",
       purchasePriceCents: 1_000,
       salePriceCents: options.salePriceCents ?? 10_000,
-      vatRateBp: options.vatRateBp ?? 1600,
       isService: false,
       imageUrls: [],
       minStock: "0",

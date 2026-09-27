@@ -133,8 +133,6 @@ export async function buildSyncSnapshot(options: SnapshotOptions) {
           legalName: company.legalName,
           currency: company.currency,
           language: company.language,
-          vatEnabled: company.vatEnabled,
-          defaultVatRateBp: company.defaultVatRateBp,
           logo: company.logo,
           address: company.address,
           phone: company.phone,

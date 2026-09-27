@@ -28,7 +28,6 @@ const createServiceSchema = z.object({
   description: z.string().max(4000).default(""),
   billingType: z.enum(BILLING_TYPES).default("HOURLY"),
   priceCents: z.number().int().min(0).default(0),
-  vatRateBp: z.number().int().min(0).max(10_000).default(0),
 });
 
 const updateServiceSchema = createServiceSchema.partial();

@@ -85,7 +85,6 @@ class CatalogApplication {
         barcode: input.barcode,
         purchasePriceCents: input.purchasePriceCents,
         salePriceCents: input.salePriceCents,
-        vatRateBp: input.vatRateBp,
         isService: input.isService,
         imageUrl: input.imageUrl ?? null,
         imageUrls: input.imageUrls,

@@ -25,8 +25,6 @@ const updateCompanySchema = z.object({
   language: z.string().max(8).optional(),
   currency: z.string().length(3).optional(),
   accountingStandard: z.enum(ACCOUNTING_STANDARDS).optional(),
-  vatEnabled: z.boolean().optional(),
-  defaultVatRateBp: z.number().int().min(0).max(10_000).optional(),
   fiscalYearStartMonth: z.number().int().min(1).max(12).optional(),
   primaryModule: z.string().max(64).optional(),
 });

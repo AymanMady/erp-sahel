@@ -70,9 +70,7 @@ class SalesApplication {
         expiryDate: input.expiryDate ?? addDays(date, 30),
         status: "DRAFT",
         globalDiscountBp: input.globalDiscountBp ?? 0,
-        totalHtCents: built.totalHtCents,
-        totalVatCents: built.totalVatCents,
-        totalTtcCents: built.totalTtcCents,
+        totalCents: built.totalCents,
         currency: company.currency,
         notes: input.notes ?? "",
         userId: userId ?? null,
@@ -113,9 +111,7 @@ class SalesApplication {
           globalDiscountBp: patch.globalDiscountBp as number,
         });
         await repository.replaceQuoteLines(company.id, quoteId, built.lines);
-        patch.totalHtCents = built.totalHtCents;
-        patch.totalVatCents = built.totalVatCents;
-        patch.totalTtcCents = built.totalTtcCents;
+        patch.totalCents = built.totalCents;
       }
 
       await repository.updateQuote(company.id, quoteId, patch);
@@ -162,9 +158,7 @@ class SalesApplication {
         deliveryDate: input.deliveryDate ?? null,
         status: "DRAFT",
         globalDiscountBp: input.globalDiscountBp ?? 0,
-        totalHtCents: built.totalHtCents,
-        totalVatCents: built.totalVatCents,
-        totalTtcCents: built.totalTtcCents,
+        totalCents: built.totalCents,
         currency: company.currency,
         notes: input.notes ?? "",
         userId: userId ?? null,
@@ -215,7 +209,6 @@ class SalesApplication {
             unit: line.unit,
             unitPriceCents: line.unitPriceCents,
             discountBp: line.discountBp,
-            vatRateBp: line.vatRateBp,
             originCountry: line.originCountry,
           })),
         },
@@ -262,7 +255,6 @@ class SalesApplication {
             unit: line.unit,
             unitPriceCents: line.unitPriceCents,
             discountBp: line.discountBp,
-            vatRateBp: line.vatRateBp,
             originCountry: line.originCountry,
           })),
           validate: false,

@@ -11,8 +11,9 @@
  *  2. discounted base  = base − line discount (basis points)
  *  3. global discount  = spread pro rata over the discounted bases, the rounding
  *                        remainder going to the last line so that Σ lines = document total
- *  4. line VAT         = net base × line rate   (rounded to the cent, per line)
- *  5. incl. tax (TTC)  = excl. tax (HT) + VAT
+ *  4. line total      = discounted base − share of the global discount
+ *
+ * No sales tax applies: the line total is the amount due.
  */
 
 import { applyDiscount, applyRate, normalizeQuantity, roundHalfUp } from "./money";
@@ -21,12 +22,10 @@ import { applyDiscount, applyRate, normalizeQuantity, roundHalfUp } from "./mone
 export interface PricingLineInput {
   /** Quantity (max 3 decimals). */
   quantity: number | string;
-  /** Unit price excluding tax, in cents. */
+  /** Unit price, in cents. */
   unitPriceCents: number;
   /** Line discount in basis points (1000 ⇒ 10 %). */
   discountBp?: number;
-  /** VAT rate in basis points (1600 ⇒ 16 %). */
-  vatRateBp?: number;
 }
 
 /** Computed line: net amounts after the line discount **and** the share of the global discount. */
@@ -34,17 +33,14 @@ export interface PricingLineResult {
   quantity: number;
   unitPriceCents: number;
   discountBp: number;
-  vatRateBp: number;
   /** Quantity × unit price, before any discount. */
   grossCents: number;
   /** Line discount, in cents. */
   lineDiscountCents: number;
   /** Share of the document's global discount, in cents. */
   globalDiscountShareCents: number;
-  /** Base excluding tax, net of all discounts. */
-  totalHtCents: number;
-  totalVatCents: number;
-  totalTtcCents: number;
+  /** Line total, net of all discounts. */
+  totalCents: number;
 }
 
 export interface PricingDocumentResult {
@@ -53,11 +49,7 @@ export interface PricingDocumentResult {
   grossCents: number;
   /** Line discounts + global discount. */
   totalDiscountCents: number;
-  totalHtCents: number;
-  totalVatCents: number;
-  totalTtcCents: number;
-  /** VAT breakdown by rate — needed for accounting entries and the invoice. */
-  vatBreakdown: { vatRateBp: number; baseCents: number; vatCents: number }[];
+  totalCents: number;
 }
 
 export interface PricingDocumentOptions {
@@ -65,8 +57,6 @@ export interface PricingDocumentOptions {
   globalDiscountBp?: number;
   /** Global discount as an absolute value (cents). Can be combined with `globalDiscountBp`. */
   globalDiscountCents?: number;
-  /** If `false`, lines are VAT-exempt (company not subject to VAT). */
-  vatEnabled?: boolean;
 }
 
 function clampBp(value: number | undefined): number {
@@ -78,27 +68,23 @@ function clampBp(value: number | undefined): number {
  * Computes the totals of a document.
  *
  * The global discount is spread pro rata then **adjusted on the last discountable
- * line**: otherwise Σ(line HT) could differ from the document HT by a few cents and
+ * line**: otherwise Σ(line totals) could differ from the document total by a few cents and
  * unbalance the accounting entry ([BR-7]).
  */
 export function computeDocumentTotals(
   inputs: PricingLineInput[],
   options: PricingDocumentOptions = {}
 ): PricingDocumentResult {
-  const vatEnabled = options.vatEnabled ?? true;
-
   const staged = inputs.map((line) => {
     const quantity = normalizeQuantity(line.quantity);
     const unitPriceCents = Math.trunc(line.unitPriceCents || 0);
     const discountBp = clampBp(line.discountBp);
-    const vatRateBp = vatEnabled ? clampBp(line.vatRateBp) : 0;
     const grossCents = roundHalfUp(quantity * unitPriceCents);
     const afterLineDiscountCents = applyDiscount(grossCents, discountBp);
     return {
       quantity,
       unitPriceCents,
       discountBp,
-      vatRateBp,
       grossCents,
       lineDiscountCents: grossCents - afterLineDiscountCents,
       afterLineDiscountCents,
@@ -130,55 +116,37 @@ export function computeDocumentTotals(
 
   const lines: PricingLineResult[] = staged.map((l, index) => {
     const globalShare = shares[index] ?? 0;
-    const totalHtCents = l.afterLineDiscountCents - globalShare;
-    const totalVatCents = applyRate(totalHtCents, l.vatRateBp);
     return {
       quantity: l.quantity,
       unitPriceCents: l.unitPriceCents,
       discountBp: l.discountBp,
-      vatRateBp: l.vatRateBp,
       grossCents: l.grossCents,
       lineDiscountCents: l.lineDiscountCents,
       globalDiscountShareCents: globalShare,
-      totalHtCents,
-      totalVatCents,
-      totalTtcCents: totalHtCents + totalVatCents,
+      totalCents: l.afterLineDiscountCents - globalShare,
     };
   });
-
-  const byRate = new Map<number, { baseCents: number; vatCents: number }>();
-  for (const line of lines) {
-    const bucket = byRate.get(line.vatRateBp) ?? { baseCents: 0, vatCents: 0 };
-    bucket.baseCents += line.totalHtCents;
-    bucket.vatCents += line.totalVatCents;
-    byRate.set(line.vatRateBp, bucket);
-  }
 
   return {
     lines,
     grossCents: staged.reduce((sum, l) => sum + l.grossCents, 0),
     totalDiscountCents:
       staged.reduce((sum, l) => sum + l.lineDiscountCents, 0) + globalDiscountCents,
-    totalHtCents: lines.reduce((sum, l) => sum + l.totalHtCents, 0),
-    totalVatCents: lines.reduce((sum, l) => sum + l.totalVatCents, 0),
-    totalTtcCents: lines.reduce((sum, l) => sum + l.totalTtcCents, 0),
-    vatBreakdown: [...byRate.entries()]
-      .map(([vatRateBp, bucket]) => ({ vatRateBp, ...bucket }))
-      .sort((a, b) => a.vatRateBp - b.vatRateBp),
+    totalCents: lines.reduce((sum, l) => sum + l.totalCents, 0),
   };
 }
 
 /** Amount still due on an invoice (never negative). */
-export function remainingToPayCents(totalTtcCents: number, paidCents: number): number {
-  return Math.max(0, totalTtcCents - paidCents);
+export function remainingToPayCents(totalCents: number, paidCents: number): number {
+  return Math.max(0, totalCents - paidCents);
 }
 
 /** Payment status derived from the amounts — never entered by hand. */
 export function derivePaymentStatus(
-  totalTtcCents: number,
+  totalCents: number,
   paidCents: number
 ): "VALIDATED" | "PARTIALLY_PAID" | "PAID" {
   if (paidCents <= 0) return "VALIDATED";
-  if (paidCents >= totalTtcCents) return "PAID";
+  if (paidCents >= totalCents) return "PAID";
   return "PARTIALLY_PAID";
 }

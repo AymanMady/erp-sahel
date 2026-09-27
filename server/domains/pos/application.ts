@@ -149,7 +149,7 @@ class PosApplication {
 
   /**
    * Checks out a ticket: validated invoice + payments, in a single transaction.
-   * The payments must exactly cover the total incl. tax — a partially paid ticket makes
+   * The payments must exactly cover the total — a partially paid ticket makes
    * no sense at the counter and would leave a debt with no identified customer.
    */
   async createTicket(
@@ -197,11 +197,11 @@ class PosApplication {
       );
 
       const paidCents = input.payments.reduce((sum, payment) => sum + payment.amountCents, 0);
-      if (paidCents !== invoice.totalTtcCents) {
+      if (paidCents !== invoice.totalCents) {
         throw new BusinessRuleError(
           tr("The amount collected ({paid}) must equal the ticket total ({total}).", {
             paid: paidCents / 100,
-            total: invoice.totalTtcCents / 100,
+            total: invoice.totalCents / 100,
           }),
           "POS_PAYMENT_MISMATCH"
         );

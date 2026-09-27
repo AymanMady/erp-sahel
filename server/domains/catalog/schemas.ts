@@ -43,7 +43,6 @@ export const createProductSchema = z.object({
   barcode: z.string().max(64).default(""),
   purchasePriceCents: z.number().int().min(0).default(0),
   salePriceCents: z.number().int().min(0).default(0),
-  vatRateBp: z.number().int().min(0).max(10_000).default(0),
   isService: z.boolean().default(false),
   imageUrl: z.string().max(2000).nullish(),
   imageUrls: z.array(z.string().max(2000)).default([]),

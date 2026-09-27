@@ -71,7 +71,6 @@ export default function PurchaseOrderDetailPage() {
           unit: line.unit,
           unitPriceCents: line.unitPriceCents,
           discountBp: line.discountBp,
-          vatRateBp: line.vatRateBp,
         })),
       }),
     onSuccess: () => {
@@ -142,12 +141,9 @@ export default function PurchaseOrderDetailPage() {
           unit: line.unit,
           unitPriceCents: line.unitPriceCents,
           discountBp: line.discountBp,
-          vatRateBp: line.vatRateBp,
-          totalHtCents: line.totalHtCents,
+          totalCents: line.totalCents,
         }))}
-        totalHtCents={data.totalHtCents}
-        totalVatCents={data.totalVatCents}
-        totalTtcCents={data.totalTtcCents}
+        totalCents={data.totalCents}
         notes={data.notes}
       />
 

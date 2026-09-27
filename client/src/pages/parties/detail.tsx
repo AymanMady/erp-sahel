@@ -124,11 +124,7 @@ export default function PartyDetailPage() {
           </CardHeader>
           <CardContent className="space-y-1 text-xs text-muted-foreground">
             <p>{data.email || t("detail.noEmail")}</p>
-            <p>
-              {data.vatNumber
-                ? t("list.vatNumberShort", { number: data.vatNumber })
-                : t("detail.noVatNumber")}
-            </p>
+            <p>{data.taxId ? t("list.taxIdShort", { number: data.taxId }) : t("detail.noTaxId")}</p>
           </CardContent>
         </Card>
       </div>
@@ -168,7 +164,7 @@ export default function PartyDetailPage() {
                     </div>
                     <div className="flex items-center gap-3">
                       <StatusBadge status={invoice.status} />
-                      <Money cents={invoice.totalTtcCents} className="text-sm font-medium" />
+                      <Money cents={invoice.totalCents} className="text-sm font-medium" />
                     </div>
                   </Link>
                 ))
@@ -323,7 +319,7 @@ function EditPartyDialog({
     partyType: string;
     email: string;
     phone: string;
-    vatNumber: string;
+    taxId: string;
     creditLimitCents: number;
     paymentTermsDays: number;
     notes: string;
@@ -336,7 +332,7 @@ function EditPartyDialog({
     partyType: party.partyType as PartyType,
     email: party.email,
     phone: party.phone,
-    vatNumber: party.vatNumber,
+    taxId: party.taxId,
     creditLimitCents: party.creditLimitCents,
     paymentTermsDays: party.paymentTermsDays,
     notes: party.notes,
@@ -403,10 +399,10 @@ function EditPartyDialog({
                 onChange={(event) => setForm({ ...form, email: event.target.value })}
               />
             </Field>
-            <Field label={t("fields.vatNumber")}>
+            <Field label={t("fields.taxId")}>
               <Input
-                value={form.vatNumber}
-                onChange={(event) => setForm({ ...form, vatNumber: event.target.value })}
+                value={form.taxId}
+                onChange={(event) => setForm({ ...form, taxId: event.target.value })}
               />
             </Field>
             <Field label={t("fields.creditLimit")} hint={t("fields.creditLimitHint")}>

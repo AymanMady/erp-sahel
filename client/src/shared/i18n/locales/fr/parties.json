@@ -1,7 +1,7 @@
 {
   "offlineUnavailable": "Ce tiers n'est pas disponible hors ligne.",
   "fields": {
-    "vatNumber": "Identifiant fiscal",
+    "taxId": "Identifiant fiscal",
     "creditLimit": "Encours autorisé",
     "creditLimitHint": "0 = aucun plafond",
     "paymentTermsDays": "Délai de règlement (jours)"
@@ -17,7 +17,7 @@
     "new": "Nouveau tiers",
     "searchPlaceholder": "Nom, code, téléphone, NIF…",
     "allTypes": "Tous les tiers",
-    "vatNumberShort": "NIF {{number}}",
+    "taxIdShort": "NIF {{number}}",
     "unlimited": "illimité",
     "termsDays": "{{days}} j",
     "cash": "comptant",
@@ -53,7 +53,7 @@
     "noLeadTime": "Aucun délai de livraison par défaut.",
     "contactInfo": "Coordonnées",
     "noEmail": "Aucun e-mail",
-    "noVatNumber": "Aucun identifiant fiscal",
+    "noTaxId": "Aucun identifiant fiscal",
     "tabs": {
       "history": "Historique",
       "contacts": "Contacts ({{n}})",

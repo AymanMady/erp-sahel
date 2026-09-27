@@ -4,7 +4,7 @@
  *
  * The chart is **data**, not code: switching standards (PCG, CGNC, IFRS) means providing
  * another `ChartTemplate` and the matching `accountMappings` — the entry builders below
- * stay unchanged since they work with **logical keys** (`SALES_REVENUE`, `VAT_COLLECTED`…)
+ * stay unchanged since they work with **logical keys** (`SALES_REVENUE`, `CUSTOMER_RECEIVABLE`…)
  * rather than account numbers.
  *
  * Account and journal names are English source strings: the server translates them into
@@ -67,18 +67,6 @@ export const OHADA_CHART: ChartTemplate = {
     { code: "41", name: "Customers", accountType: "ASSET", isGroup: true },
     { code: "411", name: "Customers", accountType: "ASSET", mappingKey: "CUSTOMER_RECEIVABLE" },
     { code: "44", name: "State and public authorities", accountType: "LIABILITY", isGroup: true },
-    {
-      code: "4431",
-      name: "VAT charged on sales",
-      accountType: "LIABILITY",
-      mappingKey: "VAT_COLLECTED",
-    },
-    {
-      code: "4451",
-      name: "Recoverable VAT on purchases",
-      accountType: "ASSET",
-      mappingKey: "VAT_DEDUCTIBLE",
-    },
     // Class 5 — Treasury
     { code: "52", name: "Banks", accountType: "ASSET", isGroup: true },
     { code: "521", name: "Local banks", accountType: "ASSET", mappingKey: "BANK" },
@@ -158,8 +146,6 @@ export const PCG_CHART: ChartTemplate = {
     { code: "370", name: "Goods inventories", accountType: "ASSET", mappingKey: "INVENTORY" },
     { code: "401", name: "Suppliers", accountType: "LIABILITY", mappingKey: "SUPPLIER_PAYABLE" },
     { code: "411", name: "Customers", accountType: "ASSET", mappingKey: "CUSTOMER_RECEIVABLE" },
-    { code: "44571", name: "VAT collected", accountType: "LIABILITY", mappingKey: "VAT_COLLECTED" },
-    { code: "44566", name: "Deductible VAT", accountType: "ASSET", mappingKey: "VAT_DEDUCTIBLE" },
     { code: "512", name: "Banks", accountType: "ASSET", mappingKey: "BANK" },
     { code: "5125", name: "Mobile money", accountType: "ASSET", mappingKey: "MOBILE_MONEY" },
     { code: "531", name: "Cash on hand", accountType: "ASSET", mappingKey: "CASH" },
@@ -257,23 +243,18 @@ export function treasuryMappingKey(
 
 /**
  * Validated sales invoice:
- *   D  411 Customers          incl. tax (TTC)
- *   C  701 Sales              excl. tax (HT)
- *   C  4431 VAT charged       VAT
+ *   D  411 Customers          total
+ *   C  701 Sales              total
  */
 export function buildSalesInvoicePosting(input: {
-  totalHtCents: number;
-  totalVatCents: number;
-  totalTtcCents: number;
+  totalCents: number;
   partyId: string;
   label: string;
-  /** Label of the VAT line (defaults to `VAT — <label>`); the server passes a translated one. */
-  vatLabel?: string;
 }): PostingLine[] {
-  const lines: PostingLine[] = [
+  return [
     {
       mappingKey: "CUSTOMER_RECEIVABLE",
-      debitCents: input.totalTtcCents,
+      debitCents: input.totalCents,
       creditCents: 0,
       label: input.label,
       partyId: input.partyId,
@@ -281,29 +262,17 @@ export function buildSalesInvoicePosting(input: {
     {
       mappingKey: "SALES_REVENUE",
       debitCents: 0,
-      creditCents: input.totalHtCents,
+      creditCents: input.totalCents,
       label: input.label,
     },
   ];
-  if (input.totalVatCents !== 0) {
-    lines.push({
-      mappingKey: "VAT_COLLECTED",
-      debitCents: 0,
-      creditCents: input.totalVatCents,
-      label: input.vatLabel ?? `VAT — ${input.label}`,
-    });
-  }
-  return lines;
 }
 
 /** Customer credit note: the exact reverse of the invoice entry [FR-VNT-6]. */
 export function buildCreditNotePosting(input: {
-  totalHtCents: number;
-  totalVatCents: number;
-  totalTtcCents: number;
+  totalCents: number;
   partyId: string;
   label: string;
-  vatLabel?: string;
 }): PostingLine[] {
   return buildSalesInvoicePosting(input).map((line) => ({
     ...line,
@@ -314,38 +283,24 @@ export function buildCreditNotePosting(input: {
 
 /**
  * Supplier invoice:
- *   D  601 Purchases          excl. tax (HT)
- *   D  4451 Recoverable VAT   VAT
- *   C  401 Suppliers          incl. tax (TTC)
+ *   D  601 Purchases          total
+ *   C  401 Suppliers          total
  */
 export function buildSupplierInvoicePosting(input: {
-  totalHtCents: number;
-  totalVatCents: number;
-  totalTtcCents: number;
+  totalCents: number;
   partyId: string;
   label: string;
-  /** Label of the VAT line (defaults to `VAT — <label>`); the server passes a translated one. */
-  vatLabel?: string;
 }): PostingLine[] {
-  const lines: PostingLine[] = [
-    { mappingKey: "PURCHASES", debitCents: input.totalHtCents, creditCents: 0, label: input.label },
+  return [
+    { mappingKey: "PURCHASES", debitCents: input.totalCents, creditCents: 0, label: input.label },
+    {
+      mappingKey: "SUPPLIER_PAYABLE",
+      debitCents: 0,
+      creditCents: input.totalCents,
+      label: input.label,
+      partyId: input.partyId,
+    },
   ];
-  if (input.totalVatCents !== 0) {
-    lines.push({
-      mappingKey: "VAT_DEDUCTIBLE",
-      debitCents: input.totalVatCents,
-      creditCents: 0,
-      label: input.vatLabel ?? `VAT — ${input.label}`,
-    });
-  }
-  lines.push({
-    mappingKey: "SUPPLIER_PAYABLE",
-    debitCents: 0,
-    creditCents: input.totalTtcCents,
-    label: input.label,
-    partyId: input.partyId,
-  });
-  return lines;
 }
 
 /**

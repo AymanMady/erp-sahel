@@ -6,8 +6,7 @@
   "sales": {
     "title": "Rapport des ventes",
     "description": "Chiffre d'affaires, articles et encaissements.",
-    "revenueExclTax": "CA HT",
-    "revenueInclTax": "CA TTC",
+    "revenue": "CA",
     "collected": "Encaissé",
     "outstanding": "Restant dû",
     "dailyRevenue": "Chiffre d'affaires quotidien",
@@ -44,8 +43,7 @@
     "title": "Rapport des achats",
     "description": "Volume d'approvisionnement sur la période.",
     "ordersPlaced": "Commandes passées",
-    "amountExclTax": "Montant HT",
-    "amountInclTax": "Montant TTC",
+    "amount": "Montant",
     "periodNote": "Période analysée : du {{from}} au {{to}}. Les montants incluent toutes les commandes fournisseurs, y compris celles non encore réceptionnées."
   }
 }

@@ -44,20 +44,15 @@ export default function PurchasesReportPage() {
         />
       </PageHeader>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         <StatCard
           label={t("purchases.ordersPlaced")}
           value={data?.summary.orderCount ?? 0}
           loading={isLoading}
         />
         <StatCard
-          label={t("purchases.amountExclTax")}
-          value={formatMoneyValue(data?.summary.totalHtCents ?? 0)}
-          loading={isLoading}
-        />
-        <StatCard
-          label={t("purchases.amountInclTax")}
-          value={formatMoneyValue(data?.summary.totalTtcCents ?? 0)}
+          label={t("purchases.amount")}
+          value={formatMoneyValue(data?.summary.totalCents ?? 0)}
           loading={isLoading}
         />
       </div>

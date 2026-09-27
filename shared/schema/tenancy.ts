@@ -1,6 +1,6 @@
 /** Company (tenant) — root of multi-company isolation [BR-13], [FR-PLAT-5]. */
 
-import { boolean, integer, pgTable, text, uuid } from "drizzle-orm/pg-core";
+import { integer, pgTable, text, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -31,10 +31,6 @@ export const companies = pgTable("companies", {
     .$type<AccountingStandard>()
     .default("OHADA")
     .notNull(),
-  /** VAT liability: when `false`, every line is computed at 0 %. */
-  vatEnabled: boolean("vat_enabled").default(true).notNull(),
-  /** Default VAT rate suggested on entry, in basis points. */
-  defaultVatRateBp: integer("default_vat_rate_bp").default(1600).notNull(),
   /** Fiscal year start month (1 = January) — used by yearly sequences and the trial balance. */
   fiscalYearStartMonth: integer("fiscal_year_start_month").default(1).notNull(),
   /** Default display domain (theme/UX). NOT normative: activation goes through `company_plugins`. */

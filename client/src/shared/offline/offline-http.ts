@@ -249,9 +249,8 @@ async function provisionalItem(body: Row, clientUuid: string, now: string): Prom
       quantity: line.quantity as string | number,
       unitPriceCents: Number(line.unitPriceCents ?? 0),
       discountBp: Number(line.discountBp ?? 0),
-      vatRateBp: Number(line.vatRateBp ?? 0),
     })),
-    { globalDiscountBp: Number(body.globalDiscountBp ?? 0), vatEnabled: true }
+    { globalDiscountBp: Number(body.globalDiscountBp ?? 0) }
   );
   Object.assign(item, {
     number: body.number ?? pendingNumber(),
@@ -262,15 +261,11 @@ async function provisionalItem(body: Row, clientUuid: string, now: string): Prom
       invoicedQuantity: "0",
       ...line,
       id: `${clientUuid}:${index}`,
-      totalHtCents: totals.lines[index]?.totalHtCents ?? 0,
-      totalVatCents: totals.lines[index]?.totalVatCents ?? 0,
-      totalTtcCents: totals.lines[index]?.totalTtcCents ?? 0,
+      totalCents: totals.lines[index]?.totalCents ?? 0,
     })),
-    totalHtCents: totals.totalHtCents,
-    totalVatCents: totals.totalVatCents,
-    totalTtcCents: totals.totalTtcCents,
+    totalCents: totals.totalCents,
     paidCents: 0,
-    balanceCents: totals.totalTtcCents,
+    balanceCents: totals.totalCents,
   });
 
   const snapshot = await readSnapshot();

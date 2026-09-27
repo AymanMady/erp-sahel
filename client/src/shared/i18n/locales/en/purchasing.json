@@ -54,7 +54,7 @@
   },
   "supplierInvoices": {
     "title": "Supplier invoices",
-    "description": "Recorded payables and the related deductible VAT.",
+    "description": "Recorded supplier payables.",
     "supplierReference": "Supplier ref.",
     "emptyTitle": "No supplier invoices",
     "emptyDescription": "They are created from a received purchase order."

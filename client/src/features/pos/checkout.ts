@@ -26,7 +26,6 @@ export interface CartLine {
   unit: string;
   quantity: number;
   unitPriceCents: number;
-  vatRateBp: number;
   discountBp: number;
   originCountry?: string;
 }
@@ -46,7 +45,6 @@ export interface CheckoutInput {
   payments: TicketPayment[];
   globalDiscountBp?: number;
   notes?: string;
-  vatEnabled: boolean;
   /** Local provisional number, incremented per register. */
   localTicketSeq: number;
 }
@@ -55,23 +53,19 @@ export interface CheckoutResult {
   mode: "online" | "offline";
   /** Final number (online) or provisional number (offline). */
   number: string;
-  totalTtcCents: number;
+  totalCents: number;
   invoiceId?: string;
 }
 
 /** Cart totals — same function as the server, so no discrepancy is possible. */
-export function cartTotals(
-  lines: CartLine[],
-  options: { globalDiscountBp?: number; vatEnabled: boolean }
-) {
+export function cartTotals(lines: CartLine[], options: { globalDiscountBp?: number } = {}) {
   return computeDocumentTotals(
     lines.map((line) => ({
       quantity: line.quantity,
       unitPriceCents: line.unitPriceCents,
       discountBp: line.discountBp,
-      vatRateBp: line.vatRateBp,
     })),
-    { globalDiscountBp: options.globalDiscountBp, vatEnabled: options.vatEnabled }
+    { globalDiscountBp: options.globalDiscountBp }
   );
 }
 
@@ -84,7 +78,6 @@ function toSyncLines(lines: CartLine[]) {
     unit: line.unit,
     unitPriceCents: line.unitPriceCents,
     discountBp: line.discountBp,
-    vatRateBp: line.vatRateBp,
     originCountry: line.originCountry ?? "",
   }));
 }
@@ -110,7 +103,7 @@ async function checkoutOnline(input: CheckoutInput): Promise<CheckoutResult> {
   return {
     mode: "online",
     number: response.invoice.number,
-    totalTtcCents: response.invoice.totalTtcCents,
+    totalCents: response.invoice.totalCents,
     invoiceId: response.invoice.id,
   };
 }
@@ -123,7 +116,6 @@ async function checkoutOnline(input: CheckoutInput): Promise<CheckoutResult> {
 async function checkoutOffline(input: CheckoutInput): Promise<CheckoutResult> {
   const totals = cartTotals(input.lines, {
     globalDiscountBp: input.globalDiscountBp,
-    vatEnabled: input.vatEnabled,
   });
   const provisionalNumber = formatProvisionalNumber("TKT", input.localTicketSeq);
   const invoiceClientUuid = newUuid();
@@ -132,7 +124,7 @@ async function checkoutOffline(input: CheckoutInput): Promise<CheckoutResult> {
     clientUuid: invoiceClientUuid,
     entity: "invoicing.sales_invoice",
     label: i18n.t("pos:outbox.ticket", { number: provisionalNumber }),
-    amountCents: totals.totalTtcCents,
+    amountCents: totals.totalCents,
     provisionalNumber,
     payload: {
       partyId: input.partyId ?? null,
@@ -169,7 +161,7 @@ async function checkoutOffline(input: CheckoutInput): Promise<CheckoutResult> {
   }
 
   await refreshCounters();
-  return { mode: "offline", number: provisionalNumber, totalTtcCents: totals.totalTtcCents };
+  return { mode: "offline", number: provisionalNumber, totalCents: totals.totalCents };
 }
 
 /**

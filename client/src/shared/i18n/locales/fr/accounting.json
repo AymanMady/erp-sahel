@@ -16,8 +16,6 @@
   "mappingKeys": {
     "SALES_REVENUE": "Ventes de marchandises",
     "SALES_DISCOUNT": "Remises accordées",
-    "VAT_COLLECTED": "TVA facturée (collectée)",
-    "VAT_DEDUCTIBLE": "TVA récupérable (déductible)",
     "CUSTOMER_RECEIVABLE": "Créances clients",
     "SUPPLIER_PAYABLE": "Dettes fournisseurs",
     "PURCHASES": "Achats de marchandises",

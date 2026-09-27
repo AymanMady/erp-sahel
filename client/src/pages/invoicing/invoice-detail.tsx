@@ -87,7 +87,7 @@ export default function InvoiceDetailPage() {
     );
   }
 
-  const remainingCents = Math.max(0, data.totalTtcCents - data.paidAmountCents);
+  const remainingCents = Math.max(0, data.totalCents - data.paidAmountCents);
   const isDraft = data.status === "DRAFT";
 
   return (
@@ -148,13 +148,10 @@ export default function InvoiceDetailPage() {
           unit: line.unit,
           unitPriceCents: line.unitPriceCents,
           discountBp: line.discountBp,
-          vatRateBp: line.vatRateBp,
-          totalHtCents: line.totalHtCents,
+          totalCents: line.totalCents,
           originCountry: line.originCountry,
         }))}
-        totalHtCents={data.totalHtCents}
-        totalVatCents={data.totalVatCents}
-        totalTtcCents={data.totalTtcCents}
+        totalCents={data.totalCents}
         paidAmountCents={data.paidAmountCents}
         notes={data.notes}
       />

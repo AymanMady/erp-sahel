@@ -19,7 +19,6 @@
     "empty": "السلة فارغة.",
     "decrease": "إنقاص",
     "increase": "زيادة",
-    "vat": "ضريبة القيمة المضافة",
     "lastTicket": "تم تحصيل التذكرة {{number}}.",
     "lastTicketOffline": "تم تحصيل التذكرة {{number}} (دون اتصال، في انتظار المزامنة).",
     "checkout": "تحصيل {{amount}}"
