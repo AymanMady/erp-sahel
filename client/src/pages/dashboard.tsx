@@ -46,7 +46,6 @@ import { useDirection } from "@/shared/i18n/direction-provider";
 import type { PermissionCode } from "@shared/rbac";
 import type { ModuleCode } from "@shared/schema";
 import { useSession } from "@/shared/auth/session";
-import { PageHeader } from "@/shared/components/page-header";
 import { Money, useMoneyFormatter } from "@/shared/components/money";
 import { StatCard } from "@/shared/components/stat-card";
 import { Badge } from "@/shared/ui/badge";
@@ -114,7 +113,7 @@ const PERIODS = ["7", "30", "90"];
 export default function DashboardPage() {
   const { t, i18n } = useTranslation("dashboard");
   const rtl = useDirection() === "rtl";
-  const { user, can, hasModule } = useSession();
+  const { can, hasModule } = useSession();
   const quickActions = QUICK_ACTIONS.filter(
     (action) => (!action.module || hasModule(action.module)) && can(action.permission)
   );
@@ -142,13 +141,9 @@ export default function DashboardPage() {
     [data, i18n.language]
   );
 
-  const greeting = user?.firstName
-    ? t("greetingWithName", { name: user.firstName })
-    : t("greeting");
-
   return (
     <div className="space-y-6">
-      <PageHeader title={greeting} description={t("description")}>
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <Select value={days} onValueChange={setDays}>
           <SelectTrigger className="w-[180px]" aria-label={t("periodLabel")}>
             <SelectValue />
@@ -169,7 +164,7 @@ export default function DashboardPage() {
             </Link>
           </Button>
         ) : null}
-      </PageHeader>
+      </div>
 
       {quickActions.length > 0 ? (
         <div className="main-card card">

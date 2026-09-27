@@ -1,7 +1,4 @@
 {
-  "greeting": "مرحبًا",
-  "greetingWithName": "مرحبًا {{name}}",
-  "description": "ما يحدث في متجرك.",
   "lastDays_zero": "آخر {{count}} يوم",
   "lastDays_one": "آخر يوم",
   "lastDays_two": "آخر يومين",

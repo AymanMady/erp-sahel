@@ -34,12 +34,12 @@ describe("money arithmetic", () => {
     expect(parseAmountToCents("1٬250٫50")).toBe(125_050);
   });
 
-  it("writes the ouguiya in full and hides decimals on round amounts", () => {
-    expect(formatMoney(125_050, "fr-FR")).toBe("1\u202f250,50 ouguiyas");
-    expect(formatMoney(125_000, "fr-FR")).toBe("1\u202f250 ouguiyas");
-    expect(formatMoney(100, "fr-FR")).toBe("1 ouguiya");
-    expect(formatMoney(125_050, "en-GB")).toBe("1,250.50 ouguiyas");
-    expect(formatMoney(125_000, "ar-u-nu-latn")).toContain("أوقية");
+  it("writes MRU after the amount and hides decimals on round amounts", () => {
+    expect(formatMoney(125_050, "fr-FR")).toBe("1\u202f250,50 MRU");
+    expect(formatMoney(125_000, "fr-FR")).toBe("1\u202f250 MRU");
+    expect(formatMoney(100, "fr-FR")).toBe("1 MRU");
+    expect(formatMoney(125_050, "en-GB")).toBe("1,250.50 MRU");
+    expect(formatMoney(125_000, "ar-u-nu-latn")).toContain("MRU");
     expect(formatMoney(125_000, "fr-FR", { withSymbol: false })).toBe("1\u202f250");
   });
 });

@@ -98,18 +98,8 @@ export function bpToPercent(bp: number): number {
 export const CURRENCY = "MRU";
 
 /**
- * Currency name written in full next to amounts: users are not accountants, so no
- * "MRU" code. Keyed by the language part of the `Intl` locale.
- */
-function currencyName(locale: string, value: number): string {
-  const language = locale.slice(0, 2);
-  if (language === "ar") return "أوقية";
-  if (language === "fr") return Math.abs(value) >= 2 ? "ouguiyas" : "ouguiya";
-  return Math.abs(value) === 1 ? "ouguiya" : "ouguiyas";
-}
-
-/**
- * Formats an amount in cents for display ("1 250 ouguiyas").
+ * Formats an amount in cents for display ("1 250 MRU"): the currency code is what
+ * shopkeepers read on prices and phone payment messages, in every language.
  * Decimals are shown only when the amount has some: prices are round in practice.
  */
 export function formatMoney(
@@ -124,7 +114,7 @@ export function formatMoney(
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
   }).format(value);
-  return withSymbol ? `${formatted} ${currencyName(locale, value)}` : formatted;
+  return withSymbol ? `${formatted} ${CURRENCY}` : formatted;
 }
 
 /** Formats a quantity without useless trailing decimal zeros ("2" rather than "2.000"). */

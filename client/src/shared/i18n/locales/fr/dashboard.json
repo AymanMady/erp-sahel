@@ -1,7 +1,4 @@
 {
-  "greeting": "Bonjour",
-  "greetingWithName": "Bonjour {{name}}",
-  "description": "Ce qui se passe dans votre commerce.",
   "lastDays_one": "{{count}} dernier jour",
   "lastDays_other": "{{count}} derniers jours",
   "periodLabel": "Période",

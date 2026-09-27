@@ -1,7 +1,4 @@
 {
-  "greeting": "Hello",
-  "greetingWithName": "Hello {{name}}",
-  "description": "What is happening in your shop.",
   "lastDays_one": "Last {{count}} day",
   "lastDays_other": "Last {{count}} days",
   "periodLabel": "Period",

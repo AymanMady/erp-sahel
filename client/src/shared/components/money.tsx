@@ -1,5 +1,5 @@
 /**
- * Amount display, always in ouguiyas (the only currency).
+ * Amount display, always in MRU (the only currency).
  *
  * The number format follows the UI language; `useTranslation()` subscribes these
  * components to language changes so they re-render when it switches.
@@ -11,7 +11,7 @@ import { formatMoney, formatQuantity, formatRate } from "@shared/money";
 import { currentIntlLocale } from "@/shared/i18n";
 import { cn } from "@/shared/lib/utils";
 
-/** Formats an amount in cents, in ouguiyas. */
+/** Formats an amount in cents, in MRU. */
 export function useMoneyFormatter(): (cents: number, options?: { withSymbol?: boolean }) => string {
   useTranslation();
   return (cents, options) => formatMoney(cents, currentIntlLocale(), options);
