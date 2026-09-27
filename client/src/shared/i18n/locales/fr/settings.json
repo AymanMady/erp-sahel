@@ -26,33 +26,6 @@
       "tooLarge": "Image trop grande (400 kilo-octets au maximum)."
     }
   },
-  "numbering": {
-    "title": "Numérotation",
-    "description": "Comment les factures, devis et autres papiers sont numérotés.",
-    "info": "Chaque numéro est donné une seule fois : deux appareils ne peuvent pas avoir le même. Sans internet, un numéro provisoire <code>{{code}}</code> est affiché en attendant.",
-    "emptyTitle": "Aucun numéro",
-    "emptyDescription": "Les numéros commencent avec le premier papier de chaque type.",
-    "columns": {
-      "documentType": "Type de document",
-      "year": "Année",
-      "prefix": "Début du numéro",
-      "lastNumber": "Dernier numéro"
-    },
-    "documentTypes": {
-      "QUOTE": "Devis",
-      "SALES_ORDER": "Commandes des clients",
-      "SALES_INVOICE": "Factures clients",
-      "CREDIT_NOTE": "Retours de marchandise",
-      "PURCHASE_ORDER": "Commandes fournisseurs",
-      "GOODS_RECEIPT": "Marchandise reçue",
-      "SUPPLIER_INVOICE": "Factures fournisseurs",
-      "PAYMENT": "Paiements",
-      "JOURNAL_ENTRY": "Opérations dans les comptes",
-      "INVENTORY_COUNT": "Comptages du stock",
-      "POS_TICKET": "Ventes à la caisse",
-      "PARTY": "Clients et fournisseurs"
-    }
-  },
   "registers": {
     "title": "Caisses",
     "description": "Vos caisses et l'historique des ouvertures et fermetures.",
@@ -151,5 +124,41 @@
     "enableAria": "Activer {{name}}",
     "confirmTitle": "Choisir « {{name}} » ?",
     "confirmDescription": "Parties activées : {{modules}}. Les autres seront cachées. Rien n'est effacé."
+  },
+  "desktopApp": {
+    "title": "Application de bureau",
+    "description": "Installez ERP Sahel sur un ordinateur : il continue de vendre même sans internet.",
+    "systems": {
+      "windows": "Windows",
+      "linux": "Linux",
+      "macos": "Mac"
+    },
+    "download": "Télécharger pour {{system}}",
+    "version": "Version {{version}}",
+    "downloadButton": "Télécharger",
+    "noRelease": "Aucune version n'est proposée pour le moment. Demandez à la personne qui gère le serveur.",
+    "notForSystem": "L'application n'est pas encore disponible pour ce système.",
+    "arm": "(processeur ARM)",
+    "formats": {
+      "exe": "Installateur (conseillé)",
+      "msi": "Autre installateur, pour les entreprises",
+      "deb": "Pour Ubuntu et Debian (conseillé)",
+      "appimage": "Pour tous les Linux, sans installation",
+      "rpm": "Pour Fedora",
+      "dmg": "Installateur Mac"
+    },
+    "steps": {
+      "title": "Comment l'installer",
+      "download": "Téléchargez le fichier ci-contre.",
+      "open": {
+        "windows": "Ouvrez le fichier téléchargé et suivez les étapes. Si Windows affiche « Windows a protégé votre ordinateur », cliquez sur « Informations complémentaires » puis « Exécuter quand même ».",
+        "linux": "Ouvrez le fichier téléchargé pour l'installer. Pour la version sans installation, faites un clic droit sur le fichier, Propriétés, et cochez « Autoriser l'exécution ».",
+        "macos": "Ouvrez le fichier téléchargé et glissez l'application dans le dossier Applications."
+      },
+      "server": "Au premier lancement, l'application demande l'adresse du serveur. Entrez celle-ci :",
+      "signIn": "Connectez-vous avec votre nom d'utilisateur et votre mot de passe habituels."
+    },
+    "copy": "Copier l'adresse",
+    "copyFailed": "L'adresse n'a pas pu être copiée."
   }
 }

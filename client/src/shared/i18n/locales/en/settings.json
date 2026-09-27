@@ -26,33 +26,6 @@
       "tooLarge": "Picture too big (400 kilobytes at most)."
     }
   },
-  "numbering": {
-    "title": "Numbering",
-    "description": "How invoices, quotes and other papers are numbered.",
-    "info": "Each number is given only once: two devices cannot get the same one. Without internet, a temporary number <code>{{code}}</code> is shown while waiting.",
-    "emptyTitle": "No numbers",
-    "emptyDescription": "Numbers start with the first paper of each type.",
-    "columns": {
-      "documentType": "Document type",
-      "year": "Year",
-      "prefix": "Start of the number",
-      "lastNumber": "Last number"
-    },
-    "documentTypes": {
-      "QUOTE": "Quotes",
-      "SALES_ORDER": "Customer orders",
-      "SALES_INVOICE": "Customer invoices",
-      "CREDIT_NOTE": "Returns of goods",
-      "PURCHASE_ORDER": "Purchase orders",
-      "GOODS_RECEIPT": "Goods received",
-      "SUPPLIER_INVOICE": "Supplier invoices",
-      "PAYMENT": "Payments",
-      "JOURNAL_ENTRY": "Operations in the accounts",
-      "INVENTORY_COUNT": "Stock counts",
-      "POS_TICKET": "Sales at the cash register",
-      "PARTY": "Customers and suppliers"
-    }
-  },
   "registers": {
     "title": "Cash registers",
     "description": "Your cash registers and the history of openings and closings.",
@@ -151,5 +124,41 @@
     "enableAria": "Enable {{name}}",
     "confirmTitle": "Choose “{{name}}”?",
     "confirmDescription": "Parts turned on: {{modules}}. The others will be hidden. Nothing is deleted."
+  },
+  "desktopApp": {
+    "title": "Desktop application",
+    "description": "Install ERP Sahel on a computer: it keeps selling even without internet.",
+    "systems": {
+      "windows": "Windows",
+      "linux": "Linux",
+      "macos": "Mac"
+    },
+    "download": "Download for {{system}}",
+    "version": "Version {{version}}",
+    "downloadButton": "Download",
+    "noRelease": "No version is offered at the moment. Ask the person who manages the server.",
+    "notForSystem": "The application is not available for this system yet.",
+    "arm": "(ARM processor)",
+    "formats": {
+      "exe": "Installer (recommended)",
+      "msi": "Other installer, for companies",
+      "deb": "For Ubuntu and Debian (recommended)",
+      "appimage": "For any Linux, no installation needed",
+      "rpm": "For Fedora",
+      "dmg": "Mac installer"
+    },
+    "steps": {
+      "title": "How to install it",
+      "download": "Download the file.",
+      "open": {
+        "windows": "Open the downloaded file and follow the steps. If Windows shows \"Windows protected your PC\", click \"More info\" then \"Run anyway\".",
+        "linux": "Open the downloaded file to install it. For the version with no installation, right-click the file, Properties, and tick \"Allow executing\".",
+        "macos": "Open the downloaded file and drag the application into the Applications folder."
+      },
+      "server": "At first launch, the application asks for the server address. Enter this one:",
+      "signIn": "Sign in with your usual user name and password."
+    },
+    "copy": "Copy the address",
+    "copyFailed": "The address could not be copied."
   }
 }

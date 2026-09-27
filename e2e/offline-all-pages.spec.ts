@@ -59,7 +59,6 @@ const ROUTES = [
   "/reports/purchases",
   "/settings/company",
   "/settings/modules",
-  "/settings/numbering",
   "/settings/registers",
   "/settings/users",
   "/settings/roles",
@@ -119,7 +118,7 @@ test.describe("whole application offline", () => {
       .poll(
         async () => {
           const keys = await cachedKeys(page);
-          return ["/api/roles?", "/api/users?", "/api/sync/journal?", "/api/company/sequences?"]
+          return ["/api/roles?", "/api/users?", "/api/sync/journal?"]
             .map((path) => keys.some((key) => key.startsWith(`http:${path}`)))
             .every(Boolean);
         },

@@ -44,14 +44,14 @@
     "modules": "Parties de l'application",
     "settings": "Paramètres",
     "company": "Ma société",
-    "numbering": "Numérotation",
     "registers": "Caisses",
     "users": "Utilisateurs",
     "accounts": "Comptes",
     "roles": "Rôles et droits",
     "sync": "Envoi des données",
     "database": "Base de données",
-    "device": "Cet appareil"
+    "device": "Cet appareil",
+    "desktopApp": "Application de bureau"
   },
   "palette": {
     "title": "Aller à un écran",

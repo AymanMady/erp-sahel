@@ -89,3 +89,49 @@ export async function releaseFor(query: {
   );
   return published ? manifest : null;
 }
+
+export type InstallerSystem = "windows" | "linux" | "macos";
+
+export interface Installer {
+  system: InstallerSystem;
+  /** Processor: x86_64 (Intel, AMD) or aarch64 (ARM, Apple). */
+  arch: string;
+  /** File type, from its name: exe, msi, appimage, deb, rpm, dmg. */
+  format: string;
+  url: string;
+}
+
+/** Installer file types a person can download and open; update archives are left out. */
+const INSTALLER_FORMATS: Record<string, InstallerSystem> = {
+  exe: "windows",
+  msi: "windows",
+  appimage: "linux",
+  deb: "linux",
+  rpm: "linux",
+  dmg: "macos",
+};
+
+/**
+ * Installers of the release offered to this server's workstations, for the download
+ * page — the same release the updater offers, so a new workstation starts where the
+ * others are. Empty when no manifest is configured.
+ */
+export async function currentInstallers(): Promise<{
+  version: string | null;
+  installers: Installer[];
+}> {
+  const url = process.env.DESKTOP_UPDATE_MANIFEST_URL?.trim();
+  if (!url) return { version: null, installers: [] };
+  const manifest = await fetchManifest(url);
+  const installers: Installer[] = [];
+  for (const [key, platform] of Object.entries(manifest.platforms)) {
+    const extension = new URL(platform.url).pathname.split(".").pop()?.toLowerCase() ?? "";
+    const system = INSTALLER_FORMATS[extension];
+    if (!system) continue;
+    // Keys are `windows-x86_64` or `windows-x86_64-nsis`: the processor comes second.
+    const arch = key.split("-")[1] ?? "x86_64";
+    if (installers.some((installer) => installer.url === platform.url)) continue;
+    installers.push({ system, arch, format: extension, url: platform.url });
+  }
+  return { version: manifest.version, installers };
+}

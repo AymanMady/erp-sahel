@@ -217,10 +217,9 @@ async function prefetch(): Promise<void> {
       ...(snapshot?.session ? [() => posApi.sessionSummary(snapshot.session!.id)] : []),
     ]),
 
-    // Settings and administration (company, numbering, modules, accounts, roles).
+    // Settings and administration (company, modules, accounts, roles).
     () => settingsApi.getCompany(),
     () => settingsApi.listSettings(),
-    () => settingsApi.listSequences(),
     () => settingsApi.listModules(),
     () => settingsApi.listUsers(),
     () => settingsApi.listRoles(),

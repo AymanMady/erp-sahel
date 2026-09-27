@@ -59,7 +59,7 @@ const StockReportPage = lazy(() => import("@/pages/reports/stock"));
 const PurchasesReportPage = lazy(() => import("@/pages/reports/purchases"));
 const CompanySettingsPage = lazy(() => import("@/pages/settings/company"));
 const ModulesSettingsPage = lazy(() => import("@/pages/settings/modules"));
-const NumberingSettingsPage = lazy(() => import("@/pages/settings/numbering"));
+const DesktopAppSettingsPage = lazy(() => import("@/pages/settings/desktop-app"));
 const RegistersSettingsPage = lazy(() => import("@/pages/settings/registers"));
 const UsersSettingsPage = lazy(() => import("@/pages/settings/users"));
 const RolesSettingsPage = lazy(() => import("@/pages/settings/roles"));
@@ -150,7 +150,7 @@ function AppRoutes() {
 
           <Route path="/settings/company" component={CompanySettingsPage} />
           <Route path="/settings/modules" component={ModulesSettingsPage} />
-          <Route path="/settings/numbering" component={NumberingSettingsPage} />
+          <Route path="/settings/desktop-app" component={DesktopAppSettingsPage} />
           <Route path="/settings/registers" component={RegistersSettingsPage} />
           <Route path="/settings/users" component={UsersSettingsPage} />
           <Route path="/settings/roles" component={RolesSettingsPage} />

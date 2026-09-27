@@ -2,13 +2,14 @@
  * Desktop application routes.
  *
  * Public: the updater of a workstation asks before anyone has signed in — and an
- * outdated workstation, refused everywhere else, must still reach it.
+ * outdated workstation, refused everywhere else, must still reach it. The installers
+ * are public files anyway.
  */
 
 import type { Express } from "express";
 
 import { asyncHandler } from "../../shared/http/handler";
-import { releaseFor } from "./releases";
+import { currentInstallers, releaseFor } from "./releases";
 
 export function registerDesktopRoutes(app: Express): void {
   /**
@@ -29,6 +30,15 @@ export function registerDesktopRoutes(app: Express): void {
         return;
       }
       res.json(release);
+    })
+  );
+
+  /** Installers of the current release, for the download page of the web app. */
+  app.get(
+    "/api/desktop/downloads",
+    asyncHandler(async (_req, res) => {
+      res.setHeader("Cache-Control", "no-store");
+      res.json(await currentInstallers());
     })
   );
 }

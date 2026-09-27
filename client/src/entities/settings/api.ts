@@ -16,10 +16,6 @@ export const settingsApi = {
   updateCompany: (body: unknown) => api.patch<Company>("/api/company", body),
   listSettings: () => api.get<{ key: string; value: string }[]>("/api/company/settings"),
   setSetting: (key: string, value: string) => api.put("/api/company/settings", { key, value }),
-  listSequences: () =>
-    api.get<{ documentType: string; year: number; lastNumber: number; prefix: string }[]>(
-      "/api/company/sequences"
-    ),
 
   listModules: () => api.get<{ modules: ModuleDescriptor[] }>("/api/platform/modules"),
   enableModule: (code: string) =>

@@ -44,14 +44,14 @@
     "modules": "Parts of the app",
     "settings": "Settings",
     "company": "My company",
-    "numbering": "Numbering",
     "registers": "Cash registers",
     "users": "Users",
     "accounts": "Accounts",
     "roles": "Roles and permissions",
     "sync": "Sending data",
     "database": "Database",
-    "device": "This device"
+    "device": "This device",
+    "desktopApp": "Desktop application"
   },
   "palette": {
     "title": "Go to a screen",

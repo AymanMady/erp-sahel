@@ -45,6 +45,8 @@ export interface NavChild {
   url: string;
   permission?: PermissionCode;
   module?: ModuleCode;
+  /** Hidden in the desktop application (downloading it, for instance). */
+  webOnly?: boolean;
 }
 
 export interface NavItem {
@@ -212,12 +214,17 @@ export const navGroups: NavGroup[] = [
           { titleKey: "items.modules", url: "/settings/modules", permission: "settings.read" },
           { titleKey: "items.users", url: "/settings/users", permission: "users.read" },
           { titleKey: "items.roles", url: "/settings/roles", permission: "users.read" },
-          { titleKey: "items.numbering", url: "/settings/numbering", permission: "settings.read" },
           {
             titleKey: "items.registers",
             url: "/settings/registers",
             module: "pos",
             permission: "settings.read",
+          },
+          {
+            titleKey: "items.desktopApp",
+            url: "/settings/desktop-app",
+            permission: "settings.read",
+            webOnly: true,
           },
         ],
       },
@@ -323,6 +330,7 @@ export function visibleNavGroups(
                 ...item,
                 items: item.items.filter(
                   (child) =>
+                    !(child.webOnly && isTauriDesktop()) &&
                     (!child.module || hasModule(child.module)) &&
                     (!child.permission || can(child.permission))
                 ),

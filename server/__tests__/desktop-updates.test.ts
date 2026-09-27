@@ -151,3 +151,40 @@ describe("update endpoint", () => {
     expect(((await response.json()) as { code: string }).code).toBe("UPDATE_MANIFEST_UNAVAILABLE");
   });
 });
+
+describe("download page", () => {
+  it("lists nothing when no manifest is configured", async () => {
+    const response = await call("/api/desktop/downloads");
+    expect(await response.json()).toEqual({ version: null, installers: [] });
+  });
+
+  it("lists the installers of the release, not the update archives", async () => {
+    publishManifest({
+      ...manifest,
+      platforms: {
+        ...manifest.platforms,
+        "windows-x86_64-msi": { url: "https://releases.example.com/a.msi", signature: "sig" },
+        "darwin-aarch64": { url: "https://releases.example.com/a.app.tar.gz", signature: "sig" },
+      },
+    });
+    const body = (await (await call("/api/desktop/downloads")).json()) as {
+      version: string;
+      installers: { system: string; arch: string; format: string; url: string }[];
+    };
+    expect(body.version).toBe("1.4.0");
+    expect(body.installers).toEqual([
+      {
+        system: "windows",
+        arch: "x86_64",
+        format: "msi",
+        url: "https://releases.example.com/a.msi",
+      },
+      {
+        system: "linux",
+        arch: "x86_64",
+        format: "appimage",
+        url: "https://releases.example.com/a.AppImage",
+      },
+    ]);
+  });
+});
