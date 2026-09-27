@@ -3,7 +3,7 @@
  *
  * Two deliberately separate stages:
  *  1. Core — **required in production**: permissions, system roles, company,
- *     administrator account, chart of accounts. Idempotent.
+ *     administrator account, super-administrator account, chart of accounts. Idempotent.
  *  2. Demo — demo data set (catalog, parties, sales, POS). Only runs when the company
  *     is empty, so it never pollutes real data.
  *
@@ -51,6 +51,7 @@ import { invoicingApplication } from "./domains/invoicing/application";
 import { paymentsApplication } from "./domains/payments/application";
 import { posApplication } from "./domains/pos/application";
 import { salesApplication } from "./domains/sales/application";
+import { ensureSuperAdmin } from "./domains/system/super-admin";
 import { tenancyApplication } from "./domains/tenancy/application";
 import { withLocale } from "./shared/i18n";
 import { logger } from "./shared/logging/logger";
@@ -169,7 +170,9 @@ async function seedAdminUser(company: Company): Promise<string> {
           email: `${username}@example.com`,
           firstName: "Administrateur",
           lastName: "",
-          isSuperuser: true,
+          // An ordinary company administrator: the platform super-administrator is a
+          // separate account (`ensureSuperAdmin`).
+          isSuperuser: false,
           // In production the password comes from the deployment settings, which other
           // people can read: the administrator chooses their own at first sign-in.
           mustChangePassword: production,
@@ -527,6 +530,7 @@ async function main(): Promise<void> {
 
   const company = await seedCompany();
   const userId = await seedAdminUser(company);
+  await ensureSuperAdmin();
 
   if (coreOnly) {
     logger.info("Seeding limited to the core (--core-only option).");

@@ -1,0 +1,81 @@
+{
+  "title": "Database",
+  "description": "Everything the application has saved: back up, put a backup back, upkeep.",
+  "units": ["bytes", "KB", "MB", "GB", "TB"],
+  "stats": {
+    "size": "Database size",
+    "companies": "Companies",
+    "users": "Users",
+    "sessions": "People signed in"
+  },
+  "backup": {
+    "title": "Back up",
+    "description": "Downloads a full copy of all the data in a single file.",
+    "action": "Download a backup",
+    "running": "Preparing the file…",
+    "done": "Backup downloaded.",
+    "hint": "Keep this file somewhere safe (USB stick, another computer). Make one before every important change."
+  },
+  "restore": {
+    "title": "Put a backup back",
+    "description": "Replaces all the data of the application with the data of a backup file.",
+    "warningTitle": "Everything will be replaced",
+    "warning": "The current sales, products, customers and accounts will be erased and replaced by those of the file. Everyone will have to sign in again. Download a backup of the current state first.",
+    "choose": "Choose a backup file (.json.gz)",
+    "understood": "I understand that all the current data will be replaced.",
+    "action": "Put this backup back",
+    "running": "Putting it back… do not close the page",
+    "confirmTitle": "Replace all the data?",
+    "confirmDescription": "The current data will be replaced by the data of the file “{{file}}”. This cannot be undone.",
+    "confirmAction": "Yes, replace everything",
+    "done": "Backup put back.",
+    "doneDescription": "{{rows}} rows put back. Sign in again."
+  },
+  "maintenance": {
+    "title": "Upkeep",
+    "description": "Small technical operations, without risk for the data.",
+    "run": "Run",
+    "analyze": {
+      "title": "Speed up searches",
+      "description": "Updates the information the database uses to search quickly.",
+      "done": "Done."
+    },
+    "purge-expired": {
+      "title": "Clean up finished sign-ins",
+      "description": "Erases expired sign-ins and old attempt counters.",
+      "done": "{{count}} items erased."
+    },
+    "unlock-sign-in": {
+      "title": "Unblock sign-ins",
+      "description": "Lets people blocked after too many wrong passwords try again at once.",
+      "done": "{{count}} blocks removed."
+    },
+    "end-all-sessions": {
+      "title": "Sign everyone out",
+      "description": "Every user will have to sign in again, on every device. You stay signed in.",
+      "done": "{{count}} sign-ins closed."
+    }
+  },
+  "info": {
+    "title": "Technical information",
+    "loading": "Loading…",
+    "unknown": "unknown",
+    "databaseName": "Database name",
+    "databaseVersion": "Database version",
+    "migrations": "Database updates",
+    "lastMigration": "Last update",
+    "environment": "Server mode",
+    "node": "Node.js version",
+    "system": "System",
+    "memory": "Memory used",
+    "uptime": "Running for",
+    "hours": "{{count}} hours"
+  },
+  "tables": {
+    "name": "Table",
+    "rows": "Rows",
+    "size": "Size",
+    "emptyTitle": "No table",
+    "emptyDescription": "The database is empty."
+  }
+}

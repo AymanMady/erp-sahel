@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 
 import { formatDateTime } from "@shared/format";
+import { useSession } from "@/shared/auth/session";
 import { useOnline } from "@/shared/hooks/use-online";
 import { runSync } from "@/shared/offline/sync-engine";
 import type { SyncStatus } from "@/shared/offline/sync-engine";
@@ -28,6 +29,7 @@ import {
 
 export function SyncIndicator({ status }: { status: SyncStatus }) {
   const online = useOnline();
+  const { isSuperuser } = useSession();
   const { t } = useTranslation("layout");
   const pending = status.pending;
   const failed = status.failed;
@@ -121,9 +123,11 @@ export function SyncIndicator({ status }: { status: SyncStatus }) {
           <IconRefresh className="size-4" />
           {t("sync.syncNow")}
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/sync">{t("sync.viewQueue")}</Link>
-        </DropdownMenuItem>
+        {isSuperuser ? (
+          <DropdownMenuItem asChild>
+            <Link href="/sync">{t("sync.viewQueue")}</Link>
+          </DropdownMenuItem>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   );

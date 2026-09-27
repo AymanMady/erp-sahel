@@ -22,6 +22,7 @@ import {
   IconCashRegister,
   IconChartBar,
   IconClipboardList,
+  IconDatabase,
   IconFileInvoice,
   IconLayoutDashboard,
   IconPackages,
@@ -53,6 +54,8 @@ export interface NavItem {
   permission?: PermissionCode;
   /** Entry shown only when this module is enabled. */
   module?: ModuleCode;
+  /** Technical entry: shown to the platform super-administrator only. */
+  superuserOnly?: boolean;
   items?: NavChild[];
 }
 
@@ -214,10 +217,34 @@ export const navGroups: NavGroup[] = [
           },
         ],
       },
-      { titleKey: "items.sync", url: "/sync", icon: IconRefresh },
+    ],
+  },
+  {
+    // Technical management: only the platform super-administrator sees it.
+    labelKey: "groups.technical",
+    items: [
+      { titleKey: "items.sync", url: "/sync", icon: IconRefresh, superuserOnly: true },
+      {
+        titleKey: "items.database",
+        url: "/system/database",
+        icon: IconDatabase,
+        superuserOnly: true,
+      },
     ],
   },
 ];
+
+/** Screens reserved to the platform super-administrator. */
+export function isSuperuserPath(pathname: string): boolean {
+  return navGroups.some((group) =>
+    group.items.some(
+      (item) =>
+        item.superuserOnly &&
+        item.url &&
+        (pathname === item.url || pathname.startsWith(`${item.url}/`))
+    )
+  );
+}
 
 /**
  * Module required by an application path, derived from the menu: a screen of a
@@ -264,19 +291,22 @@ export function navIconForPath(pathname: string): Icon | undefined {
 export const brandIcon = IconBuildingStore;
 
 /**
- * Filters the navigation by permissions and enabled modules.
+ * Filters the navigation by permissions, enabled modules and, for the technical
+ * entries, the super-administrator flag.
  * A group whose entries are all hidden disappears entirely, so that no orphan
  * section heading is left behind.
  */
 export function visibleNavGroups(
   can: (permission: PermissionCode) => boolean,
-  hasModule: (code: string) => boolean
+  hasModule: (code: string) => boolean,
+  isSuperuser = false
 ): NavGroup[] {
   return navGroups
     .map((group) => ({
       ...group,
       items: group.items
         .filter((item) => {
+          if (item.superuserOnly && !isSuperuser) return false;
           if (item.module && !hasModule(item.module)) return false;
           if (item.permission && !can(item.permission)) return false;
           return true;

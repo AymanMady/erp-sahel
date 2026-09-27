@@ -4,7 +4,7 @@ import type { Express } from "express";
 
 import { syncRateLimit } from "../../middleware/rate-limit";
 import { asyncHandler } from "../../shared/http/handler";
-import { authorize, requireAuth } from "../auth/guards";
+import { authorize, requireAuth, requireSuperuser } from "../auth/guards";
 import { SyncController } from "./controller";
 // This import is deliberate and has a side effect: it registers the entity handlers
 // with the dispatcher. Without it, the server would accept a `push` without knowing
@@ -34,23 +34,14 @@ export function registerSyncRoutes(app: Express): void {
     asyncHandler(controller.pull)
   );
   app.post("/api/sync/push", requireAuth, syncRateLimit, asyncHandler(controller.push));
+  // Monitoring (devices, journal): the technical screen of the super-administrator.
   app.patch(
     "/api/sync/devices/:id",
     requireAuth,
-    authorize({ anyPermission: ["settings.write"] }),
+    requireSuperuser,
     asyncHandler(controller.setDeviceOfflineLogin)
   );
 
-  app.get(
-    "/api/sync/status",
-    requireAuth,
-    authorize({ anyPermission: ["settings.read", "pos.use"] }),
-    asyncHandler(controller.status)
-  );
-  app.get(
-    "/api/sync/journal",
-    requireAuth,
-    authorize({ anyPermission: ["audit.read", "settings.read"] }),
-    asyncHandler(controller.journal)
-  );
+  app.get("/api/sync/status", requireAuth, requireSuperuser, asyncHandler(controller.status));
+  app.get("/api/sync/journal", requireAuth, requireSuperuser, asyncHandler(controller.journal));
 }

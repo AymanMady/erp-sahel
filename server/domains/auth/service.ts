@@ -4,7 +4,12 @@
  */
 
 import { ALL_PERMISSION_CODES } from "@shared/rbac";
-import { NotFoundError, UnauthorizedError, ValidationError } from "../../shared/errors/app-error";
+import {
+  BusinessRuleError,
+  NotFoundError,
+  UnauthorizedError,
+  ValidationError,
+} from "../../shared/errors/app-error";
 import { authApplication, hashPassword, verifyPassword } from "./application";
 import type {
   ChangePasswordRequestDto,
@@ -13,6 +18,7 @@ import type {
   RefreshRequestDto,
   SessionResponseDto,
 } from "./dto";
+import { ensureSuperAdmin, isSuperAdminUsername } from "../system/super-admin";
 import { authRepository } from "./repository";
 import { changePasswordSchema, loginSchema, refreshSchema } from "./schemas";
 
@@ -24,6 +30,9 @@ export class AuthService {
 
   async login(input: LoginRequestDto): Promise<SessionResponseDto> {
     const data = loginSchema.parse(input.body);
+    // The super-administrator must always be able to sign in: if the account was
+    // disabled, changed or erased in the database, it is put back first.
+    if (isSuperAdminUsername(data.username)) await ensureSuperAdmin();
     const session = await this.application.login({
       username: data.username,
       password: data.password,
@@ -82,6 +91,13 @@ export class AuthService {
     const data = changePasswordSchema.parse(input.body);
     const user = await this.repository.findUserById(input.userId);
     if (!user) throw new NotFoundError("User not found.");
+    if (user.isSuperuser) {
+      // Set by the server configuration: a change here would be undone at the next start.
+      throw new BusinessRuleError(
+        "The password of this account is set in the server configuration (SUPERADMIN_PASSWORD).",
+        "SUPERADMIN_PASSWORD_MANAGED"
+      );
+    }
     if (!(await verifyPassword(data.currentPassword, user.passwordHash))) {
       throw new UnauthorizedError("Current password is incorrect.");
     }

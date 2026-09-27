@@ -122,8 +122,51 @@ describe("accounts (§3.1)", () => {
     const response = await call("PATCH", `/api/users/${platform.id}`, token, {
       password: "Hacked12345",
     });
-    expect(response.status).toBe(403);
+    // Hidden from companies: for them, the account does not exist.
+    expect(response.status).toBe(404);
     // The old password still works: nothing changed.
+    await login(platform.username);
+  });
+
+  it("hides the platform administrator and the technical screens from a shop administrator", async () => {
+    const admin = await createMember(context, "administrateur");
+    const platform = await createMember(context, "administrateur", { isSuperuser: true });
+    const adminToken = await login(admin.username);
+
+    const listed = (await (await call("GET", "/api/users", adminToken)).json()) as {
+      id: string;
+    }[];
+    expect(listed.some((user) => user.id === admin.id)).toBe(true);
+    expect(listed.some((user) => user.id === platform.id)).toBe(false);
+
+    for (const path of [
+      "/api/sync/status",
+      "/api/sync/journal",
+      "/api/system/overview",
+      "/api/system/backup",
+    ]) {
+      expect((await call("GET", path, adminToken)).status, path).toBe(403);
+    }
+    const restore = await call("POST", "/api/system/restore", adminToken, {});
+    expect(restore.status).toBe(403);
+
+    const platformToken = await login(platform.username);
+    expect((await call("GET", "/api/sync/status", platformToken)).status).toBe(200);
+    const overview = await call("GET", "/api/system/overview", platformToken);
+    expect(overview.status).toBe(200);
+    const body = (await overview.json()) as { tables: { name: string }[] };
+    expect(body.tables.some((table) => table.name === "users")).toBe(true);
+  });
+
+  it("does not let the platform administrator change its password in the application", async () => {
+    const platform = await createMember(context, "administrateur", { isSuperuser: true });
+    const token = await login(platform.username);
+    const response = await call("POST", "/api/auth/change-password", token, {
+      currentPassword: PASSWORD,
+      newPassword: "Another12345",
+      confirmPassword: "Another12345",
+    });
+    expect(response.status).toBe(422);
     await login(platform.username);
   });
 

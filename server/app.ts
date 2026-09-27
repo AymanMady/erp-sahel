@@ -12,6 +12,7 @@ import express, { type Express } from "express";
 
 import { assertTokenConfiguration } from "./domains/auth/tokens";
 import { authRepository } from "./domains/auth/repository";
+import { ensureSuperAdmin } from "./domains/system/super-admin";
 import { registerRoutes } from "./routes";
 import { intlLocale, localeMiddleware } from "./shared/i18n";
 import { setFormatLocaleResolver } from "@shared/intl";
@@ -85,6 +86,10 @@ export async function createApp(): Promise<Express> {
         message: error instanceof Error ? error.message : String(error),
       });
     });
+
+  // The super-administrator account is (re)created from the configuration, so that it
+  // can always sign in. Tests create their own accounts.
+  if (process.env.NODE_ENV !== "test") void ensureSuperAdmin();
 
   registerRoutes(app);
 

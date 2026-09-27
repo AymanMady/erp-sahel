@@ -29,6 +29,7 @@ import { registerReportsRoutes } from "./domains/reports/routes";
 import { registerSalesRoutes } from "./domains/sales/routes";
 import { registerServicesRoutes } from "./domains/services/routes";
 import { registerSyncRoutes } from "./domains/sync/routes";
+import { registerSystemRoutes } from "./domains/system/routes";
 import { registerTenancyRoutes } from "./domains/tenancy/routes";
 import { registerUsersRoutes } from "./domains/users/routes";
 
@@ -42,6 +43,11 @@ const companyJson = express.json({ limit: "3mb" });
 const formBody = express.urlencoded({ extended: false, limit: "1mb" });
 
 function bodyParsers(req: Request, res: Response, next: NextFunction): void {
+  // A database backup is read by its own route, as raw bytes and with a larger limit.
+  if (req.path === "/system/restore") {
+    next();
+    return;
+  }
   const parser = req.path.startsWith("/sync")
     ? largeJson
     : req.path.startsWith("/company")
@@ -76,8 +82,12 @@ export function registerRoutes(app: Express): void {
   app.use("/api", apiRateLimit);
   // Bodies are read only once the request has passed rate limiting.
   app.use("/api", bodyParsers);
-  // Writes replayed by the offline queue: a given key is executed only once.
-  app.use("/api", idempotency);
+  // Writes replayed by the offline queue: a given key is executed only once. Technical
+  // operations are never queued offline, and a restore replaces the log itself.
+  app.use("/api", (req, res, next) => {
+    if (req.path.startsWith("/system/")) next();
+    else void idempotency(req, res, next);
+  });
 
   app.get("/api/health/db", async (_req, res) => {
     try {
@@ -109,6 +119,7 @@ export function registerRoutes(app: Express): void {
   registerAccountingRoutes(app);
   registerReportsRoutes(app);
   registerSyncRoutes(app);
+  registerSystemRoutes(app);
 
   app.use(apiNotFound);
   app.use(errorHandler);

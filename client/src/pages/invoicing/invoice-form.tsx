@@ -97,14 +97,14 @@ export default function InvoiceFormPage() {
         toast.success(t("invoiceForm.draftSavedOffline"), {
           description: t("invoiceForm.draftSavedOfflineDescription"),
         });
-        navigate("/sync");
+        navigate("/invoices");
         return;
       }
       if (outcome.mode === "offline") {
         toast.success(t("invoiceForm.savedOffline", { number: outcome.result.provisionalNumber }), {
           description: t("invoiceForm.savedOfflineDescription"),
         });
-        navigate("/sync");
+        navigate("/invoices");
         return;
       }
       const invoice = outcome.result;

@@ -48,6 +48,8 @@ export interface SessionUser {
    * the person must choose their own password before using the application.
    */
   mustChangePassword?: boolean;
+  /** The platform super-administrator: the only one to see the technical screens. */
+  isSuperuser?: boolean;
 }
 
 export interface SessionCompany {
@@ -65,6 +67,8 @@ export interface SessionValue {
   modules: string[];
   /** True when the session comes from the local cache and has not been revalidated. */
   isStale: boolean;
+  /** The platform super-administrator (technical screens). */
+  isSuperuser: boolean;
   can(permission: PermissionCode | PermissionCode[]): boolean;
   hasModule(code: string): boolean;
   login(input: { username: string; password: string }): Promise<void>;
@@ -84,7 +88,7 @@ const ANONYMOUS = {
 };
 
 interface AuthResponse {
-  user: SessionUser & { isSuperuser?: boolean };
+  user: SessionUser;
   company: SessionCompany;
   permissions: string[];
   modules: string[];
@@ -228,6 +232,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const permissionSet = new Set(state.permissions);
     return {
       ...state,
+      isSuperuser: Boolean(state.user?.isSuperuser),
       can(permission) {
         const required = Array.isArray(permission) ? permission : [permission];
         return required.some((code) => permissionSet.has(code));

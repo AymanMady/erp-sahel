@@ -1,0 +1,81 @@
+{
+  "title": "Base de données",
+  "description": "Tout ce que l'application a enregistré : sauvegarder, remettre une sauvegarde, entretenir.",
+  "units": ["octets", "Ko", "Mo", "Go", "To"],
+  "stats": {
+    "size": "Taille de la base",
+    "companies": "Sociétés",
+    "users": "Utilisateurs",
+    "sessions": "Personnes connectées"
+  },
+  "backup": {
+    "title": "Sauvegarder",
+    "description": "Télécharge une copie complète de toutes les données dans un seul fichier.",
+    "action": "Télécharger une sauvegarde",
+    "running": "Préparation du fichier…",
+    "done": "Sauvegarde téléchargée.",
+    "hint": "Gardez ce fichier en lieu sûr (clé USB, autre ordinateur). Faites-en une avant chaque changement important."
+  },
+  "restore": {
+    "title": "Remettre une sauvegarde",
+    "description": "Remplace toutes les données de l'application par celles d'un fichier de sauvegarde.",
+    "warningTitle": "Tout sera remplacé",
+    "warning": "Les ventes, produits, clients et comptes actuels seront effacés et remplacés par ceux du fichier. Tout le monde devra se reconnecter. Téléchargez d'abord une sauvegarde de l'état actuel.",
+    "choose": "Choisir un fichier de sauvegarde (.json.gz)",
+    "understood": "J'ai compris que toutes les données actuelles seront remplacées.",
+    "action": "Remettre cette sauvegarde",
+    "running": "Remise en cours… ne fermez pas la page",
+    "confirmTitle": "Remplacer toutes les données ?",
+    "confirmDescription": "Les données actuelles seront remplacées par celles du fichier « {{file}} ». Cela ne peut pas être annulé.",
+    "confirmAction": "Oui, tout remplacer",
+    "done": "Sauvegarde remise.",
+    "doneDescription": "{{rows}} lignes remises. Reconnectez-vous."
+  },
+  "maintenance": {
+    "title": "Entretien",
+    "description": "Petites opérations techniques, sans risque pour les données.",
+    "run": "Lancer",
+    "analyze": {
+      "title": "Accélérer les recherches",
+      "description": "Met à jour les informations que la base utilise pour chercher vite.",
+      "done": "C'est fait."
+    },
+    "purge-expired": {
+      "title": "Nettoyer les connexions finies",
+      "description": "Efface les connexions expirées et les anciens compteurs d'essais.",
+      "done": "{{count}} éléments effacés."
+    },
+    "unlock-sign-in": {
+      "title": "Débloquer les connexions",
+      "description": "Permet de réessayer tout de suite aux personnes bloquées après trop d'erreurs de mot de passe.",
+      "done": "{{count}} blocages retirés."
+    },
+    "end-all-sessions": {
+      "title": "Déconnecter tout le monde",
+      "description": "Tous les utilisateurs devront se reconnecter, sur tous les appareils. Vous restez connecté.",
+      "done": "{{count}} connexions fermées."
+    }
+  },
+  "info": {
+    "title": "Informations techniques",
+    "loading": "Chargement…",
+    "unknown": "inconnu",
+    "databaseName": "Nom de la base",
+    "databaseVersion": "Version de la base",
+    "migrations": "Mises à jour de la base",
+    "lastMigration": "Dernière mise à jour",
+    "environment": "Mode du serveur",
+    "node": "Version de Node.js",
+    "system": "Système",
+    "memory": "Mémoire utilisée",
+    "uptime": "Allumé depuis",
+    "hours": "{{count}} heures"
+  },
+  "tables": {
+    "name": "Table",
+    "rows": "Lignes",
+    "size": "Taille",
+    "emptyTitle": "Aucune table",
+    "emptyDescription": "La base de données est vide."
+  }
+}

@@ -61,7 +61,7 @@ export default function QuoteFormPage() {
         toast.success(t("quoteForm.savedOffline", { number: outcome.result.provisionalNumber }), {
           description: t("quoteForm.savedOfflineDescription"),
         });
-        navigate("/sync");
+        navigate("/quotes");
         return;
       }
       toast.success(t("quoteForm.created", { number: outcome.result.number }));

@@ -5,7 +5,8 @@
     "buyAndStock": "Acheter et stocker",
     "productsAndCustomers": "Produits et clients",
     "money": "Argent",
-    "settings": "Réglages"
+    "settings": "Réglages",
+    "technical": "Technique"
   },
   "items": {
     "dashboard": "Accueil",
@@ -48,7 +49,8 @@
     "users": "Utilisateurs",
     "accounts": "Comptes",
     "roles": "Rôles et droits",
-    "sync": "Envoi des données"
+    "sync": "Envoi des données",
+    "database": "Base de données"
   },
   "palette": {
     "title": "Aller à un écran",

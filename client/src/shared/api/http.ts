@@ -50,6 +50,8 @@ export interface RequestOptions {
   queueOffline?: boolean;
   /** `"blob"`: the response is a file (Excel export), returned as-is and never cached. */
   responseType?: "json" | "blob";
+  /** Longer wait than the default, for slow technical operations (database backup). */
+  timeoutMs?: number;
 }
 
 /**
@@ -239,7 +241,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
         timedOut = true;
         abort();
       },
-      method === "GET" ? READ_TIMEOUT_MS : WRITE_TIMEOUT_MS
+      options.timeoutMs ?? (method === "GET" ? READ_TIMEOUT_MS : WRITE_TIMEOUT_MS)
     );
     try {
       return await fetch(apiUrl(url), {

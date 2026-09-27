@@ -129,57 +129,63 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("password.title")}</CardTitle>
-              <CardDescription>{t("password.description")}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form
-                className="space-y-4"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  mutation.mutate();
-                }}
-              >
-                <Field label={t("password.current")} required error={errors.currentPassword}>
-                  <Input
-                    type="password"
-                    autoComplete="current-password"
-                    value={form.currentPassword}
-                    onChange={(event) => setForm({ ...form, currentPassword: event.target.value })}
-                    required
-                  />
-                </Field>
-                <Field
-                  label={t("password.new")}
-                  required
-                  error={errors.newPassword}
-                  hint={t("password.hint")}
+          {user?.isSuperuser ? null : (
+            <Card>
+              <CardHeader>
+                <CardTitle>{t("password.title")}</CardTitle>
+                <CardDescription>{t("password.description")}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form
+                  className="space-y-4"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    mutation.mutate();
+                  }}
                 >
-                  <Input
-                    type="password"
-                    autoComplete="new-password"
-                    value={form.newPassword}
-                    onChange={(event) => setForm({ ...form, newPassword: event.target.value })}
+                  <Field label={t("password.current")} required error={errors.currentPassword}>
+                    <Input
+                      type="password"
+                      autoComplete="current-password"
+                      value={form.currentPassword}
+                      onChange={(event) =>
+                        setForm({ ...form, currentPassword: event.target.value })
+                      }
+                      required
+                    />
+                  </Field>
+                  <Field
+                    label={t("password.new")}
                     required
-                  />
-                </Field>
-                <Field label={t("password.confirm")} required error={errors.confirmPassword}>
-                  <Input
-                    type="password"
-                    autoComplete="new-password"
-                    value={form.confirmPassword}
-                    onChange={(event) => setForm({ ...form, confirmPassword: event.target.value })}
-                    required
-                  />
-                </Field>
-                <Button type="submit" className="w-full" disabled={mutation.isPending}>
-                  {t("password.submit")}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+                    error={errors.newPassword}
+                    hint={t("password.hint")}
+                  >
+                    <Input
+                      type="password"
+                      autoComplete="new-password"
+                      value={form.newPassword}
+                      onChange={(event) => setForm({ ...form, newPassword: event.target.value })}
+                      required
+                    />
+                  </Field>
+                  <Field label={t("password.confirm")} required error={errors.confirmPassword}>
+                    <Input
+                      type="password"
+                      autoComplete="new-password"
+                      value={form.confirmPassword}
+                      onChange={(event) =>
+                        setForm({ ...form, confirmPassword: event.target.value })
+                      }
+                      required
+                    />
+                  </Field>
+                  <Button type="submit" className="w-full" disabled={mutation.isPending}>
+                    {t("password.submit")}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

@@ -63,6 +63,7 @@ const RegistersSettingsPage = lazy(() => import("@/pages/settings/registers"));
 const UsersSettingsPage = lazy(() => import("@/pages/settings/users"));
 const RolesSettingsPage = lazy(() => import("@/pages/settings/roles"));
 const SyncPage = lazy(() => import("@/pages/sync"));
+const DatabasePage = lazy(() => import("@/pages/system/database"));
 const ProfilePage = lazy(() => import("@/pages/profile"));
 const NotFoundPage = lazy(() => import("@/pages/not-found"));
 const ChangePasswordPage = lazy(() => import("@/pages/change-password"));
@@ -93,6 +94,9 @@ function BootScreen() {
 /** Application routes, mounted inside the standard shell. */
 function AppRoutes() {
   const [location] = useLocation();
+  // Technical screens: for anyone else they simply do not exist.
+  const { isSuperuser } = useSession();
+  const technical = <T,>(page: T) => (isSuperuser ? page : NotFoundPage);
   return (
     // Keyed by address: leaving a crashed page clears the error, the menu stays usable.
     <ErrorBoundary key={location}>
@@ -149,7 +153,8 @@ function AppRoutes() {
           <Route path="/settings/users" component={UsersSettingsPage} />
           <Route path="/settings/roles" component={RolesSettingsPage} />
 
-          <Route path="/sync" component={SyncPage} />
+          <Route path="/sync" component={technical(SyncPage)} />
+          <Route path="/system/database" component={technical(DatabasePage)} />
           <Route path="/profile" component={ProfilePage} />
 
           <Route component={NotFoundPage} />

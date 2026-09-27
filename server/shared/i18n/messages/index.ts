@@ -18,6 +18,7 @@ import { salesMessages } from "./sales";
 import { servicesMessages } from "./services";
 import { spreadsheetMessages } from "./spreadsheet";
 import { syncMessages } from "./sync";
+import { systemMessages } from "./system";
 import { tenancyMessages } from "./tenancy";
 import { usersMessages } from "./users";
 import type { MessageCatalog } from "./types";
@@ -41,6 +42,7 @@ const ALL: MessageCatalog[] = [
   servicesMessages,
   spreadsheetMessages,
   syncMessages,
+  systemMessages,
   tenancyMessages,
   usersMessages,
 ];

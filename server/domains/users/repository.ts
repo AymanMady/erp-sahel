@@ -43,7 +43,8 @@ export class UsersRepository {
       })
       .from(userCompanies)
       .innerJoin(users, eq(users.id, userCompanies.userId))
-      .where(eq(userCompanies.companyId, companyId))
+      // The platform super-administrator is never shown to a company.
+      .where(and(eq(userCompanies.companyId, companyId), eq(users.isSuperuser, false)))
       .orderBy(asc(users.username));
 
     if (memberRows.length === 0) return [];

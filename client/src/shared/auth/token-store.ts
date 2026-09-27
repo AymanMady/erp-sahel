@@ -84,6 +84,7 @@ export interface CachedSession {
     firstName: string;
     lastName: string;
     avatarUrl?: string | null;
+    isSuperuser?: boolean;
   };
   company: {
     id: string;

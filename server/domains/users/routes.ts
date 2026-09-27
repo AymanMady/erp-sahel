@@ -142,12 +142,8 @@ export function registerUsersRoutes(app: Express): void {
         throw new BusinessRuleError("You cannot deactivate your own account.", "SELF_DEACTIVATION");
       }
       const target = await usersRepository.findUser(id);
-      if (!target) throw new NotFoundError("User not found.");
-      // The platform administrator reaches every company: only another platform
-      // administrator may touch that account.
-      if (target.isSuperuser && !auth.isSuperuser) {
-        throw new ForbiddenError("Only a platform administrator can change this account.");
-      }
+      // The platform super-administrator is managed by the server configuration only.
+      if (!target || target.isSuperuser) throw new NotFoundError("User not found.");
       // Password and email belong to the person, not to one company: an administrator
       // of one shop must not take over an account used in another one.
       const inOtherCompanies =

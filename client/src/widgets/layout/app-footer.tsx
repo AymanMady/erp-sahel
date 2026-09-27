@@ -8,7 +8,7 @@ import type { SyncStatus } from "@/shared/offline/sync-engine";
 import { useOnline } from "@/shared/hooks/use-online";
 
 export function AppFooter({ syncStatus }: { syncStatus: SyncStatus }) {
-  const { company } = useSession();
+  const { company, isSuperuser } = useSession();
   const online = useOnline();
   const { t } = useTranslation("layout");
 
@@ -43,9 +43,15 @@ export function AppFooter({ syncStatus }: { syncStatus: SyncStatus }) {
           <div className="app-footer-right">
             <ul className="nav">
               <li className="nav-item">
-                <Link href="/sync" className="nav-link">
-                  <span className={`badge ${tone}`}>{label}</span>
-                </Link>
+                {isSuperuser ? (
+                  <Link href="/sync" className="nav-link">
+                    <span className={`badge ${tone}`}>{label}</span>
+                  </Link>
+                ) : (
+                  <span className="nav-link">
+                    <span className={`badge ${tone}`}>{label}</span>
+                  </span>
+                )}
               </li>
             </ul>
           </div>

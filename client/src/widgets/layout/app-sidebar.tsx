@@ -18,8 +18,8 @@ import { useLayoutState } from "./layout-state";
 
 export function AppSidebar() {
   const [pathname] = useLocation();
-  const { can, hasModule } = useSession();
-  const groups = visibleNavGroups(can, hasModule);
+  const { can, hasModule, isSuperuser } = useSession();
+  const groups = visibleNavGroups(can, hasModule, isSuperuser);
   const { t } = useTranslation("nav");
 
   return (

@@ -103,7 +103,7 @@ export function AppHeader({ syncStatus }: { syncStatus: SyncStatus }) {
     toggleMobileHeader,
   } = useLayoutState();
   const [open, setOpen] = useState(false);
-  const { can, hasModule } = useSession();
+  const { can, hasModule, isSuperuser } = useSession();
   const { t } = useTranslation("nav");
 
   const shortcuts = SHORTCUTS.filter(
@@ -111,8 +111,8 @@ export function AppHeader({ syncStatus }: { syncStatus: SyncStatus }) {
   );
 
   const entries = useMemo(
-    () => flattenNav(visibleNavGroups(can, hasModule), t),
-    [can, hasModule, t]
+    () => flattenNav(visibleNavGroups(can, hasModule, isSuperuser), t),
+    [can, hasModule, isSuperuser, t]
   );
 
   const go = useCallback(

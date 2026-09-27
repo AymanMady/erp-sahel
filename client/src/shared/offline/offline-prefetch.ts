@@ -31,6 +31,7 @@ import { salesApi } from "@/entities/sales/api";
 import { settingsApi } from "@/entities/settings/api";
 import { syncApi } from "@/entities/sync/api";
 import { ApiError } from "@/shared/api/api-error";
+import { getCachedSession } from "@/shared/auth/token-store";
 import { lastKnownOnline } from "@/shared/api/network";
 import { cachedUpdatedAt } from "./http-cache";
 import { readMeta, writeMeta } from "./storage";
@@ -225,9 +226,10 @@ async function prefetch(): Promise<void> {
     () => settingsApi.listRoles(),
     () => settingsApi.listPermissions(),
 
-    // Synchronization monitoring.
-    () => syncApi.status(),
-    () => syncApi.journal(),
+    // Synchronization monitoring: a screen of the super-administrator only.
+    ...(getCachedSession()?.user.isSuperuser
+      ? [() => syncApi.status(), () => syncApi.journal()]
+      : []),
   ];
 
   await runAll(tasks, CONCURRENCY);
