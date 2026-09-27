@@ -38,5 +38,13 @@
   "header": {
     "toggleSidebar": "Afficher ou cacher le menu",
     "toggleMenu": "Afficher les raccourcis"
+  },
+  "crash": {
+    "title": "Cet écran n'a pas pu s'afficher",
+    "description": "Appuyez sur « Recharger ». Ce que vous avez déjà enregistré n'est pas perdu.",
+    "newVersionTitle": "Une nouvelle version de l'application est prête",
+    "newVersionDescription": "Appuyez sur « Recharger » pour l'utiliser. Ce que vous avez déjà enregistré n'est pas perdu.",
+    "reload": "Recharger",
+    "home": "Retour à l'accueil"
   }
 }

@@ -1,22 +1,10 @@
 {
   "ui": {
-    "breadcrumb": "Où vous êtes",
-    "more": "Plus",
     "commandPalette": "Aller à un écran",
-    "commandPaletteDescription": "Tapez le nom d'un écran…",
-    "sidebar": "Menu",
-    "sidebarDescription": "Affiche le menu.",
-    "toggleSidebar": "Afficher ou cacher le menu"
+    "commandPaletteDescription": "Tapez le nom d'un écran…"
   },
   "searchInput": {
     "clear": "Effacer la recherche"
-  },
-  "deleteDialog": {
-    "defaultName": "cet élément",
-    "title": "Supprimer {{name}} ?",
-    "description": "{{name}} sera supprimé pour toujours. Impossible de revenir en arrière.",
-    "deleted": "{{name}} supprimé",
-    "deletedDescription": "C'est supprimé."
   },
   "resourceTable": {
     "emptyTitle": "Aucun résultat",

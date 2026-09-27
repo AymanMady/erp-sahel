@@ -10,7 +10,10 @@
       `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`
       Le serveur **refuse de démarrer** en production si le secret est absent, trop court,
       ou resté sur la valeur de développement.
-- [ ] Mot de passe de l'administrateur changé (`Admin123!` est une valeur de démonstration).
+- [ ] `SEED_ADMIN_PASSWORD` choisi (12 caractères minimum, lettres et chiffres). En
+      production, le script d'installation **refuse** la valeur de démonstration
+      `Admin123!`, et l'administrateur doit choisir son propre mot de passe à la première
+      connexion.
 - [ ] `DATABASE_URL` pointant sur une base dédiée, avec un utilisateur non superadmin.
 - [ ] `CORS_ORIGINS` limité aux domaines réellement utilisés.
 - [ ] `NODE_ENV=production` — active les en-têtes HSTS et la CSP stricte.
@@ -34,6 +37,8 @@
 | `REFRESH_TOKEN_TTL_DAYS` | —                 | Durée du jeton de rafraîchissement (30 jours)                  |
 | `DATABASE_POOL_MAX`      | —                 | Taille du pool (10 par défaut)                                 |
 | `LOG_LEVEL`              | —                 | `debug` · `info` · `warn` · `error`                            |
+| `APP_TIMEZONE`           | —                 | Fuseau des dates des documents (`UTC` par défaut)              |
+| `SKIP_MIGRATIONS`        | —                 | `true` : le build Vercel n'applique pas les migrations         |
 
 La coquille desktop appelle l'API depuis `tauri://localhost` : ces origines sont autorisées
 par défaut, inutile de les ajouter à `CORS_ORIGINS`.
@@ -184,6 +189,10 @@ déjà ingérées avant l'incident.
 ---
 
 ## 8. Mise à jour
+
+Les migrations s'appliquent toutes seules avec Docker (au démarrage du conteneur, avant le
+serveur) et avec Vercel (pendant le build, si `DATABASE_URL` est définie). Sur un serveur
+classique :
 
 ```bash
 git pull

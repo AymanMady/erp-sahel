@@ -36,6 +36,11 @@ export const createTransactionSchema = z.object({
   transactionType: z.enum(BANK_TRANSACTION_TYPES),
   amountCents: z.number().int().positive("Amount must be greater than zero"),
   reference: z.string().max(100).default(""),
+  /**
+   * Chart account on the other side of the entry (e.g. capital brought in, an expense).
+   * Left empty, the amount waits in the suspense account for the accountant.
+   */
+  counterpartGlAccountId: z.string().uuid().nullish(),
 });
 
 export const transferSchema = z.object({

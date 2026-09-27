@@ -10,11 +10,14 @@ export const documentLineSchema = z.object({
   serviceId: z.string().uuid().nullish(),
   productSku: z.string().max(64).optional(),
   description: z.string().max(255).optional(),
-  quantity: z.union([z.number(), z.string()]),
+  /** Greater than zero; a text must be a plain number ("abc" is refused, not read as 0). */
+  quantity: z.union([
+    z.number().positive("The quantity must be greater than zero"),
+    z.string().regex(/^\s*\d+(\.\d{1,3})?\s*$/, "The quantity must be a number"),
+  ]),
   unit: z.string().max(32).optional(),
-  unitPriceCents: z.number().int().nullish(),
+  unitPriceCents: z.number().int().min(0, "The price must be zero or more").nullish(),
   discountBp: z.number().int().min(0).max(10_000).default(0),
-  originCountry: z.string().max(100).optional(),
 });
 
 export const listInvoicesQuerySchema = z.object({
@@ -55,8 +58,23 @@ export const createCreditNoteSchema = z.object({
   reason: z.string().max(2000).default(""),
   /** Puts the items back in stock; `false` for destroyed goods. */
   restock: z.boolean().default(true),
-  /** Partial credit note; when omitted, the credit note takes all the invoice lines. */
-  lines: z.array(documentLineSchema).min(1).optional(),
+  /**
+   * Partial credit note: which invoice lines and how many of each. Prices are always
+   * those of the invoice. When omitted, everything not yet returned is taken.
+   */
+  lines: z
+    .array(
+      z.object({
+        invoiceLineId: z.string().uuid().nullish(),
+        productId: z.string().uuid().nullish(),
+        variantId: z.string().uuid().nullish(),
+        serviceId: z.string().uuid().nullish(),
+        description: z.string().max(255).optional(),
+        quantity: documentLineSchema.shape.quantity,
+      })
+    )
+    .min(1)
+    .optional(),
 });
 
 export const listCreditNotesQuerySchema = z.object({

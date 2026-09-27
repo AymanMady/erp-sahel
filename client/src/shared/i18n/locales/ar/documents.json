@@ -5,12 +5,12 @@
     "recipient": "إلى",
     "columns": {
       "description": "السلعة",
-      "origin": "بلد الصنع",
       "quantity": "الكمية",
       "unitPrice": "سعر القطعة الواحدة"
     },
     "alreadyPaid": "مدفوع من قبل",
-    "amountDue": "المبلغ المتبقي"
+    "amountDue": "المبلغ المتبقي",
+    "returned": "بضاعة مرتجعة"
   },
   "lineEditor": {
     "columns": {
@@ -21,7 +21,22 @@
     "removeLine": "حذف السطر",
     "addItem": "إضافة صنف",
     "freeLine": "إضافة سطر مكتوب باليد",
-    "globalDiscount": "تخفيض على المجموع"
+    "globalDiscount": "تخفيض على المجموع",
+    "problems": {
+      "name": "اكتب اسم السلعة، وإلا فلن يُحفظ هذا السطر.",
+      "quantity": "اكتب كمية أكبر من 0، وإلا فلن يُحفظ هذا السطر."
+    },
+    "ignoredLines_one": "سطر واحد فارغ أو غير مكتمل لن يُحفظ.",
+    "ignoredLines_other": "{{count}} سطر فارغ أو غير مكتمل لن يُحفظ.",
+    "ignoredLines_zero": "كل الأسطر ستُحفظ.",
+    "ignoredLines_two": "سطران فارغان أو غير مكتملين لن يُحفظا.",
+    "ignoredLines_few": "{{count}} أسطر فارغة أو غير مكتملة لن تُحفظ.",
+    "ignoredLines_many": "{{count}} سطرًا فارغًا أو غير مكتمل لن يُحفظ.",
+    "blockers": {
+      "noCustomer": "لتكمل، اختر الزبون أولًا.",
+      "noSupplier": "لتكمل، اختر المورّد أولًا.",
+      "noLine": "لتكمل، أضف سلعة واحدة على الأقل مع اسمها وكميتها."
+    }
   },
   "productPicker": {
     "title": "إضافة سلعة",

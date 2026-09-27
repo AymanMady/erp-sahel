@@ -10,6 +10,7 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   index,
+  integer,
   pgTable,
   primaryKey,
   text,
@@ -39,6 +40,13 @@ export const users = pgTable(
     /** Allows offline login on the workstation (the bcrypt hash is included in the POS snapshot). */
     allowOfflineLogin: boolean("allow_offline_login").default(true).notNull(),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+    /**
+     * Sessions opened before this instant are refused (password changed, account
+     * disabled): access tokens issued earlier stop working right away.
+     */
+    sessionsValidAfter: timestamp("sessions_valid_after", { withTimezone: true }),
+    /** The password was set by someone else (seed, administrator): it must be changed. */
+    mustChangePassword: boolean("must_change_password").default(false).notNull(),
   },
   (table) => [
     uniqueIndex("uq_users_username").on(table.username),
@@ -49,7 +57,13 @@ export const users = pgTable(
 export const insertUserSchema = createInsertSchema(users, {
   username: (s) => s.min(3, "At least 3 characters"),
   email: (s) => s.email("Adresse e-mail invalide").or(z.literal("")),
-}).omit({ id: true, createdAt: true, updatedAt: true, lastLoginAt: true });
+}).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastLoginAt: true,
+  sessionsValidAfter: true,
+});
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -178,6 +192,8 @@ export const refreshTokens = pgTable(
     companyId: uuid("company_id").references(() => companies.id, { onDelete: "cascade" }),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    /** Set when the token was exchanged for a new one (not when the person signed out). */
+    rotatedAt: timestamp("rotated_at", { withTimezone: true }),
     userAgent: text("user_agent").default("").notNull(),
     ...auditTimestamps,
   },
@@ -188,6 +204,16 @@ export const refreshTokens = pgTable(
 );
 
 export type RefreshToken = typeof refreshTokens.$inferSelect;
+
+/**
+ * Rate-limit counters shared by every server instance (a serverless host starts many:
+ * a counter kept in memory would reset on each of them).
+ */
+export const rateLimitHits = pgTable("rate_limit_hits", {
+  key: text("key").primaryKey(),
+  hits: integer("hits").default(0).notNull(),
+  resetAt: timestamp("reset_at", { withTimezone: true }).notNull(),
+});
 
 /** Tamper-proof audit log of sensitive operations [FR-AUTH-3], [NFR-SEC-6]. */
 export const auditLogs = pgTable(

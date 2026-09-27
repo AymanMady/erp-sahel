@@ -6,7 +6,7 @@
  * middleware, otherwise exceptions from later routes would escape it.
  */
 
-import type { Express } from "express";
+import express, { type Express, type NextFunction, type Request, type Response } from "express";
 
 import { apiRateLimit } from "./middleware/rate-limit";
 import { idempotency } from "./middleware/idempotency";
@@ -32,6 +32,30 @@ import { registerSyncRoutes } from "./domains/sync/routes";
 import { registerTenancyRoutes } from "./domains/tenancy/routes";
 import { registerUsersRoutes } from "./domains/users/routes";
 
+/**
+ * Request body size: 1 MB is plenty for a document. The company settings carry the logo
+ * (a data URI) and synchronization sends whole batches of offline work: they get more.
+ */
+const smallJson = express.json({ limit: "1mb" });
+const largeJson = express.json({ limit: "10mb" });
+const companyJson = express.json({ limit: "3mb" });
+const formBody = express.urlencoded({ extended: false, limit: "1mb" });
+
+function bodyParsers(req: Request, res: Response, next: NextFunction): void {
+  const parser = req.path.startsWith("/sync")
+    ? largeJson
+    : req.path.startsWith("/company")
+      ? companyJson
+      : smallJson;
+  parser(req, res, (error?: unknown) => {
+    if (error) {
+      next(error);
+      return;
+    }
+    formBody(req, res, next);
+  });
+}
+
 export function registerRoutes(app: Express): void {
   app.use(corsMiddleware);
   app.use(securityHeaders);
@@ -50,6 +74,8 @@ export function registerRoutes(app: Express): void {
   });
 
   app.use("/api", apiRateLimit);
+  // Bodies are read only once the request has passed rate limiting.
+  app.use("/api", bodyParsers);
   // Writes replayed by the offline queue: a given key is executed only once.
   app.use("/api", idempotency);
 

@@ -19,6 +19,10 @@ export const inventoryMessages: MessageCatalog = {
     "Code is required": "Le code est obligatoire",
     "Name is required": "Le nom est obligatoire",
     "Invalid identifier": "Identifiant invalide",
+    "This model does not belong to the chosen product.":
+      "Ce modèle n'appartient pas au produit choisi.",
+    "This place does not belong to the chosen store.":
+      "Cet emplacement n'appartient pas au magasin choisi.",
   },
   ar: {
     "No warehouse is configured. Create one in Settings › Warehouses.":
@@ -35,5 +39,7 @@ export const inventoryMessages: MessageCatalog = {
     "Code is required": "الرمز إلزامي",
     "Name is required": "الاسم إلزامي",
     "Invalid identifier": "معرّف غير صالح",
+    "This model does not belong to the chosen product.": "هذا النموذج لا ينتمي إلى المنتج المختار.",
+    "This place does not belong to the chosen store.": "هذا المكان لا ينتمي إلى المخزن المختار.",
   },
 };

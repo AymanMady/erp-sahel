@@ -41,7 +41,7 @@
     "validated": "Marchandise reçue : stock mis à jour.",
     "receiptDate": "Date d'arrivée",
     "unitCost": "Prix d'achat d'une unité",
-    "lot": "Lot",
+    "lot": "Numéro de fabrication",
     "optional": "pas obligatoire",
     "receivedValue": "Valeur de la marchandise reçue",
     "submit": "Confirmer l'arrivée"

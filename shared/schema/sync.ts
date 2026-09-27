@@ -7,6 +7,7 @@
  */
 
 import {
+  boolean,
   index,
   integer,
   jsonb,
@@ -21,7 +22,11 @@ import { auditTimestamps } from "./_base";
 import { users } from "./accounts";
 import { companies } from "./tenancy";
 
-export const SYNC_STATUSES = ["created", "duplicate", "error", "deferred"] as const;
+/**
+ * `pending`: an HTTP write whose idempotency key is taken while the request runs, so that
+ * a second copy arriving at the same moment waits instead of running twice.
+ */
+export const SYNC_STATUSES = ["created", "duplicate", "error", "deferred", "pending"] as const;
 export type SyncStatus = (typeof SYNC_STATUSES)[number];
 
 export const syncOperations = pgTable(
@@ -76,6 +81,11 @@ export const syncDevices = pgTable(
     lastSnapshotAt: timestamp("last_snapshot_at", { withTimezone: true }),
     lastPushAt: timestamp("last_push_at", { withTimezone: true }),
     pendingHint: integer("pending_hint").default(0).notNull(),
+    /**
+     * Approved by an administrator for signing in without network: only such a desktop
+     * receives the password hashes of the cashiers.
+     */
+    offlineLoginAllowed: boolean("offline_login_allowed").default(false).notNull(),
     ...auditTimestamps,
   },
   (table) => [uniqueIndex("uq_sync_devices").on(table.companyId, table.deviceId)]

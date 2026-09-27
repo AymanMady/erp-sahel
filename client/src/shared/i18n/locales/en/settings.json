@@ -42,7 +42,7 @@
       "QUOTE": "Quotes",
       "SALES_ORDER": "Customer orders",
       "SALES_INVOICE": "Customer invoices",
-      "CREDIT_NOTE": "Returns of goods (credit notes)",
+      "CREDIT_NOTE": "Returns of goods",
       "PURCHASE_ORDER": "Purchase orders",
       "GOODS_RECEIPT": "Goods received",
       "SUPPLIER_INVOICE": "Supplier invoices",
@@ -112,6 +112,11 @@
       "firstName": "First name",
       "lastName": "Last name",
       "allowOffline": "Can sign in without internet on a computer already used with internet"
+    },
+    "confirmBlock": {
+      "title": "Block the account of {{name}}?",
+      "description": "This person will no longer be able to sign in. You can unblock them later.",
+      "confirm": "Yes, block"
     }
   },
   "roles": {
@@ -126,6 +131,10 @@
     "dialog": {
       "systemTitle": "Basic role — {{name}}",
       "editTitle": "Edit role"
+    },
+    "confirmDelete": {
+      "title": "Delete the role “{{name}}”?",
+      "description": "This cannot be undone."
     }
   },
   "modules": {

@@ -24,15 +24,22 @@ export class SalesService {
     return salesApplication.getQuote(companyId, quoteId);
   }
 
-  async createQuote(companyId: string, body: unknown, userId: string) {
+  async createQuote(companyId: string, body: unknown, userId: string, allowPriceOverride = false) {
     const company = await tenancyApplication.requireCompany(companyId);
-    return salesApplication.createQuote(company, createQuoteSchema.parse(body), userId);
+    return salesApplication.createQuote(
+      company,
+      { ...createQuoteSchema.parse(body), allowPriceOverride },
+      userId
+    );
   }
 
-  async updateQuote(companyId: string, id: unknown, body: unknown) {
+  async updateQuote(companyId: string, id: unknown, body: unknown, allowPriceOverride = false) {
     const { id: quoteId } = idParamSchema.parse({ id });
     const company = await tenancyApplication.requireCompany(companyId);
-    return salesApplication.updateQuote(company, quoteId, updateQuoteSchema.parse(body));
+    return salesApplication.updateQuote(company, quoteId, {
+      ...updateQuoteSchema.parse(body),
+      allowPriceOverride,
+    });
   }
 
   async setQuoteStatus(companyId: string, id: unknown, body: unknown) {
@@ -56,9 +63,13 @@ export class SalesService {
     return salesApplication.getOrder(companyId, orderId);
   }
 
-  async createOrder(companyId: string, body: unknown, userId: string) {
+  async createOrder(companyId: string, body: unknown, userId: string, allowPriceOverride = false) {
     const company = await tenancyApplication.requireCompany(companyId);
-    return salesApplication.createOrder(company, createOrderSchema.parse(body), userId);
+    return salesApplication.createOrder(
+      company,
+      { ...createOrderSchema.parse(body), allowPriceOverride },
+      userId
+    );
   }
 
   async setOrderStatus(companyId: string, id: unknown, body: unknown) {

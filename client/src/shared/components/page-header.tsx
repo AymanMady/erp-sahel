@@ -6,6 +6,7 @@
  * screen gets one without having to pass it.
  */
 
+import { createElement } from "react";
 import type { Icon } from "@tabler/icons-react";
 import { useLocation } from "wouter";
 
@@ -27,15 +28,17 @@ export function PageHeader({
   className?: string;
 }) {
   const [pathname] = useLocation();
-  const PageIcon = icon ?? navIconForPath(pathname);
+  // Taken from the static menu table (same component for a given address): created
+  // with `createElement`, it is not mistaken for a component defined while rendering.
+  const pageIcon = icon ?? navIconForPath(pathname);
 
   return (
     <div className={cn("app-page-title", className)}>
       <div className="page-title-wrapper flex-wrap gap-y-3">
         <div className="page-title-heading min-w-0">
-          {PageIcon ? (
+          {pageIcon ? (
             <div className="page-title-icon max-sm:hidden">
-              <PageIcon size={30} stroke={1.5} />
+              {createElement(pageIcon, { size: 30, stroke: 1.5 })}
             </div>
           ) : null}
           <div className="min-w-0">

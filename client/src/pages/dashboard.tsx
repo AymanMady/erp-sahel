@@ -37,7 +37,7 @@ import {
 } from "recharts";
 
 import { addDays, formatDate, todayInput } from "@shared/format";
-import { centsToMajor } from "@shared/money";
+import { centsToMajor, formatQuantity } from "@shared/money";
 import { reportsApi } from "@/entities/reports/api";
 import { ApiError } from "@/shared/api/api-error";
 import { queryKeys } from "@/shared/api/query-client";
@@ -284,13 +284,13 @@ export default function DashboardPage() {
                       tickLine={false}
                       axisLine={false}
                       fontSize={12}
-                      width={70}
+                      width={90}
                       orientation={rtl ? "right" : "left"}
                       stroke="var(--muted-foreground)"
                       tickFormatter={(value: number) =>
-                        new Intl.NumberFormat(currentIntlLocale(), { notation: "compact" }).format(
-                          value
-                        )
+                        new Intl.NumberFormat(currentIntlLocale(), {
+                          maximumFractionDigits: 0,
+                        }).format(value)
                       }
                     />
                     <RechartsTooltip
@@ -380,7 +380,10 @@ export default function DashboardPage() {
                     <p className="text-xs text-muted-foreground">{row.sku}</p>
                   </div>
                   <Badge className="tabular shrink-0 bg-warning">
-                    {Number(row.quantity)} / {Number(row.minStock)}
+                    {t("restock.left", {
+                      quantity: formatQuantity(row.quantity),
+                      minimum: formatQuantity(row.minStock),
+                    })}
                   </Badge>
                 </div>
               ))

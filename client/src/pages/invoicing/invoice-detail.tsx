@@ -14,12 +14,15 @@ import { Link, useParams } from "wouter";
 import { toast } from "sonner";
 
 import { todayInput } from "@shared/format";
+import { formatMoney, formatQuantity, normalizeQuantity, parseQuantityInput } from "@shared/money";
+import { invoiceAmountDueCents } from "@shared/pricing";
 import { errorMessage } from "@/shared/api/api-error";
 import { bankingApi } from "@/entities/banking/api";
 import { invoicingApi } from "@/entities/invoicing/api";
 import { paymentApi } from "@/entities/payment/api";
 import { onlineOrQueued, queuePaymentCreate } from "@/shared/offline/offline-writes";
-import { queryKeys } from "@/shared/api/query-client";
+import { invalidateMoneyAndStock, queryKeys } from "@/shared/api/query-client";
+import { useConfirm } from "@/shared/components/confirm-dialog";
 import { useSession } from "@/shared/auth/session";
 import { DocumentView } from "@/features/documents/document-view";
 import {
@@ -53,6 +56,7 @@ export default function InvoiceDetailPage() {
   const { can } = useSession();
   const [payOpen, setPayOpen] = useState(false);
   const [creditOpen, setCreditOpen] = useState(false);
+  const [confirmDialog, confirm] = useConfirm();
 
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.invoice(params.id),
@@ -70,8 +74,8 @@ export default function InvoiceDetailPage() {
     mutationFn: () => invoicingApi.validate(params.id),
     onSuccess: (invoice) => {
       toast.success(t("invoice.validated", { number: invoice.number }));
-      void queryClient.invalidateQueries({ queryKey: queryKeys.invoice(params.id) });
-      void queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      // Stock, customer debt, dashboard and accounting all change with the validation.
+      invalidateMoneyAndStock(queryClient);
     },
     onError: (mutationError) => toast.error(errorMessage(mutationError)),
   });
@@ -87,7 +91,8 @@ export default function InvoiceDetailPage() {
     );
   }
 
-  const remainingCents = Math.max(0, data.totalCents - data.paidAmountCents);
+  // What the customer still owes: returns of goods are deducted too.
+  const remainingCents = invoiceAmountDueCents(data);
   const isDraft = data.status === "DRAFT";
 
   return (
@@ -108,7 +113,19 @@ export default function InvoiceDetailPage() {
           {t("common:actions.print")}
         </Button>
         {isDraft && can("invoicing.write") ? (
-          <Button onClick={() => validate.mutate()} disabled={validate.isPending}>
+          <Button
+            onClick={async () => {
+              const confirmed = await confirm({
+                title: t("invoice.confirmValidate.title", {
+                  amount: formatMoney(data.totalCents),
+                }),
+                description: t("invoice.confirmValidate.description"),
+                confirmLabel: t("common:actions.validate"),
+              });
+              if (confirmed) validate.mutate();
+            }}
+            disabled={validate.isPending}
+          >
             <IconCheck className="size-4" />
             {t("common:actions.validate")}
           </Button>
@@ -149,10 +166,10 @@ export default function InvoiceDetailPage() {
           unitPriceCents: line.unitPriceCents,
           discountBp: line.discountBp,
           totalCents: line.totalCents,
-          originCountry: line.originCountry,
         }))}
         totalCents={data.totalCents}
         paidAmountCents={data.paidAmountCents}
+        creditedAmountCents={data.creditedAmountCents}
         notes={data.notes}
       />
 
@@ -185,22 +202,18 @@ export default function InvoiceDetailPage() {
         invoiceId={data.id}
         partyId={data.partyId}
         remainingCents={remainingCents}
-        onDone={() => {
-          void queryClient.invalidateQueries({ queryKey: queryKeys.invoice(params.id) });
-          void queryClient.invalidateQueries({ queryKey: ["payments"] });
-          void queryClient.invalidateQueries({ queryKey: ["invoices"] });
-        }}
+        onDone={() => invalidateMoneyAndStock(queryClient)}
       />
 
       <CreditNoteDialog
         open={creditOpen}
         onOpenChange={setCreditOpen}
         invoiceId={data.id}
-        onDone={() => {
-          void queryClient.invalidateQueries({ queryKey: queryKeys.invoice(params.id) });
-          void queryClient.invalidateQueries({ queryKey: ["credit-notes"] });
-        }}
+        lines={data.lines}
+        onDone={() => invalidateMoneyAndStock(queryClient)}
       />
+
+      {confirmDialog}
     </div>
   );
 }
@@ -317,25 +330,81 @@ function PaymentDialog({
   );
 }
 
+/** Quantity of each invoice line already brought back (validated returns only). */
+async function returnedByLine(invoiceId: string): Promise<Map<string, number>> {
+  const notes = await invoicingApi.listCreditNotes({ invoiceId, limit: 100 });
+  const details = await Promise.all(
+    notes.items
+      .filter((note) => note.status === "VALIDATED")
+      .map((note) => invoicingApi.getCreditNote(note.id))
+  );
+  const returned = new Map<string, number>();
+  for (const note of details) {
+    for (const line of note.lines) {
+      if (!line.invoiceLineId) continue;
+      returned.set(
+        line.invoiceLineId,
+        (returned.get(line.invoiceLineId) ?? 0) + normalizeQuantity(line.quantity)
+      );
+    }
+  }
+  return returned;
+}
+
+/**
+ * Return of goods: the cashier chooses how many of each item come back (everything
+ * still returnable by default). Prices always come from the invoice.
+ */
 function CreditNoteDialog({
   open,
   onOpenChange,
   invoiceId,
+  lines,
   onDone,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   invoiceId: string;
+  lines: { id: string; description: string; quantity: string; unit: string }[];
   onDone: () => void;
 }) {
   const { t } = useTranslation("invoicing");
   const [reason, setReason] = useState("");
   const [restock, setRestock] = useState(true);
+  /** Typed quantity per invoice line; absent = everything still returnable. */
+  const [typed, setTyped] = useState<Record<string, string>>({});
+
+  const { data: returned } = useQuery({
+    queryKey: queryKeys.creditNotes({ invoiceId, perLine: true }),
+    queryFn: () => returnedByLine(invoiceId),
+    enabled: open,
+    staleTime: 0,
+  });
+
+  const rows = lines.map((line) => {
+    const returnable = Math.max(
+      0,
+      normalizeQuantity(line.quantity) - (returned?.get(line.id) ?? 0)
+    );
+    const text = typed[line.id];
+    const parsed = text === undefined ? returnable : (parseQuantityInput(text) ?? 0);
+    // Never more than what is left to bring back.
+    const quantity = Math.min(Math.max(0, parsed), returnable);
+    return { ...line, returnable, text, quantity };
+  });
+  const chosen = rows.filter((row) => row.quantity > 0);
 
   const mutation = useMutation({
-    mutationFn: () => invoicingApi.createCreditNote({ invoiceId, reason, restock }),
+    mutationFn: () =>
+      invoicingApi.createCreditNote({
+        invoiceId,
+        reason,
+        restock,
+        lines: chosen.map((row) => ({ invoiceLineId: row.id, quantity: row.quantity })),
+      }),
     onSuccess: () => {
       toast.success(t("creditNote.issued"));
+      setTyped({});
       onDone();
       onOpenChange(false);
     },
@@ -344,12 +413,39 @@ function CreditNoteDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{t("creditNote.title")}</DialogTitle>
           <DialogDescription>{t("creditNote.description")}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
+          <ul className="divide-y rounded-md border">
+            {rows.map((row) => (
+              <li key={row.id} className="flex items-center justify-between gap-3 p-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{row.description}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {row.returnable > 0
+                      ? t("creditNote.returnable", {
+                          quantity: formatQuantity(row.returnable),
+                          unit: row.unit,
+                        })
+                      : t("creditNote.nothingLeft")}
+                  </p>
+                </div>
+                <Input
+                  inputMode="decimal"
+                  aria-label={t("creditNote.quantity", { name: row.description })}
+                  className="tabular h-9 w-20 text-center"
+                  disabled={row.returnable <= 0}
+                  value={row.text ?? formatQuantity(row.returnable)}
+                  onChange={(event) =>
+                    setTyped((current) => ({ ...current, [row.id]: event.target.value }))
+                  }
+                />
+              </li>
+            ))}
+          </ul>
           <Field label={t("creditNote.reason")}>
             <Textarea
               rows={3}
@@ -373,7 +469,7 @@ function CreditNoteDialog({
           <Button
             variant="destructive"
             onClick={() => mutation.mutate()}
-            disabled={mutation.isPending}
+            disabled={mutation.isPending || !returned || chosen.length === 0}
           >
             {t("creditNote.submit")}
           </Button>

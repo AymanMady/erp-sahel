@@ -17,6 +17,12 @@ export const usersMessages: MessageCatalog = {
     "A system role cannot be deleted.": "Un rôle système ne peut pas être supprimé.",
     "This role is assigned to {count} user(s): remove it first.":
       "Ce rôle est affecté à {count} utilisateur(s) : retirez-le d'abord.",
+    "One of the chosen roles does not exist in this company.":
+      "Un des rôles choisis n'existe pas dans cette société.",
+    "Only a platform administrator can change this account.":
+      "Seul un administrateur principal peut modifier ce compte.",
+    "This person also works for another company: only they can change their password or email.":
+      "Cette personne travaille aussi pour une autre société : elle seule peut changer son mot de passe ou son e-mail.",
   },
   ar: {
     "At least 3 characters": "3 أحرف على الأقل",
@@ -32,5 +38,11 @@ export const usersMessages: MessageCatalog = {
     "A system role cannot be deleted.": "لا يمكن حذف دور النظام.",
     "This role is assigned to {count} user(s): remove it first.":
       "هذا الدور مسند إلى {count} مستخدم(ين): أزله أولًا.",
+    "One of the chosen roles does not exist in this company.":
+      "أحد الأدوار المختارة غير موجود في هذه الشركة.",
+    "Only a platform administrator can change this account.":
+      "لا يمكن تعديل هذا الحساب إلا من طرف المسؤول الرئيسي.",
+    "This person also works for another company: only they can change their password or email.":
+      "هذا الشخص يعمل أيضًا لشركة أخرى: هو وحده من يمكنه تغيير كلمة المرور أو البريد الإلكتروني.",
   },
 };

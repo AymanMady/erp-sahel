@@ -14,10 +14,20 @@ const journal = new Map<string, Record<string, unknown>>();
 
 vi.mock("../domains/sync/repository", () => ({
   syncRepository: {
-    findByClientUuid: async (key: string) => journal.get(key) ?? null,
-    record: async (values: Record<string, unknown>) => {
-      journal.set(String(values.clientUuid), values);
-      return values;
+    // Same contract as the database: taking a key is atomic.
+    claimHttpKey: async (values: Record<string, unknown>) => {
+      const key = String(values.clientUuid);
+      const holder = journal.get(key);
+      if (holder) return holder;
+      journal.set(key, { ...values, status: "pending" });
+      return null;
+    },
+    completeHttpKey: async (key: string, values: Record<string, unknown>) => {
+      const row = journal.get(key);
+      if (row?.status === "pending") journal.set(key, { ...row, ...values, status: "created" });
+    },
+    releaseHttpKey: async (key: string) => {
+      if (journal.get(key)?.status === "pending") journal.delete(key);
     },
   },
 }));
@@ -48,6 +58,11 @@ beforeAll(async () => {
   app.use("/api", idempotency);
   app.post("/api/catalog/categories", (req, res) => {
     executions += 1;
+    res.status(201).json({ id: randomUUID(), name: req.body.name });
+  });
+  app.post("/api/slow", async (req, res) => {
+    executions += 1;
+    await new Promise((resolve) => setTimeout(resolve, 100));
     res.status(201).json({ id: randomUUID(), name: req.body.name });
   });
   app.post("/api/fail", (_req, res) => {
@@ -100,6 +115,21 @@ describe("idempotency of replayed writes", () => {
     await post("/api/fail", key, auth);
     await post("/api/fail", key, auth);
     expect(executions).toBe(2);
+  });
+
+  it("runs only once when two copies arrive at the same time", async () => {
+    const key = randomUUID();
+    const auth = token(randomUUID());
+    const [first, second] = await Promise.all([
+      post("/api/slow", key, auth),
+      post("/api/slow", key, auth),
+    ]);
+    expect(executions).toBe(1);
+    expect([first.status, second.status].sort()).toEqual([201, 503]);
+
+    const replay = await post("/api/slow", key, auth);
+    expect(replay.status).toBe(201);
+    expect(executions).toBe(1);
   });
 
   it("refuses reuse of a key by another company", async () => {

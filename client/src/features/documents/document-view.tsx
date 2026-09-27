@@ -9,6 +9,7 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
+import { invoiceAmountDueCents } from "@shared/pricing";
 import { formatDate } from "@shared/format";
 import { useSession } from "@/shared/auth/session";
 import { Money, Quantity, Rate } from "@/shared/components/money";
@@ -24,7 +25,6 @@ export interface DocumentViewLine {
   unitPriceCents: number;
   discountBp: number;
   totalCents: number;
-  originCountry?: string;
 }
 
 export function DocumentView({
@@ -37,6 +37,7 @@ export function DocumentView({
   lines,
   totalCents,
   paidAmountCents,
+  creditedAmountCents = 0,
   notes,
   badge,
   footerNote,
@@ -50,16 +51,14 @@ export function DocumentView({
   lines: DocumentViewLine[];
   totalCents: number;
   paidAmountCents?: number;
+  /** Returned goods (credit notes): no longer owed by the customer. */
+  creditedAmountCents?: number;
   notes?: string;
   badge?: ReactNode;
   footerNote?: ReactNode;
 }) {
   const { t } = useTranslation("documents");
   const { company } = useSession();
-
-  // The country of origin is only shown when at least one line has it:
-  // no need to clutter the document otherwise ([FR-VNT-5]).
-  const showOrigin = lines.some((line) => line.originCountry);
 
   return (
     <div className="print-sheet rounded-lg border bg-card p-6 md:p-8">
@@ -102,7 +101,6 @@ export function DocumentView({
           <TableHeader>
             <TableRow className="bg-muted/40">
               <TableHead>{t("view.columns.description")}</TableHead>
-              {showOrigin ? <TableHead>{t("view.columns.origin")}</TableHead> : null}
               <TableHead className="text-end">{t("view.columns.quantity")}</TableHead>
               <TableHead className="text-end">{t("view.columns.unitPrice")}</TableHead>
               <TableHead className="text-end">{t("common:labels.discount")}</TableHead>
@@ -118,9 +116,6 @@ export function DocumentView({
                     <p className="tabular text-xs text-muted-foreground">{line.productSku}</p>
                   ) : null}
                 </TableCell>
-                {showOrigin ? (
-                  <TableCell className="text-sm">{line.originCountry || "—"}</TableCell>
-                ) : null}
                 <TableCell className="text-end">
                   <Quantity value={line.quantity} /> {line.unit}
                 </TableCell>
@@ -151,9 +146,21 @@ export function DocumentView({
                 <span className="text-muted-foreground">{t("view.alreadyPaid")}</span>
                 <Money cents={paidAmountCents} />
               </div>
+              {creditedAmountCents > 0 ? (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">{t("view.returned")}</span>
+                  <Money cents={creditedAmountCents} />
+                </div>
+              ) : null}
               <div className="flex items-center justify-between font-medium">
                 <span>{t("view.amountDue")}</span>
-                <Money cents={Math.max(0, totalCents - paidAmountCents)} />
+                <Money
+                  cents={invoiceAmountDueCents({
+                    totalCents,
+                    paidAmountCents,
+                    creditedAmountCents,
+                  })}
+                />
               </div>
             </>
           ) : null}

@@ -151,6 +151,10 @@ export class AccountingService {
       }
       await accountsRepository.requireById(companyId, line.accountId);
     }
+    // Automatic entries at zero are simply skipped; a manual entry at zero is a mistake.
+    if (data.lines.every((line) => line.debitCents === 0 && line.creditCents === 0)) {
+      throw new BusinessRuleError("An entry must have at least one non-zero line.");
+    }
 
     return runInTransaction((tx) =>
       accountingApplication.postEntry(tx, {
@@ -179,18 +183,14 @@ export class AccountingService {
   }
 
   async createFiscalYear(companyId: string, body: unknown) {
-    const data = createFiscalYearSchema.parse(body);
-    if (data.endDate <= data.startDate) {
-      throw new BusinessRuleError("The end date must be after the start date.");
-    }
-    return fiscalYearsRepository.create(companyId, data);
+    return accountingApplication.createFiscalYear(companyId, createFiscalYearSchema.parse(body));
   }
 
+  /** Closing carries the balances over into the next year — see `accountingApplication`. */
   async closeFiscalYear(companyId: string, id: unknown) {
     const { id: fiscalYearId } = idParamSchema.parse({ id });
-    const year = await fiscalYearsRepository.update(companyId, fiscalYearId, { isClosed: true });
-    if (!year) throw new NotFoundError("Fiscal year not found.");
-    return year;
+    const company = await tenancyApplication.requireCompany(companyId);
+    return accountingApplication.closeFiscalYear(company, fiscalYearId);
   }
 }
 

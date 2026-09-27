@@ -18,6 +18,7 @@ import type { RoleWithPermissions } from "@/entities/types";
 import { queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
 import { Field } from "@/shared/components/field";
+import { useConfirm } from "@/shared/components/confirm-dialog";
 import { PageHeader } from "@/shared/components/page-header";
 import { permissionLabel, roleDescription, roleName } from "@/shared/lib/i18n-labels";
 import { Badge } from "@/shared/ui/badge";
@@ -45,6 +46,7 @@ export default function RolesSettingsPage() {
   const queryClient = useQueryClient();
   const { can } = useSession();
   const { t } = useTranslation("settings");
+  const [confirmDialog, confirm] = useConfirm();
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<RoleWithPermissions | null>(null);
 
@@ -66,6 +68,7 @@ export default function RolesSettingsPage() {
 
   return (
     <div className="space-y-6">
+      {confirmDialog}
       <PageHeader title={t("roles.title")} description={t("roles.description")}>
         {can("users.write") ? (
           <Button onClick={() => setCreating(true)}>
@@ -120,7 +123,15 @@ export default function RolesSettingsPage() {
                       size="icon"
                       variant="ghost"
                       aria-label={t("common:actions.delete")}
-                      onClick={() => remove.mutate(role.id)}
+                      onClick={async () => {
+                        const confirmed = await confirm({
+                          title: t("roles.confirmDelete.title", { name: role.name }),
+                          description: t("roles.confirmDelete.description"),
+                          confirmLabel: t("common:actions.delete"),
+                          destructive: true,
+                        });
+                        if (confirmed) remove.mutate(role.id);
+                      }}
                     >
                       <IconTrash className="size-4" />
                     </Button>

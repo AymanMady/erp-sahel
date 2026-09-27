@@ -1,6 +1,6 @@
 /** Accounting persistence: chart, journals, entries, general ledger, trial balance. */
 
-import { and, asc, desc, eq, gte, inArray, lte, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, lt, lte, ne, sql, type SQL } from "drizzle-orm";
 
 import {
   accountMappings,
@@ -12,6 +12,7 @@ import {
   parties,
   type Account,
   type AccountMappingKey,
+  type FiscalYear,
   type Journal,
   type JournalEntry,
 } from "@shared/schema";
@@ -258,8 +259,8 @@ export class AccountingRepository {
         code: accounts.code,
         name: accounts.name,
         accountType: accounts.accountType,
-        debitCents: sql<number>`coalesce(sum(${journalLines.debitCents}), 0)::int`,
-        creditCents: sql<number>`coalesce(sum(${journalLines.creditCents}), 0)::int`,
+        debitCents: sql<number>`coalesce(sum(${journalLines.debitCents}), 0)::bigint`,
+        creditCents: sql<number>`coalesce(sum(${journalLines.creditCents}), 0)::bigint`,
       })
       .from(accounts)
       .leftJoin(journalLines, eq(journalLines.accountId, accounts.id))
@@ -277,12 +278,114 @@ export class AccountingRepository {
     return rows as BalanceRow[];
   }
 
+  /** Fiscal years sharing at least one day with [startDate, endDate]. */
+  async findOverlappingFiscalYear(
+    companyId: string,
+    startDate: string,
+    endDate: string,
+    excludeId?: string
+  ): Promise<FiscalYear | null> {
+    const [row] = await this.database
+      .select()
+      .from(fiscalYears)
+      .where(
+        and(
+          eq(fiscalYears.companyId, companyId),
+          lte(fiscalYears.startDate, endDate),
+          gte(fiscalYears.endDate, startDate),
+          excludeId ? ne(fiscalYears.id, excludeId) : undefined
+        )
+      )
+      .limit(1);
+    return row ?? null;
+  }
+
+  /** Locks a fiscal year row until the end of the transaction (two closings never interleave). */
+  async lockFiscalYear(companyId: string, id: string): Promise<FiscalYear | null> {
+    const [row] = await this.database
+      .select()
+      .from(fiscalYears)
+      .where(and(eq(fiscalYears.companyId, companyId), eq(fiscalYears.id, id)))
+      .for("update")
+      .limit(1);
+    return row ?? null;
+  }
+
+  /** Earliest fiscal year still open that starts before `startDate`. */
+  async findOpenFiscalYearBefore(companyId: string, startDate: string): Promise<FiscalYear | null> {
+    const [row] = await this.database
+      .select()
+      .from(fiscalYears)
+      .where(
+        and(
+          eq(fiscalYears.companyId, companyId),
+          eq(fiscalYears.isClosed, false),
+          lt(fiscalYears.startDate, startDate)
+        )
+      )
+      .orderBy(asc(fiscalYears.startDate))
+      .limit(1);
+    return row ?? null;
+  }
+
+  /** First fiscal year starting after `endDate`. */
+  async findFiscalYearAfter(companyId: string, endDate: string): Promise<FiscalYear | null> {
+    const [row] = await this.database
+      .select()
+      .from(fiscalYears)
+      .where(and(eq(fiscalYears.companyId, companyId), gt(fiscalYears.startDate, endDate)))
+      .orderBy(asc(fiscalYears.startDate))
+      .limit(1);
+    return row ?? null;
+  }
+
+  async insertFiscalYear(values: typeof fiscalYears.$inferInsert): Promise<FiscalYear> {
+    const [row] = await this.database.insert(fiscalYears).values(values).returning();
+    return row;
+  }
+
+  async markFiscalYearClosed(companyId: string, id: string): Promise<FiscalYear | null> {
+    const [row] = await this.database
+      .update(fiscalYears)
+      .set({ isClosed: true, updatedAt: new Date() })
+      .where(and(eq(fiscalYears.companyId, companyId), eq(fiscalYears.id, id)))
+      .returning();
+    return row ?? null;
+  }
+
+  /**
+   * Debit/credit totals per account and party over a period — the closing balances used
+   * to carry a fiscal year forward.
+   */
+  async periodBalancesByParty(companyId: string, fromDate: string, toDate: string) {
+    return this.database
+      .select({
+        accountId: journalLines.accountId,
+        accountType: accounts.accountType,
+        partyId: journalLines.partyId,
+        debitCents: sql<number>`coalesce(sum(${journalLines.debitCents}), 0)::bigint`,
+        creditCents: sql<number>`coalesce(sum(${journalLines.creditCents}), 0)::bigint`,
+      })
+      .from(journalLines)
+      .innerJoin(journalEntries, eq(journalEntries.id, journalLines.entryId))
+      .innerJoin(accounts, eq(accounts.id, journalLines.accountId))
+      .where(
+        and(
+          eq(journalLines.companyId, companyId),
+          gte(journalEntries.date, fromDate),
+          lte(journalEntries.date, toDate)
+        )
+      )
+      .groupBy(journalLines.accountId, accounts.accountType, journalLines.partyId, accounts.code)
+      .orderBy(asc(accounts.code));
+  }
+
   /** Balance of a treasury account, to reconcile `bank_accounts.balance_cents`. */
   async accountBalance(companyId: string, accountId: string) {
     const [row] = await this.database
       .select({
-        debitCents: sql<number>`coalesce(sum(${journalLines.debitCents}), 0)::int`,
-        creditCents: sql<number>`coalesce(sum(${journalLines.creditCents}), 0)::int`,
+        debitCents: sql<number>`coalesce(sum(${journalLines.debitCents}), 0)::bigint`,
+        creditCents: sql<number>`coalesce(sum(${journalLines.creditCents}), 0)::bigint`,
       })
       .from(journalLines)
       .where(and(eq(journalLines.companyId, companyId), eq(journalLines.accountId, accountId)));

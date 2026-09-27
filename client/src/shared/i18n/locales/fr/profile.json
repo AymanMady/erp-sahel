@@ -21,5 +21,13 @@
     "confirm": "Retapez le nouveau mot de passe",
     "submit": "Changer le mot de passe",
     "changed": "Mot de passe changé. Reconnectez-vous."
+  },
+  "forced": {
+    "title": "Choisissez votre mot de passe",
+    "description": "Le mot de passe actuel vous a été donné par le responsable. Choisissez-en un nouveau que vous seul connaissez avant de continuer.",
+    "current": "Mot de passe donné par le responsable",
+    "submit": "Enregistrer et continuer",
+    "signInAgain": "Mot de passe changé. Connectez-vous avec le nouveau mot de passe.",
+    "offline": "Il faut internet pour changer le mot de passe."
   }
 }

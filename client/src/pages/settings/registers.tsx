@@ -16,6 +16,7 @@ import { queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
 import { Field } from "@/shared/components/field";
 import { Money } from "@/shared/components/money";
+import { archiveQuestion, useConfirm } from "@/shared/components/confirm-dialog";
 import { PageHeader } from "@/shared/components/page-header";
 import { ResourceTable, type Column } from "@/shared/components/resource-table";
 import { StatusBadge } from "@/shared/components/status-badge";
@@ -44,6 +45,7 @@ export default function RegistersSettingsPage() {
   const queryClient = useQueryClient();
   const { can } = useSession();
   const { t } = useTranslation("settings");
+  const [confirmDialog, confirm] = useConfirm();
   const [open, setOpen] = useState(false);
 
   const {
@@ -89,7 +91,9 @@ export default function RegistersSettingsPage() {
             size="icon"
             variant="ghost"
             aria-label={t("common:actions.archive")}
-            onClick={() => archive.mutate(row.id)}
+            onClick={async () => {
+              if (await confirm(archiveQuestion(row.name))) archive.mutate(row.id);
+            }}
           >
             <IconTrash className="size-4" />
           </Button>
@@ -141,6 +145,7 @@ export default function RegistersSettingsPage() {
 
   return (
     <div className="space-y-6">
+      {confirmDialog}
       <PageHeader title={t("registers.title")} description={t("registers.description")}>
         {can("settings.write") ? (
           <Button onClick={() => setOpen(true)}>

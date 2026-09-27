@@ -5,7 +5,7 @@
   },
   "invoicing": {
     "name": "Factures",
-    "description": "Faire des factures clients et des avoirs."
+    "description": "Faire des factures clients et enregistrer les retours de marchandise."
   },
   "sales": {
     "name": "Devis et commandes",

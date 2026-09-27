@@ -41,7 +41,7 @@
     "validated": "Goods received: stock updated.",
     "receiptDate": "Arrival date",
     "unitCost": "Buying price for one unit",
-    "lot": "Lot",
+    "lot": "Batch number",
     "optional": "not required",
     "receivedValue": "Value of the goods received",
     "submit": "Confirm the arrival"

@@ -5,14 +5,16 @@
   "accessDenied": {
     "title": "Accès refusé",
     "description": "Vous n'avez pas le droit d'utiliser la caisse. Demandez au responsable.",
-    "backToDashboard": "Retour au tableau de bord"
+    "backToDashboard": "Retour à l'accueil"
   },
   "search": {
     "placeholder": "Scanner le code-barres ou taper le nom de l'article…",
     "searching": "Recherche en cours…",
     "noMatch": "Aucun article trouvé.",
     "startTyping": "Tapez le nom de l'article pour le trouver.",
-    "noSnapshot": "Connectez-vous une première fois avec internet pour charger les articles."
+    "noSnapshot": "Connectez-vous une première fois avec internet pour charger les articles.",
+    "inStock": "{{quantity}} en stock",
+    "outOfStock": "Plus en stock"
   },
   "cart": {
     "closeRegister": "Fermer la caisse",
@@ -21,7 +23,8 @@
     "increase": "Ajouter un",
     "lastTicket": "Vente {{number}} payée.",
     "lastTicketOffline": "Vente {{number}} payée (sans internet, sera envoyée plus tard).",
-    "checkout": "Payer {{amount}}"
+    "checkout": "Payer {{amount}}",
+    "quantity": "Quantité de {{name}}"
   },
   "customer": {
     "walkIn": "Client de passage",
@@ -37,7 +40,8 @@
     "register": "Caisse",
     "selectRegister": "Choisir une caisse",
     "opening": "Ouverture en cours…",
-    "submit": "Ouvrir la caisse"
+    "submit": "Ouvrir la caisse",
+    "closedElsewhere": "Cette caisse a été fermée sur un autre appareil. Ouvrez-la à nouveau pour continuer à vendre. Le panier est gardé."
   },
   "payment": {
     "title": "Paiement",
@@ -60,7 +64,9 @@
     "difference": "Différence (manque ou surplus)",
     "pendingNotice": "La fermeture sera envoyée avec les ventes quand internet reviendra. La différence sera recalculée à ce moment.",
     "closing": "Fermeture en cours…",
-    "submit": "Fermer la caisse"
+    "submit": "Fermer la caisse",
+    "emptyWarning": "Vous n'avez pas écrit l'argent compté. Il devrait y avoir {{amount}} dans le tiroir. Si le tiroir est vraiment vide, appuyez encore pour fermer avec 0 MRU.",
+    "confirmEmpty": "Oui, fermer avec 0 MRU"
   },
   "toasts": {
     "ticketPaid": "Vente {{number}} payée.",
@@ -69,7 +75,9 @@
     "sessionOpenedOffline": "Caisse ouverte sans internet. Tout sera envoyé quand internet reviendra.",
     "closePending": "Caisse fermée. En attente d'internet pour l'envoi.",
     "closedBalanced": "Caisse fermée. Le compte est juste.",
-    "closedWithDifference": "Caisse fermée. Attention : il y a une différence."
+    "closedWithDifference": "Caisse fermée. Attention : il y a une différence.",
+    "sessionClosedElsewhere": "La caisse a été fermée sur un autre appareil. Ouvrez-la à nouveau.",
+    "sessionNotYours": "Cette caisse a été ouverte par une autre personne. Ouvrez votre propre caisse pour vendre. Le panier est gardé."
   },
   "outbox": {
     "ticket": "Vente {{number}}",

@@ -31,6 +31,8 @@ import {
   listPending,
   markSending,
   purgeSynced,
+  recoverStaleSending,
+  releaseSending,
 } from "./outbox";
 import { applyDelta, pullSnapshot, readSnapshot } from "./snapshot";
 
@@ -112,8 +114,21 @@ async function pushBatch(
   batch: OutboxRecord[],
   maps: IdMaps
 ): Promise<{ synced: number; deferred: number }> {
-  await markSending(batch.map((record) => record.clientUuid));
+  const uuids = batch.map((record) => record.clientUuid);
+  await markSending(uuids);
+  try {
+    return await sendBatch(batch, maps);
+  } finally {
+    // Network cut or error before the acknowledgements: whatever is still "sending"
+    // goes back to the queue, otherwise it would never be resent nor counted.
+    await releaseSending(uuids);
+  }
+}
 
+async function sendBatch(
+  batch: OutboxRecord[],
+  maps: IdMaps
+): Promise<{ synced: number; deferred: number }> {
   const response = await api.post<SyncPushResponse>("/api/sync/push", {
     deviceId: getDeviceId(),
     operations: batch.map((record) => ({
@@ -166,6 +181,18 @@ async function replayHttp(record: OutboxRecord, maps: IdMaps): Promise<boolean> 
   const request = replayRequest(record, maps.all);
   await markSending([record.clientUuid]);
   try {
+    return await sendHttp(record, request, maps);
+  } finally {
+    await releaseSending([record.clientUuid]);
+  }
+}
+
+async function sendHttp(
+  record: OutboxRecord,
+  request: ReturnType<typeof replayRequest>,
+  maps: IdMaps
+): Promise<boolean> {
+  try {
     const result = await apiRequest<unknown>(request.url, {
       method: request.method,
       body: request.body,
@@ -195,10 +222,12 @@ async function replayHttp(record: OutboxRecord, maps: IdMaps): Promise<boolean> 
     }
     // 4xx: business rejection, final until the user chooses to retry.
     // 5xx: server incident, retried on the next cycle.
+    // A first send still being processed (IDEMPOTENCY_IN_PROGRESS) is not a problem
+    // to show: the next cycle gets its result.
     await acknowledge({
       clientUuid: record.clientUuid,
       status: error.status >= 500 ? "pending" : "error",
-      error: error.message,
+      error: error.code === "IDEMPOTENCY_IN_PROGRESS" ? null : error.message,
     });
     return false;
   }
@@ -266,9 +295,17 @@ async function pullDelta(): Promise<void> {
     await writeMeta(CURSOR_KEY, snapshot.cursor);
     return;
   }
-  const delta = await api.get<Parameters<typeof applyDelta>[0]>("/api/sync/pull", {
-    since: cursor,
-  });
+  const delta = await api.get<Parameters<typeof applyDelta>[0] & { resync?: boolean }>(
+    "/api/sync/pull",
+    { since: cursor }
+  );
+  if (delta.resync) {
+    // Too many changes since the last visit: the server sends nothing and asks for a
+    // full snapshot, whose cursor replaces the old one.
+    const snapshot = await pullSnapshot();
+    await writeMeta(CURSOR_KEY, snapshot.cursor);
+    return;
+  }
   await applyDelta(delta);
   await writeMeta(CURSOR_KEY, delta.cursor);
 }
@@ -348,5 +385,7 @@ export async function initialiseSyncStatus(): Promise<void> {
     lastSyncAt,
     state: snapshot ? "idle" : "offline",
   });
+  // Operations interrupted mid-send in a previous session (tab closed, network cut).
+  await recoverStaleSending();
   await refreshCounters();
 }

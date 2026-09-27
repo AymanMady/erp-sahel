@@ -13,7 +13,7 @@
  *    guarantees "synced exactly once" ([BR-8]).
  */
 
-import { boolean, integer, numeric, timestamp, uuid } from "drizzle-orm/pg-core";
+import { bigint, boolean, integer, numeric, timestamp, uuid } from "drizzle-orm/pg-core";
 
 /** Creation/update timestamps present on every table. */
 export const auditTimestamps = {
@@ -31,8 +31,11 @@ export const baseColumns = {
 /** Quantity stored with 3 decimals; on the JS side it is a `string` (never a float). */
 export const quantity = (name: string) => numeric(name, { precision: 16, scale: 3 });
 
-/** Amount in integer cents. `bigint` not needed: 2^31 cents ≈ 21 M units. */
-export const moneyCents = (name: string) => integer(name);
+/**
+ * Amount in integer cents. `bigint`: an `integer` stops at 2^31 cents ≈ 21 million MRU,
+ * which a shop's sales or a bank balance reach within a year or so.
+ */
+export const moneyCents = (name: string) => bigint(name, { mode: "number" });
 
 /** Rate in basis points (16 % ⇒ 1600). */
 export const rateBp = (name: string) => integer(name);

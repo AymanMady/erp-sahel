@@ -2,7 +2,7 @@
 
 import type { Request, Response } from "express";
 
-import { authOf } from "../auth/guards";
+import { authOf, canSetPrices } from "../auth/guards";
 import { posService } from "./service";
 
 export class PosController {
@@ -48,6 +48,10 @@ export class PosController {
 
   createTicket = async (req: Request, res: Response): Promise<void> => {
     const auth = authOf(req);
-    res.status(201).json(await this.service.createTicket(auth.companyId, auth.userId, req.body));
+    res
+      .status(201)
+      .json(
+        await this.service.createTicket(auth.companyId, auth.userId, req.body, canSetPrices(auth))
+      );
   };
 }

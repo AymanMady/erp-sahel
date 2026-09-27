@@ -5,12 +5,12 @@
     "recipient": "Pour",
     "columns": {
       "description": "Article",
-      "origin": "Pays d'origine",
       "quantity": "Quantité",
       "unitPrice": "Prix d'une unité"
     },
     "alreadyPaid": "Déjà payé",
-    "amountDue": "Reste à payer"
+    "amountDue": "Reste à payer",
+    "returned": "Marchandise rendue"
   },
   "lineEditor": {
     "columns": {
@@ -21,7 +21,18 @@
     "removeLine": "Supprimer la ligne",
     "addItem": "Ajouter un article",
     "freeLine": "Ajouter une ligne écrite à la main",
-    "globalDiscount": "Remise sur le total"
+    "globalDiscount": "Remise sur le total",
+    "problems": {
+      "name": "Écrivez le nom de l'article, sinon cette ligne ne sera pas enregistrée.",
+      "quantity": "Écrivez une quantité plus grande que 0, sinon cette ligne ne sera pas enregistrée."
+    },
+    "blockers": {
+      "noCustomer": "Pour continuer, choisissez d'abord le client.",
+      "noSupplier": "Pour continuer, choisissez d'abord le fournisseur.",
+      "noLine": "Pour continuer, ajoutez au moins un article avec son nom et une quantité."
+    },
+    "ignoredLines_one": "1 ligne vide ou pas finie ne sera pas enregistrée.",
+    "ignoredLines_other": "{{count}} lignes vides ou pas finies ne seront pas enregistrées."
   },
   "productPicker": {
     "title": "Ajouter un article",

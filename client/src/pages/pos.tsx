@@ -28,14 +28,14 @@ import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 import { toast } from "sonner";
 
-import { formatMoney } from "@shared/money";
-import { errorMessage } from "@/shared/api/api-error";
+import { formatMoney, formatQuantity, parseQuantityInput } from "@shared/money";
+import { ApiError, errorMessage } from "@/shared/api/api-error";
 import { bankingApi } from "@/entities/banking/api";
 import { catalogApi } from "@/entities/catalog/api";
 import { partyApi } from "@/entities/party/api";
 import { posApi } from "@/entities/pos/api";
-import type { Party, ProductListItem } from "@/entities/types";
-import { queryKeys } from "@/shared/api/query-client";
+import type { Party, PosSession, ProductListItem } from "@/entities/types";
+import { invalidateMoneyAndStock, queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
 import { Field } from "@/shared/components/field";
 import { Money } from "@/shared/components/money";
@@ -43,6 +43,8 @@ import { MoneyInput } from "@/shared/components/money-input";
 import { useDebounced } from "@/shared/hooks/use-debounced";
 import { useOnline } from "@/shared/hooks/use-online";
 import { cn } from "@/shared/lib/utils";
+import { offlineDb } from "@/shared/offline/db";
+import { isNetworkError } from "@/shared/offline/offline-writes";
 import { readMeta, writeMeta } from "@/shared/offline/storage";
 import {
   pullSnapshot,
@@ -56,6 +58,7 @@ import {
   checkout,
   closeSession,
   openSession,
+  pendingSessionTotals,
   type CartLine,
   type TicketPayment,
 } from "@/features/pos/checkout";
@@ -81,6 +84,57 @@ import { Separator } from "@/shared/ui/separator";
 
 const TICKET_SEQ_KEY = "pos.localTicketSeq";
 const SESSION_LOCAL_KEY = "pos.localSession";
+/** Cart kept in the browser: a reload or a closed tab must not lose the sale in progress. */
+const CART_STORAGE_KEY = "erp.pos.cart";
+
+interface StoredCart {
+  cart: CartLine[];
+  customer: Party | null;
+}
+
+function readStoredCart(): StoredCart {
+  try {
+    const raw = window.localStorage.getItem(CART_STORAGE_KEY);
+    const parsed = raw ? (JSON.parse(raw) as Partial<StoredCart>) : null;
+    return {
+      cart: Array.isArray(parsed?.cart) ? parsed.cart : [],
+      customer: parsed?.customer ?? null,
+    };
+  } catch {
+    return { cart: [], customer: null };
+  }
+}
+
+function writeStoredCart(value: StoredCart): void {
+  try {
+    if (value.cart.length === 0 && !value.customer) {
+      window.localStorage.removeItem(CART_STORAGE_KEY);
+    } else {
+      window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(value));
+    }
+  } catch {
+    // Storage full or blocked: the cart simply lives in memory.
+  }
+}
+
+/**
+ * Open session as known to the server. `confirmed` is false when the answer comes
+ * from the device (no internet): it must not be used to decide the session is closed.
+ */
+async function fetchCurrentSession(): Promise<{
+  session: PosSession | null;
+  confirmed: boolean;
+}> {
+  try {
+    return { session: await posApi.currentSessionFromServer(), confirmed: true };
+  } catch (error) {
+    if (!isNetworkError(error)) throw error;
+    // Offline, the session opened on the server is read back from the snapshot: without
+    // it, the register would offer to open a second one, rejected at sync time.
+    const snapshot = await readSnapshot();
+    return { session: snapshot?.session ?? null, confirmed: false };
+  }
+}
 
 interface LocalSession {
   sessionId: string;
@@ -97,12 +151,14 @@ export default function PosPage() {
   const searchRef = useRef<HTMLInputElement>(null);
 
   const [search, setSearch] = useState("");
-  const [cart, setCart] = useState<CartLine[]>([]);
-  const [customer, setCustomer] = useState<Party | null>(null);
+  const [cart, setCart] = useState<CartLine[]>(() => readStoredCart().cart);
+  const [customer, setCustomer] = useState<Party | null>(() => readStoredCart().customer);
   const [customerOpen, setCustomerOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
   const [closeOpen, setCloseOpen] = useState(false);
   const [localSession, setLocalSession] = useState<LocalSession | null>(null);
+  /** The session was closed elsewhere (another device): explained on the opening screen. */
+  const [sessionClosedElsewhere, setSessionClosedElsewhere] = useState(false);
   const [lastTicket, setLastTicket] = useState<{
     number: string;
     mode: string;
@@ -111,14 +167,20 @@ export default function PosPage() {
   const debouncedSearch = useDebounced(search, 200);
 
   // --- Register session -----------------------------------------------------
-  const { data: serverSession, isLoading: sessionLoading } = useQuery({
+  const {
+    data: currentSession,
+    dataUpdatedAt: sessionCheckedAt,
+    isLoading: sessionLoading,
+  } = useQuery({
     queryKey: queryKeys.posCurrentSession,
-    // Offline, the session opened on the server is read back from the snapshot: without
-    // it, the register would offer to open a second one, rejected at sync time.
-    queryFn: () => posApi.currentSession(),
+    queryFn: fetchCurrentSession,
     refetchOnReconnect: true,
+    // Also checked regularly: the session may be closed from another device.
+    refetchOnWindowFocus: true,
+    refetchInterval: online ? 2 * 60_000 : false,
     retry: false,
   });
+  const serverSession = currentSession?.session ?? null;
 
   useEffect(() => {
     void (async () => {
@@ -126,6 +188,8 @@ export default function PosPage() {
       if (raw) setLocalSession(JSON.parse(raw) as LocalSession);
     })();
   }, []);
+
+  useEffect(() => writeStoredCart({ cart, customer }), [cart, customer]);
 
   // A server-side open session takes precedence over the local one: it holds the
   // tickets that have already been synced.
@@ -138,10 +202,34 @@ export default function PosPage() {
       }
     : localSession;
 
+  /** When this device last chose its session: older server answers do not count. */
+  const sessionChosenAt = useRef(0);
   const persistSession = useCallback(async (session: LocalSession | null) => {
+    sessionChosenAt.current = Date.now();
     setLocalSession(session);
     await writeMeta(SESSION_LOCAL_KEY, session ? JSON.stringify(session) : "");
   }, []);
+
+  // The server says no session is open while this device still uses one: it was closed
+  // elsewhere. Stop using it — tickets on a closed session would all be refused. A
+  // session opened without internet and not yet sent is kept: the server cannot know it.
+  useEffect(() => {
+    if (!currentSession?.confirmed || currentSession.session || !localSession) return;
+    if (sessionCheckedAt <= sessionChosenAt.current) return;
+    let cancelled = false;
+    void (async () => {
+      if (localSession.clientUuid) {
+        const opening = await offlineDb.outbox.get(localSession.clientUuid);
+        if (opening && opening.status !== "synced") return;
+      }
+      if (cancelled) return;
+      await persistSession(null);
+      setSessionClosedElsewhere(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentSession, sessionCheckedAt, localSession, persistSession]);
 
   // --- Offline snapshot --------------------------------------------------
   const { data: snapshot } = useQuery({
@@ -265,7 +353,9 @@ export default function PosPage() {
       <OpenSessionScreen
         online={online}
         loading={sessionLoading && online}
+        closedElsewhere={sessionClosedElsewhere}
         onOpened={async (session) => {
+          setSessionClosedElsewhere(false);
           await persistSession(session);
           void queryClient.invalidateQueries({ queryKey: queryKeys.posCurrentSession });
         }}
@@ -341,7 +431,11 @@ export default function PosPage() {
                             "border-status-danger text-status-danger"
                         )}
                       >
-                        {product.stockQuantity ?? 0}
+                        {(product.stockQuantity ?? 0) <= 0
+                          ? t("search.outOfStock")
+                          : t("search.inStock", {
+                              quantity: formatQuantity(product.stockQuantity ?? 0),
+                            })}
                       </Badge>
                     ) : null}
                   </div>
@@ -408,16 +502,10 @@ export default function PosPage() {
                       >
                         <IconMinus className="size-3.5" />
                       </Button>
-                      <Input
-                        inputMode="decimal"
-                        className="tabular h-8 w-16 text-center"
-                        value={line.quantity}
-                        onChange={(event) =>
-                          setQuantity(
-                            line.productId,
-                            Number(event.target.value.replace(",", ".")) || 0
-                          )
-                        }
+                      <CartQuantityInput
+                        quantity={line.quantity}
+                        label={t("cart.quantity", { name: line.name })}
+                        onChange={(quantity) => setQuantity(line.productId, quantity)}
                       />
                       <Button
                         size="icon"
@@ -506,7 +594,8 @@ export default function PosPage() {
             setCart([]);
             setCustomer(null);
             setPayOpen(false);
-            void queryClient.invalidateQueries({ queryKey: queryKeys.posCurrentSession });
+            // Stock, money in the till, customer debt, dashboard: all changed.
+            invalidateMoneyAndStock(queryClient);
             toast.success(
               result.mode === "online"
                 ? t("toasts.ticketPaid", { number: result.number })
@@ -514,6 +603,28 @@ export default function PosPage() {
             );
             searchRef.current?.focus();
           } catch (error) {
+            if (
+              error instanceof ApiError &&
+              (error.code === "POS_SESSION_CLOSED" ||
+                error.code === "POS_SESSION_NOT_YOURS" ||
+                error.status === 404)
+            ) {
+              // Maybe closed from another device, or opened by another cashier: ask the
+              // server again. The cart is kept.
+              setPayOpen(false);
+              void queryClient.invalidateQueries({ queryKey: queryKeys.posCurrentSession });
+              if (error.code === "POS_SESSION_CLOSED") {
+                toast.error(t("toasts.sessionClosedElsewhere"));
+                return;
+              }
+              if (error.code === "POS_SESSION_NOT_YOURS") {
+                // This till was opened by someone else: forget it on this device and
+                // let this cashier open their own.
+                await persistSession(null);
+                toast.error(t("toasts.sessionNotYours"));
+                return;
+              }
+            }
             toast.error(errorMessage(error));
           }
         }}
@@ -527,10 +638,51 @@ export default function PosPage() {
         onClosed={async () => {
           await persistSession(null);
           setCart([]);
-          void queryClient.invalidateQueries({ queryKey: queryKeys.posCurrentSession });
+          invalidateMoneyAndStock(queryClient);
         }}
       />
     </div>
+  );
+}
+
+/**
+ * Quantity of a cart line. The field may be emptied to retype the number without the
+ * line disappearing: only a typed 0 removes it, when leaving the field (the bin button
+ * does it directly). Arabic-Indic digits ("٣") are understood.
+ */
+function CartQuantityInput({
+  quantity,
+  label,
+  onChange,
+}: {
+  quantity: number;
+  label: string;
+  onChange: (quantity: number) => void;
+}) {
+  const [text, setText] = useState(() => String(quantity));
+
+  // Follow the + and − buttons, without overwriting what is being typed.
+  useEffect(() => {
+    setText((current) => (parseQuantityInput(current) === quantity ? current : String(quantity)));
+  }, [quantity]);
+
+  return (
+    <Input
+      inputMode="decimal"
+      aria-label={label}
+      className="tabular h-8 w-16 text-center"
+      value={text}
+      onChange={(event) => {
+        setText(event.target.value);
+        const parsed = parseQuantityInput(event.target.value);
+        if (parsed !== null && parsed > 0) onChange(parsed);
+      }}
+      onBlur={() => {
+        const parsed = parseQuantityInput(text);
+        if (parsed === null || parsed < 0) setText(String(quantity));
+        else if (parsed === 0) onChange(0);
+      }}
+    />
   );
 }
 
@@ -547,10 +699,12 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 function OpenSessionScreen({
   online,
   loading,
+  closedElsewhere,
   onOpened,
 }: {
   online: boolean;
   loading: boolean;
+  closedElsewhere: boolean;
   onOpened: (session: LocalSession) => Promise<void>;
 }) {
   const { t } = useTranslation("pos");
@@ -583,6 +737,15 @@ function OpenSessionScreen({
         <CardContent className="space-y-4">
           {loading ? (
             <p className="text-sm text-muted-foreground">{t("openSession.checking")}</p>
+          ) : null}
+
+          {closedElsewhere ? (
+            <p
+              role="alert"
+              className="rounded-md bg-status-danger-bg px-3 py-2 text-sm text-status-danger"
+            >
+              {t("openSession.closedElsewhere")}
+            </p>
           ) : null}
 
           {!online ? (
@@ -857,6 +1020,15 @@ function CloseSessionDialog({
   const { t } = useTranslation("pos");
   const [countedCents, setCountedCents] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  /** Nothing written in "money counted": the cashier must say it really is 0. */
+  const [confirmEmpty, setConfirmEmpty] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setCountedCents(0);
+      setConfirmEmpty(false);
+    }
+  }, [open]);
 
   const { data: summary } = useQuery({
     queryKey: ["pos-session-summary", session.sessionId],
@@ -865,7 +1037,18 @@ function CloseSessionDialog({
     retry: false,
   });
 
-  const expectedCents = summary?.expectedBalanceCents ?? session.openingBalanceCents;
+  // Sales made without internet are not yet known to the server: they are added here,
+  // otherwise the expected cash would be too low and show a false gap.
+  const { data: pending } = useQuery({
+    queryKey: ["pos-session-summary", session.sessionId, "pending"],
+    queryFn: () => pendingSessionTotals(session),
+    enabled: open,
+    staleTime: 0,
+  });
+
+  const cashReceiptsCents = (summary?.totals.cashCents ?? 0) + (pending?.cashCents ?? 0);
+  const totalSalesCents = (summary?.totals.totalCents ?? 0) + (pending?.totalCents ?? 0);
+  const expectedCents = session.openingBalanceCents + cashReceiptsCents;
   const differenceCents = countedCents - expectedCents;
 
   return (
@@ -882,18 +1065,11 @@ function CloseSessionDialog({
               label={t("openingBalance")}
               value={<Money cents={session.openingBalanceCents} />}
             />
-            {summary ? (
-              <>
-                <Row
-                  label={t("closeSession.cashReceipts")}
-                  value={<Money cents={summary.totals.cashCents} />}
-                />
-                <Row
-                  label={t("closeSession.totalSales")}
-                  value={<Money cents={summary.totals.totalCents} />}
-                />
-              </>
-            ) : null}
+            <Row
+              label={t("closeSession.cashReceipts")}
+              value={<Money cents={cashReceiptsCents} />}
+            />
+            <Row label={t("closeSession.totalSales")} value={<Money cents={totalSalesCents} />} />
             <Separator className="my-2" />
             <div className="flex items-center justify-between font-medium">
               <span>{t("closeSession.expected")}</span>
@@ -902,8 +1078,23 @@ function CloseSessionDialog({
           </div>
 
           <Field label={t("closeSession.counted")}>
-            <MoneyInput valueCents={countedCents} onChange={setCountedCents} />
+            <MoneyInput
+              valueCents={countedCents}
+              onChange={(cents) => {
+                setCountedCents(cents);
+                setConfirmEmpty(false);
+              }}
+            />
           </Field>
+
+          {confirmEmpty ? (
+            <p
+              role="alert"
+              className="rounded-md bg-status-danger-bg px-3 py-2 text-sm text-status-danger"
+            >
+              {t("closeSession.emptyWarning", { amount: formatMoney(expectedCents) })}
+            </p>
+          ) : null}
 
           {countedCents > 0 ? (
             <div
@@ -932,7 +1123,12 @@ function CloseSessionDialog({
           </Button>
           <Button
             disabled={submitting}
+            variant={confirmEmpty ? "destructive" : "default"}
             onClick={async () => {
+              if (countedCents === 0 && !confirmEmpty) {
+                setConfirmEmpty(true);
+                return;
+              }
               setSubmitting(true);
               try {
                 const result = await closeSession(
@@ -959,7 +1155,11 @@ function CloseSessionDialog({
               }
             }}
           >
-            {submitting ? t("closeSession.closing") : t("closeSession.submit")}
+            {submitting
+              ? t("closeSession.closing")
+              : confirmEmpty
+                ? t("closeSession.confirmEmpty")
+                : t("closeSession.submit")}
           </Button>
         </DialogFooter>
       </DialogContent>

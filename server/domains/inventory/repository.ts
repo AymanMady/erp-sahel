@@ -8,6 +8,7 @@ import { and, asc, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
 
 import {
   products,
+  productVariants,
   stockItems,
   stockLocations,
   stockMovements,
@@ -105,6 +106,73 @@ export class InventoryRepository {
     return row;
   }
 
+  /**
+   * Tells whether each referenced record belongs to the company, in one round trip.
+   * A movement must never touch a product or a store of another company ([BR-1]).
+   */
+  async checkOwnership(input: {
+    companyId: string;
+    productId: string;
+    warehouseId: string;
+    variantId?: string | null;
+    locationId?: string | null;
+  }): Promise<{ product: boolean; warehouse: boolean; variant: boolean; location: boolean }> {
+    const { companyId, productId, warehouseId } = input;
+    const variantId = input.variantId ?? null;
+    const locationId = input.locationId ?? null;
+    const result = await this.database.execute<{
+      product: boolean;
+      warehouse: boolean;
+      variant: boolean;
+      location: boolean;
+    }>(sql`
+      select
+        exists(select 1 from ${products}
+               where ${products.id} = ${productId} and ${products.companyId} = ${companyId}) as product,
+        exists(select 1 from ${warehouses}
+               where ${warehouses.id} = ${warehouseId} and ${warehouses.companyId} = ${companyId}) as warehouse,
+        (${variantId}::uuid is null or exists(select 1 from ${productVariants}
+               where ${productVariants.id} = ${variantId}::uuid
+                 and ${productVariants.companyId} = ${companyId}
+                 and ${productVariants.productId} = ${productId})) as variant,
+        (${locationId}::uuid is null or exists(select 1 from ${stockLocations}
+               where ${stockLocations.id} = ${locationId}::uuid
+                 and ${stockLocations.companyId} = ${companyId}
+                 and ${stockLocations.warehouseId} = ${warehouseId})) as location
+    `);
+    const row = result.rows[0];
+    return {
+      product: Boolean(row?.product),
+      warehouse: Boolean(row?.warehouse),
+      variant: Boolean(row?.variant),
+      location: Boolean(row?.location),
+    };
+  }
+
+  /**
+   * Every stock line (all lots) of a product in a store, oldest first, **locked** until
+   * the end of the transaction: two sales drawing from the same lots cannot both take
+   * the last units.
+   */
+  async lockProductStock(
+    companyId: string,
+    productId: string,
+    warehouseId: string
+  ): Promise<StockItem[]> {
+    return this.database
+      .select()
+      .from(stockItems)
+      .where(
+        and(
+          eq(stockItems.companyId, companyId),
+          eq(stockItems.productId, productId),
+          eq(stockItems.warehouseId, warehouseId)
+        )
+      )
+      .orderBy(asc(stockItems.createdAt), asc(stockItems.id))
+      .for("update");
+  }
+
   async insertMovement(values: typeof stockMovements.$inferInsert): Promise<StockMovement> {
     const [row] = await this.database.insert(stockMovements).values(values).returning();
     return row;
@@ -127,6 +195,35 @@ export class InventoryRepository {
       )
       .limit(1);
     return row ?? null;
+  }
+
+  /**
+   * Average unit cost of a product in a store, over the lines that hold stock (all
+   * lots). `undefined` when no valued stock is left.
+   */
+  async averageCostInWarehouse(
+    companyId: string,
+    productId: string,
+    warehouseId: string
+  ): Promise<number | undefined> {
+    const [row] = await this.database
+      .select({
+        value: sql<number | null>`round(
+          sum(${stockItems.quantity} * ${stockItems.averageCostCents})
+            / nullif(sum(${stockItems.quantity}), 0)
+        )::bigint`,
+      })
+      .from(stockItems)
+      .where(
+        and(
+          eq(stockItems.companyId, companyId),
+          eq(stockItems.productId, productId),
+          eq(stockItems.warehouseId, warehouseId),
+          sql`${stockItems.quantity} > 0`
+        )
+      );
+    const value = Number(row?.value ?? 0);
+    return value > 0 ? value : undefined;
   }
 
   /** Available quantity of a product, across all warehouses or for a given one. */

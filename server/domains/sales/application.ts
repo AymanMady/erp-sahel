@@ -25,6 +25,8 @@ export interface QuoteInput {
   notes?: string;
   lines: RawDocumentLine[];
   clientUuid?: string | null;
+  /** May quote catalog items at another price (see `BuildDocumentOptions`). */
+  allowPriceOverride?: boolean;
 }
 
 export interface SalesOrderInput extends Omit<QuoteInput, "expiryDate"> {
@@ -54,6 +56,7 @@ class SalesApplication {
       const party = await partiesApplication.requireParty(company.id, input.partyId, database);
       const built = await buildDocumentLines(database, company, input.lines, {
         globalDiscountBp: input.globalDiscountBp,
+        allowPriceOverride: input.allowPriceOverride,
       });
       const number = await numberingApplication.allocateForCompany(
         database,
@@ -107,9 +110,24 @@ class SalesApplication {
         globalDiscountBp: input.globalDiscountBp ?? quote.globalDiscountBp,
       };
 
-      if (input.lines) {
-        const built = await buildDocumentLines(tx, company, input.lines, {
+      // Changing only the global discount must recompute the total from the lines.
+      if (input.lines || patch.globalDiscountBp !== quote.globalDiscountBp) {
+        const lines =
+          input.lines ??
+          quote.lines.map((line) => ({
+            productId: line.productId,
+            variantId: line.variantId,
+            serviceId: line.serviceId,
+            productSku: line.productSku,
+            description: line.description,
+            quantity: line.quantity,
+            unit: line.unit,
+            unitPriceCents: line.unitPriceCents,
+            discountBp: line.discountBp,
+          }));
+        const built = await buildDocumentLines(tx, company, lines, {
           globalDiscountBp: patch.globalDiscountBp as number,
+          allowPriceOverride: input.lines ? input.allowPriceOverride : true,
         });
         await repository.replaceQuoteLines(company.id, quoteId, built.lines);
         patch.totalCents = built.totalCents;
@@ -142,6 +160,7 @@ class SalesApplication {
       const party = await partiesApplication.requireParty(company.id, input.partyId, database);
       const built = await buildDocumentLines(database, company, input.lines, {
         globalDiscountBp: input.globalDiscountBp,
+        allowPriceOverride: input.allowPriceOverride,
       });
       const number = await numberingApplication.allocateForCompany(
         database,
@@ -210,7 +229,6 @@ class SalesApplication {
             unit: line.unit,
             unitPriceCents: line.unitPriceCents,
             discountBp: line.discountBp,
-            originCountry: line.originCountry,
           })),
         },
         userId,
@@ -256,7 +274,6 @@ class SalesApplication {
             unit: line.unit,
             unitPriceCents: line.unitPriceCents,
             discountBp: line.discountBp,
-            originCountry: line.originCountry,
           })),
           validate: false,
         },

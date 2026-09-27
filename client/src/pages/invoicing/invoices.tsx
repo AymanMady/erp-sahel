@@ -8,6 +8,7 @@ import { Link, useLocation } from "wouter";
 
 import { INVOICE_STATUSES } from "@shared/schema";
 import { formatDate } from "@shared/format";
+import { invoiceAmountDueCents } from "@shared/pricing";
 import { errorMessage } from "@/shared/api/api-error";
 import { invoicingApi, type InvoiceFilters } from "@/entities/invoicing/api";
 import type { InvoiceListItem } from "@/entities/types";
@@ -86,7 +87,7 @@ export default function InvoicesPage() {
       header: t("invoices.columns.remaining"),
       align: "end",
       hideOnMobile: true,
-      cell: (row) => <Money cents={Math.max(0, row.totalCents - row.paidAmountCents)} />,
+      cell: (row) => <Money cents={invoiceAmountDueCents(row)} />,
     },
     {
       id: "total",

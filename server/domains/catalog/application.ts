@@ -7,7 +7,7 @@
  */
 
 import type { Product } from "@shared/schema";
-import { runInTransaction } from "../../db";
+import { runInTransaction, type Database } from "../../db";
 import { NotFoundError } from "../../shared/errors/app-error";
 import { tr } from "../../shared/i18n";
 import { inventoryApplication } from "../inventory/application";
@@ -68,12 +68,24 @@ class CatalogApplication {
   async create(
     companyId: string,
     input: CreateProductInput,
-    userId?: string | null
+    userId?: string | null,
+    options: {
+      /** Transaction of the caller (offline ingestion): the product lives or dies with it. */
+      tx?: Database;
+      /** Idempotency key of a product created offline: a replay returns the same product. */
+      clientUuid?: string | null;
+    } = {}
   ): Promise<Product> {
-    return runInTransaction(async (tx) => {
+    const run = async (tx: Database) => {
       const repository = catalogRepository.withTransaction(tx);
 
+      if (options.clientUuid) {
+        const existing = await repository.findByClientUuid(companyId, options.clientUuid);
+        if (existing) return existing;
+      }
+
       const product = await repository.insert({
+        clientUuid: options.clientUuid ?? null,
         companyId,
         sku: input.sku.trim(),
         name: input.name.trim(),
@@ -123,7 +135,8 @@ class CatalogApplication {
       }
 
       return product;
-    });
+    };
+    return options.tx ? run(options.tx) : runInTransaction(run);
   }
 
   async update(companyId: string, productId: string, input: UpdateProductInput): Promise<Product> {

@@ -47,8 +47,19 @@ jobs:
       - name: Format
         run: npm run format:check
 
-      - name: Database schema
-        run: npx drizzle-kit push --force
+      # Versioned migrations, exactly as in production — never `push`, which would
+      # hide a schema change that has no migration.
+      - name: Database migrations
+        run: npm run db:migrate
+
+      - name: Schema and migrations agree
+        run: |
+          npx drizzle-kit generate --name ci_drift_check < /dev/null
+          if [ -n "$(git status --porcelain migrations)" ]; then
+            echo "The schema has changes without a migration: run npm run db:generate."
+            git status --porcelain migrations
+            exit 1
+          fi
 
       - name: Unit and integration tests
         run: npm test

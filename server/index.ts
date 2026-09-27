@@ -36,17 +36,31 @@ async function bootstrap(): Promise<void> {
 }
 
 /** Graceful shutdown: stop accepting connections before closing the pool. */
-async function shutdown(signal: string): Promise<void> {
+async function shutdown(signal: string, exitCode = 0): Promise<void> {
   logger.info(`Signal ${signal} received, shutting down…`);
   const close = async () => {
     await closeDatabase();
-    process.exit(0);
+    process.exit(exitCode);
   };
   if (httpServer) httpServer.close(close);
   else void close();
   // Safety net in case an open connection prevents shutdown.
   setTimeout(() => process.exit(1), 10_000).unref();
 }
+
+// A forgotten promise must not kill the server in the middle of a sale: log it.
+process.on("unhandledRejection", (reason) => {
+  logger.error("Unhandled promise rejection", {
+    message: reason instanceof Error ? reason.message : String(reason),
+    stack: reason instanceof Error ? reason.stack : undefined,
+  });
+});
+// After an uncaught exception the process state is unknown: log, then stop cleanly so
+// the host restarts it.
+process.on("uncaughtException", (error) => {
+  logger.error("Uncaught exception", { message: error.message, stack: error.stack });
+  void shutdown("uncaughtException", 1);
+});
 
 process.on("SIGTERM", () => void shutdown("SIGTERM"));
 process.on("SIGINT", () => void shutdown("SIGINT"));

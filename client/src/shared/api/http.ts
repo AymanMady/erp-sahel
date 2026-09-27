@@ -13,6 +13,7 @@ import {
   getAccessToken,
   getDeviceId,
   getRefreshToken,
+  notifySessionRevoked,
   setAccessToken,
   setRefreshToken,
 } from "@/shared/auth/token-store";
@@ -65,6 +66,24 @@ const WRITE_TIMEOUT_MS = 30_000;
 const MAX_READ_RETRIES = 1;
 const RETRYABLE_STATUSES = new Set([429, 502, 503, 504]);
 const MAX_RETRY_WAIT_MS = 5000;
+
+/**
+ * The same write (same idempotency key) is still being processed by the server — a
+ * double tap, or a replay while the first send is not finished. Not a failure: wait
+ * a moment and ask again, the server then gives the result of the first send.
+ */
+const IN_PROGRESS_CODE = "IDEMPOTENCY_IN_PROGRESS";
+const MAX_IN_PROGRESS_RETRIES = 3;
+
+async function isInProgress(response: Response): Promise<boolean> {
+  if (response.status !== 503) return false;
+  try {
+    const body = (await response.clone().json()) as { code?: string };
+    return body.code === IN_PROGRESS_CODE;
+  } catch {
+    return false;
+  }
+}
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -147,9 +166,15 @@ export async function refreshSession(): Promise<boolean> {
         body: JSON.stringify({ refreshToken }),
       });
       if (!response.ok) {
-        // Revoked or expired token: the session is permanently closed.
-        setAccessToken(null);
-        setRefreshToken(null);
+        // Server starting or busy: temporary, the session is kept for a later try.
+        if (response.status >= 500 || response.status === 429) return false;
+        // Refused (expired, revoked, password changed, account disabled): the session
+        // is permanently closed — unless a new sign-in replaced the token meanwhile.
+        if (getRefreshToken() === refreshToken) {
+          setAccessToken(null);
+          setRefreshToken(null);
+          notifySessionRevoked();
+        }
         return false;
       }
       const session = (await response.json()) as {
@@ -242,6 +267,8 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     method === "GET" && attempt < MAX_READ_RETRIES && !signal?.aborted && isBrowserOnline();
 
   let response: Response;
+  let inProgress = false;
+  let inProgressRetries = 0;
   for (let attempt = 0; ; attempt++) {
     try {
       response = await send();
@@ -267,6 +294,12 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
         isNetworkError: true,
       });
     }
+    inProgress = Boolean(idempotencyKey) && (await isInProgress(response));
+    if (inProgress && inProgressRetries < MAX_IN_PROGRESS_RETRIES) {
+      inProgressRetries += 1;
+      await wait(retryDelay(response));
+      continue;
+    }
     // Server busy (429) or starting (502 to 504): worth one more try.
     if (RETRYABLE_STATUSES.has(response.status) && canRetry(attempt)) {
       await wait(retryDelay(response));
@@ -274,10 +307,11 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     }
     break;
   }
-  reportNetworkResult(!GATEWAY_ERRORS.has(response.status));
+  // A write still being processed proves the server answers: not an outage.
+  reportNetworkResult(inProgress || !GATEWAY_ERRORS.has(response.status));
 
   // Gateway reachable but server unavailable: same fallback as without network.
-  if (GATEWAY_ERRORS.has(response.status)) {
+  if (GATEWAY_ERRORS.has(response.status) && !inProgress) {
     const fallback = await offlineFallback();
     if (fallback) return fallback.value;
   }
@@ -291,6 +325,10 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   if (response.status === 401 && !anonymous && !skipRefresh) {
     if (await refreshSession()) {
       response = await send();
+    } else if (!getRefreshToken()) {
+      // Nothing left to renew the session with: back to the sign-in screen rather
+      // than failing request after request.
+      notifySessionRevoked();
     }
   }
 

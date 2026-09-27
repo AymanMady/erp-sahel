@@ -2,7 +2,7 @@
 
 import type { Request, Response } from "express";
 
-import { authOf } from "../auth/guards";
+import { authOf, canSetPrices } from "../auth/guards";
 import { invoicingService } from "./service";
 
 export class InvoicingController {
@@ -18,11 +18,16 @@ export class InvoicingController {
 
   create = async (req: Request, res: Response): Promise<void> => {
     const auth = authOf(req);
-    res.status(201).json(await this.service.create(auth.companyId, req.body, auth.userId));
+    res
+      .status(201)
+      .json(await this.service.create(auth.companyId, req.body, auth.userId, canSetPrices(auth)));
   };
 
   update = async (req: Request, res: Response): Promise<void> => {
-    res.json(await this.service.update(authOf(req).companyId, req.params.id, req.body));
+    const auth = authOf(req);
+    res.json(
+      await this.service.update(auth.companyId, req.params.id, req.body, canSetPrices(auth))
+    );
   };
 
   validate = async (req: Request, res: Response): Promise<void> => {

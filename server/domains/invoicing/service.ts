@@ -22,17 +22,17 @@ export class InvoicingService {
     return invoicingApplication.get(companyId, invoiceId);
   }
 
-  async create(companyId: string, body: unknown, userId: string) {
+  async create(companyId: string, body: unknown, userId: string, allowPriceOverride = false) {
     const data = createInvoiceSchema.parse(body);
     const company = await tenancyApplication.requireCompany(companyId);
-    return invoicingApplication.create(company, data, userId);
+    return invoicingApplication.create(company, { ...data, allowPriceOverride }, userId);
   }
 
-  async update(companyId: string, id: unknown, body: unknown) {
+  async update(companyId: string, id: unknown, body: unknown, allowPriceOverride = false) {
     const { id: invoiceId } = idParamSchema.parse({ id });
     const data = updateInvoiceSchema.parse(body);
     const company = await tenancyApplication.requireCompany(companyId);
-    return invoicingApplication.update(company, invoiceId, data);
+    return invoicingApplication.update(company, invoiceId, { ...data, allowPriceOverride });
   }
 
   async validate(companyId: string, id: unknown, userId: string) {

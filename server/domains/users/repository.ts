@@ -4,6 +4,7 @@ import { and, asc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
 import {
   permissions,
+  refreshTokens,
   rolePermissions,
   roles,
   userCompanies,
@@ -34,7 +35,8 @@ export class UsersRepository {
         avatarUrl: users.avatarUrl,
         isSuperuser: users.isSuperuser,
         allowOfflineLogin: users.allowOfflineLogin,
-        isActive: users.isActive,
+        // Disabled either everywhere, or only in this company.
+        isActive: sql<boolean>`${users.isActive} and ${userCompanies.isActive}`,
         lastLoginAt: users.lastLoginAt,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
@@ -101,6 +103,58 @@ export class UsersRepository {
       .where(and(eq(userCompanies.userId, userId), eq(userCompanies.companyId, companyId)))
       .limit(1);
     return Boolean(row);
+  }
+
+  async findUser(userId: string) {
+    const [row] = await this.database.select().from(users).where(eq(users.id, userId)).limit(1);
+    return row ?? null;
+  }
+
+  /** Number of **other** companies the user belongs to. */
+  async countOtherMemberships(userId: string, companyId: string): Promise<number> {
+    const [row] = await this.database
+      .select({ value: sql<number>`count(*)::int` })
+      .from(userCompanies)
+      .where(
+        and(eq(userCompanies.userId, userId), sql`${userCompanies.companyId} <> ${companyId}`)
+      );
+    return row?.value ?? 0;
+  }
+
+  async setMembershipActive(userId: string, companyId: string, isActive: boolean): Promise<void> {
+    await this.database
+      .update(userCompanies)
+      .set({ isActive, updatedAt: new Date() })
+      .where(and(eq(userCompanies.userId, userId), eq(userCompanies.companyId, companyId)));
+  }
+
+  /** Revokes every session of the user: open tokens stop working at once. */
+  async endAllSessions(userId: string): Promise<void> {
+    const now = new Date();
+    await this.database
+      .update(users)
+      .set({ sessionsValidAfter: now, updatedAt: now })
+      .where(eq(users.id, userId));
+    await this.database
+      .update(refreshTokens)
+      .set({ revokedAt: now })
+      .where(and(eq(refreshTokens.userId, userId), isNull(refreshTokens.revokedAt)));
+  }
+
+  /** Keeps only the roles this company may assign: its own and the system ones, still active. */
+  async countAssignableRoles(companyId: string, roleIds: string[]): Promise<number> {
+    if (roleIds.length === 0) return 0;
+    const [row] = await this.database
+      .select({ value: sql<number>`count(*)::int` })
+      .from(roles)
+      .where(
+        and(
+          inArray(roles.id, roleIds),
+          eq(roles.isActive, true),
+          or(isNull(roles.companyId), eq(roles.companyId, companyId))
+        )
+      );
+    return row?.value ?? 0;
   }
 
   /** Replaces a user's roles within a company. */

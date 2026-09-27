@@ -48,7 +48,8 @@
     "empty": "No devices.",
     "platform": "System: {{platform}}",
     "lastPush": "Last sending: {{date}}",
-    "lastSnapshot": "Last received: {{date}}"
+    "lastSnapshot": "Last received: {{date}}",
+    "offlineLogin": "Let cashiers sign in without internet on this computer"
   },
   "entities": {
     "party": "Customer or supplier",

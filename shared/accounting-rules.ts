@@ -67,6 +67,13 @@ export const OHADA_CHART: ChartTemplate = {
     { code: "41", name: "Customers", accountType: "ASSET", isGroup: true },
     { code: "411", name: "Customers", accountType: "ASSET", mappingKey: "CUSTOMER_RECEIVABLE" },
     { code: "44", name: "State and public authorities", accountType: "LIABILITY", isGroup: true },
+    { code: "47", name: "Sundry debtors and creditors", accountType: "LIABILITY", isGroup: true },
+    {
+      code: "471",
+      name: "Suspense account",
+      accountType: "LIABILITY",
+      mappingKey: "SUSPENSE",
+    },
     // Class 5 — Treasury
     { code: "52", name: "Banks", accountType: "ASSET", isGroup: true },
     { code: "521", name: "Local banks", accountType: "ASSET", mappingKey: "BANK" },
@@ -110,6 +117,13 @@ export const OHADA_CHART: ChartTemplate = {
       accountType: "REVENUE",
       mappingKey: "SALES_DISCOUNT",
     },
+    { code: "75", name: "Other income", accountType: "REVENUE", isGroup: true },
+    {
+      code: "758",
+      name: "Miscellaneous income",
+      accountType: "REVENUE",
+      mappingKey: "MISC_INCOME",
+    },
     { code: "89", name: "Opening entries", accountType: "EQUITY", isGroup: true },
     {
       code: "890",
@@ -146,6 +160,7 @@ export const PCG_CHART: ChartTemplate = {
     { code: "370", name: "Goods inventories", accountType: "ASSET", mappingKey: "INVENTORY" },
     { code: "401", name: "Suppliers", accountType: "LIABILITY", mappingKey: "SUPPLIER_PAYABLE" },
     { code: "411", name: "Customers", accountType: "ASSET", mappingKey: "CUSTOMER_RECEIVABLE" },
+    { code: "471", name: "Suspense account", accountType: "LIABILITY", mappingKey: "SUSPENSE" },
     { code: "512", name: "Banks", accountType: "ASSET", mappingKey: "BANK" },
     { code: "5125", name: "Mobile money", accountType: "ASSET", mappingKey: "MOBILE_MONEY" },
     { code: "531", name: "Cash on hand", accountType: "ASSET", mappingKey: "CASH" },
@@ -178,6 +193,12 @@ export const PCG_CHART: ChartTemplate = {
       name: "Rebates, discounts and allowances granted",
       accountType: "REVENUE",
       mappingKey: "SALES_DISCOUNT",
+    },
+    {
+      code: "758",
+      name: "Miscellaneous operating income",
+      accountType: "REVENUE",
+      mappingKey: "MISC_INCOME",
     },
     {
       code: "890",
@@ -334,6 +355,151 @@ export function buildPaymentPosting(input: {
     partyId: input.partyId,
   };
   return input.direction === "IN" ? [treasury, counterpart] : [counterpart, treasury];
+}
+
+/** Treasury key matching the type of a cash/bank account (used when it has no linked account). */
+export function treasuryMappingKeyForAccountType(
+  accountType: "BANK" | "CASH" | "MOBILE_MONEY"
+): AccountMappingKey {
+  return accountType;
+}
+
+/** A cash/bank account as seen by the posting rules. */
+export interface TreasuryAccountRef {
+  accountType: "BANK" | "CASH" | "MOBILE_MONEY";
+  /** Linked chart-of-accounts account, if the user chose one. */
+  glAccountId?: string | null;
+}
+
+function treasuryLine(
+  account: TreasuryAccountRef,
+  debitCents: number,
+  creditCents: number,
+  label: string
+): PostingLine {
+  return {
+    mappingKey: treasuryMappingKeyForAccountType(account.accountType),
+    accountId: account.glAccountId ?? null,
+    debitCents,
+    creditCents,
+    label,
+  };
+}
+
+/**
+ * Transfer between two cash/bank accounts:
+ *   D  destination treasury   amount
+ *   C  source treasury        amount
+ */
+export function buildTreasuryTransferPosting(input: {
+  from: TreasuryAccountRef;
+  to: TreasuryAccountRef;
+  amountCents: number;
+  label: string;
+}): PostingLine[] {
+  return [
+    treasuryLine(input.to, input.amountCents, 0, input.label),
+    treasuryLine(input.from, 0, input.amountCents, input.label),
+  ];
+}
+
+/**
+ * Money put into (IN) or taken out of (OUT) a cash/bank account by hand. The other side
+ * is the account the user named, otherwise the suspense account (471), to be sorted out
+ * later by the accountant:
+ *   IN   D treasury  / C counterpart
+ *   OUT  D counterpart / C treasury
+ */
+export function buildTreasuryMovementPosting(input: {
+  account: TreasuryAccountRef;
+  direction: "IN" | "OUT";
+  amountCents: number;
+  counterpartAccountId?: string | null;
+  label: string;
+}): PostingLine[] {
+  const counterpart: PostingLine = {
+    mappingKey: "SUSPENSE",
+    accountId: input.counterpartAccountId ?? null,
+    debitCents: input.direction === "OUT" ? input.amountCents : 0,
+    creditCents: input.direction === "IN" ? input.amountCents : 0,
+    label: input.label,
+  };
+  return input.direction === "IN"
+    ? [treasuryLine(input.account, input.amountCents, 0, input.label), counterpart]
+    : [counterpart, treasuryLine(input.account, 0, input.amountCents, input.label)];
+}
+
+/**
+ * Difference found when counting the till (counted − expected):
+ *   surplus   D cash / C 758 Miscellaneous income
+ *   shortage  D 658 Miscellaneous expenses / C cash
+ */
+export function buildCashDifferencePosting(input: {
+  account: TreasuryAccountRef;
+  differenceCents: number;
+  label: string;
+}): PostingLine[] {
+  const amount = Math.abs(input.differenceCents);
+  if (input.differenceCents >= 0) {
+    return [
+      treasuryLine(input.account, amount, 0, input.label),
+      { mappingKey: "MISC_INCOME", debitCents: 0, creditCents: amount, label: input.label },
+    ];
+  }
+  return [
+    { mappingKey: "ROUNDING_DIFFERENCE", debitCents: amount, creditCents: 0, label: input.label },
+    treasuryLine(input.account, 0, amount, input.label),
+  ];
+}
+
+/** Totals of one account (and party) over a closed fiscal year. */
+export interface ClosingBalance {
+  accountId: string;
+  accountType: AccountType;
+  partyId?: string | null;
+  debitCents: number;
+  creditCents: number;
+}
+
+/**
+ * Opening entry ("report à nouveau") of the next fiscal year:
+ *  - every balance-sheet account (asset, liability, equity) is carried over with its
+ *    closing balance, per party so customer and supplier balances stay detailed;
+ *  - income and expense accounts start again from zero: their net (the year's profit
+ *    or loss) goes to the retained earnings account (`RESULT_CARRY_FORWARD`).
+ * The entry is balanced by construction: the balance-sheet net equals the result.
+ */
+export function buildCarryForwardPosting(input: { balances: ClosingBalance[]; label: string }): {
+  lines: PostingLine[];
+  resultCents: number;
+} {
+  const lines: PostingLine[] = [];
+  let resultCents = 0;
+  for (const balance of input.balances) {
+    const net = balance.debitCents - balance.creditCents;
+    if (balance.accountType === "REVENUE" || balance.accountType === "EXPENSE") {
+      resultCents -= net;
+      continue;
+    }
+    if (net === 0) continue;
+    lines.push({
+      mappingKey: "OPENING_BALANCE",
+      accountId: balance.accountId,
+      debitCents: net > 0 ? net : 0,
+      creditCents: net < 0 ? -net : 0,
+      label: input.label,
+      partyId: balance.partyId ?? null,
+    });
+  }
+  if (resultCents !== 0) {
+    lines.push({
+      mappingKey: "RESULT_CARRY_FORWARD",
+      debitCents: resultCents < 0 ? -resultCents : 0,
+      creditCents: resultCents > 0 ? resultCents : 0,
+      label: input.label,
+    });
+  }
+  return { lines, resultCents };
 }
 
 /** Natural side of an account type: drives how the balance is displayed in the trial balance. */

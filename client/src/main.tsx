@@ -7,6 +7,7 @@ import { createRoot } from "react-dom/client";
 import "@/shared/i18n";
 import { AppProviders } from "@/app/providers/app-providers";
 import { AppRouter } from "@/app/router/app-router";
+import { ErrorBoundary } from "@/shared/components/error-boundary";
 import { registerServiceWorker } from "@/shared/offline/register-sw";
 import { requestPersistentStorage } from "@/shared/offline/db";
 import "@/styles/globals.css";
@@ -16,9 +17,11 @@ if (!container) throw new Error("Root element not found in index.html.");
 
 createRoot(container).render(
   <StrictMode>
-    <AppProviders>
-      <AppRouter />
-    </AppProviders>
+    <ErrorBoundary fullScreen>
+      <AppProviders>
+        <AppRouter />
+      </AppProviders>
+    </ErrorBoundary>
   </StrictMode>
 );
 

@@ -12,8 +12,17 @@
 import { offlineDb, type OutboxEntity, type OutboxRecord, type OutboxStatus } from "./db";
 import { outboxStorage, readMeta, writeMeta } from "./storage";
 
-/** Statuses still to process: "sending" and "synced" are excluded. */
-const PENDING_STATUSES: OutboxStatus[] = ["pending", "deferred", "error"];
+/**
+ * Statuses not yet held by the server. "sending" is included: an operation in flight
+ * is not safe until acknowledged, and the user must still see it as waiting.
+ */
+const PENDING_STATUSES: OutboxStatus[] = ["pending", "sending", "deferred", "error"];
+
+/**
+ * An operation left in "sending" longer than this was interrupted (network cut, tab
+ * closed, crash): no request lasts that long, it must go back to the queue.
+ */
+export const STALE_SENDING_MS = 2 * 60_000;
 
 const SEQ_KEY = "outbox.localSeq";
 
@@ -94,6 +103,33 @@ export async function markSending(clientUuids: string[]): Promise<void> {
     .where("clientUuid")
     .anyOf(clientUuids)
     .modify({ status: "sending", updatedAt: new Date().toISOString() });
+}
+
+/**
+ * Puts operations still marked "sending" back in the queue — called when a request
+ * fails before any acknowledgement. Does not count as an attempt: the server may never
+ * have seen them, and idempotency makes the resend harmless.
+ */
+export async function releaseSending(clientUuids: string[]): Promise<number> {
+  if (clientUuids.length === 0) return 0;
+  return offlineDb.outbox
+    .where("clientUuid")
+    .anyOf(clientUuids)
+    .filter((record) => record.status === "sending")
+    .modify({ status: "pending", updatedAt: new Date().toISOString() });
+}
+
+/**
+ * Requeues operations stuck in "sending" since before `olderThanMs` (tab closed or
+ * network cut during a previous session). Called at startup.
+ */
+export async function recoverStaleSending(olderThanMs = STALE_SENDING_MS): Promise<number> {
+  const threshold = new Date(Date.now() - olderThanMs).toISOString();
+  return offlineDb.outbox
+    .where("status")
+    .equals("sending")
+    .filter((record) => record.updatedAt < threshold)
+    .modify({ status: "pending", updatedAt: new Date().toISOString() });
 }
 
 export interface AckInput {

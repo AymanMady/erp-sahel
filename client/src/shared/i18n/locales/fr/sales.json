@@ -48,6 +48,11 @@
     "pageTitle": "Commande {{number}}",
     "notFound": "Commande introuvable.",
     "invoice": "Faire la facture",
-    "invoiced": "Facture préparée à partir de la commande (pas encore validée)."
+    "invoiced": "Facture préparée à partir de la commande (pas encore validée).",
+    "confirmCancel": {
+      "title": "Annuler la commande de {{amount}} ?",
+      "description": "Elle ne pourra plus être transformée en facture.",
+      "confirm": "Oui, annuler la commande"
+    }
   }
 }

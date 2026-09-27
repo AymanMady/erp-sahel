@@ -7,13 +7,35 @@
  * still valid and what must be uploaded.
  *
  * Strategies:
- *  - navigations: network first, fall back to the cached shell ("app shell");
+ *  - navigations: network first but for a few seconds at most, then the cached shell
+ *    ("app shell") — also when the server answers with an error page (5xx);
  *  - hashed static assets: cache first, they are immutable;
- *  - API: never intercepted.
+ *  - API: never intercepted (the application has its own timeouts and offline reads).
  */
 
-const CACHE_VERSION = "erp-sahel-v1";
+try {
+  // Missing in development: the Service Worker is not registered there anyway.
+  self.importScripts("/precache-manifest.js");
+} catch {
+  // No manifest: fall back to on-the-fly caching.
+}
+
+/**
+ * Cache name, different for every build: `scripts/precache.ts` writes a build
+ * identifier into the manifest. A new build therefore fills a new cache and `activate`
+ * deletes the old ones — otherwise old files pile up on the phone. Bump the prefix by
+ * hand only when the caching rules of this file change.
+ */
+const CACHE_PREFIX = "erp-sahel-";
+const CACHE_VERSION = `${CACHE_PREFIX}v2-${typeof self.__ERP_BUILD === "string" ? self.__ERP_BUILD : "dev"}`;
 const SHELL_URL = "/index.html";
+
+/**
+ * Beyond this delay a navigation is answered from the cached shell: on a 2G network
+ * the application must open in a few seconds, not freeze for 30 s. A late network
+ * answer still refreshes the cache for next time.
+ */
+const NETWORK_TIMEOUT_MS = 4500;
 
 /** Minimal assets for an offline start. */
 const BASE_PRECACHE = ["/", SHELL_URL, "/manifest.webmanifest", "/favicon.svg"];
@@ -30,11 +52,14 @@ function precacheList() {
   return [...new Set([...BASE_PRECACHE, ...generated])];
 }
 
-try {
-  // Missing in development: the Service Worker is not registered there anyway.
-  self.importScripts("/precache-manifest.js");
-} catch {
-  // No manifest: fall back to on-the-fly caching.
+/** Only a complete, same-origin answer may be cached — never an error page. */
+function cacheable(response) {
+  return response.ok && response.type === "basic";
+}
+
+/** Resolves to `null` after `ms`, so that a slow network can be given up on. */
+function timeout(ms) {
+  return new Promise((resolve) => setTimeout(() => resolve(null), ms));
 }
 
 self.addEventListener("install", (event) => {
@@ -47,7 +72,7 @@ self.addEventListener("install", (event) => {
         precacheList().map(async (url) => {
           try {
             const response = await fetch(new Request(url, { cache: "reload" }));
-            if (response.ok) await cache.put(url, response);
+            if (cacheable(response)) await cache.put(url, response);
           } catch {
             // Asset unavailable at install time: it will be cached on first access.
           }
@@ -61,8 +86,13 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
+      // Every other ERP cache belongs to an older build.
       const keys = await caches.keys();
-      await Promise.all(keys.filter((key) => key !== CACHE_VERSION).map((key) => caches.delete(key)));
+      await Promise.all(
+        keys
+          .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_VERSION)
+          .map((key) => caches.delete(key))
+      );
       await self.clients.claim();
     })()
   );
@@ -100,15 +130,30 @@ self.addEventListener("fetch", (event) => {
   if (request.mode === "navigate") {
     event.respondWith(
       (async () => {
-        try {
-          const response = await fetch(request);
-          const cache = await caches.open(CACHE_VERSION);
-          cache.put(SHELL_URL, response.clone());
-          return response;
-        } catch {
-          const cached = await caches.match(SHELL_URL);
-          return cached ?? new Response("Offline", { status: 503, statusText: "Offline" });
+        const cached = await caches.match(SHELL_URL);
+        const network = fetch(request).then(
+          async (response) => {
+            // A 5xx page must never replace the offline shell.
+            if (cacheable(response)) {
+              const cache = await caches.open(CACHE_VERSION);
+              await cache.put(SHELL_URL, response.clone());
+            }
+            return response;
+          },
+          () => null
+        );
+        // Keeps the worker alive until a late answer has refreshed the cache.
+        event.waitUntil(network);
+
+        // No shell yet (first visit): wait for the network, however slow it is.
+        if (!cached) {
+          return (await network) ?? new Response("Offline", { status: 503, statusText: "Offline" });
         }
+        const response = await Promise.race([network, timeout(NETWORK_TIMEOUT_MS)]);
+        // Network cut, too slow, or server in trouble: the cached shell opens the
+        // application, which then works with the data kept on the device.
+        if (!response || response.status >= 500) return cached;
+        return response;
       })()
     );
     return;
@@ -120,13 +165,13 @@ self.addEventListener("fetch", (event) => {
       if (cached) return cached;
       try {
         const response = await fetch(request);
-        if (response.ok && response.type === "basic") {
+        if (cacheable(response)) {
           const cache = await caches.open(CACHE_VERSION);
           cache.put(request, response.clone());
         }
         return response;
       } catch {
-        return cached ?? Response.error();
+        return Response.error();
       }
     })()
   );

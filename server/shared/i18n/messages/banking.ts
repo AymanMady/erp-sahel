@@ -12,6 +12,7 @@ export const bankingMessages: MessageCatalog = {
     "The source and destination accounts must differ.":
       "Les comptes source et destination doivent différer.",
     "Internal transfer": "Virement interne",
+    "Till count difference {reference}": "Écart de caisse {reference}",
     "Transaction not found.": "Mouvement introuvable.",
     "Code is required": "Le code est obligatoire",
     "Label is required": "Le libellé est obligatoire",
@@ -26,6 +27,7 @@ export const bankingMessages: MessageCatalog = {
     "A movement amount must be strictly positive.": "يجب أن يكون مبلغ الحركة موجبًا تمامًا.",
     "The source and destination accounts must differ.": "يجب أن يختلف حساب المصدر عن حساب الوجهة.",
     "Internal transfer": "تحويل داخلي",
+    "Till count difference {reference}": "فرق عدّ الصندوق {reference}",
     "Transaction not found.": "الحركة غير موجودة.",
     "Code is required": "الرمز إلزامي",
     "Label is required": "التسمية إلزامية",

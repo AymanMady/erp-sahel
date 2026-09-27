@@ -5,12 +5,12 @@
     "recipient": "For",
     "columns": {
       "description": "Item",
-      "origin": "Country of origin",
       "quantity": "Quantity",
       "unitPrice": "Price for one unit"
     },
     "alreadyPaid": "Already paid",
-    "amountDue": "Amount due"
+    "amountDue": "Amount due",
+    "returned": "Goods returned"
   },
   "lineEditor": {
     "columns": {
@@ -21,7 +21,18 @@
     "removeLine": "Remove line",
     "addItem": "Add an item",
     "freeLine": "Add a line written by hand",
-    "globalDiscount": "Discount on the total"
+    "globalDiscount": "Discount on the total",
+    "problems": {
+      "name": "Write the name of the item, or this line will not be saved.",
+      "quantity": "Write a quantity above 0, or this line will not be saved."
+    },
+    "blockers": {
+      "noCustomer": "To continue, first choose the customer.",
+      "noSupplier": "To continue, first choose the supplier.",
+      "noLine": "To continue, add at least one item with its name and a quantity."
+    },
+    "ignoredLines_one": "1 empty or unfinished line will not be saved.",
+    "ignoredLines_other": "{{count}} empty or unfinished lines will not be saved."
   },
   "productPicker": {
     "title": "Add an item",

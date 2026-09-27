@@ -13,7 +13,7 @@ import { catalogApi } from "@/entities/catalog/api";
 import { inventoryApi, type StockFilters } from "@/entities/inventory/api";
 import { onlineOrQueued, queueStockMovement } from "@/shared/offline/offline-writes";
 import type { StockRow } from "@/entities/types";
-import { queryKeys } from "@/shared/api/query-client";
+import { invalidateMoneyAndStock, queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
 import { Field, FieldGrid } from "@/shared/components/field";
 import { Money, Quantity } from "@/shared/components/money";
@@ -267,8 +267,7 @@ function MovementDialog({
       } else {
         toast.success(t("stock.movementDialog.saved"));
       }
-      void queryClient.invalidateQueries({ queryKey: ["stock"] });
-      void queryClient.invalidateQueries({ queryKey: ["movements"] });
+      invalidateMoneyAndStock(queryClient);
       onOpenChange(false);
     },
     onError: (error) => toast.error(errorMessage(error)),
@@ -396,8 +395,7 @@ function TransferDialog({
       inventoryApi.transfer({ productId, fromWarehouseId, toWarehouseId, quantity }),
     onSuccess: () => {
       toast.success(t("stock.transferDialog.done"));
-      void queryClient.invalidateQueries({ queryKey: ["stock"] });
-      void queryClient.invalidateQueries({ queryKey: ["movements"] });
+      invalidateMoneyAndStock(queryClient);
       onOpenChange(false);
     },
     onError: (error) => toast.error(errorMessage(error)),

@@ -1,6 +1,6 @@
 /** Purchasing persistence: orders, goods receipts, supplier invoices. */
 
-import { and, asc, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 
 import {
   goodsReceiptLines,
@@ -27,6 +27,13 @@ export interface GoodsReceiptWithLines extends GoodsReceipt {
   lines: GoodsReceiptLine[];
   supplierName: string;
 }
+
+/** Orders that count as purchases: sent to the supplier, whether received or not. */
+const COUNTED_ORDER_STATUSES: readonly PurchaseOrder["status"][] = [
+  "ORDERED",
+  "PARTIALLY_RECEIVED",
+  "RECEIVED",
+];
 
 export class PurchasingRepository {
   constructor(private readonly database: Database = db) {}
@@ -130,15 +137,67 @@ export class PurchasingRepository {
     return row ?? null;
   }
 
-  /** Adds the received quantity to an order line, in the database to stay exact. */
-  async addReceivedQuantity(companyId: string, lineId: string, quantity: string): Promise<void> {
+  /**
+   * Updates the status only when the order is still in one of `fromStatuses` — checked
+   * by the database, so a concurrent receipt or cancellation cannot be overwritten.
+   */
+  async updateOrderStatusIf(
+    companyId: string,
+    orderId: string,
+    status: PurchaseOrder["status"],
+    fromStatuses: readonly PurchaseOrder["status"][]
+  ): Promise<PurchaseOrder | null> {
+    const [row] = await this.database
+      .update(purchaseOrders)
+      .set({ status, updatedAt: new Date() })
+      .where(
+        and(
+          eq(purchaseOrders.companyId, companyId),
+          eq(purchaseOrders.id, orderId),
+          inArray(purchaseOrders.status, [...fromStatuses])
+        )
+      )
+      .returning();
+    return row ?? null;
+  }
+
+  /** Locks the order until the end of the transaction (receipt against cancellation). */
+  async lockOrder(companyId: string, orderId: string): Promise<void> {
     await this.database
+      .select({ id: purchaseOrders.id })
+      .from(purchaseOrders)
+      .where(and(eq(purchaseOrders.companyId, companyId), eq(purchaseOrders.id, orderId)))
+      .for("update");
+  }
+
+  async updateOrderLineTotal(companyId: string, lineId: string, totalCents: number): Promise<void> {
+    await this.database
+      .update(purchaseOrderLines)
+      .set({ totalCents, updatedAt: new Date() })
+      .where(and(eq(purchaseOrderLines.companyId, companyId), eq(purchaseOrderLines.id, lineId)));
+  }
+
+  /**
+   * Adds the received quantity to an order line, in the database to stay exact.
+   * Refused (returns `false`) when it would go beyond the ordered quantity: the check
+   * is part of the update, so two receipts at the same time cannot both pass.
+   */
+  async addReceivedQuantity(companyId: string, lineId: string, quantity: string): Promise<boolean> {
+    const rows = await this.database
       .update(purchaseOrderLines)
       .set({
         receivedQuantity: sql`${purchaseOrderLines.receivedQuantity} + ${quantity}::numeric`,
         updatedAt: new Date(),
       })
-      .where(and(eq(purchaseOrderLines.companyId, companyId), eq(purchaseOrderLines.id, lineId)));
+      .where(
+        and(
+          eq(purchaseOrderLines.companyId, companyId),
+          eq(purchaseOrderLines.id, lineId),
+          sql`${purchaseOrderLines.receivedQuantity} + ${quantity}::numeric <= ${purchaseOrderLines.quantity}`
+        )
+      )
+      .returning({ id: purchaseOrderLines.id });
+    return rows.length > 0;
   }
 
   async listReceipts(
@@ -232,6 +291,48 @@ export class PurchasingRepository {
     return row;
   }
 
+  async findSupplierInvoice(companyId: string, invoiceId: string): Promise<SupplierInvoice | null> {
+    const [row] = await this.database
+      .select()
+      .from(supplierInvoices)
+      .where(and(eq(supplierInvoices.companyId, companyId), eq(supplierInvoices.id, invoiceId)))
+      .limit(1);
+    return row ?? null;
+  }
+
+  /**
+   * Increments the paid amount **in the database** (`paid + delta`), not from a value
+   * read beforehand: two simultaneous payments on the same invoice stay consistent.
+   */
+  async addSupplierPaidAmount(
+    companyId: string,
+    invoiceId: string,
+    deltaCents: number
+  ): Promise<SupplierInvoice | null> {
+    const [row] = await this.database
+      .update(supplierInvoices)
+      .set({
+        paidAmountCents: sql`${supplierInvoices.paidAmountCents} + ${deltaCents}`,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(supplierInvoices.companyId, companyId), eq(supplierInvoices.id, invoiceId)))
+      .returning();
+    return row ?? null;
+  }
+
+  async updateSupplierInvoice(
+    companyId: string,
+    invoiceId: string,
+    patch: Partial<typeof supplierInvoices.$inferInsert>
+  ): Promise<SupplierInvoice | null> {
+    const [row] = await this.database
+      .update(supplierInvoices)
+      .set({ ...patch, updatedAt: new Date() })
+      .where(and(eq(supplierInvoices.companyId, companyId), eq(supplierInvoices.id, invoiceId)))
+      .returning();
+    return row ?? null;
+  }
+
   async insertSupplierInvoiceLines(
     values: (typeof supplierInvoiceLines.$inferInsert)[]
   ): Promise<void> {
@@ -244,12 +345,14 @@ export class PurchasingRepository {
     const [row] = await this.database
       .select({
         orderCount: sql<number>`count(*)::int`,
-        totalCents: sql<number>`coalesce(sum(${purchaseOrders.totalCents}), 0)::int`,
+        totalCents: sql<number>`coalesce(sum(${purchaseOrders.totalCents}), 0)::bigint`,
       })
       .from(purchaseOrders)
       .where(
         and(
           eq(purchaseOrders.companyId, companyId),
+          // Drafts and cancelled orders were never bought.
+          inArray(purchaseOrders.status, [...COUNTED_ORDER_STATUSES]),
           gte(purchaseOrders.date, fromDate),
           lte(purchaseOrders.date, toDate)
         )

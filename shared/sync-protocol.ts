@@ -43,11 +43,10 @@ export const syncDocumentLineSchema = z.object({
   serviceId: z.string().uuid().nullish(),
   description: z.string().min(1),
   productSku: z.string().default(""),
-  quantity: z.union([z.number(), z.string()]),
+  quantity: z.union([z.number().positive(), z.string().regex(/^\s*\d+(\.\d{1,3})?\s*$/)]),
   unit: z.string().default("unité"),
-  unitPriceCents: z.number().int(),
+  unitPriceCents: z.number().int().min(0),
   discountBp: z.number().int().min(0).max(10_000).default(0),
-  originCountry: z.string().default(""),
 });
 export type SyncDocumentLine = z.infer<typeof syncDocumentLineSchema>;
 
@@ -76,7 +75,7 @@ export const syncProductPayloadSchema = z.object({
   initialStock: z
     .object({
       warehouseId: z.string().uuid(),
-      quantity: z.union([z.number(), z.string()]),
+      quantity: z.union([z.number().min(0), z.string().regex(/^\s*\d+(\.\d{1,3})?\s*$/)]),
       unitCostCents: z.number().int().min(0).default(0),
     })
     .nullish(),
@@ -146,7 +145,7 @@ export const syncStockMovementPayloadSchema = z.object({
   movementType: z.enum(["IN", "OUT", "ADJUSTMENT", "RETURN"]),
   /** Explicit direction of an adjustment; otherwise inferred from the movement type. */
   direction: z.enum(["IN", "OUT"]).nullish(),
-  quantity: z.union([z.number(), z.string()]),
+  quantity: z.union([z.number().positive(), z.string().regex(/^\s*\d+(\.\d{1,3})?\s*$/)]),
   unitCostCents: z.number().int().min(0).nullish(),
   reason: z.string().default(""),
   lotNumber: z.string().default(""),

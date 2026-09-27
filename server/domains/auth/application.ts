@@ -3,6 +3,8 @@
  * authorization context (permissions + enabled modules).
  */
 
+import { randomBytes } from "node:crypto";
+
 import bcrypt from "bcryptjs";
 
 import { ALL_PERMISSION_CODES, type PermissionCode } from "@shared/rbac";
@@ -31,8 +33,15 @@ export interface SessionTokens {
   expiresIn: number;
 }
 
-/** bcrypt cost: 10 rounds, the usual trade-off between strength and login latency. */
-const BCRYPT_ROUNDS = 10;
+/**
+ * bcrypt cost: 12 rounds. Offline sign-in copies hashes to register computers, so a
+ * stolen hash must be slow to break; 12 still answers a sign-in in a fraction of a
+ * second. Older hashes are upgraded at the next sign-in.
+ */
+const BCRYPT_ROUNDS = 12;
+
+/** Two tabs renewing with the same token within this delay is not a theft. */
+const REFRESH_REUSE_GRACE_MS = 30_000;
 
 export function hashPassword(plain: string): Promise<string> {
   return bcrypt.hash(plain, BCRYPT_ROUNDS);
@@ -40,6 +49,16 @@ export function hashPassword(plain: string): Promise<string> {
 
 export function verifyPassword(plain: string, hash: string): Promise<boolean> {
   return bcrypt.compare(plain, hash);
+}
+
+/**
+ * Real hash of a random password, computed once: comparing against it costs as much
+ * as a real check, so an unknown account name answers as slowly as a known one.
+ */
+let dummyHash: Promise<string> | undefined;
+function dummyPasswordHash(): Promise<string> {
+  dummyHash ??= bcrypt.hash(randomBytes(16).toString("hex"), BCRYPT_ROUNDS);
+  return dummyHash;
 }
 
 function toPublicUser(user: { passwordHash: string } & Record<string, unknown>): PublicUser {
@@ -137,10 +156,13 @@ class AuthApplication {
     const invalid = new UnauthorizedError("Incorrect username or password.");
     if (!user || !user.isActive) {
       // Dummy comparison to keep a comparable response time.
-      await bcrypt.compare(input.password, "$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinv");
+      await bcrypt.compare(input.password, await dummyPasswordHash());
       throw invalid;
     }
     if (!(await verifyPassword(input.password, user.passwordHash))) throw invalid;
+    if (bcrypt.getRounds(user.passwordHash) < BCRYPT_ROUNDS) {
+      await this.repository.updatePasswordHash(user.id, await hashPassword(input.password));
+    }
 
     const context = await this.buildContext(user.id, input.companyId);
     const tokens = await this.issueTokens(context, input.userAgent);
@@ -155,14 +177,38 @@ class AuthApplication {
     userAgent: string;
   }): Promise<SessionContext & { tokens: SessionTokens }> {
     const tokenHash = hashRefreshToken(input.refreshToken);
-    const stored = await this.repository.findRefreshToken(tokenHash);
-    if (!stored || stored.revokedAt || stored.expiresAt.getTime() < Date.now()) {
-      throw new UnauthorizedError("Session expired, please sign in again.");
+    const stored = await this.repository.consumeRefreshToken(tokenHash);
+    if (stored) {
+      const context = await this.buildContext(stored.userId, input.companyId ?? stored.companyId);
+      const tokens = await this.issueTokens(context, input.userAgent);
+      return { ...context, tokens };
     }
-    await this.repository.revokeRefreshToken(tokenHash);
-    const context = await this.buildContext(stored.userId, input.companyId ?? stored.companyId);
-    const tokens = await this.issueTokens(context, input.userAgent);
-    return { ...context, tokens };
+
+    const known = await this.repository.findRefreshToken(tokenHash);
+    const sinceRotation = known?.rotatedAt ? Date.now() - known.rotatedAt.getTime() : null;
+    // The same token exchanged twice within a few seconds: two tabs (or a page and its
+    // reload) of the same browser renewing together. Both get a session.
+    if (
+      known &&
+      sinceRotation !== null &&
+      sinceRotation <= REFRESH_REUSE_GRACE_MS &&
+      known.expiresAt.getTime() > Date.now()
+    ) {
+      const user = await this.repository.findUserById(known.userId);
+      const signedOutSince =
+        user?.sessionsValidAfter && known.rotatedAt && user.sessionsValidAfter > known.rotatedAt;
+      if (!signedOutSince) {
+        const context = await this.buildContext(known.userId, input.companyId ?? known.companyId);
+        const tokens = await this.issueTokens(context, input.userAgent);
+        return { ...context, tokens };
+      }
+    }
+    // A token exchanged long ago coming back means someone kept a copy of it: end every
+    // session of that account.
+    if (sinceRotation !== null && sinceRotation > REFRESH_REUSE_GRACE_MS) {
+      await this.logoutEverywhere(known!.userId);
+    }
+    throw new UnauthorizedError("Session expired, please sign in again.");
   }
 
   async logout(refreshToken: string | null | undefined): Promise<void> {

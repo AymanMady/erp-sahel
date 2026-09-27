@@ -14,11 +14,32 @@ import "./handlers";
 export function registerSyncRoutes(app: Express): void {
   const controller = new SyncController();
 
-  // Snapshot and push are available to any profile with POS access: it is the
-  // point-of-sale device that works offline.
-  app.get("/api/sync/snapshot", requireAuth, syncRateLimit, asyncHandler(controller.snapshot));
-  app.get("/api/sync/pull", requireAuth, syncRateLimit, asyncHandler(controller.pull));
+  // Snapshot and delta: the reference data a device shows without network. Push: each
+  // operation is checked against the rights of the online route it replays.
+  const canReadReference = authorize({
+    anyPermission: ["pos.use", "catalog.read", "invoicing.write"],
+  });
+  app.get(
+    "/api/sync/snapshot",
+    requireAuth,
+    canReadReference,
+    syncRateLimit,
+    asyncHandler(controller.snapshot)
+  );
+  app.get(
+    "/api/sync/pull",
+    requireAuth,
+    canReadReference,
+    syncRateLimit,
+    asyncHandler(controller.pull)
+  );
   app.post("/api/sync/push", requireAuth, syncRateLimit, asyncHandler(controller.push));
+  app.patch(
+    "/api/sync/devices/:id",
+    requireAuth,
+    authorize({ anyPermission: ["settings.write"] }),
+    asyncHandler(controller.setDeviceOfflineLogin)
+  );
 
   app.get(
     "/api/sync/status",

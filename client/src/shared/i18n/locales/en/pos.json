@@ -5,14 +5,16 @@
   "accessDenied": {
     "title": "Access denied",
     "description": "You are not allowed to use the cash register. Ask the person in charge.",
-    "backToDashboard": "Back to dashboard"
+    "backToDashboard": "Back to home"
   },
   "search": {
     "placeholder": "Scan the barcode or type the item name…",
     "searching": "Searching…",
     "noMatch": "No item found.",
     "startTyping": "Type the item name to find it.",
-    "noSnapshot": "Sign in once with internet to load the items."
+    "noSnapshot": "Sign in once with internet to load the items.",
+    "inStock": "{{quantity}} in stock",
+    "outOfStock": "Out of stock"
   },
   "cart": {
     "closeRegister": "Close the cash register",
@@ -21,7 +23,8 @@
     "increase": "Add one",
     "lastTicket": "Sale {{number}} paid.",
     "lastTicketOffline": "Sale {{number}} paid (no internet, will be sent later).",
-    "checkout": "Pay {{amount}}"
+    "checkout": "Pay {{amount}}",
+    "quantity": "Quantity of {{name}}"
   },
   "customer": {
     "walkIn": "Walk-in customer",
@@ -37,7 +40,8 @@
     "register": "Register",
     "selectRegister": "Choose a cash register",
     "opening": "Opening…",
-    "submit": "Open the register"
+    "submit": "Open the register",
+    "closedElsewhere": "This till was closed on another device. Open it again to keep selling. The cart is kept."
   },
   "payment": {
     "title": "Payment",
@@ -60,7 +64,9 @@
     "difference": "Difference (missing or extra)",
     "pendingNotice": "The closing will be sent with the sales when internet comes back. The difference will be counted again at that time.",
     "closing": "Closing…",
-    "submit": "Close the cash register"
+    "submit": "Close the cash register",
+    "emptyWarning": "You did not write the money counted. There should be {{amount}} in the drawer. If the drawer really is empty, press again to close with 0 MRU.",
+    "confirmEmpty": "Yes, close with 0 MRU"
   },
   "toasts": {
     "ticketPaid": "Sale {{number}} paid.",
@@ -69,7 +75,9 @@
     "sessionOpenedOffline": "Cash register opened without internet. Everything will be sent when internet comes back.",
     "closePending": "Cash register closed. Waiting for internet to send.",
     "closedBalanced": "Cash register closed. The count is correct.",
-    "closedWithDifference": "Cash register closed. Careful: there is a difference."
+    "closedWithDifference": "Cash register closed. Careful: there is a difference.",
+    "sessionClosedElsewhere": "The till was closed on another device. Open it again.",
+    "sessionNotYours": "This till was opened by someone else. Open your own till to sell. The cart is kept."
   },
   "outbox": {
     "ticket": "Sale {{number}}",

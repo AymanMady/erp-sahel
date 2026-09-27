@@ -12,11 +12,23 @@ import { z } from "zod";
 import { ALL_PERMISSION_CODES } from "@shared/rbac";
 import { slugify } from "@shared/format";
 import { runInTransaction } from "../../db";
-import { BusinessRuleError, ConflictError, NotFoundError } from "../../shared/errors/app-error";
+import {
+  BusinessRuleError,
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+} from "../../shared/errors/app-error";
 import { asyncHandler } from "../../shared/http/handler";
 import { tr } from "../../shared/i18n";
 import { hashPassword } from "../auth/application";
-import { authOf, authorize, requireAuth } from "../auth/guards";
+import {
+  authOf,
+  authorize,
+  invalidateAllSessionStates,
+  invalidateSessionState,
+  requireAuth,
+} from "../auth/guards";
 import { usersRepository } from "./repository";
 
 const passwordSchema = z
@@ -60,6 +72,14 @@ const idParamSchema = z.object({ id: z.string().uuid("Invalid identifier") });
 const canRead = authorize({ anyPermission: ["users.read"] });
 const canWrite = authorize({ anyPermission: ["users.write"] });
 
+/** A company may only hand out its own roles and the system ones. */
+async function assertAssignableRoles(companyId: string, roleIds: string[]): Promise<void> {
+  const unique = [...new Set(roleIds)];
+  if ((await usersRepository.countAssignableRoles(companyId, unique)) !== unique.length) {
+    throw new ValidationError("One of the chosen roles does not exist in this company.");
+  }
+}
+
 export function registerUsersRoutes(app: Express): void {
   app.get(
     "/api/users",
@@ -81,6 +101,7 @@ export function registerUsersRoutes(app: Express): void {
       if (await usersRepository.findByUsername(data.username)) {
         throw new ConflictError("This username is already taken.");
       }
+      await assertAssignableRoles(auth.companyId, data.roleIds);
 
       const user = await runInTransaction(async (tx) => {
         const repository = usersRepository.withTransaction(tx);
@@ -92,6 +113,8 @@ export function registerUsersRoutes(app: Express): void {
           lastName: data.lastName,
           phone: data.phone,
           allowOfflineLogin: data.allowOfflineLogin,
+          // Chosen by the administrator: the person picks their own at first sign-in.
+          mustChangePassword: true,
         });
         await repository.addMembership(created.id, auth.companyId, true);
         await repository.setUserRoles(created.id, auth.companyId, data.roleIds);
@@ -118,18 +141,49 @@ export function registerUsersRoutes(app: Express): void {
       if (id === auth.userId && data.isActive === false) {
         throw new BusinessRuleError("You cannot deactivate your own account.", "SELF_DEACTIVATION");
       }
+      const target = await usersRepository.findUser(id);
+      if (!target) throw new NotFoundError("User not found.");
+      // The platform administrator reaches every company: only another platform
+      // administrator may touch that account.
+      if (target.isSuperuser && !auth.isSuperuser) {
+        throw new ForbiddenError("Only a platform administrator can change this account.");
+      }
+      // Password and email belong to the person, not to one company: an administrator
+      // of one shop must not take over an account used in another one.
+      const inOtherCompanies =
+        (await usersRepository.countOtherMemberships(id, auth.companyId)) > 0;
+      if (
+        inOtherCompanies &&
+        !auth.isSuperuser &&
+        id !== auth.userId &&
+        (data.password !== undefined || data.email !== undefined)
+      ) {
+        throw new ForbiddenError(
+          "This person also works for another company: only they can change their password or email."
+        );
+      }
+      if (data.roleIds) await assertAssignableRoles(auth.companyId, data.roleIds);
 
-      const { roleIds, password, ...patch } = data;
+      const { roleIds, password, isActive, ...patch } = data;
       const updated = await runInTransaction(async (tx) => {
         const repository = usersRepository.withTransaction(tx);
         const user = await repository.updateUser(id, {
           ...patch,
-          ...(password ? { passwordHash: await hashPassword(password) } : {}),
+          // Someone working elsewhere too is only disabled in this company.
+          ...(isActive !== undefined && !inOtherCompanies ? { isActive } : {}),
+          ...(password
+            ? { passwordHash: await hashPassword(password), mustChangePassword: id !== auth.userId }
+            : {}),
         });
         if (!user) throw new NotFoundError("User not found.");
+        if (isActive !== undefined)
+          await repository.setMembershipActive(id, auth.companyId, isActive);
         if (roleIds) await repository.setUserRoles(id, auth.companyId, roleIds);
+        // A new password or a disabled account closes every open session.
+        if (password || isActive === false) await repository.endAllSessions(id);
         return user;
       });
+      invalidateSessionState(id);
 
       const { passwordHash: _hidden, ...publicUser } = updated;
       res.json(publicUser);
@@ -195,6 +249,7 @@ export function registerUsersRoutes(app: Express): void {
         if (data.permissions) await repository.setRolePermissions(id, data.permissions);
         return next;
       });
+      invalidateAllSessionStates();
       res.json(updated);
     })
   );
@@ -219,6 +274,7 @@ export function registerUsersRoutes(app: Express): void {
         );
       }
       await usersRepository.updateRole(id, { isActive: false });
+      invalidateAllSessionStates();
       res.json({ success: true });
     })
   );

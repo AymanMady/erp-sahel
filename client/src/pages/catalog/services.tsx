@@ -15,6 +15,7 @@ import { useSession } from "@/shared/auth/session";
 import { Field, FieldGrid } from "@/shared/components/field";
 import { Money } from "@/shared/components/money";
 import { MoneyInput } from "@/shared/components/money-input";
+import { archiveQuestion, useConfirm } from "@/shared/components/confirm-dialog";
 import { PageHeader } from "@/shared/components/page-header";
 import { ResourceTable, type Column } from "@/shared/components/resource-table";
 import { SearchInput } from "@/shared/components/search-input";
@@ -35,6 +36,7 @@ const BILLING_LABEL_KEYS: Record<string, string> = {
 
 export default function ServicesPage() {
   const { t } = useTranslation("catalog");
+  const [confirmDialog, confirm] = useConfirm();
   const queryClient = useQueryClient();
   const { can } = useSession();
   const [search, setSearch] = useState("");
@@ -108,7 +110,9 @@ export default function ServicesPage() {
               size="icon"
               variant="ghost"
               aria-label={t("common:actions.archive")}
-              onClick={() => archive.mutate(row.id)}
+              onClick={async () => {
+                if (await confirm(archiveQuestion(row.name))) archive.mutate(row.id);
+              }}
             >
               <IconTrash className="size-4" />
             </Button>
@@ -119,6 +123,7 @@ export default function ServicesPage() {
 
   return (
     <div className="space-y-6">
+      {confirmDialog}
       <PageHeader title={t("services.title")} description={t("services.description")}>
         {can("services.write") ? (
           <Button onClick={() => setCreating(true)}>

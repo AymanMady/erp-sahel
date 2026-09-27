@@ -80,3 +80,40 @@ export const queryKeys = {
   reports: (kind: string, filters?: unknown) => ["reports", kind, filters ?? null] as const,
   syncStatus: ["sync-status"] as const,
 } as const;
+
+/**
+ * Screens touched by a sale, a payment or a validated document: stock, money on hand,
+ * customer debts, dashboard, reports, accounting. Called after these actions so that
+ * every screen shows the new figures without the user reloading the page.
+ */
+const MONEY_AND_STOCK_KEYS = [
+  "dashboard",
+  "stock",
+  "movements",
+  "inventory-valuation",
+  "products",
+  "product",
+  "pos-products",
+  "invoices",
+  "invoice",
+  "credit-notes",
+  "payments",
+  "parties",
+  "party",
+  "sales-orders",
+  "sales-order",
+  "supplier-invoices",
+  "bank-accounts",
+  "bank-transactions",
+  "treasury",
+  "pos-current-session",
+  "pos-session-summary",
+  "entries",
+  "ledger",
+  "balance",
+  "reports",
+] as const;
+
+export function invalidateMoneyAndStock(client: QueryClient = queryClient): void {
+  for (const key of MONEY_AND_STOCK_KEYS) void client.invalidateQueries({ queryKey: [key] });
+}

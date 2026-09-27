@@ -11,6 +11,8 @@ export interface SyncDevice {
   lastSnapshotAt: string | null;
   lastPushAt: string | null;
   pendingHint: number;
+  /** Desktop only: an administrator allowed signing in without internet on it. */
+  offlineLoginAllowed?: boolean;
 }
 
 export const syncApi = {
@@ -20,4 +22,6 @@ export const syncApi = {
       devices: SyncDevice[];
     }>("/api/sync/status"),
   journal: () => api.get<SyncOperation[]>("/api/sync/journal"),
+  setDeviceOfflineLogin: (id: string, offlineLoginAllowed: boolean) =>
+    api.patch<SyncDevice>(`/api/sync/devices/${id}`, { offlineLoginAllowed }),
 };

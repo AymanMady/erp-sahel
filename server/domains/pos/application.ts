@@ -7,12 +7,13 @@
  * without a second accounting flow to reconcile ([FR-POS-3]).
  */
 
-import { todayInput } from "@shared/format";
+import { toDateInput, todayInput } from "@shared/format";
 import type { Company, PaymentMethod, PosSession } from "@shared/schema";
 import { runInTransaction, type Database } from "../../db";
 import type { RawDocumentLine } from "../../shared/documents/line-builder";
 import { BusinessRuleError, NotFoundError } from "../../shared/errors/app-error";
 import { tr } from "../../shared/i18n";
+import { bankingApplication } from "../banking/application";
 import { invoicingApplication } from "../invoicing/application";
 import type { InvoiceWithLines } from "../invoicing/repository";
 import { partiesApplication } from "../parties/application";
@@ -47,6 +48,8 @@ export interface CreateTicketInput {
   provisionalNumber?: string;
   /** `clientUuid` of each payment, so that offline replay stays idempotent. */
   paymentClientUuids?: (string | null)[];
+  /** May sell catalog items at another price (see `BuildDocumentOptions`). */
+  allowPriceOverride?: boolean;
 }
 
 class PosApplication {
@@ -113,7 +116,8 @@ class PosApplication {
   ): Promise<PosSession & { differenceCents: number }> {
     const run = async (database: Database) => {
       const repository = posRepository.withTransaction(database);
-      const session = await repository.findById(company.id, input.sessionId);
+      // Locked: a sale arriving during the closing waits, then finds the session closed.
+      const session = await repository.lockSession(company.id, input.sessionId);
       if (!session) throw new NotFoundError("Register session not found.");
       if (session.status === "CLOSED") {
         // Replaying an offline closing must not fail: the session is already in the
@@ -139,10 +143,25 @@ class PosApplication {
         notes: input.notes ?? session.notes,
       });
       if (!updated) throw new NotFoundError("Register session not found.");
-      return {
-        ...updated,
-        differenceCents: input.closingBalanceCents - expectedBalanceCents,
-      };
+
+      // Money found missing or extra when counting: the cash account is brought to what
+      // was counted, and the accounts record the loss or the gain.
+      const differenceCents = input.closingBalanceCents - expectedBalanceCents;
+      if (differenceCents !== 0) {
+        const register = await posRegistersRepository
+          .withTransaction(database)
+          .findById(company.id, session.registerId);
+        const closedOn = toDateInput(updated.closedAt ?? new Date());
+        await bankingApplication.postCashDifference(database, {
+          company,
+          bankAccountId: register?.cashAccountId ?? null,
+          differenceCents,
+          date: closedOn,
+          reference: `${register?.code ?? "CAISSE"} ${closedOn}`,
+          originId: session.id,
+        });
+      }
+      return { ...updated, differenceCents };
     };
     return tx ? run(tx) : runInTransaction(run);
   }
@@ -160,12 +179,19 @@ class PosApplication {
   ): Promise<{ invoice: InvoiceWithLines; session: PosSession }> {
     const run = async (database: Database) => {
       const repository = posRepository.withTransaction(database);
-      const session = await repository.findById(company.id, input.sessionId);
+      const session = await repository.lockSession(company.id, input.sessionId);
       if (!session) throw new NotFoundError("Register session not found.");
       if (session.status !== "OPEN") {
         throw new BusinessRuleError(
           "The register session is closed: open a new one to take payments.",
           "POS_SESSION_CLOSED"
+        );
+      }
+      // Each cashier answers for the money of their own register session.
+      if (session.userId && session.userId !== userId) {
+        throw new BusinessRuleError(
+          "This register was opened by someone else: open your own to take payments.",
+          "POS_SESSION_NOT_YOURS"
         );
       }
 
@@ -192,6 +218,7 @@ class PosApplication {
           validate: true,
           clientUuid: input.clientUuid ?? null,
           provisionalNumber: input.provisionalNumber ?? "",
+          allowPriceOverride: input.allowPriceOverride,
         },
         userId
       );
@@ -227,15 +254,7 @@ class PosApplication {
         );
       }
 
-      const totals = await paymentsRepository
-        .withTransaction(database)
-        .sessionTotals(company.id, session.id);
-      const updatedSession = await repository.updateSession(company.id, session.id, {
-        totalSalesCents: totals.totalCents,
-        totalCashCents: totals.cashCents,
-        expectedBalanceCents: session.openingBalanceCents + totals.cashCents,
-        ticketCount: session.ticketCount + 1,
-      });
+      const updatedSession = await this.refreshSessionTotals(database, company.id, session, 1);
 
       return {
         invoice: await invoicingApplication.get(company.id, invoice.id, database),
@@ -243,6 +262,67 @@ class PosApplication {
       };
     };
     return tx ? run(tx) : runInTransaction(run);
+  }
+
+  /** Recomputes the session totals from its payments; `newTickets` adds to the count. */
+  private async refreshSessionTotals(
+    database: Database,
+    companyId: string,
+    session: PosSession,
+    newTickets: number
+  ): Promise<PosSession | null> {
+    const totals = await paymentsRepository
+      .withTransaction(database)
+      .sessionTotals(companyId, session.id);
+    return posRepository.withTransaction(database).updateTotals(
+      companyId,
+      session.id,
+      {
+        totalSalesCents: totals.totalCents,
+        totalCashCents: totals.cashCents,
+        expectedBalanceCents: session.openingBalanceCents + totals.cashCents,
+      },
+      newTickets
+    );
+  }
+
+  /**
+   * Checks that a sale made without network may join its session, and locks the
+   * session. A sale made **before** the session was closed (on another device) is
+   * accepted: the money was taken while the register was open. One made after the
+   * closing is refused.
+   */
+  async lockSessionForOfflineSale(
+    tx: Database,
+    companyId: string,
+    sessionId: string,
+    soldAt: Date
+  ): Promise<PosSession> {
+    const session = await posRepository.withTransaction(tx).lockSession(companyId, sessionId);
+    if (!session) throw new NotFoundError("Register session not found.");
+    if (session.status !== "OPEN" && session.closedAt && soldAt > session.closedAt) {
+      throw new BusinessRuleError(
+        "The register session is closed: open a new one to take payments.",
+        "POS_SESSION_CLOSED"
+      );
+    }
+    return session;
+  }
+
+  /**
+   * Keeps the session totals right after an offline sale or payment arrives. For a
+   * session already closed, the expected cash is recomputed so the difference with
+   * what was counted shows the late sale.
+   */
+  async recordOfflineActivity(
+    tx: Database,
+    companyId: string,
+    sessionId: string,
+    newTickets: number
+  ): Promise<void> {
+    const session = await posRepository.withTransaction(tx).lockSession(companyId, sessionId);
+    if (!session) return;
+    await this.refreshSessionTotals(tx, companyId, session, newTickets);
   }
 
   async currentSession(companyId: string, userId: string): Promise<PosSession | null> {

@@ -26,6 +26,13 @@ if (!connectionString) {
  * behavior: quantities travel as strings and are only converted when computing
  * (`normalizeQuantity`). Amounts are integers — no risk there.
  */
+/**
+ * Amounts and sums are `bigint` in the database (a shop's yearly sales exceed the
+ * 21 million MRU an `integer` holds). `pg` returns `bigint` as a string by default: it
+ * is read as a number here, exact up to 90 000 billion MRU.
+ */
+pg.types.setTypeParser(pg.types.builtins.INT8, (value) => Number(value));
+
 export const pool = new pg.Pool({
   connectionString,
   max: Number(process.env.DATABASE_POOL_MAX ?? 10),

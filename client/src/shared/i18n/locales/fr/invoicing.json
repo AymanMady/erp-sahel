@@ -19,9 +19,13 @@
     "notFound": "Facture introuvable.",
     "validated": "Facture {{number}} validée.",
     "collect": "Recevoir un paiement",
-    "issueCreditNote": "Retour de marchandise (faire un avoir)",
+    "issueCreditNote": "Retour de marchandise ou remboursement",
     "draftNotice": "Cette facture est <strong>en préparation</strong> : elle n'a pas encore de numéro, le stock n'a pas bougé et elle n'est pas dans les comptes. Cliquez sur « Valider » quand elle est prête.",
-    "payments": "Paiements reçus"
+    "payments": "Paiements reçus",
+    "confirmValidate": {
+      "title": "Valider la facture de {{amount}} ?",
+      "description": "Elle ne pourra plus être modifiée. Les articles sortiront du stock et la somme sera due par le client."
+    }
   },
   "payment": {
     "title": "Recevoir un paiement",
@@ -34,16 +38,19 @@
     "saved": "Paiement enregistré."
   },
   "creditNote": {
-    "title": "Retour de marchandise (avoir)",
-    "description": "Une facture validée ne peut plus être changée. Pour la corriger ou annuler, on fait un avoir : il annule toute la facture.",
+    "title": "Retour de marchandise",
+    "description": "Une facture validée ne peut plus être changée. Écrivez combien de chaque article le client rapporte. Le prix est celui de la facture.",
     "reason": "Pourquoi ?",
     "reasonPlaceholder": "Le client a rendu la marchandise, erreur sur la facture…",
     "restock": "Remettre les articles dans le stock",
-    "submit": "Faire l'avoir",
-    "issued": "Avoir fait : la facture est annulée."
+    "submit": "Enregistrer le retour",
+    "issued": "Retour enregistré.",
+    "returnable": "Peut encore être rendu : {{quantity}} {{unit}}",
+    "nothingLeft": "Déjà tout rendu",
+    "quantity": "Quantité rendue de {{name}}"
   },
   "creditNotes": {
-    "title": "Retours de marchandise (avoirs)",
+    "title": "Retours de marchandise",
     "description": "Factures annulées ou corrigées, avec les articles remis en stock.",
     "columns": {
       "restock": "Remis en stock",
@@ -52,7 +59,7 @@
     "restocked": "Oui",
     "notRestocked": "Non",
     "emptyTitle": "Aucun retour",
-    "emptyDescription": "Pour faire un avoir, ouvrez une facture validée."
+    "emptyDescription": "Pour enregistrer un retour, ouvrez une facture validée."
   },
   "invoiceForm": {
     "title": "Nouvelle facture",
@@ -71,6 +78,10 @@
     "savedOffline": "Facture {{number}} gardée sur cet appareil (pas d'internet).",
     "savedOfflineDescription": "Elle sera validée quand internet reviendra.",
     "draftSaved": "Facture gardée pour plus tard.",
-    "validated": "Facture {{number}} validée. Le stock est mis à jour."
+    "validated": "Facture {{number}} validée. Le stock est mis à jour.",
+    "confirmValidate": {
+      "title": "Valider la facture de {{amount}} ?",
+      "description": "Elle ne pourra plus être modifiée. Les articles sortiront du stock et la somme sera due par le client."
+    }
   }
 }

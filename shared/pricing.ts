@@ -141,11 +141,42 @@ export function remainingToPayCents(totalCents: number, paidCents: number): numb
   return Math.max(0, totalCents - paidCents);
 }
 
+/**
+ * What the customer still owes on an invoice: total − paid − returned (credit notes).
+ * Never below zero: a customer paid back for a return owes nothing.
+ */
+export function invoiceAmountDueCents(invoice: {
+  totalCents: number;
+  paidAmountCents: number;
+  creditedAmountCents?: number | null;
+}): number {
+  return Math.max(
+    0,
+    invoice.totalCents - invoice.paidAmountCents - (invoice.creditedAmountCents ?? 0)
+  );
+}
+
+/**
+ * Status of a validated invoice from its payments and returns: everything returned
+ * cancels it; otherwise the returns reduce what has to be paid.
+ */
+export function deriveSettlementStatus(invoice: {
+  totalCents: number;
+  paidAmountCents: number;
+  creditedAmountCents?: number | null;
+}): "VALIDATED" | "PARTIALLY_PAID" | "PAID" | "CANCELLED" {
+  const credited = invoice.creditedAmountCents ?? 0;
+  if (invoice.totalCents > 0 && credited >= invoice.totalCents) return "CANCELLED";
+  return derivePaymentStatus(invoice.totalCents - credited, invoice.paidAmountCents);
+}
+
 /** Payment status derived from the amounts — never entered by hand. */
 export function derivePaymentStatus(
   totalCents: number,
   paidCents: number
 ): "VALIDATED" | "PARTIALLY_PAID" | "PAID" {
+  // Nothing to pay (free item, everything returned): nothing is waiting for money.
+  if (totalCents <= 0) return "PAID";
   if (paidCents <= 0) return "VALIDATED";
   if (paidCents >= totalCents) return "PAID";
   return "PARTIALLY_PAID";

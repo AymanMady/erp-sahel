@@ -122,6 +122,16 @@ async function main(): Promise<void> {
   await buildFunction();
   writeConfig();
 
+  // The serverless function cannot migrate on start (many instances start at once): the
+  // database is brought up to date here, before the new version is published. A
+  // deployment without a database (preview without secrets) skips it.
+  if (process.env.DATABASE_URL && process.env.SKIP_MIGRATIONS !== "true") {
+    console.log("→ Applying database migrations…");
+    run("npx", ["tsx", "scripts/migrate.ts"]);
+  } else {
+    console.log("→ DATABASE_URL not set: migrations skipped.");
+  }
+
   console.log("\n✔ Vercel build complete: .vercel/output/");
 }
 

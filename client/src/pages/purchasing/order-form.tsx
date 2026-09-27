@@ -18,6 +18,7 @@ import { PageHeader } from "@/shared/components/page-header";
 import {
   LineEditor,
   emptyLine,
+  documentBlocker,
   toApiLines,
   type DocumentLine,
 } from "@/features/documents/line-editor";
@@ -65,7 +66,9 @@ export default function PurchaseOrderFormPage() {
     onError: (error) => toast.error(errorMessage(error)),
   });
 
-  const canSubmit = Boolean(supplier) && toApiLines(lines).length > 0;
+  // Said in words next to the greyed-out button.
+  const blocker = documentBlocker({ party: supplier, lines, partyRole: "supplier" });
+  const canSubmit = !blocker;
 
   return (
     <div className="space-y-6">
@@ -81,6 +84,11 @@ export default function PurchaseOrderFormPage() {
           {mutation.isPending ? t("orderForm.creating") : t("orderForm.submit")}
         </Button>
       </PageHeader>
+      {blocker ? (
+        <p role="status" className="-mt-4 text-sm text-muted-foreground">
+          {blocker}
+        </p>
+      ) : null}
 
       <Card>
         <CardHeader>

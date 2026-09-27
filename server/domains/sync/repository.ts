@@ -12,24 +12,35 @@ export class SyncRepository {
     return new SyncRepository(tx);
   }
 
-  /** Already-ingested operation, whatever its status. */
-  async findByClientUuid(clientUuid: string): Promise<SyncOperation | null> {
+  /** Already-ingested operation of the company, whatever its status. */
+  async findByClientUuid(companyId: string, clientUuid: string): Promise<SyncOperation | null> {
     const [row] = await this.database
       .select()
       .from(syncOperations)
-      .where(eq(syncOperations.clientUuid, clientUuid))
+      .where(
+        and(eq(syncOperations.companyId, companyId), eq(syncOperations.clientUuid, clientUuid))
+      )
       .limit(1);
     return row ?? null;
   }
 
-  /** Server ids of successful operations — resolution of cross references. */
-  async resolveServerIds(clientUuids: string[]): Promise<Map<string, string>> {
+  /** Serializes the ingestion of one operation until the end of the transaction. */
+  async lockClientUuid(clientUuid: string): Promise<void> {
+    await this.database.execute(sql`select pg_advisory_xact_lock(hashtext(${clientUuid}))`);
+  }
+
+  /**
+   * Server ids of successful operations — resolution of cross references. Limited to
+   * the company: a reference can never point to another company's data.
+   */
+  async resolveServerIds(companyId: string, clientUuids: string[]): Promise<Map<string, string>> {
     if (clientUuids.length === 0) return new Map();
     const rows = await this.database
       .select({ clientUuid: syncOperations.clientUuid, serverId: syncOperations.serverId })
       .from(syncOperations)
       .where(
         and(
+          eq(syncOperations.companyId, companyId),
           inArray(syncOperations.clientUuid, clientUuids),
           inArray(syncOperations.status, ["created", "duplicate"]),
           sql`${syncOperations.serverId} <> ''`
@@ -43,13 +54,68 @@ export class SyncRepository {
       .insert(syncOperations)
       .values(values)
       // Two simultaneous submissions of the same batch: the second creates no duplicate
-      // and does not overwrite the result of the first.
+      // and does not overwrite the result of the first. A previous **failure**, on the
+      // other hand, is replaced by the new outcome: an operation that succeeds on a
+      // later attempt must no longer be reported (nor block what depends on it).
       .onConflictDoUpdate({
         target: syncOperations.clientUuid,
-        set: { updatedAt: new Date() },
+        set: {
+          status: sql`case when ${syncOperations.status} = 'error' then excluded.status else ${syncOperations.status} end`,
+          serverId: sql`case when ${syncOperations.status} = 'error' then excluded.server_id else ${syncOperations.serverId} end`,
+          assignedNumber: sql`case when ${syncOperations.status} = 'error' then excluded.assigned_number else ${syncOperations.assignedNumber} end`,
+          detail: sql`case when ${syncOperations.status} = 'error' then excluded.detail else ${syncOperations.detail} end`,
+          payload: sql`case when ${syncOperations.status} = 'error' then excluded.payload else ${syncOperations.payload} end`,
+          updatedAt: new Date(),
+        },
+        // Never across companies.
+        setWhere: sql`${syncOperations.companyId} = excluded.company_id`,
       })
       .returning();
     return row;
+  }
+
+  /**
+   * Takes an idempotency key for an HTTP write, atomically. Returns `null` when the key
+   * is now held by this request, otherwise the row that already holds it. A key left
+   * `pending` for too long (server stopped mid-request) is taken over.
+   */
+  async claimHttpKey(values: typeof syncOperations.$inferInsert): Promise<SyncOperation | null> {
+    const [claimed] = await this.database
+      .insert(syncOperations)
+      .values({ ...values, status: "pending" })
+      .onConflictDoUpdate({
+        target: syncOperations.clientUuid,
+        set: { updatedAt: new Date(), userId: values.userId ?? null },
+        setWhere: sql`${syncOperations.status} = 'pending'
+          and ${syncOperations.companyId} = excluded.company_id
+          and ${syncOperations.updatedAt} < now() - interval '2 minutes'`,
+      })
+      .returning();
+    if (claimed) return null;
+    const [holder] = await this.database
+      .select()
+      .from(syncOperations)
+      .where(eq(syncOperations.clientUuid, String(values.clientUuid)))
+      .limit(1);
+    return holder ?? null;
+  }
+
+  /** Stores the response served for a held key: replays will receive it. */
+  async completeHttpKey(
+    clientUuid: string,
+    values: Pick<typeof syncOperations.$inferInsert, "serverId" | "payload">
+  ): Promise<void> {
+    await this.database
+      .update(syncOperations)
+      .set({ ...values, status: "created", updatedAt: new Date() })
+      .where(and(eq(syncOperations.clientUuid, clientUuid), eq(syncOperations.status, "pending")));
+  }
+
+  /** Frees a held key after a failure: the request may be sent again. */
+  async releaseHttpKey(clientUuid: string): Promise<void> {
+    await this.database
+      .delete(syncOperations)
+      .where(and(eq(syncOperations.clientUuid, clientUuid), eq(syncOperations.status, "pending")));
   }
 
   async listSince(companyId: string, since: Date, limit = 500): Promise<SyncOperation[]> {
@@ -113,6 +179,24 @@ export class SyncRepository {
           updatedAt: now,
         },
       });
+  }
+
+  async isOfflineLoginAllowed(companyId: string, deviceId: string): Promise<boolean> {
+    const [row] = await this.database
+      .select({ allowed: syncDevices.offlineLoginAllowed })
+      .from(syncDevices)
+      .where(and(eq(syncDevices.companyId, companyId), eq(syncDevices.deviceId, deviceId)))
+      .limit(1);
+    return row?.allowed ?? false;
+  }
+
+  async setOfflineLoginAllowed(companyId: string, id: string, allowed: boolean) {
+    const [row] = await this.database
+      .update(syncDevices)
+      .set({ offlineLoginAllowed: allowed, updatedAt: new Date() })
+      .where(and(eq(syncDevices.companyId, companyId), eq(syncDevices.id, id)))
+      .returning();
+    return row ?? null;
   }
 
   async listDevices(companyId: string) {

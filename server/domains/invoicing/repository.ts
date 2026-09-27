@@ -109,6 +109,83 @@ export class InvoicingRepository {
     return { ...row.invoice, lines, partyName: row.partyName, partyCode: row.partyCode };
   }
 
+  /**
+   * Locks the invoice row until the end of the transaction: two returns or two
+   * payments on the same invoice are then checked one after the other, each seeing
+   * what the other did.
+   */
+  async lockForUpdate(companyId: string, invoiceId: string): Promise<SalesInvoice | null> {
+    const [row] = await this.database
+      .select()
+      .from(salesInvoices)
+      .where(and(eq(salesInvoices.companyId, companyId), eq(salesInvoices.id, invoiceId)))
+      .for("update")
+      .limit(1);
+    return row ?? null;
+  }
+
+  /** Quantity and amount already returned, per invoice line. */
+  async creditedByInvoiceLine(
+    companyId: string,
+    invoiceId: string
+  ): Promise<Map<string, { quantity: number; totalCents: number }>> {
+    const rows = await this.database
+      .select({
+        invoiceLineId: creditNoteLines.invoiceLineId,
+        quantity: sql<string>`coalesce(sum(${creditNoteLines.quantity}), 0)`,
+        totalCents: sql<number>`coalesce(sum(${creditNoteLines.totalCents}), 0)::bigint`,
+      })
+      .from(creditNoteLines)
+      .innerJoin(creditNotes, eq(creditNotes.id, creditNoteLines.creditNoteId))
+      .where(
+        and(
+          eq(creditNoteLines.companyId, companyId),
+          eq(creditNotes.invoiceId, invoiceId),
+          eq(creditNotes.status, "VALIDATED")
+        )
+      )
+      .groupBy(creditNoteLines.invoiceLineId);
+    return new Map(
+      rows
+        .filter((row) => row.invoiceLineId)
+        .map((row) => [
+          row.invoiceLineId as string,
+          { quantity: Number(row.quantity), totalCents: Number(row.totalCents) },
+        ])
+    );
+  }
+
+  /** Date of the most recent validated invoice: legal numbers follow the dates. */
+  async latestValidatedDate(companyId: string): Promise<string | null> {
+    const [row] = await this.database
+      .select({ value: sql<string | null>`max(${salesInvoices.date})::text` })
+      .from(salesInvoices)
+      .where(
+        and(
+          eq(salesInvoices.companyId, companyId),
+          inArray(salesInvoices.status, ["VALIDATED", "PARTIALLY_PAID", "PAID", "CANCELLED"])
+        )
+      );
+    return row?.value ?? null;
+  }
+
+  /** Adds a return to the invoice, in the database (`credited + delta`). */
+  async addCreditedAmount(
+    companyId: string,
+    invoiceId: string,
+    deltaCents: number
+  ): Promise<SalesInvoice | null> {
+    const [row] = await this.database
+      .update(salesInvoices)
+      .set({
+        creditedAmountCents: sql`${salesInvoices.creditedAmountCents} + ${deltaCents}`,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(salesInvoices.companyId, companyId), eq(salesInvoices.id, invoiceId)))
+      .returning();
+    return row ?? null;
+  }
+
   async findByClientUuid(companyId: string, clientUuid: string): Promise<SalesInvoice | null> {
     const [row] = await this.database
       .select()
@@ -243,13 +320,19 @@ export class InvoicingRepository {
     await this.database.insert(creditNoteLines).values(values);
   }
 
-  /** Revenue and unpaid amounts — dashboard and reports [FR-RPT-1]. */
+  /**
+   * Revenue and unpaid amounts — dashboard and reports [FR-RPT-1]. Returns (credit notes)
+   * are subtracted from the invoice they belong to; a fully returned invoice is cancelled
+   * and so left out.
+   */
   async salesSummary(companyId: string, fromDate: string, toDate: string) {
     const [row] = await this.database
       .select({
         invoiceCount: sql<number>`count(*)::int`,
-        totalCents: sql<number>`coalesce(sum(${salesInvoices.totalCents}), 0)::int`,
-        paidCents: sql<number>`coalesce(sum(${salesInvoices.paidAmountCents}), 0)::int`,
+        grossCents: sql<number>`coalesce(sum(${salesInvoices.totalCents}), 0)::bigint`,
+        returnsCents: sql<number>`coalesce(sum(${salesInvoices.creditedAmountCents}), 0)::bigint`,
+        paidCents: sql<number>`coalesce(sum(${salesInvoices.paidAmountCents}), 0)::bigint`,
+        outstandingCents: sql<number>`coalesce(sum(greatest(${salesInvoices.totalCents} - ${salesInvoices.paidAmountCents} - ${salesInvoices.creditedAmountCents}, 0)), 0)::bigint`,
       })
       .from(salesInvoices)
       .where(
@@ -260,11 +343,19 @@ export class InvoicingRepository {
           inArray(salesInvoices.status, ["VALIDATED", "PARTIALLY_PAID", "PAID"])
         )
       );
+    const grossCents = row?.grossCents ?? 0;
+    const returnsCents = row?.returnsCents ?? 0;
     return {
       invoiceCount: row?.invoiceCount ?? 0,
-      totalCents: row?.totalCents ?? 0,
+      /** Invoiced amount before returns. */
+      grossCents,
+      /** Amount given back through credit notes on these invoices. */
+      returnsCents,
+      /** Net sales: invoiced minus returns. */
+      totalCents: grossCents - returnsCents,
       paidCents: row?.paidCents ?? 0,
-      outstandingCents: (row?.totalCents ?? 0) - (row?.paidCents ?? 0),
+      /** Still owed by customers, per invoice floored at zero. */
+      outstandingCents: row?.outstandingCents ?? 0,
     };
   }
 
@@ -273,7 +364,7 @@ export class InvoicingRepository {
     return this.database
       .select({
         date: salesInvoices.date,
-        totalCents: sql<number>`coalesce(sum(${salesInvoices.totalCents}), 0)::int`,
+        totalCents: sql<number>`coalesce(sum(${salesInvoices.totalCents}), 0)::bigint`,
         invoiceCount: sql<number>`count(*)::int`,
       })
       .from(salesInvoices)
@@ -297,7 +388,7 @@ export class InvoicingRepository {
         productSku: salesInvoiceLines.productSku,
         description: salesInvoiceLines.description,
         quantity: sql<string>`coalesce(sum(${salesInvoiceLines.quantity}), 0)`,
-        revenueCents: sql<number>`coalesce(sum(${salesInvoiceLines.totalCents}), 0)::int`,
+        revenueCents: sql<number>`coalesce(sum(${salesInvoiceLines.totalCents}), 0)::bigint`,
       })
       .from(salesInvoiceLines)
       .innerJoin(salesInvoices, eq(salesInvoices.id, salesInvoiceLines.invoiceId))

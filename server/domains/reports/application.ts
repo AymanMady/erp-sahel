@@ -13,8 +13,8 @@ import { bankingApplication } from "../banking/application";
 import { catalogApplication } from "../catalog/application";
 import { partiesApplication } from "../parties/application";
 import { paymentsApplication } from "../payments/application";
-import { purchasingRepository } from "../purchasing/repository";
 import { servicesRepository } from "../services/routes";
+import { reportsRepository } from "./repository";
 
 export interface PeriodInput {
   fromDate?: string | null;
@@ -33,18 +33,29 @@ class ReportsApplication {
   async dashboard(companyId: string, input: PeriodInput = {}) {
     const { fromDate, toDate } = resolvePeriod(input);
 
-    const [sales, daily, topProducts, purchases, treasury, stock, lowStock, parties, catalog] =
-      await Promise.all([
-        invoicingRepository.salesSummary(companyId, fromDate, toDate),
-        invoicingRepository.dailyRevenue(companyId, fromDate, toDate),
-        invoicingRepository.topProducts(companyId, fromDate, toDate, 5),
-        purchasingRepository.purchaseSummary(companyId, fromDate, toDate),
-        bankingApplication.treasuryTotals(companyId),
-        inventoryApplication.valuation(companyId),
-        inventoryApplication.lowStock(companyId, 10),
-        partiesApplication.counts(companyId),
-        catalogApplication.counts(companyId),
-      ]);
+    const [
+      sales,
+      daily,
+      topProducts,
+      purchases,
+      costOfGoodsSoldCents,
+      treasury,
+      stock,
+      lowStock,
+      parties,
+      catalog,
+    ] = await Promise.all([
+      invoicingRepository.salesSummary(companyId, fromDate, toDate),
+      reportsRepository.dailyNetSales(companyId, fromDate, toDate),
+      reportsRepository.topProducts(companyId, fromDate, toDate, 5),
+      reportsRepository.purchaseSummary(companyId, fromDate, toDate),
+      reportsRepository.costOfGoodsSold(companyId, fromDate, toDate),
+      bankingApplication.treasuryTotals(companyId),
+      inventoryApplication.valuation(companyId),
+      inventoryApplication.lowStock(companyId, 10),
+      partiesApplication.counts(companyId),
+      catalogApplication.counts(companyId),
+    ]);
     const serviceCount = await servicesRepository.count(companyId);
 
     return {
@@ -57,20 +68,34 @@ class ReportsApplication {
       dailyRevenue: daily,
       topProducts,
       lowStock,
-      /** Approximate gross margin: revenue − purchases over the period. */
-      grossMarginCents: sales.totalCents - purchases.totalCents,
+      /** What the goods sold over the period cost the shop (unit cost at stock exit). */
+      costOfGoodsSoldCents,
+      /**
+       * Profit on sales ("gain sur les ventes"): net sales (after returns) minus what the
+       * goods sold cost. Services have no stock cost, so they count in full.
+       */
+      grossMarginCents: sales.totalCents - costOfGoodsSoldCents,
     };
   }
 
   async salesReport(companyId: string, input: PeriodInput = {}) {
     const { fromDate, toDate } = resolvePeriod(input);
-    const [summary, daily, topProducts, collections] = await Promise.all([
+    const [summary, daily, topProducts, collections, costOfGoodsSoldCents] = await Promise.all([
       invoicingRepository.salesSummary(companyId, fromDate, toDate),
-      invoicingRepository.dailyRevenue(companyId, fromDate, toDate),
-      invoicingRepository.topProducts(companyId, fromDate, toDate, 20),
+      reportsRepository.dailyNetSales(companyId, fromDate, toDate),
+      reportsRepository.topProducts(companyId, fromDate, toDate, 20),
       paymentsApplication.collectionsByMethod(companyId, fromDate, toDate),
+      reportsRepository.costOfGoodsSold(companyId, fromDate, toDate),
     ]);
-    return { period: { fromDate, toDate }, summary, daily, topProducts, collections };
+    return {
+      period: { fromDate, toDate },
+      summary,
+      daily,
+      topProducts,
+      collections,
+      costOfGoodsSoldCents,
+      grossMarginCents: summary.totalCents - costOfGoodsSoldCents,
+    };
   }
 
   async stockReport(companyId: string, warehouseId?: string | null) {
@@ -85,7 +110,7 @@ class ReportsApplication {
     const { fromDate, toDate } = resolvePeriod(input);
     return {
       period: { fromDate, toDate },
-      summary: await purchasingRepository.purchaseSummary(companyId, fromDate, toDate),
+      summary: await reportsRepository.purchaseSummary(companyId, fromDate, toDate),
     };
   }
 }

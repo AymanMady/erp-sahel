@@ -58,13 +58,12 @@ async function resolveLines(
       unit: line.unit,
       unitPriceCents: line.unitPriceCents,
       discountBp: line.discountBp,
-      originCountry: line.originCountry,
     });
   }
   return resolved;
 }
 
-syncDispatcher.register("core.party", async (context, payload) => {
+syncDispatcher.register("core.party", ["parties.write"], async (context, payload) => {
   const data = parsePayload("core.party", payload);
   const party = await partiesApplication.create(
     context.company.id,
@@ -74,7 +73,7 @@ syncDispatcher.register("core.party", async (context, payload) => {
   return { serverId: party.id, assignedNumber: party.code };
 });
 
-syncDispatcher.register("catalog.product", async (context, payload) => {
+syncDispatcher.register("catalog.product", ["catalog.write"], async (context, payload) => {
   const data = parsePayload("catalog.product", payload);
   const product = await catalogApplication.create(
     context.company.id,
@@ -84,12 +83,15 @@ syncDispatcher.register("catalog.product", async (context, payload) => {
       variants: [],
       minStock: String(data.minStock),
     },
-    context.userId
+    context.userId,
+    // Same transaction as the journal row, and the operation key on the product: a
+    // replay can never create it twice.
+    { tx: context.tx, clientUuid: context.clientUuid }
   );
   return { serverId: product.id, assignedNumber: product.sku };
 });
 
-syncDispatcher.register("sales.quote", async (context, payload) => {
+syncDispatcher.register("sales.quote", ["sales.write"], async (context, payload) => {
   const data = parsePayload("sales.quote", payload);
   const partyId = await resolveReference(context, data.partyId, data.partyClientUuid);
   if (!partyId) throw new Error(tr("The quote does not reference any customer."));
@@ -110,83 +112,98 @@ syncDispatcher.register("sales.quote", async (context, payload) => {
   return { serverId: quote.id, assignedNumber: quote.number };
 });
 
-syncDispatcher.register("invoicing.sales_invoice", async (context, payload) => {
-  const data = parsePayload("invoicing.sales_invoice", payload);
-  const partyId =
-    (await resolveReference(context, data.partyId, data.partyClientUuid)) ??
-    (await partiesApplication.ensureWalkInCustomer(context.company.id, context.tx)).id;
-  const posSessionId = await resolveReference(
-    context,
-    data.posSessionId,
-    data.posSessionClientUuid
-  );
-
-  const invoice = await invoicingApplication.createInTx(
-    context.tx,
-    context.company,
-    {
-      partyId,
-      warehouseId: data.warehouseId,
-      source: data.source,
-      posSessionId,
-      date: data.date,
-      dueDate: data.dueDate,
-      globalDiscountBp: data.globalDiscountBp,
-      notes: data.notes,
-      provisionalNumber: data.provisionalNumber,
-      clientUuid: context.clientUuid,
-      lines: await resolveLines(context, data.lines),
-      // An offline sale is a done deal at the counter: it arrives validated, which
-      // triggers stock and accounting on ingestion ([FR-SYNC-4]).
-      validate: true,
-    },
-    context.userId
-  );
-  return { serverId: invoice.id, assignedNumber: invoice.number };
-});
-
-syncDispatcher.register("payments.payment", async (context, payload) => {
-  const data = parsePayload("payments.payment", payload);
-  const invoiceId = await resolveReference(context, data.invoiceId, data.invoiceClientUuid);
-
-  /**
-   * A receipt cashed offline carries no customer: the invoice was attached to the
-   * walk-in customer on ingestion. The payment must therefore reuse the party **of the
-   * invoice**, rather than require a customer to have been entered at the counter.
-   */
-  const partyId =
-    (await resolveReference(context, data.partyId, data.partyClientUuid)) ??
-    (invoiceId
-      ? (await invoicingApplication.get(context.company.id, invoiceId, context.tx)).partyId
-      : null);
-
-  if (!partyId) {
-    throw new Error(
-      tr("The payment references neither a party nor an invoice: it cannot be allocated.")
+syncDispatcher.register(
+  "invoicing.sales_invoice",
+  // A sale at the register is allowed to cashiers, like `POST /api/pos/tickets`.
+  (payload) =>
+    String(payload.source ?? "POS").toUpperCase() === "POS"
+      ? ["pos.use", "invoicing.write"]
+      : ["invoicing.write"],
+  async (context, payload) => {
+    const data = parsePayload("invoicing.sales_invoice", payload);
+    const partyId =
+      (await resolveReference(context, data.partyId, data.partyClientUuid)) ??
+      (await partiesApplication.ensureWalkInCustomer(context.company.id, context.tx)).id;
+    const posSessionId = await resolveReference(
+      context,
+      data.posSessionId,
+      data.posSessionClientUuid
     );
+
+    const invoice = await invoicingApplication.createInTx(
+      context.tx,
+      context.company,
+      {
+        partyId,
+        warehouseId: data.warehouseId,
+        source: data.source,
+        posSessionId,
+        date: data.date,
+        dueDate: data.dueDate,
+        globalDiscountBp: data.globalDiscountBp,
+        notes: data.notes,
+        provisionalNumber: data.provisionalNumber,
+        clientUuid: context.clientUuid,
+        lines: await resolveLines(context, data.lines),
+        // An offline sale is a done deal at the counter: it arrives validated, which
+        // triggers stock and accounting on ingestion ([FR-SYNC-4]).
+        validate: true,
+      },
+      context.userId
+    );
+    return { serverId: invoice.id, assignedNumber: invoice.number };
   }
+);
 
-  const payment = await paymentsApplication.createInTx(
-    context.tx,
-    context.company,
-    {
-      partyId,
-      invoiceId,
-      bankAccountId: data.bankAccountId,
-      posSessionId: await resolveReference(context, data.posSessionId, data.posSessionClientUuid),
-      amountCents: data.amountCents,
-      paymentDate: data.paymentDate,
-      paymentMethod: data.paymentMethod,
-      reference: data.reference,
-      notes: data.notes,
-      clientUuid: context.clientUuid,
-    },
-    context.userId
-  );
-  return { serverId: payment.id, assignedNumber: payment.number };
-});
+syncDispatcher.register(
+  "payments.payment",
+  (payload) =>
+    payload.posSessionId || payload.posSessionClientUuid
+      ? ["pos.use", "payments.write"]
+      : ["payments.write"],
+  async (context, payload) => {
+    const data = parsePayload("payments.payment", payload);
+    const invoiceId = await resolveReference(context, data.invoiceId, data.invoiceClientUuid);
 
-syncDispatcher.register("pos.session_open", async (context, payload) => {
+    /**
+     * A receipt cashed offline carries no customer: the invoice was attached to the
+     * walk-in customer on ingestion. The payment must therefore reuse the party **of the
+     * invoice**, rather than require a customer to have been entered at the counter.
+     */
+    const partyId =
+      (await resolveReference(context, data.partyId, data.partyClientUuid)) ??
+      (invoiceId
+        ? (await invoicingApplication.get(context.company.id, invoiceId, context.tx)).partyId
+        : null);
+
+    if (!partyId) {
+      throw new Error(
+        tr("The payment references neither a party nor an invoice: it cannot be allocated.")
+      );
+    }
+
+    const payment = await paymentsApplication.createInTx(
+      context.tx,
+      context.company,
+      {
+        partyId,
+        invoiceId,
+        bankAccountId: data.bankAccountId,
+        posSessionId: await resolveReference(context, data.posSessionId, data.posSessionClientUuid),
+        amountCents: data.amountCents,
+        paymentDate: data.paymentDate,
+        paymentMethod: data.paymentMethod,
+        reference: data.reference,
+        notes: data.notes,
+        clientUuid: context.clientUuid,
+      },
+      context.userId
+    );
+    return { serverId: payment.id, assignedNumber: payment.number };
+  }
+);
+
+syncDispatcher.register("pos.session_open", ["pos.use"], async (context, payload) => {
   const data = parsePayload("pos.session_open", payload);
   const session = await posApplication.openSession(
     context.company,
@@ -197,7 +214,7 @@ syncDispatcher.register("pos.session_open", async (context, payload) => {
   return { serverId: session.id };
 });
 
-syncDispatcher.register("pos.session_close", async (context, payload) => {
+syncDispatcher.register("pos.session_close", ["pos.session.close"], async (context, payload) => {
   const data = parsePayload("pos.session_close", payload);
   const sessionId = await resolveReference(context, data.sessionId, data.sessionClientUuid);
   if (!sessionId) throw new Error(tr("The closing does not reference any session."));
@@ -214,24 +231,28 @@ syncDispatcher.register("pos.session_close", async (context, payload) => {
   return { serverId: session.id };
 });
 
-syncDispatcher.register("inventory.stock_movement", async (context, payload) => {
-  const data = parsePayload("inventory.stock_movement", payload);
-  const movement = await inventoryApplication.applyMovement(context.tx, {
-    companyId: context.company.id,
-    productId: data.productId,
-    warehouseId: data.warehouseId,
-    movementType: data.movementType,
-    direction: data.direction ?? undefined,
-    quantity: data.quantity,
-    unitCostCents: data.unitCostCents ?? undefined,
-    lotNumber: data.lotNumber,
-    reason: data.reason,
-    originType: "manual",
-    userId: context.userId,
-    clientUuid: context.clientUuid,
-  });
-  return { serverId: movement.id };
-});
+syncDispatcher.register(
+  "inventory.stock_movement",
+  ["inventory.write"],
+  async (context, payload) => {
+    const data = parsePayload("inventory.stock_movement", payload);
+    const movement = await inventoryApplication.applyMovement(context.tx, {
+      companyId: context.company.id,
+      productId: data.productId,
+      warehouseId: data.warehouseId,
+      movementType: data.movementType,
+      direction: data.direction ?? undefined,
+      quantity: data.quantity,
+      unitCostCents: data.unitCostCents ?? undefined,
+      lotNumber: data.lotNumber,
+      reason: data.reason,
+      originType: "manual",
+      userId: context.userId,
+      clientUuid: context.clientUuid,
+    });
+    return { serverId: movement.id };
+  }
+);
 
 /** Entities actually accepted by the server — exposed by the snapshot. */
 export function registeredSyncEntities(): string[] {

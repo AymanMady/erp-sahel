@@ -12,7 +12,7 @@
     "newCustomer": "New customer"
   },
   "offline": "These numbers need internet. They will come back with the connection.",
-  "serverBusy": "The server did not answer in time. Try again in a moment.",
+  "serverBusy": "The app did not answer in time. Try again in a moment.",
   "stats": {
     "revenue": "Total sales",
     "invoicesHint_one": "{{count}} invoice during this period",
@@ -42,7 +42,8 @@
     "title": "Items to buy again",
     "description": "Only a few are left.",
     "viewStock": "View stock",
-    "empty": "Nothing to buy again for now."
+    "empty": "Nothing to buy again for now.",
+    "left": "{{quantity}} left (need {{minimum}})"
   },
   "counts": {
     "title": "In numbers",

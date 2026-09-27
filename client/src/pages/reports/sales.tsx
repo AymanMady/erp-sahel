@@ -134,12 +134,12 @@ export default function SalesReportPage() {
                     tickLine={false}
                     axisLine={false}
                     fontSize={12}
-                    width={70}
+                    width={90}
                     orientation={rtl ? "right" : "left"}
                     tickFormatter={(value: number) =>
-                      new Intl.NumberFormat(currentIntlLocale(), { notation: "compact" }).format(
-                        value
-                      )
+                      new Intl.NumberFormat(currentIntlLocale(), {
+                        maximumFractionDigits: 0,
+                      }).format(value)
                     }
                   />
                   <Tooltip

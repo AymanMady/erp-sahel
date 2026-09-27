@@ -108,6 +108,15 @@ export class CatalogRepository {
     return row ?? null;
   }
 
+  async findByClientUuid(companyId: string, clientUuid: string): Promise<Product | null> {
+    const [row] = await this.database
+      .select()
+      .from(products)
+      .where(and(eq(products.companyId, companyId), eq(products.clientUuid, clientUuid)))
+      .limit(1);
+    return row ?? null;
+  }
+
   async findBySku(companyId: string, sku: string): Promise<Product | null> {
     const [row] = await this.database
       .select()

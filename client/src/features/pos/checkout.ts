@@ -15,6 +15,7 @@ import { todayInput } from "@shared/format";
 import { i18n } from "@/shared/i18n";
 import { posApi } from "@/entities/pos/api";
 import { isNetworkError } from "@/shared/offline/offline-writes";
+import { offlineDb } from "@/shared/offline/db";
 import { enqueue, newUuid } from "@/shared/offline/outbox";
 import { readSnapshot, writeSnapshot } from "@/shared/offline/snapshot";
 import { refreshCounters, runSync } from "@/shared/offline/sync-engine";
@@ -27,7 +28,6 @@ export interface CartLine {
   quantity: number;
   unitPriceCents: number;
   discountBp: number;
-  originCountry?: string;
 }
 
 export interface TicketPayment {
@@ -80,7 +80,6 @@ function toSyncLines(lines: CartLine[]) {
     unit: line.unit,
     unitPriceCents: line.unitPriceCents,
     discountBp: line.discountBp,
-    originCountry: line.originCountry ?? "",
   }));
 }
 
@@ -274,4 +273,45 @@ export async function closeSession(
   await refreshCounters();
   // The difference is only known once the server recomputes the session's receipts.
   return { mode: "offline", differenceCents: null };
+}
+
+/**
+ * Payments of a register session still waiting on this device (sales made without
+ * internet, not yet received by the server). The server's session summary does not
+ * know them: without them the expected cash would be wrong and show a false gap.
+ */
+export async function pendingSessionTotals(session: {
+  sessionId: string;
+  clientUuid: string | null;
+}): Promise<{ cashCents: number; totalCents: number }> {
+  const waiting = await offlineDb.outbox.filter((record) => record.status !== "synced").toArray();
+  // A session opened without internet and sent since: its sales may still point to
+  // its provisional identifier.
+  const sessionClientUuids = new Set<string>(session.clientUuid ? [session.clientUuid] : []);
+  const opened = await offlineDb.outbox
+    .where("entity")
+    .equals("pos.session_open")
+    .filter((record) => record.serverId === session.sessionId)
+    .toArray();
+  for (const record of opened) sessionClientUuids.add(record.clientUuid);
+
+  let cashCents = 0;
+  let totalCents = 0;
+  for (const record of waiting) {
+    if (record.entity !== "payments.payment") continue;
+    const payload = record.payload as {
+      posSessionId?: string | null;
+      posSessionClientUuid?: string | null;
+      paymentMethod?: string;
+      amountCents?: number;
+    };
+    const belongs =
+      payload.posSessionId === session.sessionId ||
+      (!!payload.posSessionClientUuid && sessionClientUuids.has(payload.posSessionClientUuid));
+    if (!belongs) continue;
+    const amount = Number(payload.amountCents) || 0;
+    totalCents += amount;
+    if (payload.paymentMethod === "CASH") cashCents += amount;
+  }
+  return { cashCents, totalCents };
 }

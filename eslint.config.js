@@ -1,5 +1,6 @@
 import js from "@eslint/js";
 import globals from "globals";
+import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
 
 /**
@@ -9,7 +10,19 @@ import tseslint from "typescript-eslint";
  * prevents silent side effects, which are especially dangerous in the sync engine.
  */
 export default tseslint.config(
-  { ignores: ["dist/**", "node_modules/**", "src-tauri/**", "migrations/**", "client/public/**"] },
+  {
+    // `.vercel/` and `dist/` hold build output, not source code.
+    ignores: [
+      "dist/**",
+      ".vercel/**",
+      "node_modules/**",
+      "src-tauri/**",
+      "migrations/**",
+      "client/public/**",
+      "test-results/**",
+      "playwright-report/**",
+    ],
+  },
 
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -29,6 +42,19 @@ export default tseslint.config(
       "no-console": ["warn", { allow: ["warn", "error", "info"] }],
       eqeqeq: ["error", "smart"],
       "prefer-const": "error",
+    },
+  },
+
+  {
+    // Rules of hooks for the React client (including the React Compiler checks).
+    files: ["client/src/**/*.{ts,tsx}"],
+    ...reactHooks.configs.flat.recommended,
+    rules: {
+      ...reactHooks.configs.flat.recommended.rules,
+      // Performance advice rather than a bug: the existing "reset a field when the
+      // dialog opens / the value changes from outside" effects are flagged. Kept visible
+      // as warnings until they are rewritten.
+      "react-hooks/set-state-in-effect": "warn",
     },
   },
 

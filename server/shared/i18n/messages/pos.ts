@@ -19,6 +19,8 @@ export const posMessages: MessageCatalog = {
     "The cart is empty": "Le panier est vide",
     "Specify at least one payment": "Indiquez au moins un paiement",
     "Invalid identifier": "Identifiant invalide",
+    "This register was opened by someone else: open your own to take payments.":
+      "Cette caisse a été ouverte par quelqu'un d'autre : ouvrez la vôtre pour encaisser.",
   },
   ar: {
     "Register not found.": "الصندوق غير موجود.",
@@ -36,5 +38,7 @@ export const posMessages: MessageCatalog = {
     "The cart is empty": "السلة فارغة",
     "Specify at least one payment": "حدد دفعة واحدة على الأقل",
     "Invalid identifier": "معرّف غير صالح",
+    "This register was opened by someone else: open your own to take payments.":
+      "هذا الصندوق فتحه شخص آخر: افتح صندوقك لتقبض المال.",
   },
 };

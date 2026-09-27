@@ -42,7 +42,7 @@ export function applyDiscount(amountCents: number, discountBp: number): number {
   return amountCents - applyRate(amountCents, discountBp);
 }
 
-/** Converts a user input ("1 250,50") into integer cents. */
+/** Converts a user input ("1 250,50", "1.500", "١٢٥٠") into integer cents. */
 export function parseAmountToCents(input: string | number | null | undefined): number {
   if (typeof input === "number") return roundHalfUp(input * 100);
   const parsed = Number.parseFloat(normalizeDecimalInput(String(input ?? "")));
@@ -50,16 +50,43 @@ export function parseAmountToCents(input: string | number | null | undefined): n
 }
 
 /**
+ * Converts a typed quantity ("3", "٣", "1,5") into a number, or `null` when the field
+ * holds no number yet (empty while the user retypes it).
+ */
+export function parseQuantityInput(input: string): number | null {
+  const cleaned = normalizeDecimalInput(input, { maxDecimals: QUANTITY_SCALE });
+  if (!/\d/.test(cleaned)) return null;
+  const parsed = Number.parseFloat(cleaned);
+  return Number.isFinite(parsed) ? normalizeQuantity(parsed) : null;
+}
+
+/** Replaces Arabic-Indic (٠-٩) and Persian (۰-۹) digits with Latin digits. */
+export function toLatinDigits(value: string): string {
+  return value.replace(/[\u0660-\u0669\u06f0-\u06f9]/g, (digit) =>
+    String(digit.charCodeAt(0) & 0xf)
+  );
+}
+
+/**
  * Normalizes a number typed in any UI language to `1234.56`.
  *
- * Accepts "1 250,50" (fr), "1,250.50" (en) and the Arabic separators (٫ decimal,
- * ٬ thousands). When both "," and "." appear, the last one is the decimal separator;
- * a lone "," is a decimal comma unless it repeats ("1,250,000").
+ * Accepts "1 250,50" (fr), "1,250.50" (en), Arabic-Indic and Persian digits, and the
+ * Arabic separators (٫ decimal, ٬ thousands). When both "," and "." appear, the last
+ * one is the decimal separator. A lone separator is a thousands separator when it
+ * repeats ("1,250,000") or when it is followed by exactly 3 digits and the value
+ * cannot have 3 decimals — MRU amounts have 2 at most, so "1,500" and "1.500" mean
+ * one thousand five hundred, while "1,50" and "1.5" mean one and a half.
  */
-export function normalizeDecimalInput(value: string): string {
+export function normalizeDecimalInput(
+  value: string,
+  options: { maxDecimals?: number } = {}
+): string {
+  const maxDecimals = options.maxDecimals ?? 2;
   // Spaces, including the narrow no-break space (U+202F) and the no-break space
   // (U+00A0) used as French thousands separators, and the Arabic thousands separator.
-  let cleaned = value.replace(/[\s\u202f\u00a0\u066c]/g, "").replace(/\u066b/g, ".");
+  let cleaned = toLatinDigits(value)
+    .replace(/[\s\u202f\u00a0\u066c]/g, "")
+    .replace(/\u066b/g, ".");
   const lastComma = cleaned.lastIndexOf(",");
   const lastDot = cleaned.lastIndexOf(".");
   if (lastComma >= 0 && lastDot >= 0) {
@@ -67,9 +94,17 @@ export function normalizeDecimalInput(value: string): string {
       lastComma > lastDot
         ? cleaned.replace(/\./g, "").replace(",", ".")
         : cleaned.replace(/,/g, "");
-  } else if (lastComma >= 0) {
+  } else if (lastComma >= 0 || lastDot >= 0) {
+    const separator = lastComma >= 0 ? "," : ".";
+    const position = Math.max(lastComma, lastDot);
+    const repeats = cleaned.indexOf(separator) !== position;
+    const decimals = cleaned.slice(position + 1);
+    const groupsThousands =
+      maxDecimals < 3 && /^\d{3}$/.test(decimals) && /\d/.test(cleaned.slice(0, position));
     cleaned =
-      cleaned.indexOf(",") === lastComma ? cleaned.replace(",", ".") : cleaned.replace(/,/g, "");
+      repeats || groupsThousands
+        ? cleaned.split(separator).join("")
+        : cleaned.replace(separator, ".");
   }
   return cleaned;
 }

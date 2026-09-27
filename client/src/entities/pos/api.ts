@@ -30,11 +30,11 @@ export const posApi = {
       "/api/pos/sessions",
       filters
     ),
-  currentSession: () =>
-    withOfflineFallback(
-      () => api.get<PosSession | null>("/api/pos/sessions/current"),
-      (snapshot) => snapshot.session
-    ),
+  /**
+   * Server answer only: this path is never kept in the device's cache
+   * (`http-cache.ts`), so it fails when the network is down.
+   */
+  currentSessionFromServer: () => api.get<PosSession | null>("/api/pos/sessions/current"),
   sessionSummary: (id: string) => api.get<SessionSummary>(`/api/pos/sessions/${id}`),
   openSession: (body: unknown) => api.post<PosSession>("/api/pos/sessions", body),
   closeSession: (id: string, body: unknown) =>

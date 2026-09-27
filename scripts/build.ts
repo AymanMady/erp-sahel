@@ -57,6 +57,27 @@ async function main(): Promise<void> {
     logLevel: "info",
   });
 
+  // The migration runner ships next to the server: the production image has no `tsx`,
+  // and the database must be migrated before the new version starts.
+  console.log("→ Building migration runner (esbuild)…");
+  await build({
+    entryPoints: [path.join(rootDir, "scripts/migrate.ts")],
+    outfile: path.join(rootDir, "dist/migrate.cjs"),
+    platform: "node",
+    target: "node20",
+    format: "cjs",
+    bundle: true,
+    minify: true,
+    packages: "external",
+    banner: {
+      js: 'const __import_meta_url = require("node:url").pathToFileURL(__filename).href;',
+    },
+    define: {
+      "import.meta.url": "__import_meta_url",
+    },
+    logLevel: "info",
+  });
+
   console.log("\n✔ Build complete.");
   console.log("  Client  : dist/public/");
   console.log("  Server  : dist/index.cjs");

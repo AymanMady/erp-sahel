@@ -21,6 +21,8 @@ export class SyncController {
         userId: auth.userId,
         deviceId: deviceId(req),
         platform: req.query.platform ?? req.headers["x-device-platform"],
+        isSuperuser: auth.isSuperuser,
+        permissions: auth.permissions,
       })
     );
   };
@@ -35,8 +37,16 @@ export class SyncController {
       await this.service.push({
         companyId: auth.companyId,
         userId: auth.userId,
+        isSuperuser: auth.isSuperuser,
+        permissions: auth.permissions,
         body: req.body,
       })
+    );
+  };
+
+  setDeviceOfflineLogin = async (req: Request, res: Response): Promise<void> => {
+    res.json(
+      await this.service.setDeviceOfflineLogin(authOf(req).companyId, req.params.id, req.body)
     );
   };
 

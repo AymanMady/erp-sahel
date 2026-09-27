@@ -36,7 +36,7 @@
   "stock": {
     "title": "Ce qui reste en stock",
     "description": "Quantité de chaque article, par magasin.",
-    "lot": "Lot",
+    "lot": "Numéro de fabrication",
     "averageCost": "Prix d'achat moyen",
     "value": "Valeur",
     "transfer": "Changer de magasin",

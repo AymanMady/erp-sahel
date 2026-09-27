@@ -35,7 +35,9 @@ async function login(page: Page): Promise<void> {
   await page.getByLabel("Username").fill(ADMIN.username);
   await page.getByLabel("Password").fill(ADMIN.password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page.getByRole("heading", { name: /Hello/ })).toBeVisible();
+  // Home screen reached: its sales summary is shown.
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByText("Total sales").first()).toBeVisible();
 }
 
 test.describe("offline sale at the counter", () => {

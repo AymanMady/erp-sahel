@@ -54,6 +54,11 @@ export const salesInvoices = pgTable(
     globalDiscountBp: rateBp("global_discount_bp").default(0).notNull(),
     totalCents: moneyCents("total_cents").default(0).notNull(),
     paidAmountCents: moneyCents("paid_amount_cents").default(0).notNull(),
+    /**
+     * Sum of the credit notes (returns) on this invoice: what the customer still owes is
+     * `total − paid − credited`.
+     */
+    creditedAmountCents: moneyCents("credited_amount_cents").default(0).notNull(),
     currency: text("currency").default("MRU").notNull(),
     notes: text("notes").default("").notNull(),
     /** Document frozen after validation — no modification possible [BR-10]. */

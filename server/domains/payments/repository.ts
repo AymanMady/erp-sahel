@@ -104,7 +104,7 @@ export class PaymentsRepository {
     return this.database
       .select({
         paymentMethod: payments.paymentMethod,
-        totalCents: sql<number>`coalesce(sum(${payments.amountCents}), 0)::int`,
+        totalCents: sql<number>`coalesce(sum(${payments.amountCents}), 0)::bigint`,
         count: sql<number>`count(*)::int`,
       })
       .from(payments)
@@ -125,7 +125,7 @@ export class PaymentsRepository {
     const rows = await this.database
       .select({
         paymentMethod: payments.paymentMethod,
-        totalCents: sql<number>`coalesce(sum(${payments.amountCents}), 0)::int`,
+        totalCents: sql<number>`coalesce(sum(${payments.amountCents}), 0)::bigint`,
         count: sql<number>`count(*)::int`,
       })
       .from(payments)

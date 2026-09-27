@@ -12,7 +12,6 @@
     "delete": "Supprimer",
     "download": "Télécharger",
     "edit": "Modifier",
-    "export": "Exporter",
     "filter": "Filtrer",
     "new": "Nouveau",
     "next": "Suivant",
@@ -80,5 +79,12 @@
   "language": {
     "label": "Langue",
     "change": "Changer de langue"
+  },
+  "confirm": {
+    "archive": {
+      "title": "Retirer « {{name}} » de la liste ?",
+      "description": "Il ne sera plus proposé. Ce qui a déjà été enregistré avec reste en place.",
+      "confirm": "Oui, retirer"
+    }
   }
 }

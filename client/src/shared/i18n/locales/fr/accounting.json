@@ -26,7 +26,9 @@
     "MOBILE_MONEY": "Bankily / Masrvi / Sedad",
     "ROUNDING_DIFFERENCE": "Écarts et arrondis",
     "OPENING_BALANCE": "Montants de départ",
-    "RESULT_CARRY_FORWARD": "Résultat des années passées"
+    "RESULT_CARRY_FORWARD": "Résultat des années passées",
+    "SUSPENSE": "Argent à classer",
+    "MISC_INCOME": "Autres gains"
   },
   "columns": {
     "account": "Compte",

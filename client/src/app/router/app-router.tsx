@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import { Redirect, Route, Switch, useLocation } from "wouter";
 
 import { useSession } from "@/shared/auth/session";
+import { ErrorBoundary } from "@/shared/components/error-boundary";
 import { AppLayout, FullscreenLayout } from "@/widgets/layout/app-layout";
 import { ModuleGate } from "@/widgets/layout/module-gate";
 import { Skeleton } from "@/shared/ui/skeleton";
@@ -64,6 +65,7 @@ const RolesSettingsPage = lazy(() => import("@/pages/settings/roles"));
 const SyncPage = lazy(() => import("@/pages/sync"));
 const ProfilePage = lazy(() => import("@/pages/profile"));
 const NotFoundPage = lazy(() => import("@/pages/not-found"));
+const ChangePasswordPage = lazy(() => import("@/pages/change-password"));
 
 function PageFallback() {
   return (
@@ -90,71 +92,75 @@ function BootScreen() {
 
 /** Application routes, mounted inside the standard shell. */
 function AppRoutes() {
+  const [location] = useLocation();
   return (
-    <Suspense fallback={<PageFallback />}>
-      <Switch>
-        <Route path="/" component={DashboardPage} />
+    // Keyed by address: leaving a crashed page clears the error, the menu stays usable.
+    <ErrorBoundary key={location}>
+      <Suspense fallback={<PageFallback />}>
+        <Switch>
+          <Route path="/" component={DashboardPage} />
 
-        <Route path="/parties" component={PartiesPage} />
-        <Route path="/parties/:id" component={PartyDetailPage} />
+          <Route path="/parties" component={PartiesPage} />
+          <Route path="/parties/:id" component={PartyDetailPage} />
 
-        <Route path="/products" component={ProductsPage} />
-        <Route path="/products/new" component={ProductFormPage} />
-        <Route path="/products/:id/edit" component={ProductFormPage} />
-        <Route path="/categories" component={CategoriesPage} />
-        <Route path="/services" component={ServicesPage} />
+          <Route path="/products" component={ProductsPage} />
+          <Route path="/products/new" component={ProductFormPage} />
+          <Route path="/products/:id/edit" component={ProductFormPage} />
+          <Route path="/categories" component={CategoriesPage} />
+          <Route path="/services" component={ServicesPage} />
 
-        <Route path="/inventory" component={InventoryPage} />
-        <Route path="/inventory/movements" component={MovementsPage} />
-        <Route path="/warehouses" component={WarehousesPage} />
+          <Route path="/inventory" component={InventoryPage} />
+          <Route path="/inventory/movements" component={MovementsPage} />
+          <Route path="/warehouses" component={WarehousesPage} />
 
-        <Route path="/quotes" component={QuotesPage} />
-        <Route path="/quotes/new" component={QuoteFormPage} />
-        <Route path="/quotes/:id" component={QuoteDetailPage} />
-        <Route path="/sales-orders" component={SalesOrdersPage} />
-        <Route path="/sales-orders/:id" component={SalesOrderDetailPage} />
+          <Route path="/quotes" component={QuotesPage} />
+          <Route path="/quotes/new" component={QuoteFormPage} />
+          <Route path="/quotes/:id" component={QuoteDetailPage} />
+          <Route path="/sales-orders" component={SalesOrdersPage} />
+          <Route path="/sales-orders/:id" component={SalesOrderDetailPage} />
 
-        <Route path="/invoices" component={InvoicesPage} />
-        <Route path="/invoices/new" component={InvoiceFormPage} />
-        <Route path="/invoices/:id" component={InvoiceDetailPage} />
-        <Route path="/credit-notes" component={CreditNotesPage} />
-        <Route path="/payments" component={PaymentsPage} />
+          <Route path="/invoices" component={InvoicesPage} />
+          <Route path="/invoices/new" component={InvoiceFormPage} />
+          <Route path="/invoices/:id" component={InvoiceDetailPage} />
+          <Route path="/credit-notes" component={CreditNotesPage} />
+          <Route path="/payments" component={PaymentsPage} />
 
-        <Route path="/purchase-orders" component={PurchaseOrdersPage} />
-        <Route path="/purchase-orders/new" component={PurchaseOrderFormPage} />
-        <Route path="/purchase-orders/:id" component={PurchaseOrderDetailPage} />
-        <Route path="/goods-receipts" component={GoodsReceiptsPage} />
-        <Route path="/supplier-invoices" component={SupplierInvoicesPage} />
+          <Route path="/purchase-orders" component={PurchaseOrdersPage} />
+          <Route path="/purchase-orders/new" component={PurchaseOrderFormPage} />
+          <Route path="/purchase-orders/:id" component={PurchaseOrderDetailPage} />
+          <Route path="/goods-receipts" component={GoodsReceiptsPage} />
+          <Route path="/supplier-invoices" component={SupplierInvoicesPage} />
 
-        <Route path="/banking" component={BankingPage} />
+          <Route path="/banking" component={BankingPage} />
 
-        <Route path="/accounting/entries" component={EntriesPage} />
-        <Route path="/accounting/ledger" component={LedgerPage} />
-        <Route path="/accounting/balance" component={BalancePage} />
-        <Route path="/accounting/accounts" component={ChartOfAccountsPage} />
+          <Route path="/accounting/entries" component={EntriesPage} />
+          <Route path="/accounting/ledger" component={LedgerPage} />
+          <Route path="/accounting/balance" component={BalancePage} />
+          <Route path="/accounting/accounts" component={ChartOfAccountsPage} />
 
-        <Route path="/reports/sales" component={SalesReportPage} />
-        <Route path="/reports/stock" component={StockReportPage} />
-        <Route path="/reports/purchases" component={PurchasesReportPage} />
+          <Route path="/reports/sales" component={SalesReportPage} />
+          <Route path="/reports/stock" component={StockReportPage} />
+          <Route path="/reports/purchases" component={PurchasesReportPage} />
 
-        <Route path="/settings/company" component={CompanySettingsPage} />
-        <Route path="/settings/modules" component={ModulesSettingsPage} />
-        <Route path="/settings/numbering" component={NumberingSettingsPage} />
-        <Route path="/settings/registers" component={RegistersSettingsPage} />
-        <Route path="/settings/users" component={UsersSettingsPage} />
-        <Route path="/settings/roles" component={RolesSettingsPage} />
+          <Route path="/settings/company" component={CompanySettingsPage} />
+          <Route path="/settings/modules" component={ModulesSettingsPage} />
+          <Route path="/settings/numbering" component={NumberingSettingsPage} />
+          <Route path="/settings/registers" component={RegistersSettingsPage} />
+          <Route path="/settings/users" component={UsersSettingsPage} />
+          <Route path="/settings/roles" component={RolesSettingsPage} />
 
-        <Route path="/sync" component={SyncPage} />
-        <Route path="/profile" component={ProfilePage} />
+          <Route path="/sync" component={SyncPage} />
+          <Route path="/profile" component={ProfilePage} />
 
-        <Route component={NotFoundPage} />
-      </Switch>
-    </Suspense>
+          <Route component={NotFoundPage} />
+        </Switch>
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 
 export function AppRouter() {
-  const { status } = useSession();
+  const { status, user } = useSession();
   const [location] = useLocation();
 
   if (status === "loading") return <BootScreen />;
@@ -176,14 +182,25 @@ export function AppRouter() {
     );
   }
 
+  // Password given by an administrator: the person chooses their own before anything else.
+  if (user?.mustChangePassword) {
+    return (
+      <Suspense fallback={<BootScreen />}>
+        <ChangePasswordPage />
+      </Suspense>
+    );
+  }
+
   // The point of sale leaves the standard shell: full screen, without sidebar.
   if (location.startsWith("/pos")) {
     return (
       <FullscreenLayout>
         <ModuleGate>
-          <Suspense fallback={<PageFallback />}>
-            <Route path="/pos" component={PosPage} />
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<PageFallback />}>
+              <Route path="/pos" component={PosPage} />
+            </Suspense>
+          </ErrorBoundary>
         </ModuleGate>
       </FullscreenLayout>
     );

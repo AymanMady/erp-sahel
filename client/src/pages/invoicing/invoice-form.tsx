@@ -14,18 +14,22 @@ import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
 
 import { addDays, todayInput } from "@shared/format";
+import { formatMoney } from "@shared/money";
+import { computeDocumentTotals } from "@shared/pricing";
 import { errorMessage } from "@/shared/api/api-error";
 import { inventoryApi } from "@/entities/inventory/api";
 import { invoicingApi } from "@/entities/invoicing/api";
 import { queueHttpWrite } from "@/shared/offline/offline-http";
 import { newUuid, onlineOrQueued, queueInvoiceCreate } from "@/shared/offline/offline-writes";
 import type { Party } from "@/entities/types";
-import { queryKeys } from "@/shared/api/query-client";
+import { invalidateMoneyAndStock, queryKeys } from "@/shared/api/query-client";
+import { useConfirm } from "@/shared/components/confirm-dialog";
 import { Field, FieldGrid } from "@/shared/components/field";
 import { PageHeader } from "@/shared/components/page-header";
 import {
   LineEditor,
   emptyLine,
+  documentBlocker,
   toApiLines,
   type DocumentLine,
 } from "@/features/documents/line-editor";
@@ -50,6 +54,8 @@ export default function InvoiceFormPage() {
   const [notes, setNotes] = useState("");
   const [globalDiscountBp, setGlobalDiscountBp] = useState(0);
   const [lines, setLines] = useState<DocumentLine[]>([emptyLine()]);
+
+  const [confirmDialog, confirm] = useConfirm();
 
   const { data: warehouses } = useQuery({
     queryKey: queryKeys.warehouses,
@@ -85,7 +91,8 @@ export default function InvoiceFormPage() {
       );
     },
     onSuccess: (outcome) => {
-      void queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      // A validated invoice takes goods out of stock and adds to the customer's debt.
+      invalidateMoneyAndStock(queryClient);
       if (outcome.mode === "offline" && outcome.result.draft) {
         toast.success(t("invoiceForm.draftSavedOffline"), {
           description: t("invoiceForm.draftSavedOfflineDescription"),
@@ -111,7 +118,26 @@ export default function InvoiceFormPage() {
     onError: (error) => toast.error(errorMessage(error)),
   });
 
-  const canSubmit = Boolean(party) && toApiLines(lines).length > 0;
+  // Said in words next to the greyed-out buttons.
+  const blocker = documentBlocker({ party, lines });
+  const canSubmit = !blocker;
+
+  const validate = async () => {
+    const { totalCents } = computeDocumentTotals(
+      toApiLines(lines).map((line) => ({
+        quantity: line.quantity,
+        unitPriceCents: line.unitPriceCents,
+        discountBp: line.discountBp,
+      })),
+      { globalDiscountBp }
+    );
+    const confirmed = await confirm({
+      title: t("invoiceForm.confirmValidate.title", { amount: formatMoney(totalCents) }),
+      description: t("invoiceForm.confirmValidate.description"),
+      confirmLabel: t("invoiceForm.validate"),
+    });
+    if (confirmed) submit.mutate(true);
+  };
 
   // Due date derived from the customer's payment terms as soon as one is picked.
   const applyParty = (next: Party | null) => {
@@ -136,11 +162,16 @@ export default function InvoiceFormPage() {
           <IconDeviceFloppy className="size-4" />
           {t("invoiceForm.saveDraft")}
         </Button>
-        <Button onClick={() => submit.mutate(true)} disabled={!canSubmit || submit.isPending}>
+        <Button onClick={() => void validate()} disabled={!canSubmit || submit.isPending}>
           <IconCheck className="size-4" />
           {submit.isPending ? t("invoiceForm.processing") : t("invoiceForm.validate")}
         </Button>
       </PageHeader>
+      {blocker ? (
+        <p role="status" className="-mt-4 text-sm text-muted-foreground">
+          {blocker}
+        </p>
+      ) : null}
 
       <Card>
         <CardHeader>
@@ -198,6 +229,7 @@ export default function InvoiceFormPage() {
           </Field>
         </CardContent>
       </Card>
+      {confirmDialog}
     </div>
   );
 }

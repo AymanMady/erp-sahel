@@ -16,12 +16,15 @@ import {
   bankAccounts,
   categories,
   parties,
+  permissions,
   posRegisters,
   productVariants,
   products,
+  rolePermissions,
   roles,
   services,
   stockItems,
+  userCompanies,
   userRoles,
   users,
   warehouses,
@@ -43,10 +46,29 @@ export interface SnapshotOptions {
   userId: string;
   /** `desktop` (Tauri) or `web` (PWA) — determines whether password hashes are sent. */
   platform: string;
+  /**
+   * Whether the password hashes of the cashiers may be sent: a desktop approved by an
+   * administrator, asked for by someone who works at the register.
+   */
+  includeOfflineLogins: boolean;
+}
+
+/**
+ * Start of the next delta, read from the **database** clock and taken a little in the
+ * past: a change written by a transaction still running when the snapshot is read has
+ * an earlier `updated_at`, and would otherwise be missed forever. Rows in the overlap
+ * are simply sent twice; the device overwrites them.
+ */
+export async function syncCursor(): Promise<string> {
+  const result = await db.execute<{ cursor: Date | string }>(
+    sql`select now() - interval '2 minutes' as cursor`
+  );
+  return new Date(result.rows[0].cursor).toISOString();
 }
 
 export async function buildSyncSnapshot(options: SnapshotOptions) {
-  const { companyId, userId, platform } = options;
+  const { companyId, userId } = options;
+  const cursor = await syncCursor();
 
   const [
     company,
@@ -125,7 +147,7 @@ export async function buildSyncSnapshot(options: SnapshotOptions) {
   return {
     generatedAt: new Date().toISOString(),
     /** Cursor to pass back to `pull` to fetch only subsequent changes. */
-    cursor: new Date().toISOString(),
+    cursor,
     company: company
       ? {
           id: company.id,
@@ -155,34 +177,48 @@ export async function buildSyncSnapshot(options: SnapshotOptions) {
       .map((entry) => ({ code: entry.code, name: entry.name })),
     /** Entities this server accepts for offline writes. */
     syncEntities: syncDispatcher.entities(),
-    offlineAuthUsers: await buildOfflineAuthUsers(companyId, platform),
+    offlineAuthUsers: options.includeOfflineLogins ? await buildOfflineAuthUsers(companyId) : [],
   };
 }
 
 /**
  * Bcrypt hashes enabling a **cold offline login** on an already-synchronized device.
  *
- * Reserved to the desktop shell: there, the snapshot lives in an application SQLite
- * database, not in browser storage. In the web PWA, opening offline relies on the
- * already-established session (still-valid refresh token) — pushing hashes down into
- * IndexedDB would add risk without benefit ([NFR-SEC-5], Q4).
+ * Reserved to a desktop shell approved by an administrator: there, the snapshot lives
+ * in an application SQLite database, not in browser storage. In the web PWA, opening
+ * offline relies on the already-established session (still-valid refresh token) —
+ * pushing hashes down into IndexedDB would add risk without benefit ([NFR-SEC-5], Q4).
+ *
+ * Only people who work at the register are included, never those who can administer
+ * the company (users, settings, modules) nor platform administrators: a copied hash of
+ * those accounts would open far more than a register.
  */
-async function buildOfflineAuthUsers(companyId: string, platform: string) {
-  if (platform !== "desktop") return [];
-  const rows = await db
-    .selectDistinct({
-      id: users.id,
-      username: users.username,
-      passwordHash: users.passwordHash,
-      isSuperuser: users.isSuperuser,
-      firstName: users.firstName,
-      lastName: users.lastName,
-    })
-    .from(users)
-    .innerJoin(userRoles, eq(userRoles.userId, users.id))
-    .innerJoin(roles, eq(roles.id, userRoles.roleId))
-    .where(
-      sql`${userRoles.companyId} = ${companyId} and ${users.isActive} and ${users.allowOfflineLogin}`
-    );
-  return rows;
+async function buildOfflineAuthUsers(companyId: string) {
+  const result = await db.execute<{
+    id: string;
+    username: string;
+    password_hash: string;
+    first_name: string;
+    last_name: string;
+  }>(sql`
+    select u.id, u.username, u.password_hash, u.first_name, u.last_name
+    from ${users} u
+    join ${userCompanies} uc on uc.user_id = u.id and uc.company_id = ${companyId} and uc.is_active
+    join ${userRoles} ur on ur.user_id = u.id and ur.company_id = ${companyId}
+    join ${roles} r on r.id = ur.role_id and r.is_active
+    join ${rolePermissions} rp on rp.role_id = r.id
+    join ${permissions} p on p.id = rp.permission_id
+    where u.is_active and u.allow_offline_login and not u.is_superuser
+    group by u.id
+    having bool_or(p.code = 'pos.use')
+       and not bool_or(p.code in ('users.write', 'settings.write', 'modules.manage'))
+  `);
+  return result.rows.map((row) => ({
+    id: row.id,
+    username: row.username,
+    passwordHash: row.password_hash,
+    isSuperuser: false,
+    firstName: row.first_name,
+    lastName: row.last_name,
+  }));
 }

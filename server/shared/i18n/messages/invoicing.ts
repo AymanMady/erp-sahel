@@ -13,13 +13,13 @@ export const invoicingMessages: MessageCatalog = {
     "An invoice without lines cannot be validated.":
       "Une facture sans ligne ne peut pas être validée.",
     "A validated invoice cannot be modified: issue a credit note to correct it.":
-      "Une facture validée est inaltérable : émettez un avoir pour la corriger.",
+      "Une facture validée ne peut plus être modifiée : faites un retour pour la corriger.",
     "A validated invoice cannot be cancelled: issue a credit note.":
-      "Une facture validée ne peut pas être annulée : émettez un avoir.",
+      "Une facture validée ne peut pas être annulée : faites un retour de marchandise.",
     "A credit note can only apply to a validated invoice.":
-      "Un avoir ne peut porter que sur une facture validée.",
+      "Un retour ne peut se faire que sur une facture validée.",
     "The credit note amount exceeds that of the original invoice.":
-      "Le montant de l'avoir dépasse celui de la facture d'origine.",
+      "Le montant du retour dépasse celui de la facture.",
     "The total paid would exceed the invoice amount.":
       "Le total réglé dépasserait le montant de la facture.",
     // Validation
@@ -28,8 +28,21 @@ export const invoicingMessages: MessageCatalog = {
     "Invalid identifier": "Identifiant invalide",
     // Accounting entry labels
     "Invoice {number}": "Facture {number}",
-    "Credit note {number}": "Avoir {number}",
-    "Credit note {number} (invoice {invoice})": "Avoir {number} (facture {invoice})",
+    "Credit note {number}": "Retour {number}",
+    "Credit note {number} (invoice {invoice})": "Retour {number} (facture {invoice})",
+    "The date cannot be before that of the last validated invoice ({date}): numbers must follow the dates.":
+      "La date ne peut pas être avant celle de la dernière facture validée ({date}) : les numéros doivent suivre les dates.",
+    "Line {line}: this item is not on the invoice.":
+      "Ligne {line} : cet article n'est pas sur la facture.",
+    "Everything on this invoice has already been returned.":
+      "Tout ce qui est sur cette facture a déjà été rendu.",
+    "{item}: only {quantity} can still be returned.":
+      "{item} : on peut encore rendre {quantity} au maximum.",
+    "Only a validated invoice that is not cancelled can be paid.":
+      "Seule une facture validée et non annulée peut être payée.",
+    "This invoice belongs to another customer.": "Cette facture appartient à un autre client.",
+    "The payment is more than what is still owed on this invoice ({due}).":
+      "Le paiement est plus grand que ce qui reste à payer sur cette facture ({due}).",
   },
   ar: {
     // Errors
@@ -40,13 +53,12 @@ export const invoicingMessages: MessageCatalog = {
       "لا يمكن المصادقة إلا على مسودة (الحالة الحالية: {status}).",
     "An invoice without lines cannot be validated.": "لا يمكن المصادقة على فاتورة بدون أسطر.",
     "A validated invoice cannot be modified: issue a credit note to correct it.":
-      "لا يمكن تعديل فاتورة مصادق عليها: أصدِر إشعارًا دائنًا لتصحيحها.",
+      "لا يمكن تعديل فاتورة مؤكدة: قم بإرجاع لتصحيحها.",
     "A validated invoice cannot be cancelled: issue a credit note.":
-      "لا يمكن إلغاء فاتورة مصادق عليها: أصدِر إشعارًا دائنًا.",
-    "A credit note can only apply to a validated invoice.":
-      "لا يمكن أن يخص الإشعار الدائن إلا فاتورة مصادقًا عليها.",
+      "لا يمكن إلغاء فاتورة مؤكدة: قم بإرجاع السلع.",
+    "A credit note can only apply to a validated invoice.": "لا يمكن الإرجاع إلا على فاتورة مؤكدة.",
     "The credit note amount exceeds that of the original invoice.":
-      "مبلغ الإشعار الدائن يتجاوز مبلغ الفاتورة الأصلية.",
+      "مبلغ الإرجاع أكبر من مبلغ الفاتورة.",
     "The total paid would exceed the invoice amount.": "سيتجاوز إجمالي المدفوع مبلغ الفاتورة.",
     // Validation
     "Select a customer": "اختر عميلًا",
@@ -54,7 +66,18 @@ export const invoicingMessages: MessageCatalog = {
     "Invalid identifier": "معرّف غير صالح",
     // Accounting entry labels
     "Invoice {number}": "فاتورة {number}",
-    "Credit note {number}": "إشعار دائن {number}",
-    "Credit note {number} (invoice {invoice})": "إشعار دائن {number} (فاتورة {invoice})",
+    "Credit note {number}": "إرجاع {number}",
+    "Credit note {number} (invoice {invoice})": "إرجاع {number} (فاتورة {invoice})",
+    "The date cannot be before that of the last validated invoice ({date}): numbers must follow the dates.":
+      "لا يمكن أن يكون التاريخ قبل تاريخ آخر فاتورة مؤكدة ({date}): يجب أن تتبع الأرقام التواريخ.",
+    "Line {line}: this item is not on the invoice.": "السطر {line}: هذه السلعة ليست في الفاتورة.",
+    "Everything on this invoice has already been returned.":
+      "كل ما في هذه الفاتورة تم إرجاعه من قبل.",
+    "{item}: only {quantity} can still be returned.": "{item}: يمكن إرجاع {quantity} فقط.",
+    "Only a validated invoice that is not cancelled can be paid.":
+      "لا يمكن دفع إلا فاتورة مؤكدة وغير ملغاة.",
+    "This invoice belongs to another customer.": "هذه الفاتورة تخص زبونًا آخر.",
+    "The payment is more than what is still owed on this invoice ({due}).":
+      "المبلغ المدفوع أكبر مما بقي للدفع في هذه الفاتورة ({due}).",
   },
 };

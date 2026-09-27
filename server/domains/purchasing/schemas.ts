@@ -43,7 +43,8 @@ export const createReceiptSchema = z.object({
         variantId: z.string().uuid().nullish(),
         lotNumber: z.string().max(64).default(""),
         quantity: z.union([z.number().positive(), z.string()]),
-        unitCostCents: z.number().int().min(0).default(0),
+        /** Omitted or 0: the order price after discounts, else the product purchase price. */
+        unitCostCents: z.number().int().min(0).optional(),
       })
     )
     .min(1, "Specify at least one received item"),

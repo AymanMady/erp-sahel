@@ -65,8 +65,6 @@ const documentLineColumns = {
   discountBp: rateBp("discount_bp").default(0).notNull(),
   totalCents: moneyCents("total_cents").default(0).notNull(),
   position: integer("position").default(0).notNull(),
-  /** Country of origin frozen at document time — must appear on quotes and invoices [FR-VNT-5]. */
-  originCountry: text("origin_country").default("").notNull(),
 };
 
 export const quoteLines = pgTable(

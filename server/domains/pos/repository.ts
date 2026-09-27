@@ -1,6 +1,6 @@
 /** Point-of-sale persistence: registers and sessions. */
 
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 
 import { posRegisters, posSessions, users, type PosSession } from "@shared/schema";
 import { db, type Database } from "../../db";
@@ -57,6 +57,39 @@ export class PosRepository {
       .from(posSessions)
       .where(and(eq(posSessions.companyId, companyId), eq(posSessions.id, sessionId)))
       .limit(1);
+    return row ?? null;
+  }
+
+  /**
+   * Locks the session until the end of the transaction: a sale and the closing, or two
+   * sales, then happen one after the other and each sees the other's totals.
+   */
+  async lockSession(companyId: string, sessionId: string): Promise<PosSession | null> {
+    const [row] = await this.database
+      .select()
+      .from(posSessions)
+      .where(and(eq(posSessions.companyId, companyId), eq(posSessions.id, sessionId)))
+      .for("update")
+      .limit(1);
+    return row ?? null;
+  }
+
+  /** New totals of the session; the ticket count is increased in the database. */
+  async updateTotals(
+    companyId: string,
+    sessionId: string,
+    totals: { totalSalesCents: number; totalCashCents: number; expectedBalanceCents: number },
+    newTickets: number
+  ): Promise<PosSession | null> {
+    const [row] = await this.database
+      .update(posSessions)
+      .set({
+        ...totals,
+        ticketCount: sql`${posSessions.ticketCount} + ${newTickets}`,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(posSessions.companyId, companyId), eq(posSessions.id, sessionId)))
+      .returning();
     return row ?? null;
   }
 

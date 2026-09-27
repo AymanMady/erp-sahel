@@ -6,6 +6,7 @@
  * a handler, without touching the engine ([FR-PLUG-1]).
  */
 
+import type { PermissionCode } from "@shared/rbac";
 import type { SyncEntity } from "@shared/sync-protocol";
 import type { Company } from "@shared/schema";
 import type { Database } from "../../db";
@@ -31,6 +32,10 @@ export interface SyncHandlerContext {
    * engine then postpones the operation to the next cycle instead of failing it.
    */
   resolveRef(clientUuid: string): Promise<string>;
+  /** When the operation was made on the device. */
+  operationCreatedAt: Date;
+  /** Whether the person may sell at another price than the catalog one. */
+  canSetPrices: boolean;
 }
 
 export interface SyncHandlerResult {
@@ -56,17 +61,36 @@ export class DeferredDependencyError extends Error {
   }
 }
 
-class SyncDispatcher {
-  private readonly handlers = new Map<string, SyncHandler>();
+/**
+ * Permissions that allow an operation — the same ones as the online route it replays
+ * (any one of them is enough). Working offline must never give more rights than
+ * working online.
+ */
+export type SyncPermissionRule = (payload: Record<string, unknown>) => PermissionCode[];
 
-  register(entity: SyncEntity | string, handler: SyncHandler): void {
+interface RegisteredHandler {
+  handler: SyncHandler;
+  permissions: SyncPermissionRule;
+}
+
+class SyncDispatcher {
+  private readonly handlers = new Map<string, RegisteredHandler>();
+
+  register(
+    entity: SyncEntity | string,
+    permissions: PermissionCode[] | SyncPermissionRule,
+    handler: SyncHandler
+  ): void {
     if (this.handlers.has(entity)) {
       throw new Error(`Sync handler already registered for "${entity}".`);
     }
-    this.handlers.set(entity, handler);
+    this.handlers.set(entity, {
+      handler,
+      permissions: typeof permissions === "function" ? permissions : () => permissions,
+    });
   }
 
-  get(entity: string): SyncHandler | undefined {
+  get(entity: string): RegisteredHandler | undefined {
     return this.handlers.get(entity);
   }
 

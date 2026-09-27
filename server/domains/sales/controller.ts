@@ -2,7 +2,7 @@
 
 import type { Request, Response } from "express";
 
-import { authOf } from "../auth/guards";
+import { authOf, canSetPrices } from "../auth/guards";
 import { salesService } from "./service";
 
 export class SalesController {
@@ -18,11 +18,18 @@ export class SalesController {
 
   createQuote = async (req: Request, res: Response): Promise<void> => {
     const auth = authOf(req);
-    res.status(201).json(await this.service.createQuote(auth.companyId, req.body, auth.userId));
+    res
+      .status(201)
+      .json(
+        await this.service.createQuote(auth.companyId, req.body, auth.userId, canSetPrices(auth))
+      );
   };
 
   updateQuote = async (req: Request, res: Response): Promise<void> => {
-    res.json(await this.service.updateQuote(authOf(req).companyId, req.params.id, req.body));
+    const auth = authOf(req);
+    res.json(
+      await this.service.updateQuote(auth.companyId, req.params.id, req.body, canSetPrices(auth))
+    );
   };
 
   setQuoteStatus = async (req: Request, res: Response): Promise<void> => {
@@ -46,7 +53,11 @@ export class SalesController {
 
   createOrder = async (req: Request, res: Response): Promise<void> => {
     const auth = authOf(req);
-    res.status(201).json(await this.service.createOrder(auth.companyId, req.body, auth.userId));
+    res
+      .status(201)
+      .json(
+        await this.service.createOrder(auth.companyId, req.body, auth.userId, canSetPrices(auth))
+      );
   };
 
   setOrderStatus = async (req: Request, res: Response): Promise<void> => {

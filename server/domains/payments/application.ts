@@ -8,7 +8,7 @@
  */
 
 import { todayInput } from "@shared/format";
-import { CURRENCY, formatMoney } from "@shared/money";
+import { CURRENCY } from "@shared/money";
 import { buildPaymentPosting } from "@shared/accounting-rules";
 import type { Company, Payment, PaymentDirection, PaymentMethod } from "@shared/schema";
 import { runInTransaction, type Database } from "../../db";
@@ -17,9 +17,9 @@ import { tr } from "../../shared/i18n";
 import { accountingApplication } from "../accounting/application";
 import { bankingApplication } from "../banking/application";
 import { invoicingApplication } from "../invoicing/application";
-import { invoicingRepository } from "../invoicing/repository";
 import { numberingApplication } from "../numbering/application";
 import { partiesApplication } from "../parties/application";
+import { purchasingApplication } from "../purchasing/application";
 import { paymentsRepository } from "./repository";
 
 export interface CreatePaymentInput {
@@ -62,25 +62,40 @@ class PaymentsApplication {
     const paymentDate = input.paymentDate ?? todayInput();
     await partiesApplication.requireParty(company.id, input.partyId, tx);
 
+    if (input.invoiceId && input.supplierInvoiceId) {
+      throw new BusinessRuleError("A payment settles one invoice at a time.");
+    }
+    // Money received settles a customer invoice; money paid out settles a supplier one.
+    if (input.invoiceId && direction !== "IN") {
+      throw new BusinessRuleError("A customer invoice is settled with money received.");
+    }
+    if (input.supplierInvoiceId && direction !== "OUT") {
+      throw new BusinessRuleError("A supplier invoice is settled with money paid out.");
+    }
+
+    // Settled first: the invoice is locked, checked (right customer, not cancelled, no
+    // more than what is still owed) and updated in this same transaction.
     if (input.invoiceId) {
-      const invoice = await invoicingRepository
-        .withTransaction(tx)
-        .findById(company.id, input.invoiceId);
-      if (!invoice) throw new NotFoundError("Invoice not found.");
-      if (invoice.status === "DRAFT") {
+      await invoicingApplication.applyPayment(
+        tx,
+        company.id,
+        input.invoiceId,
+        input.amountCents,
+        input.partyId
+      );
+    }
+    // Money paid to a supplier reduces what is owed on their invoice.
+    if (input.supplierInvoiceId) {
+      const supplierInvoice = await purchasingApplication.applySupplierPayment(
+        tx,
+        company.id,
+        input.supplierInvoiceId,
+        input.amountCents
+      );
+      if (supplierInvoice.supplierId !== input.partyId) {
         throw new BusinessRuleError(
-          "Validate the invoice before recording a payment.",
-          "INVOICE_NOT_VALIDATED"
-        );
-      }
-      const remaining = invoice.totalCents - invoice.paidAmountCents;
-      if (input.amountCents > remaining) {
-        throw new BusinessRuleError(
-          tr("The payment exceeds the amount due ({amount}).", {
-            amount: formatMoney(remaining),
-          }),
-          "OVERPAYMENT",
-          { remainingCents: remaining }
+          "This invoice belongs to another supplier.",
+          "PAYMENT_PARTY_MISMATCH"
         );
       }
     }
@@ -118,10 +133,6 @@ class PaymentsApplication {
     });
 
     const label = tr("Payment {number}", { number });
-
-    if (input.invoiceId) {
-      await invoicingApplication.applyPayment(tx, company.id, input.invoiceId, input.amountCents);
-    }
 
     await bankingApplication.recordMovement(tx, {
       companyId: company.id,

@@ -1,22 +1,10 @@
 {
   "ui": {
-    "breadcrumb": "أين أنت",
-    "more": "المزيد",
     "commandPalette": "الذهاب إلى شاشة",
-    "commandPaletteDescription": "اكتب اسم الشاشة…",
-    "sidebar": "القائمة",
-    "sidebarDescription": "يعرض القائمة.",
-    "toggleSidebar": "إظهار القائمة أو إخفاؤها"
+    "commandPaletteDescription": "اكتب اسم الشاشة…"
   },
   "searchInput": {
     "clear": "مسح البحث"
-  },
-  "deleteDialog": {
-    "defaultName": "هذا العنصر",
-    "title": "حذف {{name}}؟",
-    "description": "سيُحذف {{name}} إلى الأبد. لا يمكن الرجوع.",
-    "deleted": "تم حذف {{name}}",
-    "deletedDescription": "تم الحذف."
   },
   "resourceTable": {
     "emptyTitle": "لا توجد نتائج",

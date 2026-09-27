@@ -48,7 +48,8 @@
     "empty": "Aucun appareil.",
     "platform": "Système : {{platform}}",
     "lastPush": "Dernier envoi : {{date}}",
-    "lastSnapshot": "Dernière réception : {{date}}"
+    "lastSnapshot": "Dernière réception : {{date}}",
+    "offlineLogin": "Permettre aux caissiers de se connecter sans internet sur cet ordinateur"
   },
   "entities": {
     "party": "Client ou fournisseur",

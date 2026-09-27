@@ -38,5 +38,13 @@
   "header": {
     "toggleSidebar": "Show or hide the menu",
     "toggleMenu": "Show shortcuts"
+  },
+  "crash": {
+    "title": "This screen could not be shown",
+    "description": "Press “Reload”. What you already saved is not lost.",
+    "newVersionTitle": "A new version of the app is ready",
+    "newVersionDescription": "Press “Reload” to use it. What you already saved is not lost.",
+    "reload": "Reload",
+    "home": "Back to home"
   }
 }

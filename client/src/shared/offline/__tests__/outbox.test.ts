@@ -21,6 +21,8 @@ import {
   listPending,
   markSending,
   purgeSynced,
+  recoverStaleSending,
+  releaseSending,
   retryFailed,
 } from "../outbox";
 
@@ -164,5 +166,48 @@ describe("purge", () => {
 
     const remaining = await listAll();
     expect(remaining.map((record) => record.clientUuid)).toEqual([pending.clientUuid]);
+  });
+});
+
+describe("interrupted sends", () => {
+  it("still counts an operation being sent as waiting", async () => {
+    const record = await enqueue({ entity: "core.party", payload: {}, label: "Party" });
+    await markSending([record.clientUuid]);
+
+    expect(await countPending()).toBe(1);
+  });
+
+  it("puts operations back in the queue when the request fails", async () => {
+    const record = await enqueue({ entity: "invoicing.sales_invoice", payload: {}, label: "T" });
+    const done = await enqueue({ entity: "core.party", payload: {}, label: "P" });
+    await markSending([record.clientUuid, done.clientUuid]);
+    await acknowledge({ clientUuid: done.clientUuid, status: "synced", serverId: "srv" });
+
+    await releaseSending([record.clientUuid, done.clientUuid]);
+
+    const pending = await listPending();
+    expect(pending.map((entry) => entry.clientUuid)).toEqual([record.clientUuid]);
+    // An acknowledged operation is never sent back to the queue.
+    const stored = await offlineDb.outbox.get(done.clientUuid);
+    expect(stored?.status).toBe("synced");
+  });
+
+  it("requeues at startup only the sends stuck for more than two minutes", async () => {
+    const stuck = await enqueue({ entity: "invoicing.sales_invoice", payload: {}, label: "Old" });
+    const inFlight = await enqueue({
+      entity: "invoicing.sales_invoice",
+      payload: {},
+      label: "New",
+    });
+    await markSending([stuck.clientUuid, inFlight.clientUuid]);
+    await offlineDb.outbox.update(stuck.clientUuid, {
+      updatedAt: new Date(Date.now() - 3 * 60_000).toISOString(),
+    });
+
+    expect(await recoverStaleSending()).toBe(1);
+
+    const pending = await listPending();
+    expect(pending.map((entry) => entry.clientUuid)).toEqual([stuck.clientUuid]);
+    expect((await offlineDb.outbox.get(inFlight.clientUuid))?.status).toBe("sending");
   });
 });

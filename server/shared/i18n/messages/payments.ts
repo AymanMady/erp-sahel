@@ -16,6 +16,13 @@ export const paymentsMessages: MessageCatalog = {
     "Select a party": "Choisissez un client ou un fournisseur",
     "Amount must be greater than zero": "Le montant doit être supérieur à zéro",
     "Invalid identifier": "Identifiant invalide",
+    "A payment settles one invoice at a time.":
+      "Un paiement ne peut régler qu'une seule facture à la fois.",
+    "A customer invoice is settled with money received.":
+      "Une facture de client se règle avec de l'argent reçu.",
+    "A supplier invoice is settled with money paid out.":
+      "Une facture de fournisseur se règle avec de l'argent donné.",
+    "This invoice belongs to another supplier.": "Cette facture appartient à un autre fournisseur.",
   },
   ar: {
     "The payment amount must be strictly positive.": "يجب أن يكون مبلغ الدفعة موجبًا تمامًا.",
@@ -27,5 +34,9 @@ export const paymentsMessages: MessageCatalog = {
     "Select a party": "اختر طرفًا",
     "Amount must be greater than zero": "يجب أن يكون المبلغ أكبر من صفر",
     "Invalid identifier": "معرّف غير صالح",
+    "A payment settles one invoice at a time.": "الدفعة الواحدة تسدد فاتورة واحدة فقط.",
+    "A customer invoice is settled with money received.": "فاتورة الزبون تُسدَّد بمال مقبوض.",
+    "A supplier invoice is settled with money paid out.": "فاتورة المورد تُسدَّد بمال مدفوع.",
+    "This invoice belongs to another supplier.": "هذه الفاتورة تخص موردًا آخر.",
   },
 };

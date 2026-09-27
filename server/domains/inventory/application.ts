@@ -73,6 +73,8 @@ class InventoryApplication {
     const direction = input.direction ?? defaultDirection(input.movementType);
     const repository = inventoryRepository.withTransaction(tx);
 
+    await this.requireOwnership(tx, input);
+
     const stockItem = await repository.ensureStockItem({
       companyId: input.companyId,
       productId: input.productId,
@@ -87,25 +89,21 @@ class InventoryApplication {
     const nextQuantity = normalizeQuantity(currentQuantity + delta);
 
     if (nextQuantity < 0 && !input.allowNegative) {
-      throw new BusinessRuleError(
-        tr("Insufficient stock: {available} available, {requested} requested.", {
-          available: currentQuantity,
-          requested: quantity,
-        }),
-        "INSUFFICIENT_STOCK",
-        { available: currentQuantity, requested: quantity }
-      );
+      throw insufficientStock(currentQuantity, quantity);
     }
 
-    // Weighted average cost: only valued incoming movements change it.
+    // Weighted average cost: only valued incoming movements change it. With no stock
+    // (or a negative balance), the old average means nothing: the incoming cost wins.
+    const incomingCostCents = input.unitCostCents ?? 0;
     let averageCostCents: number | null = null;
-    if (direction === "IN" && (input.unitCostCents ?? 0) > 0) {
-      const previousValue = currentQuantity * stockItem.averageCostCents;
-      const incomingValue = quantity * (input.unitCostCents ?? 0);
+    if (direction === "IN" && incomingCostCents > 0) {
       averageCostCents =
-        nextQuantity > 0
-          ? roundHalfUp((previousValue + incomingValue) / nextQuantity)
-          : (input.unitCostCents ?? 0);
+        currentQuantity > 0
+          ? roundHalfUp(
+              (currentQuantity * stockItem.averageCostCents + quantity * incomingCostCents) /
+                nextQuantity
+            )
+          : incomingCostCents;
     }
 
     await repository.applyDelta({
@@ -124,7 +122,8 @@ class InventoryApplication {
       direction,
       quantity: quantity.toFixed(3),
       balanceAfter: nextQuantity.toFixed(3),
-      unitCostCents: input.unitCostCents ?? stockItem.averageCostCents,
+      // A movement without a known cost is recorded at the current average cost.
+      unitCostCents: incomingCostCents > 0 ? incomingCostCents : stockItem.averageCostCents,
       originType: input.originType ?? "manual",
       originId: input.originId ?? null,
       reference: input.reference ?? "",
@@ -132,6 +131,64 @@ class InventoryApplication {
       userId: input.userId ?? null,
       clientUuid: input.clientUuid ?? null,
     });
+  }
+
+  /**
+   * The product, the store (and the model or place, when given) must belong to the
+   * company: identifiers come from the request and must never reach another company.
+   */
+  private async requireOwnership(tx: Database, input: MovementInput): Promise<void> {
+    const owned = await inventoryRepository.withTransaction(tx).checkOwnership(input);
+    if (!owned.product) throw new NotFoundError("Product not found.");
+    if (!owned.warehouse) throw new NotFoundError("Warehouse not found.");
+    if (!owned.variant) {
+      throw new BusinessRuleError("This model does not belong to the chosen product.");
+    }
+    if (!owned.location) {
+      throw new BusinessRuleError("This place does not belong to the chosen store.");
+    }
+  }
+
+  /**
+   * Splits a quantity to take out over the lots of a product in a store, oldest first
+   * (FIFO). A sale does not name a lot: without this, stock received with a lot number
+   * would be shown as available but refused at the till.
+   * The remainder, when negative stock is allowed, goes on the line without a lot.
+   */
+  private async allocateOut(
+    tx: Database,
+    input: {
+      companyId: string;
+      productId: string;
+      warehouseId: string;
+      quantity: number;
+      allowNegative?: boolean;
+    }
+  ): Promise<{ lotNumber: string; quantity: number }[]> {
+    const items = await inventoryRepository
+      .withTransaction(tx)
+      .lockProductStock(input.companyId, input.productId, input.warehouseId);
+
+    const allocations: { lotNumber: string; quantity: number }[] = [];
+    let remaining = input.quantity;
+    let available = 0;
+    for (const item of items) {
+      const onHand = normalizeQuantity(item.quantity);
+      if (onHand <= 0) continue;
+      available = normalizeQuantity(available + onHand);
+      if (remaining <= 0) continue;
+      const taken = Math.min(onHand, remaining);
+      allocations.push({ lotNumber: item.lotNumber, quantity: taken });
+      remaining = normalizeQuantity(remaining - taken);
+    }
+
+    if (remaining > 0) {
+      if (!input.allowNegative) throw insufficientStock(available, input.quantity);
+      const untracked = allocations.find((allocation) => allocation.lotNumber === "");
+      if (untracked) untracked.quantity = normalizeQuantity(untracked.quantity + remaining);
+      else allocations.push({ lotNumber: "", quantity: remaining });
+    }
+    return allocations;
   }
 
   /** Standalone movement (manual adjustment): opens its own transaction. */
@@ -213,21 +270,34 @@ class InventoryApplication {
     const movements: StockMovement[] = [];
     for (const line of input.lines) {
       if (!line.productId) continue;
-      movements.push(
-        await this.applyMovement(tx, {
-          companyId: input.companyId,
-          productId: line.productId,
-          warehouseId: input.warehouseId,
-          lotNumber: line.lotNumber,
-          movementType: "OUT",
-          quantity: line.quantity,
-          originType: input.originType,
-          originId: input.originId,
-          reference: input.reference,
-          userId: input.userId,
-          allowNegative: input.allowNegative,
-        })
-      );
+      const quantity = normalizeQuantity(line.quantity);
+      // A named lot is taken as is; otherwise the lots are used oldest first.
+      const allocations = line.lotNumber
+        ? [{ lotNumber: line.lotNumber, quantity }]
+        : await this.allocateOut(tx, {
+            companyId: input.companyId,
+            productId: line.productId,
+            warehouseId: input.warehouseId,
+            quantity,
+            allowNegative: input.allowNegative,
+          });
+      for (const allocation of allocations) {
+        movements.push(
+          await this.applyMovement(tx, {
+            companyId: input.companyId,
+            productId: line.productId,
+            warehouseId: input.warehouseId,
+            lotNumber: allocation.lotNumber,
+            movementType: "OUT",
+            quantity: allocation.quantity,
+            originType: input.originType,
+            originId: input.originId,
+            reference: input.reference,
+            userId: input.userId,
+            allowNegative: input.allowNegative,
+          })
+        );
+      }
     }
     return movements;
   }
@@ -245,9 +315,19 @@ class InventoryApplication {
       lines: { productId?: string | null; quantity: number | string; lotNumber?: string }[];
     }
   ): Promise<StockMovement[]> {
+    const repository = inventoryRepository.withTransaction(tx);
     const movements: StockMovement[] = [];
     for (const line of input.lines) {
       if (!line.productId) continue;
+      // Goods returned without a lot go back on the line without a lot, valued at the
+      // average cost of the product in this store so they do not lower its value.
+      const unitCostCents = line.lotNumber
+        ? undefined
+        : await repository.averageCostInWarehouse(
+            input.companyId,
+            line.productId,
+            input.warehouseId
+          );
       movements.push(
         await this.applyMovement(tx, {
           companyId: input.companyId,
@@ -256,6 +336,7 @@ class InventoryApplication {
           lotNumber: line.lotNumber,
           movementType: "RETURN",
           quantity: line.quantity,
+          unitCostCents,
           originType: input.originType,
           originId: input.originId,
           reference: input.reference,
@@ -277,6 +358,7 @@ class InventoryApplication {
       userId?: string | null;
       lines: {
         productId: string;
+        variantId?: string | null;
         quantity: number | string;
         unitCostCents: number;
         lotNumber?: string;
@@ -289,6 +371,7 @@ class InventoryApplication {
         await this.applyMovement(tx, {
           companyId: input.companyId,
           productId: line.productId,
+          variantId: line.variantId,
           warehouseId: input.warehouseId,
           lotNumber: line.lotNumber,
           movementType: "IN",
@@ -333,6 +416,17 @@ class InventoryApplication {
     const warehouse = await warehousesRepository.findById(companyId, warehouseId);
     if (!warehouse) throw new NotFoundError("Warehouse not found.");
   }
+}
+
+function insufficientStock(available: number, requested: number): BusinessRuleError {
+  return new BusinessRuleError(
+    tr("Insufficient stock: {available} available, {requested} requested.", {
+      available,
+      requested,
+    }),
+    "INSUFFICIENT_STOCK",
+    { available, requested }
+  );
 }
 
 export const inventoryApplication = new InventoryApplication();

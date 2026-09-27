@@ -1,22 +1,10 @@
 {
   "ui": {
-    "breadcrumb": "Where you are",
-    "more": "More",
     "commandPalette": "Go to a screen",
-    "commandPaletteDescription": "Type the name of a screen…",
-    "sidebar": "Menu",
-    "sidebarDescription": "Shows the menu.",
-    "toggleSidebar": "Show or hide the menu"
+    "commandPaletteDescription": "Type the name of a screen…"
   },
   "searchInput": {
     "clear": "Clear search"
-  },
-  "deleteDialog": {
-    "defaultName": "this item",
-    "title": "Delete {{name}}?",
-    "description": "{{name}} will be deleted forever. You cannot undo this.",
-    "deleted": "{{name}} deleted",
-    "deletedDescription": "It is deleted."
   },
   "resourceTable": {
     "emptyTitle": "No results",

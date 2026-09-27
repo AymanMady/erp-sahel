@@ -18,6 +18,14 @@ import { setFormatLocaleResolver } from "@shared/intl";
 import { logger } from "./shared/logging/logger";
 
 /**
+ * Document dates ("today", fiscal year of a number) must not depend on where the server
+ * runs. Mauritania is on UTC all year round, without summer time.
+ */
+process.env.TZ = process.env.APP_TIMEZONE ?? "UTC";
+
+const REQUEST_ID_PATTERN = /^[A-Za-z0-9._-]{1,64}$/;
+
+/**
  * Validates the configuration and registers the API routes.
  * The client (Vite or static) is left to the caller.
  */
@@ -35,15 +43,15 @@ export async function createApp(): Promise<Express> {
   // first so that body-parsing errors are translated too.
   app.use(localeMiddleware);
 
-  // 10 MB: a company logo as a data URI fits, a large file import does not
-  // (such imports will go through a dedicated upload, not the JSON body).
-  app.use(express.json({ limit: "10mb" }));
-  app.use(express.urlencoded({ extended: false, limit: "10mb" }));
+  // Request bodies are read in `registerRoutes`, after rate limiting.
   app.use(compression());
 
   /** Correlation id propagated in logs and error responses. */
   app.use((req, res, next) => {
-    req.requestId = String(req.headers["x-request-id"] ?? randomUUID());
+    // Written as-is in the logs and echoed back: only a short, plain value is kept.
+    const supplied = req.headers["x-request-id"];
+    req.requestId =
+      typeof supplied === "string" && REQUEST_ID_PATTERN.test(supplied) ? supplied : randomUUID();
     res.setHeader("x-request-id", req.requestId);
     next();
   });

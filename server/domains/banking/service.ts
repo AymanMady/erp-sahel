@@ -3,8 +3,9 @@
 import { asc } from "drizzle-orm";
 
 import { bankAccounts } from "@shared/schema";
-import { runInTransaction } from "../../db";
 import { NotFoundError } from "../../shared/errors/app-error";
+import { accountingApplication } from "../accounting/application";
+import { tenancyApplication } from "../tenancy/application";
 import { bankingApplication } from "./application";
 import { bankAccountsRepository, bankingRepository } from "./repository";
 import {
@@ -32,16 +33,21 @@ export class BankingService {
   }
 
   async createAccount(companyId: string, body: unknown) {
-    return bankAccountsRepository.create(companyId, createBankAccountSchema.parse(body));
+    const data = createBankAccountSchema.parse(body);
+    // Postings go to this account: it must belong to the company's own chart.
+    if (data.glAccountId) {
+      await accountingApplication.requirePostableAccount(companyId, data.glAccountId);
+    }
+    return bankAccountsRepository.create(companyId, data);
   }
 
   async updateAccount(companyId: string, id: unknown, body: unknown) {
     const { id: accountId } = idParamSchema.parse({ id });
-    const account = await bankAccountsRepository.update(
-      companyId,
-      accountId,
-      updateBankAccountSchema.parse(body)
-    );
+    const data = updateBankAccountSchema.parse(body);
+    if (data.glAccountId) {
+      await accountingApplication.requirePostableAccount(companyId, data.glAccountId);
+    }
+    const account = await bankAccountsRepository.update(companyId, accountId, data);
     if (!account) throw new NotFoundError("Cash/bank account not found.");
     return account;
   }
@@ -63,7 +69,8 @@ export class BankingService {
   async createTransaction(companyId: string, body: unknown) {
     const data = createTransactionSchema.parse(body);
     await bankAccountsRepository.requireById(companyId, data.bankAccountId);
-    return runInTransaction((tx) => bankingApplication.recordMovement(tx, { companyId, ...data }));
+    const company = await tenancyApplication.requireCompany(companyId);
+    return bankingApplication.recordManualMovement({ company, ...data });
   }
 
   async transfer(companyId: string, body: unknown) {
@@ -72,7 +79,8 @@ export class BankingService {
       bankAccountsRepository.requireById(companyId, data.fromAccountId),
       bankAccountsRepository.requireById(companyId, data.toAccountId),
     ]);
-    return bankingApplication.transfer({ companyId, ...data });
+    const company = await tenancyApplication.requireCompany(companyId);
+    return bankingApplication.transfer({ company, ...data });
   }
 
   async setReconciled(companyId: string, id: unknown, body: unknown) {

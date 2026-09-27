@@ -36,7 +36,7 @@
   "stock": {
     "title": "What is left in stock",
     "description": "Quantity of each item, by warehouse.",
-    "lot": "Lot",
+    "lot": "Batch number",
     "averageCost": "Average buying price",
     "value": "Value",
     "transfer": "Change warehouse",

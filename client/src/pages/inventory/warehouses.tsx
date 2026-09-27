@@ -12,6 +12,7 @@ import type { Warehouse } from "@/entities/types";
 import { queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
 import { Field } from "@/shared/components/field";
+import { archiveQuestion, useConfirm } from "@/shared/components/confirm-dialog";
 import { PageHeader } from "@/shared/components/page-header";
 import { ResourceTable, type Column } from "@/shared/components/resource-table";
 import { Badge } from "@/shared/ui/badge";
@@ -23,6 +24,7 @@ import { Textarea } from "@/shared/ui/textarea";
 
 export default function WarehousesPage() {
   const { t } = useTranslation("inventory");
+  const [confirmDialog, confirm] = useConfirm();
   const queryClient = useQueryClient();
   const { can } = useSession();
   const [open, setOpen] = useState(false);
@@ -82,7 +84,9 @@ export default function WarehousesPage() {
               size="icon"
               variant="ghost"
               aria-label={t("common:actions.archive")}
-              onClick={() => archive.mutate(row.id)}
+              onClick={async () => {
+                if (await confirm(archiveQuestion(row.name))) archive.mutate(row.id);
+              }}
             >
               <IconTrash className="size-4" />
             </Button>
@@ -93,6 +97,7 @@ export default function WarehousesPage() {
 
   return (
     <div className="space-y-6">
+      {confirmDialog}
       <PageHeader title={t("warehouses.title")} description={t("warehouses.description")}>
         {can("settings.write") ? (
           <Button onClick={() => setOpen(true)}>

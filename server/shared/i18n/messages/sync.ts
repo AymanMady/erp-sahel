@@ -5,7 +5,7 @@ import type { MessageCatalog } from "./types";
 export const syncMessages: MessageCatalog = {
   fr: {
     'Entity "{entity}" is not supported by this server.':
-      "Entité « {entity} » non prise en charge par ce serveur.",
+      "L'opération « {entity} » n'est pas reconnue par l'application.",
     "Waiting for {dependency} to be synchronized.":
       "En attente de la synchronisation de {dependency}.",
     "Unknown error during ingestion.": "Erreur inconnue à l'ingestion.",
@@ -16,10 +16,13 @@ export const syncMessages: MessageCatalog = {
       "Ce paiement n'a ni client ni facture : impossible de savoir à quoi il correspond.",
     "The closing does not reference any session.":
       "Cette fermeture de caisse ne correspond à aucune ouverture.",
+    "The data sent is incomplete or invalid.":
+      "Les informations envoyées sont incomplètes ou fausses.",
+    "Device not found.": "Appareil introuvable.",
   },
   ar: {
     'Entity "{entity}" is not supported by this server.':
-      "الكيان «{entity}» غير مدعوم من طرف هذا الخادم.",
+      "العملية «{entity}» غير معروفة في التطبيق.",
     "Waiting for {dependency} to be synchronized.": "في انتظار مزامنة {dependency}.",
     "Unknown error during ingestion.": "خطأ غير معروف أثناء الاستيعاب.",
     "Dependency not synchronized yet ({clientUuid}): operation postponed to the next cycle.":
@@ -28,5 +31,7 @@ export const syncMessages: MessageCatalog = {
     "The payment references neither a party nor an invoice: it cannot be allocated.":
       "الدفعة لا تشير إلى أي طرف أو فاتورة: يتعذّر تخصيصها.",
     "The closing does not reference any session.": "الإقفال لا يشير إلى أي جلسة.",
+    "The data sent is incomplete or invalid.": "المعلومات المرسلة ناقصة أو غير صحيحة.",
+    "Device not found.": "الجهاز غير موجود.",
   },
 };

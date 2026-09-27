@@ -12,7 +12,7 @@
     "newCustomer": "Nouveau client"
   },
   "offline": "Ces chiffres ont besoin d'internet. Ils reviendront avec la connexion.",
-  "serverBusy": "Le serveur n'a pas répondu à temps. Réessayez dans un instant.",
+  "serverBusy": "L'application n'a pas répondu à temps. Réessayez dans un instant.",
   "stats": {
     "revenue": "Total des ventes",
     "invoicesHint_one": "{{count}} facture pendant cette période",
@@ -42,7 +42,8 @@
     "title": "Articles à racheter",
     "description": "Il en reste peu.",
     "viewStock": "Voir le stock",
-    "empty": "Rien à racheter pour le moment."
+    "empty": "Rien à racheter pour le moment.",
+    "left": "Reste {{quantity}} (il en faut {{minimum}})"
   },
   "counts": {
     "title": "En chiffres",

@@ -30,7 +30,7 @@ export const commonMessages: MessageCatalog = {
     "This value already exists.": "Cette valeur existe déjà.",
     "Database temporarily unreachable. Please try again in a moment.":
       "Base de données momentanément injoignable. Réessayez dans un instant.",
-    "Internal server error": "Erreur interne du serveur",
+    "Internal server error": "Un problème est survenu dans l'application. Réessayez.",
     "Unknown endpoint: {method} {path}": "Endpoint inconnu : {method} {path}",
     "Record not found.": "Enregistrement introuvable.",
     "Too many requests. Please try again in a moment.":
@@ -44,6 +44,8 @@ export const commonMessages: MessageCatalog = {
     "Party name is required": "Le nom est obligatoire",
     "Code is required": "Le code est obligatoire",
     "Label is required": "Le libellé est obligatoire",
+    "This request is already being processed. Please try again in a moment.":
+      "Cette demande est déjà en cours. Réessayez dans un instant.",
   },
   ar: {
     "Invalid data": "بيانات غير صالحة",
@@ -70,7 +72,7 @@ export const commonMessages: MessageCatalog = {
     "This value already exists.": "هذه القيمة موجودة بالفعل.",
     "Database temporarily unreachable. Please try again in a moment.":
       "تعذّر الوصول إلى قاعدة البيانات مؤقتًا. حاول مرة أخرى بعد قليل.",
-    "Internal server error": "خطأ داخلي في الخادم",
+    "Internal server error": "حدث مشكل في التطبيق. حاول مرة أخرى.",
     "Unknown endpoint: {method} {path}": "نقطة نهاية غير معروفة: {method} {path}",
     "Record not found.": "السجل غير موجود.",
     "Too many requests. Please try again in a moment.": "طلبات كثيرة جدًا. حاول مرة أخرى بعد قليل.",
@@ -82,5 +84,7 @@ export const commonMessages: MessageCatalog = {
     "Party name is required": "اسم الطرف مطلوب",
     "Code is required": "الرمز مطلوب",
     "Label is required": "التسمية مطلوبة",
+    "This request is already being processed. Please try again in a moment.":
+      "هذا الطلب قيد التنفيذ. حاول مرة أخرى بعد قليل.",
   },
 };

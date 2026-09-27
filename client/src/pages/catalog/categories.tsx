@@ -12,6 +12,7 @@ import type { Category } from "@/entities/types";
 import { queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
 import { Field } from "@/shared/components/field";
+import { archiveQuestion, useConfirm } from "@/shared/components/confirm-dialog";
 import { PageHeader } from "@/shared/components/page-header";
 import { ResourceTable, type Column } from "@/shared/components/resource-table";
 import { Button } from "@/shared/ui/button";
@@ -24,6 +25,7 @@ const NONE = "NONE";
 
 export default function CategoriesPage() {
   const { t } = useTranslation("catalog");
+  const [confirmDialog, confirm] = useConfirm();
   const queryClient = useQueryClient();
   const { can } = useSession();
   const [open, setOpen] = useState(false);
@@ -83,7 +85,9 @@ export default function CategoriesPage() {
               size="icon"
               variant="ghost"
               aria-label={t("common:actions.archive")}
-              onClick={() => archive.mutate(row.id)}
+              onClick={async () => {
+                if (await confirm(archiveQuestion(row.name))) archive.mutate(row.id);
+              }}
             >
               <IconTrash className="size-4" />
             </Button>
@@ -94,6 +98,7 @@ export default function CategoriesPage() {
 
   return (
     <div className="space-y-6">
+      {confirmDialog}
       <PageHeader title={t("categories.title")} description={t("categories.description")}>
         {can("catalog.write") ? (
           <Button onClick={() => setOpen(true)}>

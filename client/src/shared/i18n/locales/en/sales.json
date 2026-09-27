@@ -48,6 +48,11 @@
     "pageTitle": "Order {{number}}",
     "notFound": "Order not found.",
     "invoice": "Make the invoice",
-    "invoiced": "Invoice prepared from the order (not validated yet)."
+    "invoiced": "Invoice prepared from the order (not validated yet).",
+    "confirmCancel": {
+      "title": "Cancel the order of {{amount}}?",
+      "description": "It can no longer be turned into an invoice.",
+      "confirm": "Yes, cancel the order"
+    }
   }
 }

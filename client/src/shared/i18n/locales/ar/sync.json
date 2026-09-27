@@ -48,7 +48,8 @@
     "empty": "لا يوجد أي جهاز.",
     "platform": "النظام: {{platform}}",
     "lastPush": "آخر إرسال: {{date}}",
-    "lastSnapshot": "آخر استلام: {{date}}"
+    "lastSnapshot": "آخر استلام: {{date}}",
+    "offlineLogin": "السماح لأمناء الصندوق بالدخول دون إنترنت على هذا الحاسوب"
   },
   "entities": {
     "party": "زبون أو مورد",

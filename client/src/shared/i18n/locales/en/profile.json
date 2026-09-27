@@ -21,5 +21,13 @@
     "confirm": "Type the new password again",
     "submit": "Change the password",
     "changed": "Password changed. Sign in again."
+  },
+  "forced": {
+    "title": "Choose your password",
+    "description": "Your current password was given to you by the manager. Choose a new one that only you know before you continue.",
+    "current": "Password given by the manager",
+    "submit": "Save and continue",
+    "signInAgain": "Password changed. Sign in with the new password.",
+    "offline": "You need internet to change the password."
   }
 }

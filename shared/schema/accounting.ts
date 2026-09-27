@@ -66,6 +66,10 @@ export const ACCOUNT_MAPPING_KEYS = [
   "ROUNDING_DIFFERENCE",
   "OPENING_BALANCE",
   "RESULT_CARRY_FORWARD",
+  /** Money in or out of a cash/bank account whose reason is not known yet (to sort out later). */
+  "SUSPENSE",
+  /** Small unplanned income, e.g. more money in the till than expected at closing. */
+  "MISC_INCOME",
 ] as const;
 export type AccountMappingKey = (typeof ACCOUNT_MAPPING_KEYS)[number];
 

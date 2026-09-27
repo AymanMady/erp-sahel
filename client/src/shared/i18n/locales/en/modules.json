@@ -5,7 +5,7 @@
   },
   "invoicing": {
     "name": "Invoices",
-    "description": "Issue customer invoices and credit notes."
+    "description": "Make customer invoices and record returns of goods."
   },
   "sales": {
     "name": "Quotes and orders",

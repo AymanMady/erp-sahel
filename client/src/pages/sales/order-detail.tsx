@@ -6,12 +6,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useParams } from "wouter";
 import { toast } from "sonner";
 
+import { formatMoney } from "@shared/money";
 import { SALES_ORDER_STATUSES } from "@shared/schema";
 import { errorMessage } from "@/shared/api/api-error";
 import { salesApi } from "@/entities/sales/api";
-import { queryKeys } from "@/shared/api/query-client";
+import { invalidateMoneyAndStock, queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
 import { DocumentView } from "@/features/documents/document-view";
+import { useConfirm } from "@/shared/components/confirm-dialog";
 import { PageHeader } from "@/shared/components/page-header";
 import { StatusBadge, statusLabel } from "@/shared/components/status-badge";
 import { Button } from "@/shared/ui/button";
@@ -25,6 +27,7 @@ export default function SalesOrderDetailPage() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const { can } = useSession();
+  const [confirmDialog, confirm] = useConfirm();
 
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.salesOrder(params.id),
@@ -46,7 +49,7 @@ export default function SalesOrderDetailPage() {
     mutationFn: () => salesApi.invoiceOrder(params.id),
     onSuccess: (created) => {
       toast.success(t("order.invoiced"));
-      void queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      invalidateMoneyAndStock(queryClient);
       navigate(`/invoices/${created.id}`);
     },
     onError: (mutationError) => toast.error(errorMessage(mutationError)),
@@ -65,6 +68,7 @@ export default function SalesOrderDetailPage() {
 
   return (
     <div className="space-y-6">
+      {confirmDialog}
       <PageHeader
         title={t("order.pageTitle", { number: data.number })}
         description={data.partyName}
@@ -81,7 +85,21 @@ export default function SalesOrderDetailPage() {
           {t("common:actions.print")}
         </Button>
         {can("sales.write") ? (
-          <Select value={data.status} onValueChange={(value) => setStatus.mutate(value)}>
+          <Select
+            value={data.status}
+            onValueChange={async (value) => {
+              if (value === "CANCELLED") {
+                const confirmed = await confirm({
+                  title: t("order.confirmCancel.title", { amount: formatMoney(data.totalCents) }),
+                  description: t("order.confirmCancel.description"),
+                  confirmLabel: t("order.confirmCancel.confirm"),
+                  destructive: true,
+                });
+                if (!confirmed) return;
+              }
+              setStatus.mutate(value);
+            }}
+          >
             <SelectTrigger className="w-[190px]">
               <SelectValue />
             </SelectTrigger>
@@ -123,7 +141,6 @@ export default function SalesOrderDetailPage() {
           unitPriceCents: line.unitPriceCents,
           discountBp: line.discountBp,
           totalCents: line.totalCents,
-          originCountry: line.originCountry,
         }))}
         totalCents={data.totalCents}
         notes={data.notes}

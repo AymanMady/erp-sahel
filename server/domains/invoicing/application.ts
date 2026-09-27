@@ -11,13 +11,13 @@
  * ([BR-10], [FR-VNT-6]).
  */
 
-import { addDays, todayInput } from "@shared/format";
-import { CURRENCY, formatMoney } from "@shared/money";
-import { derivePaymentStatus } from "@shared/pricing";
+import { addDays, formatDate, todayInput } from "@shared/format";
+import { CURRENCY, formatMoney, normalizeQuantity, roundHalfUp } from "@shared/money";
+import { deriveSettlementStatus, invoiceAmountDueCents } from "@shared/pricing";
 import { buildCreditNotePosting, buildSalesInvoicePosting } from "@shared/accounting-rules";
-import type { Company, SalesInvoice } from "@shared/schema";
+import type { Company, SalesInvoice, SalesInvoiceLine } from "@shared/schema";
 import { db, runInTransaction, type Database } from "../../db";
-import { BusinessRuleError, NotFoundError } from "../../shared/errors/app-error";
+import { BusinessRuleError, NotFoundError, ValidationError } from "../../shared/errors/app-error";
 import { buildDocumentLines, type RawDocumentLine } from "../../shared/documents/line-builder";
 import { tr } from "../../shared/i18n";
 import { accountingApplication } from "../accounting/application";
@@ -41,9 +41,50 @@ export interface CreateInvoiceInput {
   validate?: boolean;
   clientUuid?: string | null;
   provisionalNumber?: string;
+  /** May sell catalog items at another price (see `BuildDocumentOptions`). */
+  allowPriceOverride?: boolean;
+  /** Offline sale: when the device read its prices. */
+  pricedAt?: Date | null;
+  /**
+   * Lets stock go below zero. Only for a sale made without network: the goods have
+   * left and the money was taken, refusing the sale afterwards would lose it.
+   */
+  allowNegativeStock?: boolean;
+  /**
+   * Refuse a date earlier than the last validated invoice (default). Off only for sales
+   * made without network, which arrive after the fact with their real date.
+   */
+  enforceChronology?: boolean;
+}
+
+/** A returned line: which invoice line, and how many. */
+export interface CreditNoteLineInput {
+  invoiceLineId?: string | null;
+  productId?: string | null;
+  variantId?: string | null;
+  serviceId?: string | null;
+  description?: string;
+  quantity: number | string;
 }
 
 class InvoicingApplication {
+  /**
+   * Invoice numbers must follow the dates: an invoice dated before the last validated
+   * one would get a higher number for an earlier day.
+   */
+  private async assertChronology(tx: Database, companyId: string, date: string): Promise<void> {
+    const latest = await invoicingRepository.withTransaction(tx).latestValidatedDate(companyId);
+    if (latest && date < latest) {
+      throw new BusinessRuleError(
+        tr(
+          "The date cannot be before that of the last validated invoice ({date}): numbers must follow the dates.",
+          { date: formatDate(latest) }
+        ),
+        "INVOICE_DATE_BEFORE_LAST"
+      );
+    }
+  }
+
   /**
    * Customer credit limit check before validation.
    * A limit of 0 means "no limit": blocking by default would paralyse a company that
@@ -98,10 +139,13 @@ class InvoicingApplication {
 
     const built = await buildDocumentLines(tx, company, input.lines, {
       globalDiscountBp: input.globalDiscountBp,
+      allowPriceOverride: input.allowPriceOverride,
+      pricedAt: input.pricedAt,
     });
 
     const shouldValidate = input.validate ?? false;
     if (shouldValidate) {
+      if (input.enforceChronology ?? true) await this.assertChronology(tx, company.id, date);
       await this.assertCreditLimit(tx, company, input.partyId, built.totalCents);
     }
 
@@ -142,7 +186,9 @@ class InvoicingApplication {
     );
 
     if (shouldValidate) {
-      await this.applyValidationEffects(tx, company, invoice, built.lines, userId);
+      await this.applyValidationEffects(tx, company, invoice, built.lines, userId, {
+        allowNegativeStock: input.allowNegativeStock,
+      });
     }
 
     return (await repository.findById(company.id, invoice.id)) as InvoiceWithLines;
@@ -154,9 +200,11 @@ class InvoicingApplication {
     company: Company,
     invoice: SalesInvoice,
     lines: { productId: string | null; quantity: string }[],
-    userId?: string | null
+    userId?: string | null,
+    options: { allowNegativeStock?: boolean } = {}
   ): Promise<void> {
     await inventoryApplication.consumeForDocument(tx, {
+      allowNegative: options.allowNegativeStock,
       companyId: company.id,
       warehouseId:
         invoice.warehouseId ?? (await inventoryApplication.defaultWarehouseId(company.id, tx)),
@@ -206,6 +254,7 @@ class InvoicingApplication {
         throw new BusinessRuleError("An invoice without lines cannot be validated.");
       }
 
+      await this.assertChronology(tx, company.id, invoice.date);
       await this.assertCreditLimit(tx, company, invoice.partyId, invoice.totalCents);
 
       const number = await numberingApplication.allocateForCompany(
@@ -251,9 +300,26 @@ class InvoicingApplication {
         globalDiscountBp: input.globalDiscountBp ?? invoice.globalDiscountBp,
       };
 
-      if (input.lines) {
-        const built = await buildDocumentLines(tx, company, input.lines, {
+      // The total follows the lines **and** the global discount: changing only the
+      // discount must recompute it from the lines already on the draft.
+      if (input.lines || patch.globalDiscountBp !== invoice.globalDiscountBp) {
+        const lines =
+          input.lines ??
+          invoice.lines.map((line) => ({
+            productId: line.productId,
+            variantId: line.variantId,
+            serviceId: line.serviceId,
+            productSku: line.productSku,
+            description: line.description,
+            quantity: line.quantity,
+            unit: line.unit,
+            unitPriceCents: line.unitPriceCents,
+            discountBp: line.discountBp,
+          }));
+        const built = await buildDocumentLines(tx, company, lines, {
           globalDiscountBp: (patch.globalDiscountBp as number) ?? 0,
+          // Lines kept from the draft already carry an accepted price.
+          allowPriceOverride: input.lines ? input.allowPriceOverride : true,
         });
         await repository.replaceLines(company.id, invoiceId, built.lines);
         patch.totalCents = built.totalCents;
@@ -278,8 +344,13 @@ class InvoicingApplication {
   }
 
   /**
-   * Credit note: restocks if requested and posts the reverse entry.
-   * Without lines, the credit note takes **all** of the invoice lines (full return).
+   * Credit note (return): restocks if requested and posts the reverse entry.
+   * Without lines, the credit note takes **everything not yet returned** (full return).
+   *
+   * What is returned always comes from the invoice: a product that was not sold, more
+   * than what was sold (all credit notes together), or another price is refused. The
+   * amount of each returned line is the share of what the customer actually paid for
+   * it — line discount and global discount included.
    */
   async createCreditNote(
     company: Company,
@@ -288,12 +359,15 @@ class InvoicingApplication {
       date?: string;
       reason?: string;
       restock?: boolean;
-      lines?: RawDocumentLine[];
+      lines?: CreditNoteLineInput[];
     },
     userId?: string | null
   ) {
     return runInTransaction(async (tx) => {
       const repository = invoicingRepository.withTransaction(tx);
+      // Locked first: two returns entered at the same time are checked one after the other.
+      const locked = await repository.lockForUpdate(company.id, input.invoiceId);
+      if (!locked) throw new NotFoundError("Invoice not found.");
       const invoice = await repository.findById(company.id, input.invoiceId);
       if (!invoice) throw new NotFoundError("Invoice not found.");
       if (invoice.status === "DRAFT" || invoice.status === "CANCELLED") {
@@ -305,23 +379,94 @@ class InvoicingApplication {
 
       const date = input.date ?? todayInput();
       const restock = input.restock ?? true;
-      const sourceLines: RawDocumentLine[] =
-        input.lines ??
-        invoice.lines.map((line) => ({
+      const alreadyCredited = await repository.creditedByInvoiceLine(company.id, invoice.id);
+      const remaining = new Map(
+        invoice.lines.map((line) => {
+          const credited = alreadyCredited.get(line.id);
+          return [
+            line.id,
+            {
+              quantity: normalizeQuantity(Number(line.quantity) - (credited?.quantity ?? 0)),
+              totalCents: line.totalCents - (credited?.totalCents ?? 0),
+            },
+          ];
+        })
+      );
+
+      const requested: { line: SalesInvoiceLine; quantity: number }[] = input.lines
+        ? input.lines.map((raw, index) => {
+            const position = index + 1;
+            const quantity = Number(raw.quantity);
+            if (!Number.isFinite(quantity) || quantity <= 0) {
+              throw new ValidationError(
+                tr("Line {line}: the quantity must be a number greater than zero.", {
+                  line: position,
+                })
+              );
+            }
+            const line = this.findInvoiceLine(invoice.lines, raw, remaining);
+            if (!line) {
+              throw new BusinessRuleError(
+                tr("Line {line}: this item is not on the invoice.", { line: position }),
+                "CREDIT_NOTE_LINE_NOT_ON_INVOICE"
+              );
+            }
+            return { line, quantity: normalizeQuantity(quantity) };
+          })
+        : invoice.lines
+            .map((line) => ({ line, quantity: remaining.get(line.id)?.quantity ?? 0 }))
+            .filter((entry) => entry.quantity > 0);
+
+      if (requested.length === 0) {
+        throw new BusinessRuleError(
+          "Everything on this invoice has already been returned.",
+          "CREDIT_NOTE_NOTHING_LEFT"
+        );
+      }
+
+      const lines = requested.map(({ line, quantity }, position) => {
+        const left = remaining.get(line.id) ?? { quantity: 0, totalCents: 0 };
+        if (quantity > left.quantity + 1e-9) {
+          throw new BusinessRuleError(
+            tr("{item}: only {quantity} can still be returned.", {
+              item: line.description,
+              quantity: left.quantity,
+            }),
+            "CREDIT_NOTE_TOO_LARGE"
+          );
+        }
+        // Returning what is left takes exactly what is left, so rounding never makes
+        // the returns of a line add up to more than what was paid for it.
+        const totalCents =
+          Math.abs(quantity - left.quantity) < 1e-9
+            ? left.totalCents
+            : Math.min(
+                left.totalCents,
+                roundHalfUp((line.totalCents * quantity) / Number(line.quantity))
+              );
+        remaining.set(line.id, {
+          quantity: normalizeQuantity(left.quantity - quantity),
+          totalCents: left.totalCents - totalCents,
+        });
+        return {
+          invoiceLineId: line.id,
           productId: line.productId,
           variantId: line.variantId,
           serviceId: line.serviceId,
           productSku: line.productSku,
           description: line.description,
-          quantity: line.quantity,
+          quantity: quantity.toFixed(3),
           unit: line.unit,
           unitPriceCents: line.unitPriceCents,
           discountBp: line.discountBp,
-          originCountry: line.originCountry,
-        }));
-
-      const built = await buildDocumentLines(tx, company, sourceLines);
-      if (built.totalCents > invoice.totalCents) {
+          totalCents,
+          position,
+        };
+      });
+      const totalCents = lines.reduce((sum, line) => sum + line.totalCents, 0);
+      // All returns together never exceed the invoice (also covers returns recorded
+      // before lines were linked to the invoice lines).
+      if (invoice.creditedAmountCents + totalCents > invoice.totalCents) {
         throw new BusinessRuleError(
           "The credit note amount exceeds that of the original invoice.",
           "CREDIT_NOTE_TOO_LARGE"
@@ -344,14 +489,14 @@ class InvoicingApplication {
         status: "VALIDATED",
         reason: input.reason ?? "",
         restock,
-        totalCents: built.totalCents,
+        totalCents,
         currency: CURRENCY,
         isLocked: true,
         userId: userId ?? null,
       });
 
       await repository.insertCreditNoteLines(
-        built.lines.map((line) => ({
+        lines.map((line) => ({
           ...line,
           companyId: company.id,
           creditNoteId: creditNote.id,
@@ -367,7 +512,7 @@ class InvoicingApplication {
           originId: creditNote.id,
           reference: creditNote.number,
           userId,
-          lines: built.lines.map((line) => ({
+          lines: lines.map((line) => ({
             productId: line.productId,
             quantity: line.quantity,
           })),
@@ -393,9 +538,13 @@ class InvoicingApplication {
         }),
       });
 
-      // A full credit note settles the invoice: it must no longer show as unpaid.
-      if (built.totalCents >= invoice.totalCents - invoice.paidAmountCents) {
-        await repository.update(company.id, invoice.id, { status: "CANCELLED" });
+      // The return reduces what the customer owes. Only a return of **everything**
+      // cancels the invoice; a partial return of a paid ticket leaves it paid.
+      const updated = await repository.addCreditedAmount(company.id, invoice.id, totalCents);
+      if (updated) {
+        await repository.update(company.id, invoice.id, {
+          status: deriveSettlementStatus(updated),
+        });
       }
 
       return repository.findCreditNote(company.id, creditNote.id);
@@ -403,24 +552,66 @@ class InvoicingApplication {
   }
 
   /**
+   * Invoice line a returned line refers to: by its id, otherwise the first line of the
+   * same item that still has something to return.
+   */
+  private findInvoiceLine(
+    lines: SalesInvoiceLine[],
+    raw: CreditNoteLineInput,
+    remaining: Map<string, { quantity: number }>
+  ): SalesInvoiceLine | undefined {
+    if (raw.invoiceLineId) return lines.find((line) => line.id === raw.invoiceLineId);
+    const candidates = lines.filter((line) =>
+      raw.productId
+        ? line.productId === raw.productId && (line.variantId ?? null) === (raw.variantId ?? null)
+        : raw.serviceId
+          ? line.serviceId === raw.serviceId
+          : !line.productId && !line.serviceId && line.description === raw.description?.trim()
+    );
+    return candidates.find((line) => (remaining.get(line.id)?.quantity ?? 0) > 0) ?? candidates[0];
+  }
+
+  /**
    * Applies a receipt to the invoice. Called by the `payments` domain, within **its**
    * transaction, so that payment and status stay consistent.
+   *
+   * Refused: an invoice not validated or cancelled, a customer other than the invoice's
+   * one, and more than what is still owed (returns deducted).
    */
   async applyPayment(
     tx: Database,
     companyId: string,
     invoiceId: string,
-    amountCents: number
+    amountCents: number,
+    partyId?: string
   ): Promise<SalesInvoice> {
     const repository = invoicingRepository.withTransaction(tx);
-    const invoice = await repository.addPaidAmount(companyId, invoiceId, amountCents);
+    const invoice = await repository.lockForUpdate(companyId, invoiceId);
     if (!invoice) throw new NotFoundError("Invoice not found.");
-    if (invoice.paidAmountCents > invoice.totalCents) {
-      throw new BusinessRuleError("The total paid would exceed the invoice amount.", "OVERPAYMENT");
+    if (invoice.status === "DRAFT" || invoice.status === "CANCELLED") {
+      throw new BusinessRuleError(
+        "Only a validated invoice that is not cancelled can be paid.",
+        "INVOICE_NOT_PAYABLE"
+      );
     }
-    const status = derivePaymentStatus(invoice.totalCents, invoice.paidAmountCents);
-    const updated = await repository.update(companyId, invoiceId, { status });
-    return updated ?? invoice;
+    if (partyId && invoice.partyId !== partyId) {
+      throw new BusinessRuleError(
+        "This invoice belongs to another customer.",
+        "PAYMENT_PARTY_MISMATCH"
+      );
+    }
+    if (amountCents > invoiceAmountDueCents(invoice)) {
+      throw new BusinessRuleError(
+        tr("The payment is more than what is still owed on this invoice ({due}).", {
+          due: formatMoney(invoiceAmountDueCents(invoice)),
+        }),
+        "OVERPAYMENT"
+      );
+    }
+    const updated = await repository.addPaidAmount(companyId, invoiceId, amountCents);
+    if (!updated) throw new NotFoundError("Invoice not found.");
+    const status = deriveSettlementStatus(updated);
+    return (await repository.update(companyId, invoiceId, { status })) ?? updated;
   }
 
   /**

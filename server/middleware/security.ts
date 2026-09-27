@@ -1,8 +1,8 @@
 /**
  * Security headers and CORS [NFR-SEC-3], [NFR-SEC-4].
  *
- * The CSP allows `asset:` so the Tauri shell can display product thumbnails cached
- * locally for offline mode.
+ * The CSP only applies to the web application served by this server: the desktop
+ * shell (Tauri) has its own policy in `src-tauri/tauri.conf.json`.
  */
 
 import type { NextFunction, Request, Response } from "express";
@@ -61,9 +61,13 @@ export function securityHeaders(_req: Request, res: Response, next: NextFunction
         "default-src 'self'",
         "script-src 'self'",
         "style-src 'self' 'unsafe-inline'",
-        "img-src 'self' data: blob: https: asset: http://asset.localhost",
+        // Product pictures may be links to other sites; nothing else leaves the site.
+        "img-src 'self' data: blob: https:",
         "font-src 'self' data:",
-        "connect-src 'self' https: http://localhost:* ws: wss:",
+        "connect-src 'self'",
+        "worker-src 'self'",
+        "manifest-src 'self'",
+        "object-src 'none'",
         "frame-ancestors 'none'",
         "base-uri 'self'",
         "form-action 'self'",

@@ -13,18 +13,23 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 
+import { toast } from "sonner";
+
 import type { PermissionCode } from "@shared/rbac";
 import { api } from "@/shared/api/http";
 import { ApiError } from "@/shared/api/api-error";
+import { i18n } from "@/shared/i18n";
 import { clearOfflineStorage } from "@/shared/offline/db";
 import {
   clearSession,
   getCachedSession,
   getRefreshToken,
+  onSessionRevoked,
   setAccessToken,
   setCachedSession,
   setRefreshToken,
@@ -38,6 +43,11 @@ export interface SessionUser {
   lastName: string;
   email?: string;
   avatarUrl?: string | null;
+  /**
+   * Set by the server when an administrator created the account or reset its password:
+   * the person must choose their own password before using the application.
+   */
+  mustChangePassword?: boolean;
 }
 
 export interface SessionCompany {
@@ -63,6 +73,15 @@ export interface SessionValue {
 }
 
 const SessionContext = createContext<SessionValue | null>(null);
+
+const ANONYMOUS = {
+  status: "anonymous" as const,
+  user: null,
+  company: null,
+  permissions: [],
+  modules: [],
+  isStale: false,
+};
 
 interface AuthResponse {
   user: SessionUser & { isSuperuser?: boolean };
@@ -155,6 +174,25 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void loadSession();
   }, [loadSession]);
+
+  // The server refused the session (password changed, account disabled, sign-in
+  // expired): back to the sign-in screen, once, instead of failing every request.
+  // Data waiting to be sent stays on the device.
+  const statusRef = useRef(state.status);
+  useEffect(() => {
+    statusRef.current = state.status;
+  }, [state.status]);
+  useEffect(
+    () =>
+      onSessionRevoked(() => {
+        if (statusRef.current !== "authenticated") return;
+        statusRef.current = "anonymous";
+        clearSession();
+        setState(ANONYMOUS);
+        toast.info(i18n.t("auth:sessionEnded"));
+      }),
+    []
+  );
 
   const login = useCallback(
     async (input: { username: string; password: string }) => {

@@ -55,7 +55,7 @@
     "invoicing": {
       "read": "Voir les factures",
       "write": "Faire et valider les factures",
-      "cancel": "Annuler une facture (faire un avoir)"
+      "cancel": "Annuler une facture (retour de marchandise ou remboursement)"
     },
     "payments": {
       "read": "Voir les paiements",

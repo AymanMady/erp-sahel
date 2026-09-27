@@ -19,9 +19,13 @@
     "notFound": "Invoice not found.",
     "validated": "Invoice {{number}} validated.",
     "collect": "Receive a payment",
-    "issueCreditNote": "Return of goods (make a credit note)",
+    "issueCreditNote": "Return of goods or refund",
     "draftNotice": "This invoice is <strong>being prepared</strong>: it has no number yet, the stock has not moved and it is not in the accounts. Click “Validate” when it is ready.",
-    "payments": "Payments received"
+    "payments": "Payments received",
+    "confirmValidate": {
+      "title": "Validate the invoice of {{amount}}?",
+      "description": "It can no longer be changed. The items will leave the stock and the customer will owe the amount."
+    }
   },
   "payment": {
     "title": "Receive a payment",
@@ -34,16 +38,19 @@
     "saved": "Payment saved."
   },
   "creditNote": {
-    "title": "Return of goods (credit note)",
-    "description": "A validated invoice cannot be changed. To correct or cancel it, you make a credit note: it cancels the whole invoice.",
+    "title": "Return of goods",
+    "description": "A validated invoice cannot be changed. Write how many of each item the customer brings back. The price is the one on the invoice.",
     "reason": "Why?",
     "reasonPlaceholder": "The customer brought the goods back, mistake on the invoice…",
     "restock": "Put the items back in stock",
-    "submit": "Make the credit note",
-    "issued": "Credit note made: the invoice is cancelled."
+    "submit": "Record the return",
+    "issued": "Return recorded.",
+    "returnable": "Can still be brought back: {{quantity}} {{unit}}",
+    "nothingLeft": "Already all brought back",
+    "quantity": "Quantity brought back of {{name}}"
   },
   "creditNotes": {
-    "title": "Returns of goods (credit notes)",
+    "title": "Returns of goods",
     "description": "Cancelled or corrected invoices, with the items put back in stock.",
     "columns": {
       "restock": "Put back in stock",
@@ -52,7 +59,7 @@
     "restocked": "Yes",
     "notRestocked": "No",
     "emptyTitle": "No returns",
-    "emptyDescription": "To make a credit note, open a validated invoice."
+    "emptyDescription": "To record a return, open a validated invoice."
   },
   "invoiceForm": {
     "title": "New invoice",
@@ -71,6 +78,10 @@
     "savedOffline": "Invoice {{number}} kept on this device (no internet).",
     "savedOfflineDescription": "It will be validated when internet comes back.",
     "draftSaved": "Invoice kept for later.",
-    "validated": "Invoice {{number}} validated. The stock is updated."
+    "validated": "Invoice {{number}} validated. The stock is updated.",
+    "confirmValidate": {
+      "title": "Validate the invoice of {{amount}}?",
+      "description": "It can no longer be changed. The items will leave the stock and the customer will owe the amount."
+    }
   }
 }

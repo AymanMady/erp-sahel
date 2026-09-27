@@ -52,7 +52,13 @@ export class AuthRepository {
     const [row] = await this.database
       .select({ id: userCompanies.id })
       .from(userCompanies)
-      .where(and(eq(userCompanies.userId, userId), eq(userCompanies.companyId, companyId)))
+      .where(
+        and(
+          eq(userCompanies.userId, userId),
+          eq(userCompanies.companyId, companyId),
+          eq(userCompanies.isActive, true)
+        )
+      )
       .limit(1);
     return Boolean(row);
   }
@@ -69,6 +75,8 @@ export class AuthRepository {
         and(
           eq(userRoles.userId, userId),
           eq(userRoles.companyId, companyId),
+          // A deleted role (soft-deleted) no longer grants anything.
+          eq(roles.isActive, true),
           // A role is either a system role (null companyId) or specific to this company.
           or(isNull(roles.companyId), eq(roles.companyId, companyId))
         )
@@ -90,10 +98,17 @@ export class AuthRepository {
     return rows.map((row) => row.id);
   }
 
+  /** Same password, stronger hash: sessions stay open. */
+  async updatePasswordHash(userId: string, passwordHash: string): Promise<void> {
+    await this.database.update(users).set({ passwordHash }).where(eq(users.id, userId));
+  }
+
+  /** Sets a new password and invalidates every session opened before now. */
   async updatePassword(userId: string, passwordHash: string): Promise<void> {
+    const now = new Date();
     await this.database
       .update(users)
-      .set({ passwordHash, updatedAt: new Date() })
+      .set({ passwordHash, mustChangePassword: false, sessionsValidAfter: now, updatedAt: now })
       .where(eq(users.id, userId));
   }
 
@@ -116,6 +131,26 @@ export class AuthRepository {
     return row ?? null;
   }
 
+  /**
+   * Uses a refresh token: revokes it **in the same statement** that checks it is still
+   * valid. Of two requests presenting the same token at once, only one gets the row.
+   */
+  async consumeRefreshToken(tokenHash: string) {
+    const now = new Date();
+    const [row] = await this.database
+      .update(refreshTokens)
+      .set({ revokedAt: now, rotatedAt: now })
+      .where(
+        and(
+          eq(refreshTokens.tokenHash, tokenHash),
+          isNull(refreshTokens.revokedAt),
+          sql`${refreshTokens.expiresAt} > now()`
+        )
+      )
+      .returning();
+    return row ?? null;
+  }
+
   async revokeRefreshToken(tokenHash: string): Promise<void> {
     await this.database
       .update(refreshTokens)
@@ -123,11 +158,37 @@ export class AuthRepository {
       .where(eq(refreshTokens.tokenHash, tokenHash));
   }
 
+  /** Ends every session of the user, access tokens included. */
   async revokeAllForUser(userId: string): Promise<void> {
+    const now = new Date();
     await this.database
       .update(refreshTokens)
-      .set({ revokedAt: new Date() })
+      .set({ revokedAt: now })
       .where(and(eq(refreshTokens.userId, userId), isNull(refreshTokens.revokedAt)));
+    await this.database
+      .update(users)
+      .set({ sessionsValidAfter: now, updatedAt: now })
+      .where(eq(users.id, userId));
+  }
+
+  /**
+   * What decides, on every request, whether a session is still valid: the account,
+   * its membership of the company and its current permissions.
+   */
+  async loadSessionState(userId: string, companyId: string) {
+    const [user] = await this.database
+      .select({
+        isActive: users.isActive,
+        isSuperuser: users.isSuperuser,
+        sessionsValidAfter: users.sessionsValidAfter,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    if (!user) return null;
+    const isMember = user.isSuperuser || (await this.hasMembership(userId, companyId));
+    const permissions = isMember ? await this.listEffectivePermissions(userId, companyId) : [];
+    return { ...user, isMember, permissions };
   }
 
   /** Purges expired sessions — called at startup, without a dedicated worker. */

@@ -7,7 +7,12 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { hasAnyPermission, resolveRolePermissions, DEFAULT_ROLES } from "@shared/rbac";
+import {
+  ALL_PERMISSION_CODES,
+  DEFAULT_ROLES,
+  hasAnyPermission,
+  resolveRolePermissions,
+} from "@shared/rbac";
 import { closeDatabase, db as database } from "../db";
 import { catalogApplication } from "../domains/catalog/application";
 import { invoicingApplication } from "../domains/invoicing/application";
@@ -135,7 +140,7 @@ describe("data isolation between companies", () => {
 describe("permission model", () => {
   it("grants every permission to the administrator", () => {
     const administrator = DEFAULT_ROLES.find((role) => role.slug === "administrateur");
-    expect(resolveRolePermissions(administrator!.permissions).length).toBeGreaterThan(30);
+    expect(resolveRolePermissions(administrator!.permissions)).toEqual(ALL_PERMISSION_CODES);
   });
 
   it("grants the salesperson neither accounting nor administration", () => {

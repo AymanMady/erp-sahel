@@ -42,7 +42,7 @@
       "QUOTE": "Devis",
       "SALES_ORDER": "Commandes des clients",
       "SALES_INVOICE": "Factures clients",
-      "CREDIT_NOTE": "Retours de marchandise (avoirs)",
+      "CREDIT_NOTE": "Retours de marchandise",
       "PURCHASE_ORDER": "Commandes fournisseurs",
       "GOODS_RECEIPT": "Marchandise reçue",
       "SUPPLIER_INVOICE": "Factures fournisseurs",
@@ -112,6 +112,11 @@
       "firstName": "Prénom",
       "lastName": "Nom",
       "allowOffline": "Peut se connecter sans internet sur un ordinateur déjà utilisé avec internet"
+    },
+    "confirmBlock": {
+      "title": "Bloquer le compte de {{name}} ?",
+      "description": "Cette personne ne pourra plus se connecter. Vous pourrez la débloquer plus tard.",
+      "confirm": "Oui, bloquer"
     }
   },
   "roles": {
@@ -126,6 +131,10 @@
     "dialog": {
       "systemTitle": "Rôle de base — {{name}}",
       "editTitle": "Modifier le rôle"
+    },
+    "confirmDelete": {
+      "title": "Supprimer le rôle « {{name}} » ?",
+      "description": "Cela ne peut pas être annulé."
     }
   },
   "modules": {

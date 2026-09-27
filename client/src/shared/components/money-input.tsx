@@ -12,7 +12,13 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { centsToMajor, parseAmountToCents, parsePercentToBp, bpToPercent } from "@shared/money";
+import {
+  bpToPercent,
+  centsToMajor,
+  parseAmountToCents,
+  parsePercentToBp,
+  toLatinDigits,
+} from "@shared/money";
 import { currentIntlLocale } from "@/shared/i18n";
 import { Input } from "@/shared/ui/input";
 import { cn } from "@/shared/lib/utils";
@@ -142,7 +148,8 @@ export function QuantityInput({
       disabled={disabled}
       className={cn("tabular text-end", className)}
       value={String(value)}
-      onChange={(event) => onChange(event.target.value.replace(",", "."))}
+      // Arabic-Indic digits ("٣") and the Arabic decimal comma are read like the others.
+      onChange={(event) => onChange(toLatinDigits(event.target.value).replace(/[,\u066b]/, "."))}
     />
   );
 }

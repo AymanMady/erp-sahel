@@ -132,10 +132,10 @@ export class BankingRepository {
   async treasuryTotals(companyId: string) {
     const [row] = await this.database
       .select({
-        cashCents: sql<number>`coalesce(sum(${bankAccounts.balanceCents}) filter (where ${bankAccounts.accountType} = 'CASH'), 0)::int`,
-        bankCents: sql<number>`coalesce(sum(${bankAccounts.balanceCents}) filter (where ${bankAccounts.accountType} = 'BANK'), 0)::int`,
-        mobileCents: sql<number>`coalesce(sum(${bankAccounts.balanceCents}) filter (where ${bankAccounts.accountType} = 'MOBILE_MONEY'), 0)::int`,
-        totalCents: sql<number>`coalesce(sum(${bankAccounts.balanceCents}), 0)::int`,
+        cashCents: sql<number>`coalesce(sum(${bankAccounts.balanceCents}) filter (where ${bankAccounts.accountType} = 'CASH'), 0)::bigint`,
+        bankCents: sql<number>`coalesce(sum(${bankAccounts.balanceCents}) filter (where ${bankAccounts.accountType} = 'BANK'), 0)::bigint`,
+        mobileCents: sql<number>`coalesce(sum(${bankAccounts.balanceCents}) filter (where ${bankAccounts.accountType} = 'MOBILE_MONEY'), 0)::bigint`,
+        totalCents: sql<number>`coalesce(sum(${bankAccounts.balanceCents}), 0)::bigint`,
       })
       .from(bankAccounts)
       .where(and(eq(bankAccounts.companyId, companyId), eq(bankAccounts.isActive, true)));

@@ -124,6 +124,7 @@ export class PartiesExtraRepository {
           status: salesInvoices.status,
           totalCents: salesInvoices.totalCents,
           paidAmountCents: salesInvoices.paidAmountCents,
+          creditedAmountCents: salesInvoices.creditedAmountCents,
         })
         .from(salesInvoices)
         .where(and(eq(salesInvoices.companyId, companyId), eq(salesInvoices.partyId, partyId)))
@@ -147,11 +148,14 @@ export class PartiesExtraRepository {
     return { invoices, payments: settlements };
   }
 
-  /** Customer outstanding balance: total invoiced and unpaid — drives the credit limit check. */
+  /**
+   * What the customer owes: invoiced, minus paid, minus returned (credit notes) — drives
+   * the credit limit check.
+   */
   async outstandingBalanceCents(companyId: string, partyId: string): Promise<number> {
     const [row] = await this.database
       .select({
-        value: sql<number>`coalesce(sum(${salesInvoices.totalCents} - ${salesInvoices.paidAmountCents}), 0)::int`,
+        value: sql<number>`coalesce(sum(greatest(${salesInvoices.totalCents} - ${salesInvoices.paidAmountCents} - ${salesInvoices.creditedAmountCents}, 0)), 0)::bigint`,
       })
       .from(salesInvoices)
       .where(

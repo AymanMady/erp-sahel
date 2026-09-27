@@ -24,12 +24,20 @@ export const accountingMessages: MessageCatalog = {
     "The end date must be after the start date.":
       "La date de fin doit être postérieure à la date de début.",
     "Fiscal year not found.": "Exercice introuvable.",
+    "These dates overlap fiscal year {name}. Choose dates after or before it.":
+      "Ces dates empiètent sur l'exercice {name}. Choisissez des dates avant ou après.",
+    "Fiscal year {name} is already closed.": "L'exercice {name} est déjà clôturé.",
+    "Close fiscal year {name} first: it comes before this one.":
+      "Clôturez d'abord l'exercice {name} : il vient avant celui-ci.",
+    "This account is a heading: choose one of the accounts under it.":
+      "Ce compte est un titre : choisissez un des comptes qui sont dessous.",
     // Validation
     "Account number is required": "Le numéro de compte est obligatoire",
     "Label is required": "Le libellé est obligatoire",
     "An entry has at least two lines": "Une écriture comporte au moins deux lignes",
     "Invalid identifier": "Identifiant invalide",
     // Automatic entry labels
+    "Opening balances carried over from {name}": "Report à nouveau de l'exercice {name}",
     // Default chart of accounts
     Capital: "Capital",
     "Share capital": "Capital social",
@@ -43,6 +51,11 @@ export const accountingMessages: MessageCatalog = {
     "Suppliers, trade payables": "Fournisseurs, dettes en compte",
     Customers: "Clients",
     "State and public authorities": "État et collectivités",
+    "Sundry debtors and creditors": "Débiteurs et créditeurs divers",
+    "Suspense account": "Compte d'attente",
+    "Other income": "Autres produits",
+    "Miscellaneous income": "Produits divers",
+    "Miscellaneous operating income": "Produits divers de gestion",
     Banks: "Banques",
     "Local banks": "Banques locales",
     "Financial institutions": "Établissements financiers",
@@ -90,12 +103,20 @@ export const accountingMessages: MessageCatalog = {
       "لا يمكن أن يكون السطر مدينًا ودائنًا في آن واحد.",
     "The end date must be after the start date.": "يجب أن يكون تاريخ النهاية بعد تاريخ البداية.",
     "Fiscal year not found.": "السنة المالية غير موجودة.",
+    "These dates overlap fiscal year {name}. Choose dates after or before it.":
+      "هذه التواريخ تتداخل مع السنة المالية {name}. اختر تواريخ قبلها أو بعدها.",
+    "Fiscal year {name} is already closed.": "السنة المالية {name} مقفلة من قبل.",
+    "Close fiscal year {name} first: it comes before this one.":
+      "أقفل السنة المالية {name} أولًا: فهي تأتي قبل هذه السنة.",
+    "This account is a heading: choose one of the accounts under it.":
+      "هذا الحساب عنوان فقط: اختر أحد الحسابات التي تحته.",
     // Validation
     "Account number is required": "رقم الحساب مطلوب",
     "Label is required": "التسمية إلزامية",
     "An entry has at least two lines": "يتضمن القيد سطرين على الأقل",
     "Invalid identifier": "معرّف غير صالح",
     // Automatic entry labels
+    "Opening balances carried over from {name}": "أرصدة منقولة من السنة المالية {name}",
     // Default chart of accounts
     Capital: "رأس المال",
     "Share capital": "رأس المال الاجتماعي",
@@ -109,6 +130,11 @@ export const accountingMessages: MessageCatalog = {
     "Suppliers, trade payables": "الموردون، ديون تجارية",
     Customers: "العملاء",
     "State and public authorities": "الدولة والجماعات العمومية",
+    "Sundry debtors and creditors": "مدينون ودائنون متنوعون",
+    "Suspense account": "حساب انتظار",
+    "Other income": "إيرادات أخرى",
+    "Miscellaneous income": "إيرادات متنوعة",
+    "Miscellaneous operating income": "إيرادات تسيير متنوعة",
     Banks: "البنوك",
     "Local banks": "البنوك المحلية",
     "Financial institutions": "المؤسسات المالية",

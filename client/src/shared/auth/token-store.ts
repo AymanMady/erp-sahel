@@ -49,6 +49,21 @@ export function onAccessTokenChange(listener: (token: string | null) => void): (
   return () => listeners.delete(listener);
 }
 
+const revokedListeners = new Set<() => void>();
+
+/**
+ * Called when the server has refused the session for good (password changed, account
+ * disabled, sign-in expired): the application must go back to the sign-in screen.
+ */
+export function onSessionRevoked(listener: () => void): () => void {
+  revokedListeners.add(listener);
+  return () => revokedListeners.delete(listener);
+}
+
+export function notifySessionRevoked(): void {
+  for (const listener of revokedListeners) listener();
+}
+
 export function getRefreshToken(): string | null {
   return safeGet(REFRESH_KEY);
 }

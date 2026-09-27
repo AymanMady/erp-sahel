@@ -127,7 +127,6 @@ export default function QuoteDetailPage() {
           unitPriceCents: line.unitPriceCents,
           discountBp: line.discountBp,
           totalCents: line.totalCents,
-          originCountry: line.originCountry,
         }))}
         totalCents={data.totalCents}
         notes={data.notes}

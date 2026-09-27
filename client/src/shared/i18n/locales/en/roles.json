@@ -55,7 +55,7 @@
     "invoicing": {
       "read": "See invoices",
       "write": "Make and validate invoices",
-      "cancel": "Cancel an invoice (make a credit note)"
+      "cancel": "Cancel an invoice (return of goods or refund)"
     },
     "payments": {
       "read": "See payments",

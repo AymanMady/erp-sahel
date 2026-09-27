@@ -6,15 +6,25 @@ import { z } from "zod";
 import { syncPushRequestSchema } from "@shared/sync-protocol";
 import { parties, products, services, stockItems } from "@shared/schema";
 import { db } from "../../db";
+import { NotFoundError } from "../../shared/errors/app-error";
 import { tenancyApplication } from "../tenancy/application";
 import { syncApplication } from "./application";
 import { syncRepository } from "./repository";
-import { buildSyncSnapshot } from "./snapshot";
+import { buildSyncSnapshot, syncCursor } from "./snapshot";
 
 const pullQuerySchema = z.object({
   since: z.string().datetime().optional(),
   deviceId: z.string().max(128).optional(),
 });
+
+/** Largest delta served; beyond, the device takes a full snapshot (`resync`). */
+const PULL_LIMITS = {
+  products: 2000,
+  parties: 2000,
+  services: 500,
+  stock: 5000,
+  operations: 500,
+} as const;
 
 /** Platform declared by the device; `web` by default (the most restrictive). */
 function normalizePlatform(value: unknown): string {
@@ -28,12 +38,21 @@ export class SyncService {
     userId: string;
     deviceId: string;
     platform: unknown;
+    isSuperuser: boolean;
+    permissions: readonly string[];
   }) {
     const platform = normalizePlatform(input.platform);
+    // Password hashes only go to a desktop an administrator approved, for someone who
+    // works at the register.
+    const includeOfflineLogins =
+      platform === "desktop" &&
+      (input.isSuperuser || input.permissions.includes("pos.use")) &&
+      (await syncRepository.isOfflineLoginAllowed(input.companyId, input.deviceId));
     const snapshot = await buildSyncSnapshot({
       companyId: input.companyId,
       userId: input.userId,
       platform,
+      includeOfflineLogins,
     });
     await syncRepository.touchDevice({
       companyId: input.companyId,
@@ -49,21 +68,26 @@ export class SyncService {
    * Delta since a cursor: only the reference data the device displays.
    * Without `since`, an empty delta is returned rather than the whole catalog — the
    * device must then request a full snapshot, which is explicit and bounded.
+   *
+   * The cursor comes from the database clock, a little in the past (`syncCursor`), and
+   * is read **before** the changes: nothing written meanwhile can fall between two
+   * deltas. When a list would not fit in one answer, nothing is cut silently: the
+   * answer says `resync`, and the device takes a full snapshot instead.
    */
   async pull(companyId: string, query: unknown) {
     const { since } = pullQuerySchema.parse(query ?? {});
-    const cursor = new Date().toISOString();
-    if (!since) {
-      return {
-        cursor,
-        since: null,
-        products: [],
-        parties: [],
-        services: [],
-        stock: [],
-        operations: [],
-      };
-    }
+    const cursor = await syncCursor();
+    const empty = {
+      cursor,
+      since: since ?? null,
+      resync: false,
+      products: [],
+      parties: [],
+      services: [],
+      stock: [],
+      operations: [],
+    };
+    if (!since) return empty;
     const sinceDate = new Date(since);
 
     const [changedProducts, changedParties, changedServices, changedStock, operations] =
@@ -72,17 +96,19 @@ export class SyncService {
           .select()
           .from(products)
           .where(and(eq(products.companyId, companyId), gt(products.updatedAt, sinceDate)))
-          .limit(2000),
+          .limit(PULL_LIMITS.products + 1),
         db
           .select()
           .from(parties)
           .where(and(eq(parties.companyId, companyId), gt(parties.updatedAt, sinceDate)))
-          .limit(2000),
+          .limit(PULL_LIMITS.parties + 1),
         db
           .select()
           .from(services)
           .where(and(eq(services.companyId, companyId), gt(services.updatedAt, sinceDate)))
-          .limit(500),
+          .limit(PULL_LIMITS.services + 1),
+        // Whole balance of every product/store touched since the cursor, not only the
+        // lines that changed: the device replaces its total.
         db
           .select({
             productId: stockItems.productId,
@@ -90,15 +116,33 @@ export class SyncService {
             quantity: sql<string>`coalesce(sum(${stockItems.quantity}), 0)`,
           })
           .from(stockItems)
-          .where(and(eq(stockItems.companyId, companyId), gt(stockItems.updatedAt, sinceDate)))
+          .where(
+            and(
+              eq(stockItems.companyId, companyId),
+              sql`(${stockItems.productId}, ${stockItems.warehouseId}) in (
+                select changed.product_id, changed.warehouse_id from ${stockItems} changed
+                where changed.company_id = ${companyId} and changed.updated_at > ${sinceDate}
+              )`
+            )
+          )
           .groupBy(stockItems.productId, stockItems.warehouseId)
-          .limit(5000),
-        syncRepository.listSince(companyId, sinceDate),
+          .limit(PULL_LIMITS.stock + 1),
+        syncRepository.listSince(companyId, sinceDate, PULL_LIMITS.operations),
       ]);
+
+    if (
+      changedProducts.length > PULL_LIMITS.products ||
+      changedParties.length > PULL_LIMITS.parties ||
+      changedServices.length > PULL_LIMITS.services ||
+      changedStock.length > PULL_LIMITS.stock
+    ) {
+      return { ...empty, resync: true };
+    }
 
     return {
       cursor,
       since,
+      resync: false,
       products: changedProducts,
       parties: changedParties,
       services: changedServices,
@@ -115,11 +159,23 @@ export class SyncService {
     };
   }
 
-  async push(input: { companyId: string; userId: string; body: unknown }) {
+  async push(input: {
+    companyId: string;
+    userId: string;
+    isSuperuser: boolean;
+    permissions: readonly string[];
+    body: unknown;
+  }) {
     const data = syncPushRequestSchema.parse(input.body);
     const company = await tenancyApplication.requireCompany(input.companyId);
     const results = await syncApplication.push(
-      { company, userId: input.userId, deviceId: data.deviceId },
+      {
+        company,
+        userId: input.userId,
+        deviceId: data.deviceId,
+        isSuperuser: input.isSuperuser,
+        permissions: input.permissions,
+      },
       data.operations
     );
     return {
@@ -127,6 +183,19 @@ export class SyncService {
       cursor: new Date().toISOString(),
       serverTime: new Date().toISOString(),
     };
+  }
+
+  /** An administrator approves (or no longer approves) a desktop for signing in offline. */
+  async setDeviceOfflineLogin(companyId: string, id: unknown, body: unknown) {
+    const { id: deviceRowId } = z.object({ id: z.string().uuid() }).parse({ id });
+    const { offlineLoginAllowed } = z.object({ offlineLoginAllowed: z.boolean() }).parse(body);
+    const device = await syncRepository.setOfflineLoginAllowed(
+      companyId,
+      deviceRowId,
+      offlineLoginAllowed
+    );
+    if (!device) throw new NotFoundError("Device not found.");
+    return device;
   }
 
   async status(companyId: string) {

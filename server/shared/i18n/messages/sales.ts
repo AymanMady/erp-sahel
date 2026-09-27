@@ -23,6 +23,18 @@ export const salesMessages: MessageCatalog = {
     "Line {line}: service not found.": "Ligne {line} : service introuvable.",
     "Line {line}: the description is required.": "Ligne {line} : la désignation est obligatoire.",
     unit: "unité",
+    "Line {line}: the quantity must be a number greater than zero.":
+      "Ligne {line} : la quantité doit être un nombre plus grand que zéro.",
+    "Line {line}: the price must be zero or more.":
+      "Ligne {line} : le prix ne peut pas être négatif.",
+    "Line {line}: this model does not belong to the chosen product.":
+      "Ligne {line} : ce modèle ne correspond pas à l'article choisi.",
+    "Line {line}: {item} is no longer sold.": "Ligne {line} : {item} n'est plus vendu.",
+    "Line {line}: you are not allowed to change the price of {item}.":
+      "Ligne {line} : vous n'avez pas le droit de changer le prix de {item}.",
+    "The quantity must be greater than zero": "La quantité doit être plus grande que zéro",
+    "The quantity must be a number": "La quantité doit être un nombre",
+    "The price must be zero or more": "Le prix ne peut pas être négatif",
   },
   ar: {
     "Quote not found.": "عرض السعر غير موجود.",
@@ -44,5 +56,17 @@ export const salesMessages: MessageCatalog = {
     "Line {line}: service not found.": "السطر {line}: الخدمة غير موجودة.",
     "Line {line}: the description is required.": "السطر {line}: الوصف إلزامي.",
     unit: "وحدة",
+    "Line {line}: the quantity must be a number greater than zero.":
+      "السطر {line}: يجب أن تكون الكمية رقمًا أكبر من صفر.",
+    "Line {line}: the price must be zero or more.":
+      "السطر {line}: لا يمكن أن يكون السعر أقل من صفر.",
+    "Line {line}: this model does not belong to the chosen product.":
+      "السطر {line}: هذا النوع لا يخص السلعة المختارة.",
+    "Line {line}: {item} is no longer sold.": "السطر {line}: {item} لم يعد يُباع.",
+    "Line {line}: you are not allowed to change the price of {item}.":
+      "السطر {line}: لا يحق لك تغيير سعر {item}.",
+    "The quantity must be greater than zero": "يجب أن تكون الكمية أكبر من صفر",
+    "The quantity must be a number": "يجب أن تكون الكمية رقمًا",
+    "The price must be zero or more": "لا يمكن أن يكون السعر أقل من صفر",
   },
 };

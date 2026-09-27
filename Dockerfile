@@ -16,6 +16,8 @@ RUN npm run build
 FROM node:20-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
+# Document dates must not depend on the host (Mauritania is on UTC all year round).
+ENV TZ=UTC
 
 # Only production dependencies are kept in the final image.
 COPY package.json package-lock.json ./
@@ -33,4 +35,6 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||5000)+'/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-CMD ["node", "dist/index.cjs"]
+# The database is migrated before the server starts: a new version never runs against an
+# old schema.
+CMD ["sh", "-c", "node dist/migrate.cjs && exec node dist/index.cjs"]

@@ -13,6 +13,7 @@ import type { UserWithRoles } from "@/entities/types";
 import { queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
 import { Field, FieldGrid } from "@/shared/components/field";
+import { useConfirm } from "@/shared/components/confirm-dialog";
 import { PageHeader } from "@/shared/components/page-header";
 import { roleName } from "@/shared/lib/i18n-labels";
 import { ResourceTable, type Column } from "@/shared/components/resource-table";
@@ -35,6 +36,7 @@ export default function UsersSettingsPage() {
   const queryClient = useQueryClient();
   const { can, user: currentUser } = useSession();
   const { t } = useTranslation("settings");
+  const [confirmDialog, confirm] = useConfirm();
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<UserWithRoles | null>(null);
 
@@ -114,7 +116,19 @@ export default function UsersSettingsPage() {
         <Switch
           checked={row.isActive}
           disabled={!can("users.write") || row.id === currentUser?.id}
-          onCheckedChange={(checked) => toggleActive.mutate({ id: row.id, isActive: checked })}
+          onCheckedChange={async (checked) => {
+            // Blocking someone out is asked first; letting them back in is not.
+            if (!checked) {
+              const confirmed = await confirm({
+                title: t("users.confirmBlock.title", { name: row.username }),
+                description: t("users.confirmBlock.description"),
+                confirmLabel: t("users.confirmBlock.confirm"),
+                destructive: true,
+              });
+              if (!confirmed) return;
+            }
+            toggleActive.mutate({ id: row.id, isActive: checked });
+          }}
           aria-label={t("users.activateAccount")}
         />
       ),
@@ -134,6 +148,7 @@ export default function UsersSettingsPage() {
 
   return (
     <div className="space-y-6">
+      {confirmDialog}
       <PageHeader title={t("users.title")} description={t("users.description")}>
         {can("users.write") ? (
           <Button onClick={() => setCreating(true)}>

@@ -74,7 +74,9 @@ async function login(page: Page): Promise<void> {
   await page.getByLabel("Username").fill(ADMIN.username);
   await page.getByLabel("Password").fill(ADMIN.password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page.getByRole("heading", { name: /Hello/ })).toBeVisible();
+  // Home screen reached: its sales summary is shown.
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByText("Total sales").first()).toBeVisible();
 }
 
 /** Reads a table of the offline IndexedDB database. */
@@ -124,7 +126,19 @@ test.describe("whole application offline", () => {
         { timeout: 60_000 }
       )
       .toBe(true);
-    await page.waitForLoadState("networkidle");
+    // The prefetch pass is over when it records its end time: no request of it is
+    // still in flight. (Waiting for "network idle" never ends: the app checks the
+    // server every few seconds.)
+    await expect
+      .poll(
+        async () => {
+          const meta = await readStore(page, "meta");
+          const lastRun = meta.find((row) => row.key === "prefetch.lastRunAt")?.value;
+          return Number(lastRun ?? 0) > 0;
+        },
+        { timeout: 120_000 }
+      )
+      .toBe(true);
 
     // --- Outage ---------------------------------------------------------------
     await context.setOffline(true);
@@ -132,7 +146,10 @@ test.describe("whole application offline", () => {
     for (const route of ROUTES) {
       await test.step(`opens ${route} offline`, async () => {
         await page.goto(route);
-        await expect(page.getByRole("heading").first()).toBeVisible();
+        // The home screen has no title, only its figures; every other page has one.
+        const ready =
+          route === "/" ? page.getByText("Total sales").first() : page.getByRole("heading").first();
+        await expect(ready).toBeVisible();
         // Give requests time to fail and the local fallback time to answer.
         await page.waitForTimeout(400);
         await expect(page.locator("body")).not.toContainText(NETWORK_ERRORS);
@@ -149,9 +166,17 @@ test.describe("whole application offline", () => {
     // Administration data is there (the screen used to be empty).
     await page.goto("/settings/roles");
     // System role name as seeded (English since the i18n migration, French before).
-    await expect(page.getByText(/^Administrat(or|eur)$/).first()).toBeVisible();
+    // Lists exist twice (table on a computer, cards on a phone): take the one shown.
+    await expect(
+      page
+        .getByText(/^Administrat(or|eur)$/)
+        .filter({ visible: true })
+        .first()
+    ).toBeVisible();
     await page.goto("/settings/users");
-    await expect(page.getByText("admin", { exact: true }).first()).toBeVisible();
+    await expect(
+      page.getByText("admin", { exact: true }).filter({ visible: true }).first()
+    ).toBeVisible();
 
     // --- Offline entry -----------------------------------------------------------
     const roleName = `Offline storekeeper ${Date.now()}`;

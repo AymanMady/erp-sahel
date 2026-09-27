@@ -16,7 +16,7 @@ import { normalizeQuantity } from "@shared/money";
 import { formatDate, todayInput } from "@shared/format";
 import { errorMessage } from "@/shared/api/api-error";
 import { purchasingApi } from "@/entities/purchasing/api";
-import { queryKeys } from "@/shared/api/query-client";
+import { invalidateMoneyAndStock, queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
 import { DocumentView } from "@/features/documents/document-view";
 import { Field } from "@/shared/components/field";
@@ -210,7 +210,8 @@ export default function PurchaseOrderDetailPage() {
         onDone={() => {
           void queryClient.invalidateQueries({ queryKey: queryKeys.purchaseOrder(params.id) });
           void queryClient.invalidateQueries({ queryKey: ["goods-receipts"] });
-          void queryClient.invalidateQueries({ queryKey: ["stock"] });
+          // Received goods change the stock, its value and the dashboard.
+          invalidateMoneyAndStock(queryClient);
         }}
       />
     </div>
@@ -236,6 +237,7 @@ function ReceiveDialog({
       quantity: string;
       receivedQuantity: string;
       unitPriceCents: number;
+      totalCents: number;
     }[];
   };
   onDone: () => void;
@@ -253,7 +255,11 @@ function ReceiveDialog({
         quantity: String(
           Math.max(0, normalizeQuantity(line.quantity) - normalizeQuantity(line.receivedQuantity))
         ),
-        unitCostCents: line.unitPriceCents,
+        // Price actually paid: after the line discount and the whole-order discount.
+        unitCostCents:
+          normalizeQuantity(line.quantity) > 0
+            ? Math.round(line.totalCents / normalizeQuantity(line.quantity))
+            : line.unitPriceCents,
         lotNumber: "",
       }))
   );

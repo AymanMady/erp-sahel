@@ -133,10 +133,24 @@ async function seedCompany(): Promise<Company> {
   return company;
 }
 
+/** Demonstration password: accepted for local use only. */
+const DEMO_ADMIN_PASSWORD = "Admin123!";
+
+function isStrongEnough(password: string): boolean {
+  return password.length >= 12 && /[A-Za-z]/.test(password) && /[0-9]/.test(password);
+}
+
 /** Initial administrator account, linked to the company with the Administrator role. */
 async function seedAdminUser(company: Company): Promise<string> {
   const username = process.env.SEED_ADMIN_USERNAME ?? "admin";
-  const password = process.env.SEED_ADMIN_PASSWORD ?? "Admin123!";
+  const password = process.env.SEED_ADMIN_PASSWORD ?? DEMO_ADMIN_PASSWORD;
+  const production = process.env.NODE_ENV === "production";
+  if (production && (password === DEMO_ADMIN_PASSWORD || !isStrongEnough(password))) {
+    throw new Error(
+      "In production, set SEED_ADMIN_PASSWORD to a password of at least 12 characters, " +
+        `with letters and digits, different from the demonstration one (${DEMO_ADMIN_PASSWORD}).`
+    );
+  }
 
   const [existing] = await db
     .select()
@@ -156,6 +170,9 @@ async function seedAdminUser(company: Company): Promise<string> {
           firstName: "Administrateur",
           lastName: "",
           isSuperuser: true,
+          // In production the password comes from the deployment settings, which other
+          // people can read: the administrator chooses their own at first sign-in.
+          mustChangePassword: production,
         })
         .returning()
     )[0];

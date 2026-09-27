@@ -12,7 +12,6 @@
     "delete": "Delete",
     "download": "Download",
     "edit": "Edit",
-    "export": "Export",
     "filter": "Filter",
     "new": "New",
     "next": "Next",
@@ -80,5 +79,12 @@
   "language": {
     "label": "Language",
     "change": "Change language"
+  },
+  "confirm": {
+    "archive": {
+      "title": "Remove “{{name}}” from the list?",
+      "description": "It will no longer be offered. What was already recorded with it stays as it is.",
+      "confirm": "Yes, remove"
+    }
   }
 }

@@ -13,6 +13,7 @@ import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { todayInput } from "@shared/format";
+import { DEFAULT_ROLES } from "@shared/rbac";
 import type { SyncOperationInput } from "@shared/sync-protocol";
 import {
   journalEntries,
@@ -31,6 +32,12 @@ import {
   type TestContext,
 } from "./helpers";
 
+/** Rights of the cashier role: what a register device pushes with. */
+const CASHIER = {
+  isSuperuser: false,
+  permissions: DEFAULT_ROLES.find((role) => role.slug === "vendeur")!.permissions as string[],
+};
+
 let context: TestContext;
 let productId: string;
 /**
@@ -47,7 +54,7 @@ beforeAll(async () => {
 
   sessionUuid = randomUUID();
   await syncApplication.push(
-    { company: context.company, userId: context.userId, deviceId: "poste-test" },
+    { company: context.company, userId: context.userId, deviceId: "poste-test", ...CASHIER },
     [
       {
         clientUuid: sessionUuid,
@@ -113,7 +120,6 @@ function buildOfflineBatch(): {
               unit: "piece",
               unitPriceCents: 10_000,
               discountBp: 0,
-              originCountry: "",
             },
           ],
         },
@@ -128,7 +134,7 @@ function buildOfflineBatch(): {
         payload: {
           invoiceClientUuid: invoiceUuid,
           posSessionClientUuid: sessionUuid,
-          amountCents: 34_800,
+          amountCents: 30_000,
           paymentDate: date,
           paymentMethod: "CASH",
           reference: "OFFLINE-TKT-0001",
@@ -143,7 +149,7 @@ describe("offline batch ingestion", () => {
   it("creates the full chain and assigns a legal number", async () => {
     const batch = buildOfflineBatch();
     const results = await syncApplication.push(
-      { company: context.company, userId: context.userId, deviceId: "poste-test" },
+      { company: context.company, userId: context.userId, deviceId: "poste-test", ...CASHIER },
       batch.operations
     );
 
@@ -158,7 +164,7 @@ describe("offline batch ingestion", () => {
       .from(salesInvoices)
       .where(eq(salesInvoices.clientUuid, batch.invoiceUuid));
     expect(invoice.status).toBe("PAID");
-    expect(invoice.totalCents).toBe(34_800);
+    expect(invoice.totalCents).toBe(30_000);
     expect(invoice.provisionalNumber).toBe("OFFLINE-TKT-0001");
     expect(invoice.isLocked).toBe(true);
   });
@@ -169,6 +175,7 @@ describe("offline batch ingestion", () => {
       company: context.company,
       userId: context.userId,
       deviceId: "poste-test",
+      ...CASHIER,
     };
 
     const first = await syncApplication.push(identity, batch.operations);
@@ -213,7 +220,12 @@ describe("offline batch ingestion", () => {
     const quantityBefore = Number(before.quantity);
 
     const batch = buildOfflineBatch();
-    const identity = { company: context.company, userId: context.userId, deviceId: "poste-test" };
+    const identity = {
+      company: context.company,
+      userId: context.userId,
+      deviceId: "poste-test",
+      ...CASHIER,
+    };
 
     await syncApplication.push(identity, batch.operations);
     await syncApplication.push(identity, batch.operations);
@@ -232,7 +244,12 @@ describe("offline batch ingestion", () => {
 
   it("produces balanced journal entries, without duplicates", async () => {
     const batch = buildOfflineBatch();
-    const identity = { company: context.company, userId: context.userId, deviceId: "poste-test" };
+    const identity = {
+      company: context.company,
+      userId: context.userId,
+      deviceId: "poste-test",
+      ...CASHIER,
+    };
 
     await syncApplication.push(identity, batch.operations);
     await syncApplication.push(identity, batch.operations);
@@ -270,7 +287,7 @@ describe("offline batch ingestion", () => {
     const missingPartyUuid = randomUUID();
 
     const [result] = await syncApplication.push(
-      { company: context.company, userId: context.userId, deviceId: "poste-test" },
+      { company: context.company, userId: context.userId, deviceId: "poste-test", ...CASHIER },
       [
         {
           clientUuid: orphanInvoiceUuid,
@@ -317,7 +334,7 @@ describe("offline batch ingestion", () => {
     const invoiceUuid = randomUUID();
 
     const results = await syncApplication.push(
-      { company: context.company, userId: context.userId, deviceId: "poste-test" },
+      { company: context.company, userId: context.userId, deviceId: "poste-test", ...CASHIER },
       [
         {
           clientUuid: partyUuid,

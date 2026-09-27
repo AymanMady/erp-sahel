@@ -11,7 +11,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { IconRefresh, IconTrash } from "@tabler/icons-react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
@@ -19,6 +19,7 @@ import { formatDateTime } from "@shared/format";
 import { errorMessage } from "@/shared/api/api-error";
 import { syncApi } from "@/entities/sync/api";
 import { queryKeys } from "@/shared/api/query-client";
+import { useSession } from "@/shared/auth/session";
 import { Money } from "@/shared/components/money";
 import { PageHeader } from "@/shared/components/page-header";
 import { ResourceTable, type Column } from "@/shared/components/resource-table";
@@ -37,6 +38,7 @@ import {
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
+import { Switch } from "@/shared/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 /** Synchronization entity → key in `sync:entities`. */
@@ -55,6 +57,14 @@ const ENTITY_LABEL_KEYS: Record<string, string> = {
 export default function SyncPage() {
   const { t } = useTranslation("sync");
   const online = useOnline();
+  const { can } = useSession();
+  const queryClient = useQueryClient();
+  const offlineLogin = useMutation({
+    mutationFn: (input: { id: string; allowed: boolean }) =>
+      syncApi.setDeviceOfflineLogin(input.id, input.allowed),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: queryKeys.syncStatus }),
+    onError: (error) => toast.error(errorMessage(error)),
+  });
   const entityLabel = (entity: string) =>
     ENTITY_LABEL_KEYS[entity] ? t(`entities.${ENTITY_LABEL_KEYS[entity]}`) : entity;
   const [status, setStatus] = useState<SyncStatus>(getSyncStatus);
@@ -299,6 +309,18 @@ export default function SyncPage() {
                         {t("devices.platform", { platform: device.platform })}
                       </p>
                     </div>
+                    {device.platform === "desktop" && can("settings.write") ? (
+                      <label className="flex items-center gap-2 text-sm">
+                        <Switch
+                          checked={Boolean(device.offlineLoginAllowed)}
+                          disabled={offlineLogin.isPending || !online}
+                          onCheckedChange={(checked) =>
+                            offlineLogin.mutate({ id: device.id, allowed: checked })
+                          }
+                        />
+                        {t("devices.offlineLogin")}
+                      </label>
+                    ) : null}
                     <div className="text-end text-xs text-muted-foreground">
                       <p>
                         {t("devices.lastPush", {

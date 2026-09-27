@@ -96,7 +96,7 @@ Identifiants de démonstration : **`admin` / `Admin123!`** (modifiables dans `.e
 | `npm start`                          | Démarre le build de production                               |
 | `npm run check`                      | Vérification TypeScript de tout le dépôt                     |
 | `npm run lint`                       | ESLint, règles d'architecture comprises                      |
-| `npm test`                           | 80 tests unitaires et d'intégration                          |
+| `npm test`                           | Tests unitaires et d'intégration (plus de 110)               |
 | `npm run test:e2e`                   | Scénario end-to-end, coupure réseau incluse                  |
 | `npm run quality`                    | `check` + `lint` + `test`                                    |
 | `npm run db:push`                    | Synchronise le schéma (développement)                        |

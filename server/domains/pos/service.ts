@@ -71,9 +71,12 @@ export class PosService {
     });
   }
 
-  async createTicket(companyId: string, userId: string, body: unknown) {
+  async createTicket(companyId: string, userId: string, body: unknown, allowPriceOverride = false) {
     const company = await tenancyApplication.requireCompany(companyId);
-    return posApplication.createTicket(company, userId, createTicketSchema.parse(body));
+    return posApplication.createTicket(company, userId, {
+      ...createTicketSchema.parse(body),
+      allowPriceOverride,
+    });
   }
 }
 
