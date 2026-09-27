@@ -8,11 +8,17 @@
     "backToDashboard": "Retour à l'accueil"
   },
   "search": {
-    "placeholder": "Scanner le code-barres ou taper le nom du produit…",
+    "placeholder": "Scanner le code-barres ou taper le nom du produit ou du service…",
     "searching": "Recherche en cours…",
-    "noMatch": "Aucun produit trouvé.",
-    "startTyping": "Tapez le nom du produit pour le trouver.",
+    "noMatch": "Aucun produit ni service trouvé.",
+    "startTyping": "Tapez le nom du produit ou du service pour le trouver.",
     "noSnapshot": "Connectez-vous une première fois avec internet pour charger les produits.",
+    "service": "Service",
+    "units": {
+      "hourly": "heure",
+      "daily": "jour",
+      "flat": "forfait"
+    },
     "inStock": "{{quantity}} en stock",
     "outOfStock": "Plus en stock"
   },

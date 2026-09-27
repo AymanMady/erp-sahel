@@ -4,6 +4,8 @@ import { asc } from "drizzle-orm";
 
 import { categories } from "@shared/schema";
 import { NotFoundError } from "../../shared/errors/app-error";
+import { tr } from "../../shared/i18n";
+import { buildWorkbook, readWorkbook, rejectImport } from "../../shared/spreadsheet/workbook";
 import { catalogApplication } from "./application";
 import { catalogRepository, categoriesRepository } from "./repository";
 import {
@@ -15,6 +17,7 @@ import {
   updateCategorySchema,
   updateProductSchema,
 } from "./schemas";
+import { PRODUCT_COLUMNS, parseProductRows } from "./spreadsheet";
 
 export class CatalogService {
   async searchProducts(companyId: string, query: unknown) {
@@ -46,6 +49,18 @@ export class CatalogService {
     const { id: productId } = idParamSchema.parse({ id });
     await catalogApplication.archive(companyId, productId);
     return { success: true as const };
+  }
+
+  async exportProducts(companyId: string) {
+    const rows = await catalogApplication.listForExport(companyId);
+    return buildWorkbook(tr("Products"), PRODUCT_COLUMNS, rows);
+  }
+
+  async importProducts(companyId: string, file: unknown) {
+    const rows = await readWorkbook(file, PRODUCT_COLUMNS, ["name"]);
+    const { items, issues } = parseProductRows(rows);
+    if (issues.length > 0) rejectImport(issues);
+    return catalogApplication.importProducts(companyId, items);
   }
 
   async listCategories(companyId: string) {

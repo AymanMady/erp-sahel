@@ -48,6 +48,8 @@ export interface RequestOptions {
    * replay itself, and by screens that have their own queue (`onlineOrQueued`).
    */
   queueOffline?: boolean;
+  /** `"blob"`: the response is a file (Excel export), returned as-is and never cached. */
+  responseType?: "json" | "blob";
 }
 
 /**
@@ -197,10 +199,13 @@ export async function refreshSession(): Promise<boolean> {
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, query, signal, anonymous, skipRefresh } = options;
+  const wantsFile = options.responseType === "blob";
+  // A file (Excel import) is sent as-is, not as JSON.
+  const sendsFile = body instanceof Blob;
 
   const url = buildUrl(path, query);
-  // Authenticated reads: kept so they can be shown again offline.
-  const offlineReadable = method === "GET" && !anonymous;
+  // Authenticated reads: kept so they can be shown again offline. Files are not.
+  const offlineReadable = method === "GET" && !anonymous && !wantsFile;
   const isWrite = method !== "GET" && !anonymous;
   // Same key on first send and on replay: if the response got lost on the way, the
   // server recognizes the write instead of doing it again.
@@ -217,7 +222,8 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     };
     // Server messages (errors, exports) come back in the UI language.
     headers["Accept-Language"] = currentLanguage();
-    if (body !== undefined) headers["Content-Type"] = "application/json";
+    if (sendsFile) headers["Content-Type"] = body.type || "application/octet-stream";
+    else if (body !== undefined) headers["Content-Type"] = "application/json";
     if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
     if (!anonymous) {
       const token = getAccessToken();
@@ -239,7 +245,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       return await fetch(apiUrl(url), {
         method,
         headers,
-        body: body === undefined ? undefined : JSON.stringify(body),
+        body: sendsFile ? body : body === undefined ? undefined : JSON.stringify(body),
         signal: controller.signal,
       });
     } finally {
@@ -334,6 +340,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
   if (!response.ok) throw await parseError(response);
   if (response.status === 204) return undefined as T;
+  if (wantsFile) return (await response.blob()) as T;
 
   const contentType = response.headers.get("Content-Type") ?? "";
   if (!contentType.includes("application/json")) return (await response.text()) as T;

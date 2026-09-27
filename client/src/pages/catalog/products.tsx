@@ -5,12 +5,13 @@
 
 import { useState } from "react";
 import { IconFilter, IconPlus } from "@tabler/icons-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 
 import { errorMessage } from "@/shared/api/api-error";
 import { catalogApi, type ProductFilters } from "@/entities/catalog/api";
+import { SpreadsheetActions } from "@/features/spreadsheet/spreadsheet-actions";
 import type { ProductListItem } from "@/entities/types";
 import { queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
@@ -29,6 +30,7 @@ export default function ProductsPage() {
   const { t } = useTranslation("catalog");
   const [, navigate] = useLocation();
   const { can } = useSession();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState(ALL);
   const [showFilters, setShowFilters] = useState(false);
@@ -114,6 +116,19 @@ export default function ProductsPage() {
           <IconFilter className="size-4" />
           {t("products.filters")}
         </Button>
+        <SpreadsheetActions
+          fileName={t("products.fileName")}
+          exportFile={catalogApi.exportProducts}
+          importFile={catalogApi.importProducts}
+          canImport={can("catalog.write")}
+          importHint={t("products.importHint")}
+          onImported={() => {
+            // Prices changed: the list, the product pages and the till all reload.
+            for (const key of ["products", "product", "pos-products", "categories"]) {
+              void queryClient.invalidateQueries({ queryKey: [key] });
+            }
+          }}
+        />
         {can("catalog.write") ? (
           <Button asChild>
             <Link href="/products/new">

@@ -27,7 +27,9 @@
     "empty": {
       "title": "Personne pour le moment",
       "description": "Ajoutez votre premier client ou fournisseur."
-    }
+    },
+    "fileName": "clients-fournisseurs",
+    "importHint": "Le téléphone doit avoir 8 chiffres et commencer par 2, 3 ou 4. Les contacts et adresses ne sont pas importés."
   },
   "create": {
     "title": "Nouveau client ou fournisseur",

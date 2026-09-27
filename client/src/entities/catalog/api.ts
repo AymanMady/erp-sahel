@@ -1,12 +1,18 @@
 /** Catalog API access (products, categories, referenced suppliers). */
 
-import { api } from "@/shared/api/http";
+import { api, apiRequest } from "@/shared/api/http";
 import { i18n } from "@/shared/i18n";
 import { productDetailOffline, withOfflineFallback } from "@/shared/offline/offline-reads";
 import { offlineNotFound } from "@/shared/api/api-error";
 import { pendingProducts } from "@/shared/offline/offline-writes";
 import { listProductsOffline } from "@/shared/offline/snapshot";
-import type { Category, Paginated, ProductDetail, ProductListItem } from "@/entities/types";
+import type {
+  Category,
+  ImportResult,
+  Paginated,
+  ProductDetail,
+  ProductListItem,
+} from "@/entities/types";
 
 export interface ProductFilters {
   search?: string;
@@ -70,4 +76,14 @@ export const catalogApi = {
     api.put(`/api/catalog/products/${productId}/suppliers`, body),
   removeProductSupplier: (productId: string, supplierId: string) =>
     api.delete(`/api/catalog/products/${productId}/suppliers/${supplierId}`),
+
+  /** Excel file of every product; also the model to fill in for an import. */
+  exportProducts: () => apiRequest<Blob>("/api/catalog/products/export", { responseType: "blob" }),
+  /** Needs the server: a whole file is never kept for later. */
+  importProducts: (file: File) =>
+    apiRequest<ImportResult>("/api/catalog/products/import", {
+      method: "POST",
+      body: file,
+      queueOffline: false,
+    }),
 };

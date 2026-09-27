@@ -2,6 +2,8 @@
 
 import type { Request, Response } from "express";
 
+import { tr } from "../../shared/i18n";
+import { sendWorkbook } from "../../shared/spreadsheet/http";
 import { authOf } from "../auth/guards";
 import { partiesService } from "./service";
 
@@ -10,6 +12,15 @@ export class PartiesController {
 
   list = async (req: Request, res: Response): Promise<void> => {
     res.json(await this.service.list(authOf(req).companyId, req.query));
+  };
+
+  exportAll = async (req: Request, res: Response): Promise<void> => {
+    const companyId = authOf(req).companyId;
+    sendWorkbook(res, tr("customers-suppliers"), await this.service.exportParties(companyId));
+  };
+
+  importAll = async (req: Request, res: Response): Promise<void> => {
+    res.json(await this.service.importParties(authOf(req).companyId, req.body));
   };
 
   get = async (req: Request, res: Response): Promise<void> => {

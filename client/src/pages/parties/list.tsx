@@ -11,6 +11,7 @@ import { PARTY_TYPES, type PartyType } from "@shared/schema";
 import { isValidPhone } from "@shared/phone";
 import { errorMessage } from "@/shared/api/api-error";
 import { partyApi, type PartyFilters } from "@/entities/party/api";
+import { SpreadsheetActions } from "@/features/spreadsheet/spreadsheet-actions";
 import { onlineOrQueued, queuePartyCreate } from "@/shared/offline/offline-writes";
 import type { Party } from "@/entities/types";
 import { queryKeys } from "@/shared/api/query-client";
@@ -42,6 +43,7 @@ export default function PartiesPage() {
   const { t } = useTranslation("parties");
   const [, navigate] = useLocation();
   const { can } = useSession();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [partyType, setPartyType] = useState("ALL");
   const [page, setPage] = useState({ limit: 25, offset: 0 });
@@ -120,6 +122,18 @@ export default function PartiesPage() {
   return (
     <div className="space-y-6">
       <PageHeader title={t("list.title")} description={t("list.description")}>
+        <SpreadsheetActions
+          fileName={t("list.fileName")}
+          exportFile={partyApi.exportAll}
+          importFile={partyApi.importAll}
+          canImport={can("parties.write")}
+          importHint={t("list.importHint")}
+          onImported={() => {
+            for (const key of ["parties", "party"]) {
+              void queryClient.invalidateQueries({ queryKey: [key] });
+            }
+          }}
+        />
         {can("parties.write") ? (
           <Button onClick={() => setCreating(true)}>
             <IconPlus className="size-4" />

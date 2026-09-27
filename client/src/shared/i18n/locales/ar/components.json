@@ -26,5 +26,34 @@
   "detail": {
     "lines": "المنتجات",
     "noLines": "لا توجد أسطر."
+  },
+  "spreadsheet": {
+    "export": "تصدير إلى Excel",
+    "exporting": "جارٍ التحضير…",
+    "import": "استيراد من Excel",
+    "title": "استيراد من Excel",
+    "description": "أضف أو عدّل عدة بطاقات دفعة واحدة بملف Excel.",
+    "step1": "نزّل الملف الحالي: فهو النموذج الذي تملؤه.",
+    "downloadModel": "تنزيل النموذج",
+    "step2": "في Excel، عدّل الأسطر أو أضف أسطرًا جديدة. السطر الذي يحمل رمزًا موجودًا يعدّل تلك البطاقة؛ والسطر بدون رمز ينشئ بطاقة جديدة.",
+    "step3": "احفظ الملف، واختره أدناه، ثم اضغط على « استيراد ».",
+    "choose": "اختر ملف Excel (.xlsx)",
+    "submit": "استيراد",
+    "importing": "جارٍ الاستيراد…",
+    "done": "انتهى الاستيراد.",
+    "created_zero": "لم تتم إضافة أي شيء",
+    "created_one": "أضيف {{count}}",
+    "created_two": "أضيف {{count}}",
+    "created_few": "أضيف {{count}}",
+    "created_many": "أضيف {{count}}",
+    "created_other": "أضيف {{count}}",
+    "updated_zero": "لم يُعدَّل أي شيء",
+    "updated_one": "عُدّل {{count}}",
+    "updated_two": "عُدّل {{count}}",
+    "updated_few": "عُدّل {{count}}",
+    "updated_many": "عُدّل {{count}}",
+    "updated_other": "عُدّل {{count}}",
+    "issue": "السطر {{row}}، العمود « {{column}} »: {{message}}",
+    "issueNoColumn": "السطر {{row}}: {{message}}"
   }
 }

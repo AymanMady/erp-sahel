@@ -1,6 +1,6 @@
 /** Parties (customers/suppliers) API access. */
 
-import { api } from "@/shared/api/http";
+import { api, apiRequest } from "@/shared/api/http";
 import {
   listPartiesOffline,
   partyDetailOffline,
@@ -9,7 +9,14 @@ import {
 import { offlineNotFound } from "@/shared/api/api-error";
 import { i18n } from "@/shared/i18n";
 import { pendingParties } from "@/shared/offline/offline-writes";
-import type { Contact, Paginated, Party, PartyAddress, PartyDetail } from "@/entities/types";
+import type {
+  Contact,
+  ImportResult,
+  Paginated,
+  Party,
+  PartyAddress,
+  PartyDetail,
+} from "@/entities/types";
 
 export interface PartyFilters {
   search?: string;
@@ -50,4 +57,14 @@ export const partyApi = {
   updateAddress: (addressId: string, body: unknown) =>
     api.patch<PartyAddress>(`/api/parties/addresses/${addressId}`, body),
   archiveAddress: (addressId: string) => api.delete(`/api/parties/addresses/${addressId}`),
+
+  /** Excel file of every customer and supplier; also the model to fill in for an import. */
+  exportAll: () => apiRequest<Blob>("/api/parties/export", { responseType: "blob" }),
+  /** Needs the server: a whole file is never kept for later. */
+  importAll: (file: File) =>
+    apiRequest<ImportResult>("/api/parties/import", {
+      method: "POST",
+      body: file,
+      queueOffline: false,
+    }),
 };

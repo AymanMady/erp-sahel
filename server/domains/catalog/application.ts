@@ -10,9 +10,16 @@ import type { Product } from "@shared/schema";
 import { runInTransaction, type Database } from "../../db";
 import { NotFoundError } from "../../shared/errors/app-error";
 import { tr } from "../../shared/i18n";
+import type { ImportResult } from "../../shared/spreadsheet/workbook";
 import { inventoryApplication } from "../inventory/application";
-import { catalogRepository, type ProductSearchOptions } from "./repository";
+import {
+  catalogRepository,
+  categoriesRepository,
+  type ProductExportRow,
+  type ProductSearchOptions,
+} from "./repository";
 import type { CreateProductInput, UpdateProductInput } from "./schemas";
+import type { ProductImportRow } from "./spreadsheet";
 
 export interface ProductListItem extends Product {
   categoryName: string | null;
@@ -191,6 +198,77 @@ class CatalogApplication {
 
   async counts(companyId: string) {
     return catalogRepository.counts(companyId);
+  }
+
+  async listForExport(companyId: string): Promise<ProductExportRow[]> {
+    return catalogRepository.listForExport(companyId);
+  }
+
+  /**
+   * Saves the rows of an Excel file, all or nothing: one row refused by the database
+   * cancels the whole file, so it can be fixed and imported again without duplicates.
+   *
+   * Categories are matched by name and created when missing. Stock is not imported:
+   * quantities go through stock movements, never through the product sheet.
+   */
+  async importProducts(companyId: string, rows: ProductImportRow[]): Promise<ImportResult> {
+    return runInTransaction(async (tx) => {
+      const repository = catalogRepository.withTransaction(tx);
+      const categoryRepository = categoriesRepository.withTransaction(tx);
+
+      const existingIds = await repository.idsBySku(companyId);
+      const categoryIds = new Map(
+        (await categoryRepository.listAll(companyId)).map((category) => [
+          category.name.trim().toLowerCase(),
+          category.id,
+        ])
+      );
+
+      const resolveCategory = async (name: string | undefined) => {
+        if (name === undefined) return undefined;
+        if (!name) return null;
+        const key = name.toLowerCase();
+        let id = categoryIds.get(key);
+        if (!id) {
+          id = (await categoryRepository.create(companyId, { name })).id;
+          categoryIds.set(key, id);
+        }
+        return id;
+      };
+
+      const result: ImportResult = { created: 0, updated: 0 };
+      for (const row of rows) {
+        const { minStock, ...fields } = row.fields;
+        const categoryId = await resolveCategory(row.categoryName);
+        const values = {
+          ...fields,
+          name: fields.name.trim(),
+          ...(minStock !== undefined ? { minStock: String(minStock) } : {}),
+          ...(categoryId !== undefined ? { categoryId } : {}),
+        };
+
+        const existingId = row.sku ? existingIds.get(row.sku.toLowerCase()) : undefined;
+        if (existingId) {
+          await repository.update(companyId, existingId, {
+            ...values,
+            ...(fields.unit !== undefined ? { unit: fields.unit || tr("unit") } : {}),
+            isActive: true,
+          });
+          result.updated += 1;
+          continue;
+        }
+
+        const product = await repository.insert({
+          ...values,
+          companyId,
+          sku: row.sku || (await repository.nextSku(companyId, fields.isService ?? false)),
+          unit: fields.unit || tr("unit"),
+        });
+        existingIds.set(product.sku.toLowerCase(), product.id);
+        result.created += 1;
+      }
+      return result;
+    });
   }
 }
 

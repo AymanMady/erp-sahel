@@ -8,11 +8,17 @@
     "backToDashboard": "Back to home"
   },
   "search": {
-    "placeholder": "Scan the barcode or type the product name…",
+    "placeholder": "Scan the barcode or type the product or service name…",
     "searching": "Searching…",
-    "noMatch": "No product found.",
-    "startTyping": "Type the product name to find it.",
+    "noMatch": "No product or service found.",
+    "startTyping": "Type the product or service name to find it.",
     "noSnapshot": "Sign in once with internet to load the products.",
+    "service": "Service",
+    "units": {
+      "hourly": "hour",
+      "daily": "day",
+      "flat": "fixed price"
+    },
     "inStock": "{{quantity}} in stock",
     "outOfStock": "Out of stock"
   },

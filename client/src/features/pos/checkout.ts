@@ -21,7 +21,10 @@ import { readSnapshot, writeSnapshot } from "@/shared/offline/snapshot";
 import { refreshCounters, runSync } from "@/shared/offline/sync-engine";
 
 export interface CartLine {
-  productId: string;
+  /** Set for a catalog product, `null` for a service line. */
+  productId: string | null;
+  /** Set for a billable service (no stock); absent on product lines. */
+  serviceId?: string | null;
   sku: string;
   name: string;
   unit: string;
@@ -59,6 +62,11 @@ export interface CheckoutResult {
   invoiceId?: string;
 }
 
+/** Stable identity of a cart line: a product and a service may share an id space. */
+export function cartLineKey(line: Pick<CartLine, "productId" | "serviceId">): string {
+  return line.serviceId ? `service:${line.serviceId}` : `product:${line.productId}`;
+}
+
 /** Cart totals — same function as the server, so no discrepancy is possible. */
 export function cartTotals(lines: CartLine[], options: { globalDiscountBp?: number } = {}) {
   return computeDocumentTotals(
@@ -73,7 +81,8 @@ export function cartTotals(lines: CartLine[], options: { globalDiscountBp?: numb
 
 function toSyncLines(lines: CartLine[]) {
   return lines.map((line) => ({
-    productId: line.productId,
+    productId: line.productId ?? null,
+    serviceId: line.serviceId ?? null,
     description: line.name,
     productSku: line.sku,
     quantity: line.quantity,

@@ -5,13 +5,15 @@
  * customer/supplier roles without duplicating the record ([FR-TIERS-3]).
  */
 
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 
 import { parties, type Party, type PartyType } from "@shared/schema";
 import { db, runInTransaction, type Database } from "../../db";
 import { NotFoundError } from "../../shared/errors/app-error";
 import { tr } from "../../shared/i18n";
+import type { ImportResult } from "../../shared/spreadsheet/workbook";
 import { partiesExtraRepository, partiesRepository } from "./repository";
+import type { PartyImportRow } from "./spreadsheet";
 
 /** Code prefix according to the party's main role. */
 function codePrefix(partyType: PartyType): string {
@@ -114,6 +116,38 @@ class PartiesApplication {
 
   async counts(companyId: string) {
     return partiesExtraRepository.counts(companyId);
+  }
+
+  async listForExport(companyId: string): Promise<Party[]> {
+    return partiesRepository.listAll(companyId, { orderBy: [asc(parties.name)] }) as Promise<
+      Party[]
+    >;
+  }
+
+  /**
+   * Saves the rows of an Excel file, all or nothing: one row refused by the database
+   * cancels the whole file, so it can be fixed and imported again without duplicates.
+   */
+  async importParties(companyId: string, rows: PartyImportRow[]): Promise<ImportResult> {
+    return runInTransaction(async (tx) => {
+      const repository = partiesRepository.withTransaction(tx);
+      const existingIds = await partiesExtraRepository.withTransaction(tx).idsByCode(companyId);
+
+      const result: ImportResult = { created: 0, updated: 0 };
+      for (const row of rows) {
+        const fields = { ...row.fields, name: row.fields.name.trim() };
+        const existingId = row.code ? existingIds.get(row.code.toLowerCase()) : undefined;
+        if (existingId) {
+          await repository.update(companyId, existingId, { ...fields, isActive: true });
+          result.updated += 1;
+          continue;
+        }
+        const party = await this.create(companyId, { ...fields, code: row.code }, tx);
+        existingIds.set(party.code.toLowerCase(), party.id);
+        result.created += 1;
+      }
+      return result;
+    });
   }
 
   async outstandingBalanceCents(

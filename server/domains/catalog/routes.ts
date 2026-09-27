@@ -3,6 +3,7 @@
 import type { Express } from "express";
 
 import { asyncHandler } from "../../shared/http/handler";
+import { workbookUpload } from "../../shared/spreadsheet/http";
 import { authorize, requireAuth } from "../auth/guards";
 import { CatalogController } from "./controller";
 
@@ -13,6 +14,20 @@ export function registerCatalogRoutes(app: Express): void {
   const controller = new CatalogController();
 
   app.get("/api/catalog/products", requireAuth, canRead, asyncHandler(controller.listProducts));
+  // Declared before `/products/:id`, which would otherwise take "export" as an id.
+  app.get(
+    "/api/catalog/products/export",
+    requireAuth,
+    canRead,
+    asyncHandler(controller.exportProducts)
+  );
+  app.post(
+    "/api/catalog/products/import",
+    requireAuth,
+    canWrite,
+    workbookUpload,
+    asyncHandler(controller.importProducts)
+  );
   app.get(
     "/api/catalog/products/barcode/:barcode",
     requireAuth,

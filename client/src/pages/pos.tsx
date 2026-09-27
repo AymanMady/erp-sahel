@@ -34,7 +34,8 @@ import { bankingApi } from "@/entities/banking/api";
 import { catalogApi } from "@/entities/catalog/api";
 import { partyApi } from "@/entities/party/api";
 import { posApi } from "@/entities/pos/api";
-import type { Party, PosSession, ProductListItem } from "@/entities/types";
+import { settingsApi } from "@/entities/settings/api";
+import type { Party, PosSession, ProductListItem, Service } from "@/entities/types";
 import { invalidateMoneyAndStock, queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
 import { Field } from "@/shared/components/field";
@@ -45,6 +46,7 @@ import { useOnline } from "@/shared/hooks/use-online";
 import { cn } from "@/shared/lib/utils";
 import { offlineDb } from "@/shared/offline/db";
 import { isNetworkError } from "@/shared/offline/offline-writes";
+import { listServicesOffline } from "@/shared/offline/offline-reads";
 import { readMeta, writeMeta } from "@/shared/offline/storage";
 import {
   pullSnapshot,
@@ -54,6 +56,7 @@ import {
   findByBarcodeOffline,
 } from "@/shared/offline/snapshot";
 import {
+  cartLineKey,
   cartTotals,
   checkout,
   closeSession,
@@ -86,6 +89,12 @@ const TICKET_SEQ_KEY = "pos.localTicketSeq";
 const SESSION_LOCAL_KEY = "pos.localSession";
 /** Cart kept in the browser: a reload or a closed tab must not lose the sale in progress. */
 const CART_STORAGE_KEY = "erp.pos.cart";
+/** Unit shown on a service line, by billing type (pos namespace). */
+const SERVICE_UNIT_KEYS: Record<string, string> = {
+  HOURLY: "search.units.hourly",
+  DAILY: "search.units.daily",
+  FLAT: "search.units.flat",
+};
 
 interface StoredCart {
   cart: CartLine[];
@@ -147,7 +156,7 @@ export default function PosPage() {
   const { t } = useTranslation("pos");
   const online = useOnline();
   const queryClient = useQueryClient();
-  const { can } = useSession();
+  const { can, hasModule } = useSession();
   const searchRef = useRef<HTMLInputElement>(null);
 
   const [search, setSearch] = useState("");
@@ -260,14 +269,37 @@ export default function PosPage() {
   const products: ProductListItem[] =
     online && onlineResults ? onlineResults.items : (offlineResults as ProductListItem[]);
 
+  // --- Service search (labor, flat fees: no stock) -----------------------------
+  const canSellServices = hasModule("services") && (can("services.read") || can("catalog.read"));
+  const { data: onlineServices } = useQuery({
+    queryKey: ["pos-services", debouncedSearch],
+    queryFn: () => settingsApi.listServices({ search: debouncedSearch || undefined, limit: 40 }),
+    enabled: online && canSellServices,
+    retry: false,
+  });
+
+  const offlineServices = useMemo(
+    () =>
+      snapshot && canSellServices
+        ? listServicesOffline(snapshot, { search: debouncedSearch, limit: 40 }).items
+        : [],
+    [snapshot, debouncedSearch, canSellServices]
+  );
+
+  const services: Service[] = !canSellServices
+    ? []
+    : online && onlineServices
+      ? onlineServices.items
+      : offlineServices;
+
   const totals = cartTotals(cart);
 
   const addToCart = useCallback((product: ProductListItem) => {
     setCart((current) => {
-      const existing = current.find((line) => line.productId === product.id);
-      if (existing) {
+      const key = cartLineKey({ productId: product.id });
+      if (current.some((line) => cartLineKey(line) === key)) {
         return current.map((line) =>
-          line.productId === product.id ? { ...line, quantity: line.quantity + 1 } : line
+          cartLineKey(line) === key ? { ...line, quantity: line.quantity + 1 } : line
         );
       }
       return [
@@ -286,6 +318,37 @@ export default function PosPage() {
     setSearch("");
     searchRef.current?.focus();
   }, []);
+
+  const addServiceToCart = useCallback(
+    (service: Service) => {
+      setCart((current) => {
+        const key = cartLineKey({ productId: null, serviceId: service.id });
+        if (current.some((line) => cartLineKey(line) === key)) {
+          return current.map((line) =>
+            cartLineKey(line) === key ? { ...line, quantity: line.quantity + 1 } : line
+          );
+        }
+        return [
+          ...current,
+          {
+            productId: null,
+            serviceId: service.id,
+            sku: service.code,
+            name: service.name,
+            unit: SERVICE_UNIT_KEYS[service.billingType]
+              ? t(SERVICE_UNIT_KEYS[service.billingType])
+              : "",
+            quantity: 1,
+            unitPriceCents: service.priceCents,
+            discountBp: 0,
+          },
+        ];
+      });
+      setSearch("");
+      searchRef.current?.focus();
+    },
+    [t]
+  );
 
   /** A scanner "types" the code then sends Enter: the barcode is resolved at that point. */
   const handleSearchSubmit = useCallback(async () => {
@@ -309,24 +372,26 @@ export default function PosPage() {
       }
     }
     // A single result is shown: adding it is the expected action.
-    if (products.length === 1) addToCart(products[0]);
-  }, [search, snapshot, online, products, addToCart]);
+    if (products.length === 1 && services.length === 0) addToCart(products[0]);
+    else if (services.length === 1 && products.length === 0) addServiceToCart(services[0]);
+  }, [search, snapshot, online, products, services, addToCart, addServiceToCart]);
 
-  const updateQuantity = (productId: string, delta: number) =>
+  /** `key` is the line's `cartLineKey`: products and services live in the same cart. */
+  const updateQuantity = (key: string, delta: number) =>
     setCart((current) =>
       current
         .map((line) =>
-          line.productId === productId
+          cartLineKey(line) === key
             ? { ...line, quantity: Math.max(0, line.quantity + delta) }
             : line
         )
         .filter((line) => line.quantity > 0)
     );
 
-  const setQuantity = (productId: string, quantity: number) =>
+  const setQuantity = (key: string, quantity: number) =>
     setCart((current) =>
       current
-        .map((line) => (line.productId === productId ? { ...line, quantity } : line))
+        .map((line) => (cartLineKey(line) === key ? { ...line, quantity } : line))
         .filter((line) => line.quantity > 0)
     );
 
@@ -400,7 +465,7 @@ export default function PosPage() {
 
         <ScrollArea className="min-h-0 flex-1">
           <div className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-3 xl:grid-cols-4">
-            {products.length === 0 ? (
+            {products.length === 0 && services.length === 0 ? (
               <p className="col-span-full py-16 text-center text-sm text-muted-foreground">
                 {isFetching
                   ? t("search.searching")
@@ -442,6 +507,23 @@ export default function PosPage() {
                 </button>
               ))
             )}
+            {services.map((service) => (
+              <button
+                key={`service-${service.id}`}
+                type="button"
+                onClick={() => addServiceToCart(service)}
+                className="flex flex-col gap-1 rounded-lg border p-3 text-start transition-colors hover:border-primary hover:bg-muted/50 active:translate-y-px"
+              >
+                <span className="line-clamp-2 text-sm font-medium">{service.name}</span>
+                <span className="tabular text-xs text-muted-foreground">{service.code}</span>
+                <div className="mt-auto flex items-center justify-between gap-2 pt-1">
+                  <Money cents={service.priceCents} className="text-sm font-semibold" />
+                  <Badge variant="outline" className="text-[10px]">
+                    {t("search.service")}
+                  </Badge>
+                </div>
+              </button>
+            ))}
           </div>
         </ScrollArea>
       </section>
@@ -473,7 +555,7 @@ export default function PosPage() {
           ) : (
             <ul className="divide-y">
               {cart.map((line) => (
-                <li key={line.productId} className="space-y-2 p-3">
+                <li key={cartLineKey(line)} className="space-y-2 p-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">{line.name}</p>
@@ -486,7 +568,7 @@ export default function PosPage() {
                       variant="ghost"
                       className="size-7 shrink-0"
                       aria-label={t("common:actions.remove")}
-                      onClick={() => setQuantity(line.productId, 0)}
+                      onClick={() => setQuantity(cartLineKey(line), 0)}
                     >
                       <IconTrash className="size-4" />
                     </Button>
@@ -498,21 +580,21 @@ export default function PosPage() {
                         variant="outline"
                         className="size-8"
                         aria-label={t("cart.decrease")}
-                        onClick={() => updateQuantity(line.productId, -1)}
+                        onClick={() => updateQuantity(cartLineKey(line), -1)}
                       >
                         <IconMinus className="size-3.5" />
                       </Button>
                       <CartQuantityInput
                         quantity={line.quantity}
                         label={t("cart.quantity", { name: line.name })}
-                        onChange={(quantity) => setQuantity(line.productId, quantity)}
+                        onChange={(quantity) => setQuantity(cartLineKey(line), quantity)}
                       />
                       <Button
                         size="icon"
                         variant="outline"
                         className="size-8"
                         aria-label={t("cart.increase")}
-                        onClick={() => updateQuantity(line.productId, 1)}
+                        onClick={() => updateQuantity(cartLineKey(line), 1)}
                       >
                         <IconPlus className="size-3.5" />
                       </Button>

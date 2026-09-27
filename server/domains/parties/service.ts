@@ -3,6 +3,7 @@
 import { runInTransaction } from "../../db";
 import { NotFoundError } from "../../shared/errors/app-error";
 import { tr } from "../../shared/i18n";
+import { buildWorkbook, readWorkbook, rejectImport } from "../../shared/spreadsheet/workbook";
 import { partiesApplication } from "./application";
 import { contactsRepository, partiesExtraRepository, partyAddressesRepository } from "./repository";
 import {
@@ -13,6 +14,7 @@ import {
   listPartiesQuerySchema,
   updatePartySchema,
 } from "./schemas";
+import { parsePartyRows, partyColumns } from "./spreadsheet";
 
 export class PartiesService {
   async list(companyId: string, query: unknown) {
@@ -39,6 +41,18 @@ export class PartiesService {
     const { id: partyId } = idParamSchema.parse({ id });
     await partiesApplication.archive(companyId, partyId);
     return { success: true as const };
+  }
+
+  async exportParties(companyId: string) {
+    const rows = await partiesApplication.listForExport(companyId);
+    return buildWorkbook(tr("Customers and suppliers"), partyColumns(), rows);
+  }
+
+  async importParties(companyId: string, file: unknown) {
+    const rows = await readWorkbook(file, partyColumns(), ["name"]);
+    const { items, issues } = parsePartyRows(rows);
+    if (issues.length > 0) rejectImport(issues);
+    return partiesApplication.importParties(companyId, items);
   }
 
   async listContacts(companyId: string, id: unknown) {

@@ -30,6 +30,9 @@ export interface ProductSearchOptions {
   orderBy?: "name" | "sku" | "price" | "recent";
 }
 
+/** One line of the Excel export. */
+export type ProductExportRow = Product & { categoryName: string | null };
+
 export class CatalogRepository {
   constructor(private readonly database: Database = db) {}
 
@@ -278,6 +281,30 @@ export class CatalogRepository {
           eq(productSuppliers.supplierId, supplierId)
         )
       );
+  }
+
+  /** Every active product, for the Excel export. */
+  async listForExport(companyId: string): Promise<ProductExportRow[]> {
+    const rows = await this.database
+      .select({ product: products, categoryName: categories.name })
+      .from(products)
+      .leftJoin(categories, eq(categories.id, products.categoryId))
+      .where(and(eq(products.companyId, companyId), eq(products.isActive, true)))
+      .orderBy(asc(products.name));
+    return rows.map((row) => ({ ...row.product, categoryName: row.categoryName }));
+  }
+
+  /**
+   * Code (lower case) ⇒ product id, archived products included: an import that names
+   * an archived product's code brings that product back instead of failing on the
+   * unique code.
+   */
+  async idsBySku(companyId: string): Promise<Map<string, string>> {
+    const rows = await this.database
+      .select({ id: products.id, sku: products.sku })
+      .from(products)
+      .where(eq(products.companyId, companyId));
+    return new Map(rows.map((row) => [row.sku.toLowerCase(), row.id]));
   }
 
   /** Dashboard counters. */

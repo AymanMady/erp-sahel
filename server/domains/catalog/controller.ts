@@ -2,6 +2,8 @@
 
 import type { Request, Response } from "express";
 
+import { tr } from "../../shared/i18n";
+import { sendWorkbook } from "../../shared/spreadsheet/http";
 import { authOf } from "../auth/guards";
 import { catalogService } from "./service";
 
@@ -11,6 +13,16 @@ export class CatalogController {
   listProducts = async (req: Request, res: Response): Promise<void> => {
     const auth = authOf(req);
     res.json(await this.service.searchProducts(auth.companyId, req.query));
+  };
+
+  exportProducts = async (req: Request, res: Response): Promise<void> => {
+    const auth = authOf(req);
+    sendWorkbook(res, tr("products"), await this.service.exportProducts(auth.companyId));
+  };
+
+  importProducts = async (req: Request, res: Response): Promise<void> => {
+    const auth = authOf(req);
+    res.json(await this.service.importProducts(auth.companyId, req.body));
   };
 
   getProduct = async (req: Request, res: Response): Promise<void> => {

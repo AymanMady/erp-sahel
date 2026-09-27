@@ -12,7 +12,9 @@
     "allCategories": "Toutes les catégories",
     "emptyTitle": "Aucun produit",
     "emptyDescription": "Ajoutez vos produits pour les vendre et suivre ce qui reste.",
-    "offlineUnavailable": "Ce produit n'est pas disponible sans internet."
+    "offlineUnavailable": "Ce produit n'est pas disponible sans internet.",
+    "fileName": "produits",
+    "importHint": "Les quantités en stock ne sont pas importées : utilisez « Entrées et sorties » dans le menu Stock. Les catégories qui n'existent pas encore sont créées."
   },
   "productForm": {
     "defaultUnit": "pièce",

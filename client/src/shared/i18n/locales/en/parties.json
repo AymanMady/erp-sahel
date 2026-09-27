@@ -27,7 +27,9 @@
     "empty": {
       "title": "Nobody yet",
       "description": "Add your first customer or supplier."
-    }
+    },
+    "fileName": "customers-suppliers",
+    "importHint": "The phone number must have 8 digits and start with 2, 3 or 4. Contacts and addresses are not imported."
   },
   "create": {
     "title": "New customer or supplier",

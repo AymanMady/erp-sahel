@@ -168,6 +168,18 @@ export class PartiesExtraRepository {
     return row?.value ?? 0;
   }
 
+  /**
+   * Code (lower case) ⇒ party id, archived parties included: an import that names an
+   * archived party's code brings that party back instead of failing on the unique code.
+   */
+  async idsByCode(companyId: string): Promise<Map<string, string>> {
+    const rows = await this.database
+      .select({ id: parties.id, code: parties.code })
+      .from(parties)
+      .where(eq(parties.companyId, companyId));
+    return new Map(rows.map((row) => [row.code.toLowerCase(), row.id]));
+  }
+
   async counts(companyId: string) {
     const [row] = await this.database
       .select({

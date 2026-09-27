@@ -22,5 +22,26 @@
   "detail": {
     "lines": "Produits",
     "noLines": "Aucune ligne."
+  },
+  "spreadsheet": {
+    "export": "Exporter vers Excel",
+    "exporting": "Préparation…",
+    "import": "Importer depuis Excel",
+    "title": "Importer depuis Excel",
+    "description": "Ajoutez ou modifiez beaucoup de fiches d'un coup avec un fichier Excel.",
+    "step1": "Téléchargez le fichier actuel : il sert de modèle.",
+    "downloadModel": "Télécharger le modèle",
+    "step2": "Dans Excel, modifiez les lignes ou ajoutez-en. Une ligne avec un code qui existe déjà modifie cette fiche ; une ligne sans code crée une nouvelle fiche.",
+    "step3": "Enregistrez le fichier, choisissez-le ci-dessous, puis cliquez sur « Importer ».",
+    "choose": "Choisir le fichier Excel (.xlsx)",
+    "submit": "Importer",
+    "importing": "Importation en cours…",
+    "done": "Importation terminée.",
+    "created_one": "{{count}} ajouté",
+    "created_other": "{{count}} ajoutés",
+    "updated_one": "{{count}} modifié",
+    "updated_other": "{{count}} modifiés",
+    "issue": "Ligne {{row}}, colonne « {{column}} » : {{message}}",
+    "issueNoColumn": "Ligne {{row}} : {{message}}"
   }
 }

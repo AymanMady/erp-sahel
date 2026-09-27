@@ -75,6 +75,19 @@ export type {
   Warehouse,
 } from "@shared/schema";
 
+/** Outcome of an Excel import: rows that created a record, rows that changed one. */
+export interface ImportResult {
+  created: number;
+  updated: number;
+}
+
+/** A problem found in an imported file (`details` of an `IMPORT_INVALID` error). */
+export interface ImportIssue {
+  row: number;
+  column?: string;
+  message: string;
+}
+
 /** Paginated list envelope returned by every API list. */
 export interface Paginated<T> {
   items: T[];

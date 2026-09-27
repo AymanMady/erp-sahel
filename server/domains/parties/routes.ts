@@ -3,6 +3,7 @@
 import type { Express } from "express";
 
 import { asyncHandler } from "../../shared/http/handler";
+import { workbookUpload } from "../../shared/spreadsheet/http";
 import { authorize, requireAuth } from "../auth/guards";
 import { PartiesController } from "./controller";
 
@@ -13,6 +14,15 @@ export function registerPartiesRoutes(app: Express): void {
   const controller = new PartiesController();
 
   app.get("/api/parties", requireAuth, canRead, asyncHandler(controller.list));
+  // Declared before `/parties/:id`, which would otherwise take "export" as an id.
+  app.get("/api/parties/export", requireAuth, canRead, asyncHandler(controller.exportAll));
+  app.post(
+    "/api/parties/import",
+    requireAuth,
+    canWrite,
+    workbookUpload,
+    asyncHandler(controller.importAll)
+  );
   app.get("/api/parties/:id", requireAuth, canRead, asyncHandler(controller.get));
   app.post("/api/parties", requireAuth, canWrite, asyncHandler(controller.create));
   app.patch("/api/parties/:id", requireAuth, canWrite, asyncHandler(controller.update));

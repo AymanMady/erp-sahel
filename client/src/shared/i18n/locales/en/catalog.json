@@ -12,7 +12,9 @@
     "allCategories": "All categories",
     "emptyTitle": "No products",
     "emptyDescription": "Add your products to sell them and see what is left.",
-    "offlineUnavailable": "This product is not available without internet."
+    "offlineUnavailable": "This product is not available without internet.",
+    "fileName": "products",
+    "importHint": "Stock quantities are not imported: use “Stock in and out” in the Stock menu. Categories that do not exist yet are created."
   },
   "productForm": {
     "defaultUnit": "piece",
