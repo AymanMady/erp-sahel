@@ -31,7 +31,7 @@
     "description": "Add or change many records at once with an Excel file.",
     "step1": "Download the current file: it is the model to fill in.",
     "downloadModel": "Download the model",
-    "step2": "In Excel, change rows or add new ones. A row whose code already exists changes that record; a row without a code creates a new one.",
+    "step2": "In Excel, change rows or add new ones. No code needed: it is given automatically. A row whose name already exists changes that record; a new name creates a new record.",
     "step3": "Save the file, choose it below, then click “Import”.",
     "choose": "Choose the Excel file (.xlsx)",
     "submit": "Import",

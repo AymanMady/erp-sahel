@@ -34,13 +34,15 @@ export const spreadsheetMessages: MessageCatalog = {
       "Ce texte est trop long ({max} caractères au maximum).",
     "The file has {count} problem(s). Nothing was saved: fix the file and import it again.":
       "Le fichier contient {count} problème(s). Rien n'a été enregistré : corrigez le fichier puis importez-le de nouveau.",
-    "The code {code} is already used on row {row}.":
-      "Le code {code} est déjà utilisé à la ligne {row}.",
+    "« {name} » is already on row {row}.": "« {name} » est déjà à la ligne {row}.",
+    "{count} products are already called « {name} »: rename them in the application first.":
+      "{count} produits s'appellent déjà « {name} » : renommez-les d'abord dans l'application.",
+    "{count} customers or suppliers are already called « {name} »: rename them in the application first.":
+      "{count} clients ou fournisseurs s'appellent déjà « {name} » : renommez-les d'abord dans l'application.",
 
     // Products sheet
     Products: "Produits",
     products: "produits",
-    "Product code": "Code du produit",
     "Product name": "Nom du produit",
     Category: "Catégorie",
     "Sold by": "Vendu par",
@@ -55,7 +57,6 @@ export const spreadsheetMessages: MessageCatalog = {
     // Customers and suppliers sheet
     "Customers and suppliers": "Clients et fournisseurs",
     "customers-suppliers": "clients-fournisseurs",
-    Code: "Code",
     Name: "Nom",
     Type: "Type",
     Phone: "Téléphone",
@@ -93,12 +94,15 @@ export const spreadsheetMessages: MessageCatalog = {
       "هذا النص طويل جدًا ({max} حرفًا على الأكثر).",
     "The file has {count} problem(s). Nothing was saved: fix the file and import it again.":
       "يحتوي الملف على {count} مشكلة. لم يُحفظ أي شيء: صحّح الملف ثم استورده من جديد.",
-    "The code {code} is already used on row {row}.": "الرمز {code} مستعمل من قبل في السطر {row}.",
+    "« {name} » is already on row {row}.": "« {name} » موجود من قبل في السطر {row}.",
+    "{count} products are already called « {name} »: rename them in the application first.":
+      "يوجد {count} منتجات باسم « {name} »: غيّر أسماءها أولًا في التطبيق.",
+    "{count} customers or suppliers are already called « {name} »: rename them in the application first.":
+      "يوجد {count} عملاء أو موردين باسم « {name} »: غيّر أسماءهم أولًا في التطبيق.",
 
     // Products sheet
     Products: "المنتجات",
     products: "المنتجات",
-    "Product code": "رمز المنتج",
     "Product name": "اسم المنتج",
     Category: "الفئة",
     "Sold by": "يباع بـ",
@@ -113,7 +117,6 @@ export const spreadsheetMessages: MessageCatalog = {
     // Customers and suppliers sheet
     "Customers and suppliers": "العملاء والموردون",
     "customers-suppliers": "العملاء-والموردون",
-    Code: "الرمز",
     Name: "الاسم",
     Type: "النوع",
     Phone: "الهاتف",

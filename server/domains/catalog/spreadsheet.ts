@@ -1,13 +1,15 @@
 /**
  * The products sheet: its columns, and how one row becomes a product.
  *
- * A row is matched to a product by its code. Known code ⇒ the product is updated;
- * empty or unknown code ⇒ a product is created (with that code, or a new one).
+ * The code is not in the file: it is always given automatically. A row is matched to a
+ * product by its name. Known name ⇒ the product is updated; new name ⇒ a product is
+ * created.
  */
 
 import { tr } from "../../shared/i18n";
 import {
   RowReader,
+  nameKey,
   reportSchemaIssues,
   type ImportIssue,
   type SheetColumn,
@@ -17,7 +19,6 @@ import type { ProductExportRow } from "./repository";
 import { createProductSchema } from "./schemas";
 
 export const PRODUCT_COLUMNS: SheetColumn<ProductExportRow>[] = [
-  { key: "sku", label: "Product code", width: 16, value: (row) => row.sku },
   { key: "name", label: "Product name", width: 36, value: (row) => row.name },
   { key: "category", label: "Category", width: 20, value: (row) => row.categoryName ?? "" },
   { key: "unit", label: "Sold by", width: 12, value: (row) => row.unit },
@@ -54,7 +55,6 @@ export const PRODUCT_COLUMNS: SheetColumn<ProductExportRow>[] = [
 /** A valid row, ready to be saved. Absent columns are left out, so they are kept. */
 export interface ProductImportRow {
   rowNumber: number;
-  sku: string;
   categoryName?: string;
   fields: {
     name: string;
@@ -74,13 +74,12 @@ export function parseProductRows(rows: SheetRow[]): {
 } {
   const items: ProductImportRow[] = [];
   const issues: ImportIssue[] = [];
-  const seenCodes = new Map<string, number>();
+  const seenNames = new Map<string, number>();
 
   for (const row of rows) {
     const reader = new RowReader(PRODUCT_COLUMNS, row);
     const present = (key: string) => !reader.absent(key);
 
-    const sku = reader.text("sku");
     const fields: ProductImportRow["fields"] = { name: reader.text("name") };
     if (present("unit")) fields.unit = reader.text("unit");
     if (present("barcode")) fields.barcode = reader.text("barcode");
@@ -92,25 +91,24 @@ export function parseProductRows(rows: SheetRow[]): {
 
     if (!fields.name) reader.fail("name", tr("The product name is missing."));
 
-    const key = sku.toLowerCase();
-    if (sku && seenCodes.has(key)) {
+    const key = nameKey(fields.name);
+    if (key && seenNames.has(key)) {
       reader.fail(
-        "sku",
-        tr("The code {code} is already used on row {row}.", { code: sku, row: seenCodes.get(key) })
+        "name",
+        tr("« {name} » is already on row {row}.", { name: fields.name, row: seenNames.get(key) })
       );
-    } else if (sku) {
-      seenCodes.set(key, row.rowNumber);
+    } else if (key) {
+      seenNames.set(key, row.rowNumber);
     }
 
     // Same length and format rules as the product form.
-    const checked = createProductSchema.safeParse({ ...fields, sku: sku || undefined });
+    const checked = createProductSchema.safeParse(fields);
     if (!checked.success) reportSchemaIssues(reader, checked.error, COLUMN_OF_FIELD);
 
     issues.push(...reader.issues);
     if (reader.issues.length === 0) {
       items.push({
         rowNumber: row.rowNumber,
-        sku,
         categoryName: present("category") ? reader.text("category") : undefined,
         fields,
       });

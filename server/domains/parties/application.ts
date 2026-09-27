@@ -11,7 +11,7 @@ import { parties, type Party, type PartyType } from "@shared/schema";
 import { db, runInTransaction, type Database } from "../../db";
 import { NotFoundError } from "../../shared/errors/app-error";
 import { tr } from "../../shared/i18n";
-import type { ImportResult } from "../../shared/spreadsheet/workbook";
+import { matchByName, type ImportResult } from "../../shared/spreadsheet/workbook";
 import { partiesExtraRepository, partiesRepository } from "./repository";
 import type { PartyImportRow } from "./spreadsheet";
 
@@ -127,23 +127,29 @@ class PartiesApplication {
   /**
    * Saves the rows of an Excel file, all or nothing: one row refused by the database
    * cancels the whole file, so it can be fixed and imported again without duplicates.
+   *
+   * A row updates the party with the same name, or creates one with an automatic code:
+   * the code is never taken from the file.
    */
   async importParties(companyId: string, rows: PartyImportRow[]): Promise<ImportResult> {
     return runInTransaction(async (tx) => {
       const repository = partiesRepository.withTransaction(tx);
-      const existingIds = await partiesExtraRepository.withTransaction(tx).idsByCode(companyId);
+      const matches = matchByName(
+        rows,
+        await partiesExtraRepository.withTransaction(tx).activeNames(companyId),
+        "{count} customers or suppliers are already called « {name} »: rename them in the application first."
+      );
 
       const result: ImportResult = { created: 0, updated: 0 };
       for (const row of rows) {
         const fields = { ...row.fields, name: row.fields.name.trim() };
-        const existingId = row.code ? existingIds.get(row.code.toLowerCase()) : undefined;
+        const existingId = matches.get(row);
         if (existingId) {
-          await repository.update(companyId, existingId, { ...fields, isActive: true });
+          await repository.update(companyId, existingId, fields);
           result.updated += 1;
           continue;
         }
-        const party = await this.create(companyId, { ...fields, code: row.code }, tx);
-        existingIds.set(party.code.toLowerCase(), party.id);
+        await this.create(companyId, fields, tx);
         result.created += 1;
       }
       return result;

@@ -10,7 +10,7 @@ import type { Product } from "@shared/schema";
 import { runInTransaction, type Database } from "../../db";
 import { NotFoundError } from "../../shared/errors/app-error";
 import { tr } from "../../shared/i18n";
-import type { ImportResult } from "../../shared/spreadsheet/workbook";
+import { matchByName, type ImportResult } from "../../shared/spreadsheet/workbook";
 import { inventoryApplication } from "../inventory/application";
 import {
   catalogRepository,
@@ -208,6 +208,9 @@ class CatalogApplication {
    * Saves the rows of an Excel file, all or nothing: one row refused by the database
    * cancels the whole file, so it can be fixed and imported again without duplicates.
    *
+   * A row updates the product with the same name, or creates one with an automatic
+   * code: the code is never taken from the file.
+   *
    * Categories are matched by name and created when missing. Stock is not imported:
    * quantities go through stock movements, never through the product sheet.
    */
@@ -216,7 +219,11 @@ class CatalogApplication {
       const repository = catalogRepository.withTransaction(tx);
       const categoryRepository = categoriesRepository.withTransaction(tx);
 
-      const existingIds = await repository.idsBySku(companyId);
+      const matches = matchByName(
+        rows,
+        await repository.activeNames(companyId),
+        "{count} products are already called « {name} »: rename them in the application first."
+      );
       const categoryIds = new Map(
         (await categoryRepository.listAll(companyId)).map((category) => [
           category.name.trim().toLowerCase(),
@@ -247,24 +254,22 @@ class CatalogApplication {
           ...(categoryId !== undefined ? { categoryId } : {}),
         };
 
-        const existingId = row.sku ? existingIds.get(row.sku.toLowerCase()) : undefined;
+        const existingId = matches.get(row);
         if (existingId) {
           await repository.update(companyId, existingId, {
             ...values,
             ...(fields.unit !== undefined ? { unit: fields.unit || tr("unit") } : {}),
-            isActive: true,
           });
           result.updated += 1;
           continue;
         }
 
-        const product = await repository.insert({
+        await repository.insert({
           ...values,
           companyId,
-          sku: row.sku || (await repository.nextSku(companyId, fields.isService ?? false)),
+          sku: await repository.nextSku(companyId, fields.isService ?? false),
           unit: fields.unit || tr("unit"),
         });
-        existingIds.set(product.sku.toLowerCase(), product.id);
         result.created += 1;
       }
       return result;

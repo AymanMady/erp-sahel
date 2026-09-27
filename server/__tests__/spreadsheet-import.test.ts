@@ -62,7 +62,7 @@ describe("products", () => {
     expect(reloaded?.salePriceCents).toBe(12_550);
   });
 
-  it("creates new products, updates known codes and creates missing categories", async () => {
+  it("updates by name, creates with an automatic code and ignores any code column", async () => {
     const file = await workbookOf([
       [
         "Code du produit",
@@ -71,24 +71,39 @@ describe("products", () => {
         "Prix de vente (MRU)",
         "Service (sans stock)",
       ],
-      ["XL-001", "Riz 25 kg", "Alimentation", "1 500,50", "Non"],
-      [null, "Pose de carrelage", "", 300, "Oui"],
+      ["IGNORED-1", "  test ITEM ", "Alimentation", "1 500,50", "Non"],
+      ["IGNORED-2", "Pose de carrelage", "", 300, "Oui"],
     ]);
 
     const result = await catalogService.importProducts(context.company.id, file);
     expect(result).toEqual({ created: 1, updated: 1 });
 
     const { items } = await catalogRepository.search(context.company.id, { limit: 50 });
-    const rice = items.find((item) => item.sku === "XL-001");
-    expect(rice?.name).toBe("Riz 25 kg");
-    expect(rice?.salePriceCents).toBe(150_050);
-    expect(rice?.categoryName).toBe("Alimentation");
+    const item = items.find((candidate) => candidate.sku === "XL-001");
+    // The stored code is kept; the name is taken from the file.
+    expect(item?.name).toBe("test ITEM");
+    expect(item?.salePriceCents).toBe(150_050);
+    expect(item?.categoryName).toBe("Alimentation");
     // Absent from the file: kept as it was.
-    expect(rice?.purchasePriceCents).toBe(1_000);
+    expect(item?.purchasePriceCents).toBe(1_000);
 
-    const service = items.find((item) => item.name === "Pose de carrelage");
+    const service = items.find((candidate) => candidate.name === "Pose de carrelage");
     expect(service?.isService).toBe(true);
     expect(service?.sku).toMatch(/^SRV-\d{4}$/);
+    expect(items.some((candidate) => candidate.sku.startsWith("IGNORED"))).toBe(false);
+  });
+
+  it("refuses a name used twice, in the file or among existing products", async () => {
+    const twice = await workbookOf([["Product name"], ["Sel"], ["sel"]]);
+    const inFile = await rejection(catalogService.importProducts(context.company.id, twice));
+    expect((inFile.details as { row: number }[]).map((issue) => issue.row)).toEqual([3]);
+
+    await createStockedProduct(context, { sku: "DUP-1" });
+    const ambiguous = await workbookOf([["Product name"], ["Test item"]]);
+    const inDatabase = await rejection(
+      catalogService.importProducts(context.company.id, ambiguous)
+    );
+    expect(inDatabase.code).toBe("IMPORT_INVALID");
   });
 
   it("saves nothing when one row is wrong, and says which row", async () => {

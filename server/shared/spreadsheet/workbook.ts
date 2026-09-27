@@ -247,6 +247,46 @@ function readCell(value: ExcelJS.CellValue): CellValue {
   return String(value).trim();
 }
 
+/**
+ * Key a record is recognized by in a file: its name, ignoring case and extra spaces.
+ * Codes are never in the file — they are always given automatically.
+ */
+export function nameKey(name: string): string {
+  return name.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+/**
+ * Finds, for each imported row, the record it updates (by name) — or `null` when it
+ * creates one. A name carried by several records is refused rather than guessed.
+ */
+export function matchByName<TItem extends { rowNumber: number; fields: { name: string } }>(
+  items: TItem[],
+  existing: { id: string; name: string }[],
+  ambiguousMessage: string
+): Map<TItem, string | null> {
+  const idsByName = new Map<string, string[]>();
+  for (const record of existing) {
+    const key = nameKey(record.name);
+    idsByName.set(key, [...(idsByName.get(key) ?? []), record.id]);
+  }
+
+  const matches = new Map<TItem, string | null>();
+  const issues: ImportIssue[] = [];
+  for (const item of items) {
+    const ids = idsByName.get(nameKey(item.fields.name)) ?? [];
+    if (ids.length > 1) {
+      issues.push({
+        row: item.rowNumber,
+        column: tr("Name"),
+        message: tr(ambiguousMessage, { name: item.fields.name.trim(), count: ids.length }),
+      });
+    }
+    matches.set(item, ids.length === 1 ? ids[0] : null);
+  }
+  if (issues.length > 0) rejectImport(issues);
+  return matches;
+}
+
 // ─── Cell parsing ────────────────────────────────────────────────────────────
 
 /**

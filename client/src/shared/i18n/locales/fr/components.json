@@ -31,7 +31,7 @@
     "description": "Ajoutez ou modifiez beaucoup de fiches d'un coup avec un fichier Excel.",
     "step1": "Téléchargez le fichier actuel : il sert de modèle.",
     "downloadModel": "Télécharger le modèle",
-    "step2": "Dans Excel, modifiez les lignes ou ajoutez-en. Une ligne avec un code qui existe déjà modifie cette fiche ; une ligne sans code crée une nouvelle fiche.",
+    "step2": "Dans Excel, modifiez les lignes ou ajoutez-en. Pas besoin de code : il est donné automatiquement. Une ligne dont le nom existe déjà modifie cette fiche ; un nouveau nom crée une nouvelle fiche.",
     "step3": "Enregistrez le fichier, choisissez-le ci-dessous, puis cliquez sur « Importer ».",
     "choose": "Choisir le fichier Excel (.xlsx)",
     "submit": "Importer",

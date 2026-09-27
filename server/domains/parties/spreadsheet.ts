@@ -1,14 +1,15 @@
 /**
  * The customers and suppliers sheet: its columns, and how one row becomes a party.
  *
- * A row is matched to a party by its code. Known code ⇒ the party is updated; empty or
- * unknown code ⇒ a party is created (with that code, or a new one).
+ * The code is not in the file: it is always given automatically. A row is matched to a
+ * party by its name. Known name ⇒ the party is updated; new name ⇒ a party is created.
  */
 
 import type { Party, PartyType } from "@shared/schema";
 import { tr } from "../../shared/i18n";
 import {
   RowReader,
+  nameKey,
   reportSchemaIssues,
   type ImportIssue,
   type SheetColumn,
@@ -26,7 +27,6 @@ export const PARTY_TYPE_LABELS: Record<PartyType, string> = {
 
 export function partyColumns(): SheetColumn<Party>[] {
   return [
-    { key: "code", label: "Code", width: 14, value: (row) => row.code },
     { key: "name", label: "Name", width: 32, value: (row) => row.name },
     {
       key: "partyType",
@@ -64,7 +64,6 @@ export function partyColumns(): SheetColumn<Party>[] {
 /** A valid row, ready to be saved. Absent columns are left out, so they are kept. */
 export interface PartyImportRow {
   rowNumber: number;
-  code: string;
   fields: {
     name: string;
     partyType?: PartyType;
@@ -86,13 +85,12 @@ export function parsePartyRows(rows: SheetRow[]): {
   const columns = partyColumns();
   const items: PartyImportRow[] = [];
   const issues: ImportIssue[] = [];
-  const seenCodes = new Map<string, number>();
+  const seenNames = new Map<string, number>();
 
   for (const row of rows) {
     const reader = new RowReader(columns, row);
     const present = (key: string) => !reader.absent(key);
 
-    const code = reader.text("code");
     const fields: PartyImportRow["fields"] = { name: reader.text("name") };
     if (present("partyType")) {
       fields.partyType = reader.choice("partyType", PARTY_TYPE_LABELS, "CUSTOMER");
@@ -109,23 +107,23 @@ export function parsePartyRows(rows: SheetRow[]): {
 
     if (!fields.name) reader.fail("name", tr("The name is missing."));
 
-    const key = code.toLowerCase();
-    if (code && seenCodes.has(key)) {
+    const key = nameKey(fields.name);
+    if (key && seenNames.has(key)) {
       reader.fail(
-        "code",
-        tr("The code {code} is already used on row {row}.", { code, row: seenCodes.get(key) })
+        "name",
+        tr("« {name} » is already on row {row}.", { name: fields.name, row: seenNames.get(key) })
       );
-    } else if (code) {
-      seenCodes.set(key, row.rowNumber);
+    } else if (key) {
+      seenNames.set(key, row.rowNumber);
     }
 
     // Same rules as the form (phone format, text lengths); the phone comes back cleaned.
-    const checked = createPartySchema.safeParse({ ...fields, code: code || undefined });
+    const checked = createPartySchema.safeParse(fields);
     if (!checked.success) reportSchemaIssues(reader, checked.error, COLUMN_OF_FIELD);
     else if (fields.phone !== undefined) fields.phone = checked.data.phone;
 
     issues.push(...reader.issues);
-    if (reader.issues.length === 0) items.push({ rowNumber: row.rowNumber, code, fields });
+    if (reader.issues.length === 0) items.push({ rowNumber: row.rowNumber, fields });
   }
 
   return { items, issues };

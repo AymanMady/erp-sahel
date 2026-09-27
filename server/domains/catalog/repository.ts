@@ -294,17 +294,12 @@ export class CatalogRepository {
     return rows.map((row) => ({ ...row.product, categoryName: row.categoryName }));
   }
 
-  /**
-   * Code (lower case) ⇒ product id, archived products included: an import that names
-   * an archived product's code brings that product back instead of failing on the
-   * unique code.
-   */
-  async idsBySku(companyId: string): Promise<Map<string, string>> {
-    const rows = await this.database
-      .select({ id: products.id, sku: products.sku })
+  /** Names and ids of the active products, for matching the rows of an import. */
+  async activeNames(companyId: string): Promise<{ id: string; name: string }[]> {
+    return this.database
+      .select({ id: products.id, name: products.name })
       .from(products)
-      .where(eq(products.companyId, companyId));
-    return new Map(rows.map((row) => [row.sku.toLowerCase(), row.id]));
+      .where(and(eq(products.companyId, companyId), eq(products.isActive, true)));
   }
 
   /** Dashboard counters. */
