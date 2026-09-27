@@ -1,52 +1,52 @@
 {
   "labels": {
-    "DRAFT": "Brouillon",
-    "SENT": "Envoyé",
+    "DRAFT": "En préparation",
+    "SENT": "Envoyé au client",
     "ACCEPTED": "Accepté",
     "REJECTED": "Refusé",
     "EXPIRED": "Expiré",
-    "CONVERTED": "Converti",
+    "CONVERTED": "Devenu commande",
     "CONFIRMED": "Confirmée",
     "PROCESSING": "En préparation",
-    "SHIPPED": "Expédiée",
+    "SHIPPED": "En route",
     "DELIVERED": "Livrée",
     "INVOICED": "Facturée",
     "CANCELLED": "Annulé",
     "VALIDATED": "Validée",
-    "PARTIALLY_PAID": "Partiellement payée",
+    "PARTIALLY_PAID": "Payée en partie",
     "PAID": "Payée",
     "ORDERED": "Commandée",
-    "PARTIALLY_RECEIVED": "Partiellement reçue",
+    "PARTIALLY_RECEIVED": "Reçue en partie",
     "RECEIVED": "Reçue",
     "OPEN": "Ouverte",
-    "CLOSED": "Clôturée",
+    "CLOSED": "Fermée",
     "PENDING": "En attente",
     "created": "Créé",
-    "duplicate": "Doublon ignoré",
-    "error": "Erreur",
-    "deferred": "Reporté",
-    "synced": "Synchronisé",
-    "sending": "Envoi…",
+    "duplicate": "Déjà reçu",
+    "error": "Problème",
+    "deferred": "Plus tard",
+    "synced": "Envoyé",
+    "sending": "Envoi en cours…",
     "pending": "En attente"
   },
   "paymentMethods": {
-    "CASH": "Espèces",
-    "BANK_TRANSFER": "Virement",
+    "CASH": "Argent liquide",
+    "BANK_TRANSFER": "Virement bancaire",
     "CHECK": "Chèque",
-    "CARD": "Carte",
-    "MOBILE_MONEY": "Bankily / Masrvi / Sedad"
+    "CARD": "Carte bancaire",
+    "MOBILE_MONEY": "Bankily, Masrvi ou Sedad"
   },
   "movements": {
     "IN": "Entrée",
     "OUT": "Sortie",
-    "TRANSFER": "Transfert",
-    "ADJUSTMENT": "Ajustement",
+    "TRANSFER": "Changement de magasin",
+    "ADJUSTMENT": "Correction",
     "RETURN": "Retour"
   },
   "partyTypes": {
     "CUSTOMER": "Client",
     "SUPPLIER": "Fournisseur",
-    "BOTH": "Client & fournisseur",
-    "PROSPECT": "Prospect"
+    "BOTH": "Client et fournisseur",
+    "PROSPECT": "Client possible"
   }
 }

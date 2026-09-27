@@ -1,5 +1,5 @@
 /**
- * Amount display, always in the current company's currency.
+ * Amount display, always in ouguiyas (the only currency).
  *
  * The number format follows the UI language; `useTranslation()` subscribes these
  * components to language changes so they re-render when it switches.
@@ -9,18 +9,12 @@ import { useTranslation } from "react-i18next";
 
 import { formatMoney, formatQuantity, formatRate } from "@shared/money";
 import { currentIntlLocale } from "@/shared/i18n";
-import { useSession } from "@/shared/auth/session";
 import { cn } from "@/shared/lib/utils";
 
-export function useCurrency(): string {
-  return useSession().company?.currency ?? "MRU";
-}
-
-/** Formats an amount in cents with the company currency. */
+/** Formats an amount in cents, in ouguiyas. */
 export function useMoneyFormatter(): (cents: number, options?: { withSymbol?: boolean }) => string {
-  const currency = useCurrency();
   useTranslation();
-  return (cents, options) => formatMoney(cents, currency, currentIntlLocale(), options);
+  return (cents, options) => formatMoney(cents, currentIntlLocale(), options);
 }
 
 export function Money({
@@ -35,7 +29,6 @@ export function Money({
   /** `auto` colors negative amounts red (cash discrepancies, credit notes). */
   tone?: "auto" | "muted";
 }) {
-  const currency = useCurrency();
   useTranslation();
   const negative = cents < 0;
   return (
@@ -47,7 +40,7 @@ export function Money({
         className
       )}
     >
-      {formatMoney(cents, currency, currentIntlLocale(), { withSymbol })}
+      {formatMoney(cents, currentIntlLocale(), { withSymbol })}
     </span>
   );
 }

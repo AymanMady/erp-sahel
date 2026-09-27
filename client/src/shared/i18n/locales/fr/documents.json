@@ -1,45 +1,44 @@
 {
   "view": {
-    "currency": "Devise : {{currency}}",
     "date": "Date : {{date}}",
-    "dueDate": "Échéance : {{date}}",
-    "recipient": "Destinataire",
+    "dueDate": "À payer avant le : {{date}}",
+    "recipient": "Pour",
     "columns": {
-      "description": "Désignation",
-      "origin": "Origine",
-      "quantity": "Qté",
-      "unitPrice": "P.U."
+      "description": "Article",
+      "origin": "Pays d'origine",
+      "quantity": "Quantité",
+      "unitPrice": "Prix d'une unité"
     },
-    "alreadyPaid": "Déjà réglé",
+    "alreadyPaid": "Déjà payé",
     "amountDue": "Reste à payer"
   },
   "lineEditor": {
     "columns": {
-      "description": "Désignation"
+      "description": "Article"
     },
-    "empty": "Aucune ligne. Ajoutez un article ou une prestation.",
-    "descriptionPlaceholder": "Désignation de la ligne",
+    "empty": "Aucun article pour le moment. Cliquez sur « Ajouter un article ».",
+    "descriptionPlaceholder": "Nom de l'article ou du service",
     "removeLine": "Supprimer la ligne",
     "addItem": "Ajouter un article",
-    "freeLine": "Ligne libre",
-    "globalDiscount": "Remise globale"
+    "freeLine": "Ajouter une ligne écrite à la main",
+    "globalDiscount": "Remise sur le total"
   },
   "productPicker": {
-    "title": "Ajouter une ligne",
-    "description": "Le prix est repris du catalogue ; il reste modifiable.",
-    "searchPlaceholder": "Article ou prestation…",
-    "service": "prestation",
-    "stock": "stock {{quantity}}"
+    "title": "Ajouter un article",
+    "description": "Le prix est rempli tout seul. Vous pouvez le changer.",
+    "searchPlaceholder": "Nom de l'article ou du service…",
+    "service": "service",
+    "stock": "reste {{quantity}}"
   },
   "partyPicker": {
     "selectCustomer": "Sélectionner un client",
     "chooseCustomer": "Choisir un client",
     "chooseSupplier": "Choisir un fournisseur",
-    "newParty": "Nouveau tiers",
-    "noResults": "Aucun tiers trouvé."
+    "newParty": "Nouveau client ou fournisseur",
+    "noResults": "Personne trouvé."
   },
   "units": {
     "unit": "unité",
-    "service": "prestation"
+    "service": "service"
   }
 }

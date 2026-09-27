@@ -7,7 +7,7 @@
  * reflect that without forcing an artificial order.
  */
 
-import { normalizeQuantity } from "@shared/money";
+import { CURRENCY, normalizeQuantity } from "@shared/money";
 import { addDays, todayInput } from "@shared/format";
 import { buildSupplierInvoicePosting } from "@shared/accounting-rules";
 import type { Company, PurchaseOrder } from "@shared/schema";
@@ -81,7 +81,7 @@ class PurchasingApplication {
         status: "DRAFT",
         globalDiscountBp: input.globalDiscountBp ?? 0,
         totalCents: built.totalCents,
-        currency: company.currency,
+        currency: CURRENCY,
         notes: input.notes ?? "",
         userId: userId ?? null,
       });
@@ -280,7 +280,7 @@ class PurchasingApplication {
           (supplier.paymentTermsDays > 0 ? addDays(date, supplier.paymentTermsDays) : date),
         status: "VALIDATED",
         totalCents: built.totalCents,
-        currency: company.currency,
+        currency: CURRENCY,
         notes: input.notes ?? "",
       });
 

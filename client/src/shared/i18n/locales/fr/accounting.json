@@ -11,13 +11,13 @@
     "PURCHASES": "Achats",
     "BANK": "Banque",
     "CASH": "Caisse",
-    "MISC": "Opérations diverses"
+    "MISC": "Autres opérations"
   },
   "mappingKeys": {
     "SALES_REVENUE": "Ventes de marchandises",
     "SALES_DISCOUNT": "Remises accordées",
-    "CUSTOMER_RECEIVABLE": "Créances clients",
-    "SUPPLIER_PAYABLE": "Dettes fournisseurs",
+    "CUSTOMER_RECEIVABLE": "Ce que les clients doivent",
+    "SUPPLIER_PAYABLE": "Ce que l'on doit aux fournisseurs",
     "PURCHASES": "Achats de marchandises",
     "INVENTORY": "Stock de marchandises",
     "INVENTORY_VARIATION": "Variation de stock",
@@ -25,17 +25,17 @@
     "BANK": "Banque",
     "MOBILE_MONEY": "Bankily / Masrvi / Sedad",
     "ROUNDING_DIFFERENCE": "Écarts et arrondis",
-    "OPENING_BALANCE": "Bilan d'ouverture",
-    "RESULT_CARRY_FORWARD": "Report à nouveau"
+    "OPENING_BALANCE": "Montants de départ",
+    "RESULT_CARRY_FORWARD": "Résultat des années passées"
   },
   "columns": {
     "account": "Compte",
     "accountNumber": "Numéro",
-    "accountName": "Intitulé",
+    "accountName": "Nom du compte",
     "nature": "Nature",
-    "group": "Regroupement",
+    "group": "Groupe",
     "entry": "Écriture",
-    "label": "Libellé",
+    "label": "Description",
     "debit": "Débit",
     "credit": "Crédit",
     "balance": "Solde"
@@ -44,57 +44,57 @@
     "fromDate": "Date de début",
     "toDate": "Date de fin"
   },
-  "balanced": "Équilibrée",
-  "unbalanced": "Déséquilibrée",
+  "balanced": "Juste",
+  "unbalanced": "Pas juste",
   "accounts": {
-    "title": "Plan comptable",
-    "description": "Référentiel de la société et comptes utilisés par les écritures automatiques.",
+    "title": "Liste des comptes",
+    "description": "Les comptes de la société, et ceux remplis automatiquement par les ventes et les achats.",
     "newAccount": "Nouveau compte",
     "tabs": {
       "accounts": "Comptes",
-      "mappings": "Automatismes"
+      "mappings": "Remplissage automatique"
     },
     "mappingUpdated": "Compte associé mis à jour.",
     "created": "Compte créé.",
-    "emptyTitle": "Plan comptable vide",
-    "emptyDescription": "Le plan est installé automatiquement à la création de la société.",
-    "mappingsTitle": "Comptes des écritures automatiques",
-    "mappingsDescription": "Les factures et règlements désignent une clé logique ; c'est ici qu'elle est reliée à un compte du plan. Changer de référentiel comptable revient à modifier ces associations.",
+    "emptyTitle": "Aucun compte",
+    "emptyDescription": "La liste est créée automatiquement avec la société.",
+    "mappingsTitle": "Comptes remplis automatiquement",
+    "mappingsDescription": "Chaque vente, achat ou paiement est écrit automatiquement dans le compte choisi ici.",
     "notConfigured": "Non configuré",
     "dialog": {
-      "parentAccount": "Compte parent",
-      "isGroup": "Compte de regroupement (ne reçoit pas d'écriture)"
+      "parentAccount": "Fait partie du compte",
+      "isGroup": "Compte qui regroupe d'autres comptes (on n'écrit pas dedans)"
     }
   },
   "balance": {
-    "title": "Balance",
-    "description": "Cumuls débit/crédit par compte. Le total des deux colonnes doit être égal.",
-    "emptyTitle": "Balance vide",
-    "emptyDescription": "Aucun compte mouvementé sur la période sélectionnée.",
+    "title": "Totaux par compte",
+    "description": "Total des débits et des crédits de chaque compte. Les deux totaux doivent être égaux.",
+    "emptyTitle": "Rien à afficher",
+    "emptyDescription": "Aucun mouvement pendant cette période.",
     "totals": "Totaux"
   },
   "entries": {
     "title": "Journal comptable",
-    "description": "Toutes les écritures, générées automatiquement ou saisies à la main.",
-    "newEntry": "Saisir une écriture",
+    "description": "Toutes les opérations écrites dans les comptes, automatiquement ou à la main.",
+    "newEntry": "Écrire une opération",
     "allJournals": "Tous les journaux",
-    "empty": "Aucune écriture sur la période. Les factures et règlements en génèrent automatiquement.",
-    "saved": "Écriture enregistrée.",
+    "empty": "Rien pendant cette période. Les factures et paiements s'écrivent ici tout seuls.",
+    "saved": "Opération enregistrée.",
     "dialog": {
-      "title": "Saisie d'une écriture",
-      "description": "L'écriture doit être équilibrée : le total des débits doit égaler celui des crédits.",
+      "title": "Écrire une opération",
+      "description": "Le total des débits doit être égal au total des crédits.",
       "journal": "Journal",
-      "entryLabel": "Libellé de l'écriture",
+      "entryLabel": "Description de l'opération",
       "removeLine": "Supprimer la ligne",
       "addLine": "Ajouter une ligne",
-      "submit": "Enregistrer l'écriture"
+      "submit": "Enregistrer l'opération"
     }
   },
   "ledger": {
-    "title": "Grand livre",
-    "description": "Détail des mouvements par compte. Sélectionnez un compte pour suivre son solde.",
+    "title": "Détail par compte",
+    "description": "Tous les mouvements d'un compte. Choisissez un compte pour voir ce qu'il contient.",
     "allAccounts": "Tous les comptes",
     "emptyTitle": "Aucun mouvement",
-    "emptyDescription": "Aucune écriture ne correspond aux critères choisis."
+    "emptyDescription": "Rien ne correspond à votre choix."
   }
 }

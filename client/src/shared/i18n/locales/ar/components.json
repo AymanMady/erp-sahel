@@ -1,12 +1,12 @@
 {
   "ui": {
-    "breadcrumb": "مسار التنقل",
+    "breadcrumb": "أين أنت",
     "more": "المزيد",
-    "commandPalette": "لوحة الأوامر",
-    "commandPaletteDescription": "ابحث عن أمر لتنفيذه…",
-    "sidebar": "التنقل",
-    "sidebarDescription": "يعرض قائمة التنقل على الهاتف.",
-    "toggleSidebar": "إظهار الشريط الجانبي أو إخفاؤه"
+    "commandPalette": "الذهاب إلى شاشة",
+    "commandPaletteDescription": "اكتب اسم الشاشة…",
+    "sidebar": "القائمة",
+    "sidebarDescription": "يعرض القائمة.",
+    "toggleSidebar": "إظهار القائمة أو إخفاؤها"
   },
   "searchInput": {
     "clear": "مسح البحث"
@@ -14,21 +14,21 @@
   "deleteDialog": {
     "defaultName": "هذا العنصر",
     "title": "حذف {{name}}؟",
-    "description": "سيُحذف {{name}} نهائيًا. لا يمكن التراجع عن هذا الإجراء.",
+    "description": "سيُحذف {{name}} إلى الأبد. لا يمكن الرجوع.",
     "deleted": "تم حذف {{name}}",
-    "deletedDescription": "تم حذف السجل."
+    "deletedDescription": "تم الحذف."
   },
   "resourceTable": {
     "emptyTitle": "لا توجد نتائج",
-    "emptyDescription": "لا يوجد عنصر يطابق بحثك.",
+    "emptyDescription": "لا شيء يطابق بحثك.",
     "itemCount_zero": "لا عناصر",
     "itemCount_one": "عنصر واحد",
     "itemCount_two": "عنصران",
     "itemCount_few": "{{count}} عناصر",
     "itemCount_many": "{{count}} عنصرًا",
     "itemCount_other": "{{count}} عنصر",
-    "perPage": "لكل صفحة",
-    "pageOf": "الصفحة {{page}} / {{pageCount}}",
+    "perPage": "عدد الأسطر في الصفحة",
+    "pageOf": "الصفحة {{page}} من {{pageCount}}",
     "firstPage": "الصفحة الأولى",
     "previousPage": "الصفحة السابقة",
     "nextPage": "الصفحة التالية",

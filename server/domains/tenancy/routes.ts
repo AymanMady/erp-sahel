@@ -23,7 +23,6 @@ const updateCompanySchema = z.object({
   /** Data URI or URL: used as the brand sign, PWA icon and favicon. */
   logo: z.string().max(2_000_000).nullish(),
   language: z.string().max(8).optional(),
-  currency: z.string().length(3).optional(),
   accountingStandard: z.enum(ACCOUNTING_STANDARDS).optional(),
   fiscalYearStartMonth: z.number().int().min(1).max(12).optional(),
   primaryModule: z.string().max(64).optional(),

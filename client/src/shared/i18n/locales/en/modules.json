@@ -25,11 +25,11 @@
   },
   "banking": {
     "name": "Cash and bank",
-    "description": "Track money in the till, in the bank and on Bankily / Masrvi / Sedad."
+    "description": "Follow the money in the cash box, in the bank and on Bankily, Masrvi, Sedad."
   },
   "accounting": {
     "name": "Accounting",
-    "description": "Journal, general ledger and trial balance (for the accountant)."
+    "description": "The detailed accounts of the company (for the accountant)."
   },
   "reports": {
     "name": "Reports",
@@ -38,11 +38,11 @@
   "presets": {
     "simple": {
       "name": "Simple",
-      "description": "POS, stock and purchasing. Ideal for a shop."
+      "description": "Cash register, stock and purchases. Good for a shop."
     },
     "invoices": {
       "name": "With invoices",
-      "description": "Plus: quotes, invoices, services and reports."
+      "description": "Also: quotes, invoices, services and reports."
     },
     "full": {
       "name": "Full",

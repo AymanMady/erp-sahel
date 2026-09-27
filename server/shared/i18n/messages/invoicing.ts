@@ -6,10 +6,10 @@ export const invoicingMessages: MessageCatalog = {
   fr: {
     // Errors
     "Credit limit exceeded for {party}: limit {limit}, outstanding after invoicing {outstanding}.":
-      "Encours dépassé pour {party} : limite {limit}, encours après facturation {outstanding}.",
+      "{party} dépasse son crédit maximum : maximum {limit}, il devrait {outstanding} avec cette facture.",
     "Invoice not found.": "Facture introuvable.",
     "Only a draft can be validated (current status: {status}).":
-      "Seul un brouillon peut être validé (statut actuel : {status}).",
+      "Seule une facture en préparation peut être validée (état actuel : {status}).",
     "An invoice without lines cannot be validated.":
       "Une facture sans ligne ne peut pas être validée.",
     "A validated invoice cannot be modified: issue a credit note to correct it.":

@@ -5,15 +5,15 @@ import type { MessageCatalog } from "./types";
 export const paymentsMessages: MessageCatalog = {
   fr: {
     "The payment amount must be strictly positive.":
-      "Le montant du règlement doit être strictement positif.",
+      "Le montant du paiement doit être plus grand que zéro.",
     "Invoice not found.": "Facture introuvable.",
     "Validate the invoice before recording a payment.":
-      "Validez la facture avant d'enregistrer un règlement.",
+      "Validez la facture avant d'enregistrer un paiement.",
     "The payment exceeds the amount due ({amount}).":
-      "Le règlement dépasse le reste à payer ({amount}).",
-    "Payment {number}": "Règlement {number}",
-    "Payment not found.": "Règlement introuvable.",
-    "Select a party": "Sélectionnez un tiers",
+      "Le paiement est plus grand que ce qui reste à payer ({amount}).",
+    "Payment {number}": "Paiement {number}",
+    "Payment not found.": "Paiement introuvable.",
+    "Select a party": "Choisissez un client ou un fournisseur",
     "Amount must be greater than zero": "Le montant doit être supérieur à zéro",
     "Invalid identifier": "Identifiant invalide",
   },

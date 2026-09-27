@@ -1,147 +1,146 @@
 {
   "company": {
-    "title": "Société",
-    "description": "Identité, fiscalité et référentiel comptable.",
-    "saved": "Paramètres enregistrés.",
-    "identity": "Identité",
-    "accounting": "Comptabilité",
-    "accountingDescription": "Le référentiel comptable détermine le plan installé ; les comptes utilisés par les automatismes restent modifiables dans le plan comptable.",
+    "title": "Ma société",
+    "description": "Nom, adresse, logo et réglages des comptes.",
+    "saved": "Enregistré.",
+    "identity": "Ma société",
+    "accounting": "Comptes (pour le comptable)",
+    "accountingDescription": "Laissez ces réglages tels quels si vous n'êtes pas comptable.",
     "fields": {
-      "name": "Nom commercial",
-      "legalName": "Raison sociale",
-      "taxId": "Identifiant fiscal",
+      "name": "Nom de la société",
+      "legalName": "Nom officiel (sur les papiers)",
+      "taxId": "Numéro d'identification fiscale",
       "website": "Site web",
       "city": "Ville",
       "country": "Pays",
-      "currencyHint": "Code ISO à trois lettres.",
-      "accountingStandard": "Référentiel comptable",
-      "fiscalYearStart": "Début d'exercice"
+      "accountingStandard": "Système de comptes",
+      "fiscalYearStart": "L'année commence en"
     },
     "logo": {
       "title": "Logo",
-      "description": "Affiché dans la barre latérale et sur les documents imprimés.",
+      "description": "Affiché dans le menu et sur les factures imprimées.",
       "alt": "Logo de la société",
       "none": "Aucun logo",
       "choose": "Choisir une image",
       "remove": "Retirer le logo",
-      "tooLarge": "Logo trop volumineux (400 Ko maximum)."
+      "tooLarge": "Image trop grande (400 kilo-octets au maximum)."
     }
   },
   "numbering": {
     "title": "Numérotation",
-    "description": "Séquences légales par type de document et par exercice.",
-    "info": "Les numéros sont attribués par le serveur au moment de la validation, dans la transaction du document : deux postes ne peuvent pas obtenir le même. Hors ligne, un numéro provisoire <code>{{code}}</code> est affiché jusqu'à la synchronisation.",
-    "emptyTitle": "Aucune séquence",
-    "emptyDescription": "Les séquences se créent à l'émission du premier document de chaque type.",
+    "description": "Comment les factures, devis et autres papiers sont numérotés.",
+    "info": "Chaque numéro est donné une seule fois : deux appareils ne peuvent pas avoir le même. Sans internet, un numéro provisoire <code>{{code}}</code> est affiché en attendant.",
+    "emptyTitle": "Aucun numéro",
+    "emptyDescription": "Les numéros commencent avec le premier papier de chaque type.",
     "columns": {
       "documentType": "Type de document",
-      "year": "Exercice",
-      "prefix": "Préfixe",
+      "year": "Année",
+      "prefix": "Début du numéro",
       "lastNumber": "Dernier numéro"
     },
     "documentTypes": {
       "QUOTE": "Devis",
-      "SALES_ORDER": "Commandes de vente",
+      "SALES_ORDER": "Commandes des clients",
       "SALES_INVOICE": "Factures clients",
-      "CREDIT_NOTE": "Avoirs",
+      "CREDIT_NOTE": "Retours de marchandise (avoirs)",
       "PURCHASE_ORDER": "Commandes fournisseurs",
-      "GOODS_RECEIPT": "Bons de réception",
+      "GOODS_RECEIPT": "Marchandise reçue",
       "SUPPLIER_INVOICE": "Factures fournisseurs",
-      "PAYMENT": "Règlements",
-      "JOURNAL_ENTRY": "Écritures comptables",
-      "INVENTORY_COUNT": "Inventaires",
-      "POS_TICKET": "Tickets de caisse",
-      "PARTY": "Tiers"
+      "PAYMENT": "Paiements",
+      "JOURNAL_ENTRY": "Opérations dans les comptes",
+      "INVENTORY_COUNT": "Comptages du stock",
+      "POS_TICKET": "Ventes à la caisse",
+      "PARTY": "Clients et fournisseurs"
     }
   },
   "registers": {
     "title": "Caisses",
-    "description": "Postes de vente et historique des sessions.",
+    "description": "Vos caisses et l'historique des ouvertures et fermetures.",
     "new": "Nouvelle caisse",
-    "archived": "Caisse archivée.",
-    "created": "Caisse créée.",
+    "archived": "Caisse retirée.",
+    "created": "Caisse ajoutée.",
     "tabs": {
       "registers": "Caisses",
-      "sessions": "Sessions"
+      "sessions": "Ouvertures et fermetures"
     },
     "columns": {
       "register": "Caisse",
-      "cashier": "Caissier",
-      "openedAt": "Ouverture",
-      "closedAt": "Clôture",
+      "cashier": "Vendeur",
+      "openedAt": "Ouverte le",
+      "closedAt": "Fermée le",
       "sales": "Ventes",
-      "difference": "Écart"
+      "difference": "Différence"
     },
     "emptyRegistersTitle": "Aucune caisse",
-    "emptyRegistersDescription": "Une caisse est nécessaire pour ouvrir une session de vente.",
-    "emptySessionsTitle": "Aucune session",
-    "emptySessionsDescription": "Les sessions apparaissent dès la première ouverture de caisse.",
+    "emptyRegistersDescription": "Ajoutez une caisse pour commencer à vendre.",
+    "emptySessionsTitle": "Rien pour le moment",
+    "emptySessionsDescription": "Chaque ouverture de caisse apparaîtra ici.",
     "dialog": {
-      "warehouse": "Magasin rattaché",
-      "warehouseHint": "Détermine d'où sort le stock vendu.",
-      "cashAccount": "Compte de caisse",
-      "cashAccountHint": "Crédité par les encaissements en espèces.",
-      "defaultAccount": "Compte par défaut"
+      "warehouse": "Magasin de cette caisse",
+      "warehouseHint": "Les articles vendus sortent de ce magasin.",
+      "cashAccount": "Où va l'argent liquide",
+      "cashAccountHint": "L'argent liquide reçu est ajouté ici.",
+      "defaultAccount": "Caisse habituelle"
     }
   },
   "users": {
     "title": "Utilisateurs",
-    "description": "Comptes rattachés à cette société et rôles qui leur sont affectés.",
+    "description": "Les personnes qui utilisent l'application, et ce qu'elles ont le droit de faire.",
     "new": "Nouvel utilisateur",
-    "updated": "Utilisateur mis à jour.",
-    "created": "Utilisateur créé.",
+    "updated": "Modifié.",
+    "created": "Utilisateur ajouté.",
     "noRole": "aucun",
-    "allowed": "Autorisée",
+    "allowed": "Oui",
     "never": "jamais",
     "activateAccount": "Activer le compte",
     "emptyTitle": "Aucun utilisateur",
-    "emptyDescription": "Créez des comptes pour vos vendeurs, magasiniers et comptables.",
+    "emptyDescription": "Ajoutez un compte pour chaque vendeur, magasinier ou comptable.",
     "columns": {
       "user": "Utilisateur",
-      "roles": "Rôles",
-      "offlineLogin": "Connexion hors ligne",
+      "roles": "Droits",
+      "offlineLogin": "Peut travailler sans internet",
       "lastLogin": "Dernière connexion"
     },
     "dialog": {
       "editTitle": "Modifier l'utilisateur",
-      "description": "Les rôles affectés ne valent que pour la société courante.",
-      "username": "Identifiant",
+      "description": "Choisissez ce que cette personne a le droit de faire.",
+      "username": "Nom d'utilisateur",
       "newPassword": "Nouveau mot de passe",
       "password": "Mot de passe",
-      "keepPasswordHint": "Laisser vide pour ne pas modifier.",
-      "passwordHint": "8 caractères, lettres et chiffres.",
+      "keepPasswordHint": "Laissez vide pour garder l'ancien.",
+      "passwordHint": "Au moins 8 caractères, avec des lettres et des chiffres.",
       "firstName": "Prénom",
       "lastName": "Nom",
-      "allowOffline": "Autoriser la connexion hors ligne sur un poste desktop synchronisé"
+      "allowOffline": "Peut se connecter sans internet sur un ordinateur déjà utilisé avec internet"
     }
   },
   "roles": {
-    "title": "Rôles & permissions",
-    "description": "Le masquage côté interface est un confort ; l'autorisation est vérifiée à chaque appel serveur.",
+    "title": "Rôles et droits",
+    "description": "Chaque rôle dit ce qu'une personne a le droit de faire.",
     "new": "Nouveau rôle",
     "deleted": "Rôle supprimé.",
-    "updated": "Rôle mis à jour.",
-    "created": "Rôle créé.",
-    "permissionCount_one": "{{count}} permission",
-    "permissionCount_other": "{{count}} permissions",
+    "updated": "Rôle modifié.",
+    "created": "Rôle ajouté.",
+    "permissionCount_one": "{{count}} droit",
+    "permissionCount_other": "{{count}} droits",
     "dialog": {
-      "systemTitle": "Rôle système — {{name}}",
+      "systemTitle": "Rôle de base — {{name}}",
       "editTitle": "Modifier le rôle"
     }
   },
   "modules": {
-    "title": "Modules",
-    "description": "Activez seulement ce que vous utilisez : le menu reste simple. Désactiver un module n'efface jamais vos données.",
-    "enabled": "Module activé.",
-    "disabled": "Module désactivé.",
-    "presetApplied": "Niveau « {{name}} » appliqué.",
-    "step1Title": "1. Choisissez un niveau",
-    "step1Description": "Pour tout type de commerce. Vous pourrez ajuster ensuite.",
-    "step2Title": "2. Ou ajustez module par module",
-    "step2Description": "Produits, clients, paiements et réglages sont toujours disponibles.",
-    "requires": "Nécessite : {{modules}}",
+    "title": "Parties de l'application",
+    "description": "Activez seulement ce dont vous avez besoin : le menu reste simple. Cacher une partie n'efface rien.",
+    "enabled": "Activé.",
+    "disabled": "Caché.",
+    "presetApplied": "« {{name}} » choisi.",
+    "step1Title": "Étape 1 : choisissez ce qui vous convient",
+    "step1Description": "Pour tout type de commerce. Vous pourrez changer plus tard.",
+    "step2Title": "Étape 2 : ou choisissez partie par partie",
+    "step2Description": "Les articles, les clients, les paiements et les réglages sont toujours là.",
+    "requires": "A besoin de : {{modules}}",
     "enableAria": "Activer {{name}}",
-    "confirmTitle": "Passer au niveau « {{name}} » ?",
-    "confirmDescription": "Modules activés : {{modules}}. Les autres seront masqués, sans perte de données."
+    "confirmTitle": "Choisir « {{name}} » ?",
+    "confirmDescription": "Parties activées : {{modules}}. Les autres seront cachées. Rien n'est effacé."
   }
 }

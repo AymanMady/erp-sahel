@@ -1,42 +1,41 @@
 {
   "view": {
-    "currency": "العملة: {{currency}}",
     "date": "التاريخ: {{date}}",
-    "dueDate": "تاريخ الاستحقاق: {{date}}",
-    "recipient": "المرسل إليه",
+    "dueDate": "يُدفع قبل: {{date}}",
+    "recipient": "إلى",
     "columns": {
-      "description": "البيان",
-      "origin": "المنشأ",
+      "description": "السلعة",
+      "origin": "بلد الصنع",
       "quantity": "الكمية",
-      "unitPrice": "سعر الوحدة"
+      "unitPrice": "سعر القطعة الواحدة"
     },
-    "alreadyPaid": "المبلغ المدفوع",
+    "alreadyPaid": "مدفوع من قبل",
     "amountDue": "المبلغ المتبقي"
   },
   "lineEditor": {
     "columns": {
-      "description": "البيان"
+      "description": "السلعة"
     },
-    "empty": "لا توجد أسطر. أضف صنفًا أو خدمة.",
-    "descriptionPlaceholder": "بيان السطر",
+    "empty": "لا توجد سلعة بعد. اضغط على «إضافة سلعة».",
+    "descriptionPlaceholder": "اسم السلعة أو الخدمة",
     "removeLine": "حذف السطر",
     "addItem": "إضافة صنف",
-    "freeLine": "سطر حر",
-    "globalDiscount": "خصم إجمالي"
+    "freeLine": "إضافة سطر مكتوب باليد",
+    "globalDiscount": "تخفيض على المجموع"
   },
   "productPicker": {
-    "title": "إضافة سطر",
-    "description": "يُؤخذ السعر من الكتالوج، ويمكن تعديله.",
-    "searchPlaceholder": "صنف أو خدمة…",
+    "title": "إضافة سلعة",
+    "description": "السعر يُملأ وحده. يمكنك تغييره.",
+    "searchPlaceholder": "اسم السلعة أو الخدمة…",
     "service": "خدمة",
-    "stock": "المخزون {{quantity}}"
+    "stock": "الباقي {{quantity}}"
   },
   "partyPicker": {
     "selectCustomer": "اختر عميلًا",
     "chooseCustomer": "اختيار عميل",
     "chooseSupplier": "اختيار مورد",
-    "newParty": "جهة جديدة",
-    "noResults": "لم يُعثر على أي جهة."
+    "newParty": "زبون أو مورد جديد",
+    "noResults": "لم نجد أحدًا."
   },
   "units": {
     "unit": "وحدة",

@@ -1,21 +1,21 @@
 {
-  "title": "Règlements",
-  "description": "Encaissements et décaissements, avec leur impact en trésorerie.",
+  "title": "Paiements",
+  "description": "L'argent reçu des clients et l'argent payé aux fournisseurs.",
   "columns": {
-    "party": "Tiers",
+    "party": "Client ou fournisseur",
     "invoice": "Facture",
-    "method": "Mode",
-    "account": "Compte"
+    "method": "Payé comment",
+    "account": "Caisse ou compte"
   },
   "filters": {
-    "allDirections": "Tous les sens",
-    "incoming": "Encaissements",
-    "outgoing": "Décaissements",
-    "allMethods": "Tous les modes"
+    "allDirections": "Reçus et payés",
+    "incoming": "Argent reçu",
+    "outgoing": "Argent payé",
+    "allMethods": "Toutes les façons de payer"
   },
   "empty": {
-    "title": "Aucun règlement",
-    "description": "Les règlements s'enregistrent depuis une facture ou depuis la caisse."
+    "title": "Aucun paiement",
+    "description": "Les paiements se font depuis une facture ou depuis la caisse."
   },
-  "totalInOnPage": "Total encaissé sur cette page :"
+  "totalInOnPage": "Total reçu sur cette page :"
 }

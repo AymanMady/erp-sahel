@@ -1,68 +1,68 @@
 {
-  "title": "Trésorerie",
-  "description": "Comptes, mouvements et rapprochement bancaire.",
-  "markReconciled": "Marquer comme rapproché",
+  "title": "Caisse et banque",
+  "description": "Où est votre argent : caisse, banque, Bankily, Masrvi, Sedad.",
+  "markReconciled": "Vérifié sur le relevé",
   "accountTypes": {
     "bank": "Compte bancaire",
     "cash": "Caisse",
-    "mobileMoney": "Bankily / Masrvi / Sedad"
+    "mobileMoney": "Bankily, Masrvi ou Sedad"
   },
   "transactionTypes": {
-    "deposit": "Dépôt",
-    "withdrawal": "Retrait",
-    "transfer": "Virement"
+    "deposit": "Argent entré",
+    "withdrawal": "Argent sorti",
+    "transfer": "Transfert"
   },
   "columns": {
-    "account": "Compte",
-    "label": "Libellé",
-    "reconciled": "Rapproché"
+    "account": "Caisse ou compte",
+    "label": "Description",
+    "reconciled": "Vérifié"
   },
   "actions": {
-    "transfer": "Virement interne",
-    "newMovement": "Saisir un mouvement",
-    "newAccount": "Nouveau compte"
+    "transfer": "Déplacer de l'argent",
+    "newMovement": "Ajouter une entrée ou une sortie",
+    "newAccount": "Nouvelle caisse ou nouveau compte"
   },
   "stats": {
-    "total": "Trésorerie totale",
+    "total": "Tout l'argent",
     "cash": "Caisse",
     "bank": "Banque",
-    "mobile": "Bankily / Masrvi / Sedad"
+    "mobile": "Bankily, Masrvi, Sedad"
   },
   "accounts": {
-    "title": "Comptes",
-    "empty": "Aucun compte de trésorerie. Créez-en un pour enregistrer des règlements."
+    "title": "Caisses et comptes",
+    "empty": "Aucune caisse ni compte. Ajoutez-en un pour enregistrer les paiements."
   },
   "filters": {
-    "allAccounts": "Tous les comptes"
+    "allAccounts": "Toutes les caisses et tous les comptes"
   },
   "empty": {
-    "title": "Aucun mouvement",
-    "description": "Les règlements alimentent automatiquement ce journal."
+    "title": "Aucune entrée ni sortie",
+    "description": "Les paiements s'ajoutent ici tout seuls."
   },
   "accountDialog": {
-    "title": "Nouveau compte de trésorerie",
+    "title": "Nouvelle caisse ou nouveau compte",
     "accountNumber": "Numéro de compte",
-    "iban": "IBAN",
-    "isDefault": "Compte par défaut pour ce type de règlement"
+    "iban": "Numéro international du compte (si la banque le donne)",
+    "isDefault": "À utiliser par défaut pour ce type de paiement"
   },
   "movementDialog": {
-    "title": "Mouvement de trésorerie",
-    "description": "Pour un dépôt ou un retrait sans facture associée (apport, frais bancaires…).",
-    "direction": "Sens",
-    "deposit": "Dépôt (+)",
-    "withdrawal": "Retrait (−)"
+    "title": "Entrée ou sortie d'argent",
+    "description": "Pour de l'argent qui entre ou sort sans facture (apport, frais de banque…).",
+    "direction": "L'argent",
+    "deposit": "Entre (+)",
+    "withdrawal": "Sort (−)"
   },
   "transferDialog": {
-    "title": "Virement interne",
-    "description": "Transfert entre deux comptes de la société (remise d'espèces en banque, par exemple).",
-    "defaultDescription": "Virement interne",
-    "from": "Depuis",
-    "to": "Vers",
-    "submit": "Virer"
+    "title": "Déplacer de l'argent",
+    "description": "D'une caisse ou d'un compte à un autre (par exemple : déposer l'argent de la caisse à la banque).",
+    "defaultDescription": "Argent déplacé",
+    "from": "Prendre dans",
+    "to": "Mettre dans",
+    "submit": "Déplacer"
   },
   "toasts": {
-    "accountCreated": "Compte créé.",
-    "movementSaved": "Mouvement enregistré.",
-    "transferDone": "Virement effectué."
+    "accountCreated": "Ajouté.",
+    "movementSaved": "Enregistré.",
+    "transferDone": "Argent déplacé."
   }
 }

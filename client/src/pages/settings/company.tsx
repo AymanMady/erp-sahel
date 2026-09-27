@@ -48,7 +48,6 @@ export default function CompanySettingsPage() {
     city: "",
     country: "",
     logo: "" as string | null,
-    currency: "MRU",
     accountingStandard: "OHADA" as (typeof ACCOUNTING_STANDARDS)[number],
     fiscalYearStartMonth: 1,
   });
@@ -71,7 +70,6 @@ export default function CompanySettingsPage() {
       city: data.city,
       country: data.country,
       logo: data.logo,
-      currency: data.currency,
       accountingStandard: data.accountingStandard,
       fiscalYearStartMonth: data.fiscalYearStartMonth,
     });
@@ -199,16 +197,6 @@ export default function CompanySettingsPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <FieldGrid>
-                <Field label={t("common:labels.currency")} hint={t("company.fields.currencyHint")}>
-                  <Input
-                    value={form.currency}
-                    onChange={(event) =>
-                      setForm({ ...form, currency: event.target.value.toUpperCase().slice(0, 3) })
-                    }
-                    disabled={readOnly}
-                    className="tabular"
-                  />
-                </Field>
                 <Field label={t("company.fields.accountingStandard")}>
                   <Select
                     value={form.accountingStandard}

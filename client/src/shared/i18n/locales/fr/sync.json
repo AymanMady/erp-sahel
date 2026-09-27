@@ -1,64 +1,64 @@
 {
-  "title": "Synchronisation",
-  "description": "File d'attente de ce poste et journal d'ingestion du serveur.",
-  "retryErrors": "Réessayer les erreurs",
-  "syncNow": "Synchroniser",
-  "retried": "Opérations en erreur remises en file.",
-  "discard": "Abandonner",
-  "discarded": "Opération abandonnée.",
+  "title": "Envoi des données",
+  "description": "Ce qui attend d'être envoyé depuis cet appareil, et ce qui a déjà été reçu.",
+  "retryErrors": "Réessayer ce qui n'a pas marché",
+  "syncNow": "Envoyer maintenant",
+  "retried": "On réessaie.",
+  "discard": "Laisser tomber",
+  "discarded": "Laissé tombé.",
   "never": "jamais",
   "stats": {
-    "pending": "En attente sur ce poste",
-    "failed": "En erreur",
-    "lastSync": "Dernière synchronisation",
+    "pending": "À envoyer depuis cet appareil",
+    "failed": "Pas marché",
+    "lastSync": "Dernier envoi",
     "state": "État"
   },
   "states": {
-    "offline": "Hors ligne",
-    "syncing": "En cours",
-    "error": "Erreur",
-    "upToDate": "À jour"
+    "offline": "Pas d'internet",
+    "syncing": "Envoi en cours",
+    "error": "Problème",
+    "upToDate": "Tout est envoyé"
   },
   "tabs": {
-    "outbox": "File locale",
-    "journal": "Journal serveur",
-    "devices": "Postes"
+    "outbox": "À envoyer",
+    "journal": "Déjà reçu",
+    "devices": "Appareils"
   },
   "columns": {
-    "operation": "Opération",
+    "operation": "Quoi",
     "state": "État",
-    "attempts": "Tentatives",
-    "entity": "Entité",
-    "assignedNumber": "Numéro attribué",
-    "device": "Poste",
+    "attempts": "Essais",
+    "entity": "Type",
+    "assignedNumber": "Numéro donné",
+    "device": "Appareil",
     "result": "Résultat",
     "detail": "Détail"
   },
   "outbox": {
-    "emptyTitle": "File vide",
-    "emptyDescription": "Toutes les opérations de ce poste ont été synchronisées."
+    "emptyTitle": "Rien à envoyer",
+    "emptyDescription": "Tout ce qui a été fait sur cet appareil a été envoyé."
   },
   "journal": {
-    "emptyTitle": "Journal vide",
-    "emptyDescription": "Aucune opération hors-ligne n'a encore été ingérée."
+    "emptyTitle": "Rien pour le moment",
+    "emptyDescription": "Rien n'a encore été envoyé sans internet."
   },
   "devices": {
-    "title": "Postes synchronisés",
-    "description": "Dernière remontée et dernier instantané servi, par poste.",
-    "empty": "Aucun poste enregistré.",
-    "platform": "Plateforme : {{platform}}",
+    "title": "Appareils",
+    "description": "Le dernier envoi de chaque appareil.",
+    "empty": "Aucun appareil.",
+    "platform": "Système : {{platform}}",
     "lastPush": "Dernier envoi : {{date}}",
-    "lastSnapshot": "Dernier instantané : {{date}}"
+    "lastSnapshot": "Dernière réception : {{date}}"
   },
   "entities": {
-    "party": "Tiers",
-    "product": "Produit",
+    "party": "Client ou fournisseur",
+    "product": "Article",
     "quote": "Devis",
     "invoice": "Facture",
-    "payment": "Règlement",
+    "payment": "Paiement",
     "posSessionOpen": "Ouverture de caisse",
-    "posSessionClose": "Clôture de caisse",
-    "stockMovement": "Mouvement de stock",
-    "offlineEntry": "Saisie hors ligne"
+    "posSessionClose": "Fermeture de caisse",
+    "stockMovement": "Changement de stock",
+    "offlineEntry": "Fait sans internet"
   }
 }

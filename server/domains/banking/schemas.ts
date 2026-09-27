@@ -11,7 +11,6 @@ export const createBankAccountSchema = z.object({
   accountNumber: z.string().max(64).default(""),
   iban: z.string().max(64).default(""),
   swift: z.string().max(32).default(""),
-  currency: z.string().length(3).default("MRU"),
   glAccountId: z.string().uuid().nullish(),
   isDefault: z.boolean().default(false),
 });

@@ -1,59 +1,58 @@
 {
-  "offlineUnavailable": "Ce tiers n'est pas disponible hors ligne.",
+  "offlineUnavailable": "Pas disponible sans internet.",
   "fields": {
-    "taxId": "Identifiant fiscal",
-    "creditLimit": "Encours autorisé",
-    "creditLimitHint": "0 = aucun plafond",
-    "paymentTermsDays": "Délai de règlement (jours)"
+    "taxId": "Numéro d'identification fiscale",
+    "creditLimit": "Crédit maximum autorisé",
+    "creditLimitHint": "Mettez 0 pour ne pas mettre de limite",
+    "paymentTermsDays": "Nombre de jours pour payer"
   },
   "addressTypes": {
-    "billing": "Facturation",
-    "shipping": "Livraison",
+    "billing": "Adresse pour la facture",
+    "shipping": "Adresse de livraison",
     "other": "Autre"
   },
   "list": {
-    "title": "Tiers",
-    "description": "Clients, fournisseurs et prospects de la société.",
-    "new": "Nouveau tiers",
-    "searchPlaceholder": "Nom, code, téléphone, NIF…",
-    "allTypes": "Tous les tiers",
-    "taxIdShort": "NIF {{number}}",
-    "unlimited": "illimité",
-    "termsDays": "{{days}} j",
-    "cash": "comptant",
+    "title": "Clients et fournisseurs",
+    "description": "Les personnes et sociétés avec qui vous travaillez.",
+    "new": "Ajouter",
+    "searchPlaceholder": "Nom, code ou téléphone…",
+    "allTypes": "Tout le monde",
+    "taxIdShort": "Numéro fiscal : {{number}}",
+    "unlimited": "sans limite",
+    "cash": "paie tout de suite",
     "columns": {
       "contact": "Contact",
-      "paymentTerms": "Règlement"
+      "paymentTerms": "Délai pour payer"
     },
     "empty": {
-      "title": "Aucun tiers",
-      "description": "Créez votre premier client ou fournisseur pour commencer à facturer."
+      "title": "Personne pour le moment",
+      "description": "Ajoutez votre premier client ou fournisseur."
     }
   },
   "create": {
-    "title": "Nouveau tiers",
-    "description": "Le code est généré automatiquement selon le type (CLI, FRN, PSP).",
-    "creating": "Création…",
-    "submit": "Créer le tiers",
-    "created": "Tiers « {{name}} » créé ({{code}}).",
-    "savedOffline": "Tiers « {{name}} » enregistré hors ligne.",
-    "savedOfflineDescription": "Il sera créé sur le serveur à la prochaine synchronisation."
+    "title": "Nouveau client ou fournisseur",
+    "description": "Le code est donné automatiquement.",
+    "creating": "Création en cours…",
+    "submit": "Ajouter",
+    "created": "« {{name}} » ajouté.",
+    "savedOffline": "« {{name}} » gardé sur cet appareil (pas d'internet).",
+    "savedOfflineDescription": "Il sera envoyé quand internet reviendra."
   },
   "detail": {
-    "notFound": "Tiers introuvable.",
-    "outstanding": "Encours actuel",
-    "creditLimit": "Plafond autorisé :",
-    "noCreditLimit": "Aucun plafond d'encours défini.",
-    "paymentTerms": "Conditions de règlement",
+    "notFound": "Introuvable.",
+    "outstanding": "Doit encore",
+    "creditLimit": "Crédit maximum :",
+    "noCreditLimit": "Pas de limite de crédit.",
+    "paymentTerms": "Délai pour payer",
     "termsDays_one": "{{count}} jour",
     "termsDays_other": "{{count}} jours",
-    "cash": "Comptant",
-    "leadTime_one": "Délai de livraison fournisseur : {{count}} jour",
-    "leadTime_other": "Délai de livraison fournisseur : {{count}} jours",
-    "noLeadTime": "Aucun délai de livraison par défaut.",
-    "contactInfo": "Coordonnées",
+    "cash": "Paie tout de suite",
+    "leadTime_one": "Livre en {{count}} jour",
+    "leadTime_other": "Livre en {{count}} jours",
+    "noLeadTime": "Délai de livraison pas indiqué.",
+    "contactInfo": "Comment le joindre",
     "noEmail": "Aucun e-mail",
-    "noTaxId": "Aucun identifiant fiscal",
+    "noTaxId": "Pas de numéro fiscal",
     "tabs": {
       "history": "Historique",
       "contacts": "Contacts ({{n}})",
@@ -61,12 +60,12 @@
     },
     "invoices": {
       "title": "Factures",
-      "description": "Documents émis pour ce tiers.",
-      "empty": "Aucune facture pour ce tiers."
+      "description": "Factures faites pour cette personne.",
+      "empty": "Aucune facture."
     },
     "payments": {
-      "title": "Règlements",
-      "empty": "Aucun règlement enregistré."
+      "title": "Paiements",
+      "empty": "Aucun paiement."
     },
     "contacts": {
       "title": "Contacts",
@@ -78,22 +77,22 @@
     }
   },
   "edit": {
-    "title": "Modifier le tiers",
-    "saved": "Tiers mis à jour."
+    "title": "Modifier",
+    "saved": "Modifié."
   },
   "contact": {
-    "title": "Nouveau contact",
+    "title": "Nouvelle personne à contacter",
     "added": "Contact ajouté.",
     "firstName": "Prénom",
     "lastName": "Nom",
-    "role": "Fonction",
-    "rolePlaceholder": "Responsable achats, comptable…"
+    "role": "Son travail",
+    "rolePlaceholder": "Responsable des achats, comptable…"
   },
   "address": {
     "title": "Nouvelle adresse",
     "added": "Adresse ajoutée.",
     "type": "Type d'adresse",
-    "street": "Rue",
+    "street": "Quartier, rue",
     "city": "Ville",
     "postalCode": "Code postal",
     "country": "Pays",

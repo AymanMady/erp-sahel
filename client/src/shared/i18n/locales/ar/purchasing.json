@@ -1,62 +1,62 @@
 {
   "orders": {
     "title": "أوامر الشراء",
-    "description": "التموين: الاستلام هو ما يُدخل البضاعة إلى المخزون.",
+    "description": "ما تطلبه من الموردين. يزيد المخزون عندما تصل البضاعة.",
     "expectedDelivery": "التسليم المتوقع",
     "new": "أمر شراء جديد",
     "searchPlaceholder": "الرقم أو المورد…",
-    "allStatuses": "جميع الحالات",
-    "emptyTitle": "لا توجد أوامر شراء",
-    "emptyDescription": "أنشئ أمر شراء لتتبع عمليات التموين."
+    "allStatuses": "كل الحالات",
+    "emptyTitle": "لا توجد أي طلبية",
+    "emptyDescription": "اعمل طلبية لتتابع ما تشتريه."
   },
   "orderForm": {
     "title": "أمر شراء جديد",
-    "description": "لا يؤثر أمر الشراء على المخزون: الاستلام هو الذي يفعل ذلك.",
+    "description": "الطلبية لا تغير المخزون. يزيد المخزون عندما تصل البضاعة.",
     "created": "تم إنشاء الأمر {{number}}.",
     "creating": "جارٍ الإنشاء…",
     "submit": "إنشاء الأمر",
-    "header": "الترويسة",
-    "selectSupplier": "اختر مورداً",
-    "receivingWarehouse": "مستودع الاستلام",
-    "defaultWarehouse": "المستودع الافتراضي",
-    "lines": "البنود"
+    "header": "المعلومات",
+    "selectSupplier": "اختر موردًا",
+    "receivingWarehouse": "وضع البضاعة في",
+    "defaultWarehouse": "المخزن المعتاد",
+    "lines": "السلع"
   },
   "orderDetail": {
     "title": "الأمر {{number}}",
-    "invoiceCreated": "تم حفظ فاتورة المورد وترحيلها محاسبياً.",
+    "invoiceCreated": "تم حفظ فاتورة المورد.",
     "notFound": "الأمر غير موجود.",
-    "receive": "استلام",
+    "receive": "وصلت البضاعة",
     "supplierInvoice": "فاتورة المورد",
-    "documentTitle": "أمر شراء",
-    "receiptProgress": "تقدم الاستلام",
+    "documentTitle": "طلبية للمورد",
+    "receiptProgress": "البضاعة التي وصلت",
     "item": "الصنف",
     "ordered": "المطلوب",
     "received": "المستلم",
-    "remaining": "المتبقي",
-    "receipts": "سندات الاستلام"
+    "remaining": "لم يصل بعد",
+    "receipts": "وصول البضاعة"
   },
   "receiveDialog": {
-    "title": "استلام البضاعة",
-    "description": "تدخل الكميات المُدخلة إلى المخزون بالتكلفة المحددة وتُحتسب في متوسط التكلفة المرجح.",
-    "validated": "تمت المصادقة على الاستلام: تم تحديث المخزون.",
-    "receiptDate": "تاريخ الاستلام",
-    "unitCost": "تكلفة الوحدة",
+    "title": "وصول البضاعة",
+    "description": "اكتب ما وصل فعلًا والسعر المدفوع. يزيد المخزون فورًا.",
+    "validated": "تم استلام البضاعة: تم تحديث المخزون.",
+    "receiptDate": "تاريخ الوصول",
+    "unitCost": "سعر شراء القطعة الواحدة",
     "lot": "الدفعة",
-    "optional": "اختياري",
-    "receivedValue": "القيمة المستلمة",
-    "submit": "المصادقة على الاستلام"
+    "optional": "غير إجباري",
+    "receivedValue": "قيمة البضاعة المستلمة",
+    "submit": "تأكيد الوصول"
   },
   "receipts": {
-    "title": "الاستلامات",
-    "description": "كل استلام مُصادق عليه يُنشئ حركات الإدخال إلى المخزون.",
-    "emptyTitle": "لا توجد استلامات",
-    "emptyDescription": "تُدخل الاستلامات انطلاقاً من أمر شراء."
+    "title": "البضاعة المستلمة",
+    "description": "كل وصول بضاعة أُضيف إلى المخزون.",
+    "emptyTitle": "لم يُستلم شيء",
+    "emptyDescription": "افتح طلبية مورد واضغط على «وصلت البضاعة»."
   },
   "supplierInvoices": {
     "title": "فواتير الموردين",
-    "description": "ديون الموردين المسجلة.",
-    "supplierReference": "مرجع المورد",
+    "description": "ما تدين به لمورديك.",
+    "supplierReference": "رقم فاتورة المورد",
     "emptyTitle": "لا توجد فواتير موردين",
-    "emptyDescription": "تُنشأ انطلاقاً من أمر شراء تم استلامه."
+    "emptyDescription": "تُعمل من طلبية وصلت بضاعتها."
   }
 }

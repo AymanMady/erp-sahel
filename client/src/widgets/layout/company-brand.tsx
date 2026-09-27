@@ -1,4 +1,4 @@
-/** Company logo, name and currency, in place of the template's `.logo-src` image. */
+/** Company logo and name, in place of the template's `.logo-src` image. */
 
 import { useTranslation } from "react-i18next";
 
@@ -16,11 +16,7 @@ export function CompanyBrand() {
       </span>
       <span className="app-brand__text">
         <span className="truncate">{company?.name ?? t("common:appName")}</span>
-        <small className="truncate">
-          {company
-            ? t("companyBrand.currency", { currency: company.currency })
-            : t("common:states.loading")}
-        </small>
+        {company ? null : <small className="truncate">{t("common:states.loading")}</small>}
       </span>
     </div>
   );

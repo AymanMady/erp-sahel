@@ -1,21 +1,21 @@
 {
   "title": "Payments",
-  "description": "Incoming and outgoing payments, with their impact on treasury.",
+  "description": "Money received from customers and money paid to suppliers.",
   "columns": {
-    "party": "Party",
+    "party": "Customer or supplier",
     "invoice": "Invoice",
-    "method": "Method",
-    "account": "Account"
+    "method": "Paid how",
+    "account": "Cash box or account"
   },
   "filters": {
-    "allDirections": "All directions",
-    "incoming": "Incoming",
-    "outgoing": "Outgoing",
-    "allMethods": "All methods"
+    "allDirections": "Received and paid",
+    "incoming": "Money received",
+    "outgoing": "Money paid",
+    "allMethods": "All ways to pay"
   },
   "empty": {
     "title": "No payments",
-    "description": "Payments are recorded from an invoice or from the register."
+    "description": "Payments are made from an invoice or from the cash register."
   },
   "totalInOnPage": "Total received on this page:"
 }

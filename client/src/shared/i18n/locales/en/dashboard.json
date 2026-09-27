@@ -1,7 +1,7 @@
 {
   "greeting": "Hello",
   "greetingWithName": "Hello {{name}}",
-  "description": "Overview of the company's activity.",
+  "description": "What is happening in your shop.",
   "lastDays_one": "Last {{count}} day",
   "lastDays_other": "Last {{count}} days",
   "periodLabel": "Period",
@@ -14,41 +14,41 @@
     "viewStock": "View stock",
     "newCustomer": "New customer"
   },
-  "offline": "Indicators are not available offline. They will reappear as soon as the network is back.",
+  "offline": "These numbers need internet. They will come back with the connection.",
   "stats": {
-    "revenue": "Revenue",
-    "invoicesHint_one": "{{count}} invoice in the period",
-    "invoicesHint_other": "{{count}} invoices in the period",
-    "outstanding": "Outstanding receivables",
-    "outstandingHint": "Validated invoices not fully paid",
-    "treasury": "Cash position",
+    "revenue": "Total sales",
+    "invoicesHint_one": "{{count}} invoice during this period",
+    "invoicesHint_other": "{{count}} invoices during this period",
+    "outstanding": "Customers owe you",
+    "outstandingHint": "Invoices not paid yet",
+    "treasury": "Money available",
     "treasuryHint": "Cash {{cash}} · Bank {{bank}}",
     "stockValue": "Stock value",
-    "skusHint_one": "{{count}} SKU in stock",
-    "skusHint_other": "{{count}} SKUs in stock"
+    "skusHint_one": "{{count}} item in stock",
+    "skusHint_other": "{{count}} items in stock"
   },
   "revenueChart": {
-    "title": "Revenue trend",
-    "description": "Amounts of validated invoices, from {{from}} to {{to}}.",
-    "empty": "No sales recorded in this period.",
-    "series": "Revenue"
+    "title": "Sales day by day",
+    "description": "Validated invoices, from {{from}} to {{to}}.",
+    "empty": "No sales during this period.",
+    "series": "Sales"
   },
   "topSales": {
     "title": "Best sellers",
-    "description": "Top 5 items in the period.",
-    "empty": "No sales in this period.",
+    "description": "The 5 items sold the most during this period.",
+    "empty": "No sales during this period.",
     "sold_one": "{{count}} sold",
     "sold_other": "{{count}} sold"
   },
   "restock": {
-    "title": "Reorder alerts",
-    "description": "Items at or below their threshold.",
+    "title": "Items to buy again",
+    "description": "Only a few are left.",
     "viewStock": "View stock",
-    "empty": "No items below their alert threshold."
+    "empty": "Nothing to buy again for now."
   },
   "counts": {
-    "title": "Master data",
-    "description": "Company data volumes.",
+    "title": "In numbers",
+    "description": "What is saved in the application.",
     "customers": "Customers",
     "suppliers": "Suppliers",
     "products": "Products",

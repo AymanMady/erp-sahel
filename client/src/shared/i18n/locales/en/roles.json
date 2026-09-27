@@ -2,95 +2,95 @@
   "system": {
     "administrateur": {
       "name": "Administrator",
-      "description": "Company settings, users, master data and accounting."
+      "description": "Can do everything: settings, users, accounts."
     },
     "responsable-magasin": {
       "name": "Store manager",
-      "description": "Store purchasing, stock, catalog and reports."
+      "description": "Purchases, stock, items and reports."
     },
     "vendeur": {
       "name": "Salesperson / Cashier",
-      "description": "Sales, quotes, invoices, collections and POS session."
+      "description": "Sales, quotes, invoices, payments and cash register."
     },
     "comptable": {
       "name": "Accountant",
-      "description": "Journal, general ledger, trial balance and bank reconciliation."
+      "description": "The company's accounts and the bank."
     },
     "consultation": {
-      "name": "Read-only",
-      "description": "Read-only access to all authorized screens."
+      "name": "Look only",
+      "description": "Can see everything but cannot change anything."
     }
   },
   "groups": {
-    "masterData": "Master data",
-    "operations": "Operations",
-    "accountingReporting": "Accounting & reporting",
-    "administration": "Administration"
+    "masterData": "Basic information",
+    "operations": "Everyday work",
+    "accountingReporting": "Accounts and reports",
+    "administration": "Managing the application"
   },
   "permissions": {
     "parties": {
-      "read": "View parties",
-      "write": "Create and edit parties"
+      "read": "See customers and suppliers",
+      "write": "Add and change customers and suppliers"
     },
     "catalog": {
-      "read": "View the catalog",
-      "write": "Create and edit products"
+      "read": "See the items",
+      "write": "Add and change items"
     },
     "services": {
-      "read": "View services",
-      "write": "Create and edit services"
+      "read": "See the services",
+      "write": "Add and change services"
     },
     "inventory": {
-      "read": "View stock",
-      "write": "Stock movements and adjustments"
+      "read": "See the stock",
+      "write": "Add or remove stock"
     },
     "purchasing": {
-      "read": "View purchasing",
-      "write": "Create orders and receipts"
+      "read": "See purchases",
+      "write": "Make orders and receive goods"
     },
     "sales": {
-      "read": "View quotes and orders",
-      "write": "Create quotes and orders"
+      "read": "See quotes and orders",
+      "write": "Make quotes and orders"
     },
     "invoicing": {
-      "read": "View invoices",
-      "write": "Create and validate invoices",
-      "cancel": "Cancel an invoice and issue a credit note"
+      "read": "See invoices",
+      "write": "Make and validate invoices",
+      "cancel": "Cancel an invoice (make a credit note)"
     },
     "payments": {
-      "read": "View payments",
-      "write": "Record payments"
+      "read": "See payments",
+      "write": "Save payments"
     },
     "banking": {
-      "read": "View cash and bank",
-      "write": "Enter and reconcile bank transactions"
+      "read": "See cash and bank",
+      "write": "Add money in and money out"
     },
     "pos": {
       "use": "Use the point of sale",
       "session": {
-        "close": "Close a POS session"
+        "close": "Close the cash register"
       }
     },
     "accounting": {
-      "read": "View accounting",
-      "write": "Enter journal entries"
+      "read": "See the accounts",
+      "write": "Write in the accounts"
     },
     "reports": {
-      "read": "View reports"
+      "read": "See reports"
     },
     "settings": {
-      "read": "View settings",
-      "write": "Edit company settings"
+      "read": "See settings",
+      "write": "Change the company settings"
     },
     "users": {
-      "read": "View users",
-      "write": "Manage users and roles"
+      "read": "See users",
+      "write": "Manage users and what they are allowed to do"
     },
     "modules": {
-      "manage": "Enable or disable modules"
+      "manage": "Turn on or hide parts of the application"
     },
     "audit": {
-      "read": "View the audit log"
+      "read": "See the history of actions"
     }
   }
 }

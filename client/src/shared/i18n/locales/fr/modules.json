@@ -20,16 +20,16 @@
     "description": "Voir ce qui reste en magasin, les entrées et les sorties."
   },
   "services": {
-    "name": "Prestations",
+    "name": "Services",
     "description": "Vendre des services (pose, réparation, livraison…)."
   },
   "banking": {
     "name": "Caisse et banque",
-    "description": "Suivre l'argent en caisse, en banque et sur Bankily / Masrvi / Sedad."
+    "description": "Suivre l'argent en caisse, en banque et sur Bankily, Masrvi, Sedad."
   },
   "accounting": {
     "name": "Comptabilité",
-    "description": "Journal, grand livre et balance (pour le comptable)."
+    "description": "Les comptes détaillés de l'entreprise (pour le comptable)."
   },
   "reports": {
     "name": "Rapports",
@@ -42,7 +42,7 @@
     },
     "invoices": {
       "name": "Avec factures",
-      "description": "En plus : devis, factures, prestations et rapports."
+      "description": "En plus : devis, factures, services et rapports."
     },
     "full": {
       "name": "Complet",

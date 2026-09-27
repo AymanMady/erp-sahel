@@ -68,12 +68,7 @@ export function DocumentView({
           {company?.logo ? (
             <img src={company.logo} alt="" className="size-12 rounded-md object-contain" />
           ) : null}
-          <div>
-            <p className="text-lg font-semibold">{company?.name}</p>
-            <p className="text-xs text-muted-foreground">
-              {t("view.currency", { currency: company?.currency })}
-            </p>
-          </div>
+          <p className="text-lg font-semibold">{company?.name}</p>
         </div>
         <div className="text-end">
           <div className="flex items-center justify-end gap-2">

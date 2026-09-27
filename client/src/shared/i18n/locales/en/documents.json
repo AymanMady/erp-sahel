@@ -1,42 +1,41 @@
 {
   "view": {
-    "currency": "Currency: {{currency}}",
     "date": "Date: {{date}}",
-    "dueDate": "Due date: {{date}}",
-    "recipient": "Bill to",
+    "dueDate": "To pay before: {{date}}",
+    "recipient": "For",
     "columns": {
-      "description": "Description",
-      "origin": "Origin",
-      "quantity": "Qty",
-      "unitPrice": "Unit price"
+      "description": "Item",
+      "origin": "Country of origin",
+      "quantity": "Quantity",
+      "unitPrice": "Price for one unit"
     },
     "alreadyPaid": "Already paid",
     "amountDue": "Amount due"
   },
   "lineEditor": {
     "columns": {
-      "description": "Description"
+      "description": "Item"
     },
-    "empty": "No lines. Add an item or a service.",
-    "descriptionPlaceholder": "Line description",
+    "empty": "No items yet. Click “Add an item”.",
+    "descriptionPlaceholder": "Name of the item or service",
     "removeLine": "Remove line",
     "addItem": "Add an item",
-    "freeLine": "Free-text line",
-    "globalDiscount": "Overall discount"
+    "freeLine": "Add a line written by hand",
+    "globalDiscount": "Discount on the total"
   },
   "productPicker": {
-    "title": "Add a line",
-    "description": "The price is taken from the catalog; you can still change it.",
-    "searchPlaceholder": "Item or service…",
+    "title": "Add an item",
+    "description": "The price is filled in by itself. You can change it.",
+    "searchPlaceholder": "Name of the item or service…",
     "service": "service",
-    "stock": "stock {{quantity}}"
+    "stock": "{{quantity}} left"
   },
   "partyPicker": {
     "selectCustomer": "Select a customer",
     "chooseCustomer": "Choose a customer",
     "chooseSupplier": "Choose a supplier",
-    "newParty": "New contact",
-    "noResults": "No contact found."
+    "newParty": "New customer or supplier",
+    "noResults": "Nobody found."
   },
   "units": {
     "unit": "unit",

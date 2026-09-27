@@ -1,31 +1,31 @@
 {
   "labels": {
-    "DRAFT": "مسودة",
-    "SENT": "مُرسَل",
+    "DRAFT": "قيد التحضير",
+    "SENT": "أُرسل إلى الزبون",
     "ACCEPTED": "مقبول",
     "REJECTED": "مرفوض",
     "EXPIRED": "منتهي الصلاحية",
-    "CONVERTED": "محوَّل",
+    "CONVERTED": "أصبح طلبية",
     "CONFIRMED": "مؤكَّد",
     "PROCESSING": "قيد التجهيز",
-    "SHIPPED": "مشحون",
+    "SHIPPED": "في الطريق",
     "DELIVERED": "مُسلَّم",
     "INVOICED": "مُفوتَر",
     "CANCELLED": "ملغى",
     "VALIDATED": "مُعتمَد",
-    "PARTIALLY_PAID": "مدفوع جزئيًا",
+    "PARTIALLY_PAID": "مدفوعة جزئيًا",
     "PAID": "مدفوع",
     "ORDERED": "مطلوب",
-    "PARTIALLY_RECEIVED": "مستلم جزئيًا",
+    "PARTIALLY_RECEIVED": "مستلمة جزئيًا",
     "RECEIVED": "مستلم",
     "OPEN": "مفتوحة",
     "CLOSED": "مغلقة",
     "PENDING": "قيد الانتظار",
     "created": "تم الإنشاء",
-    "duplicate": "مكرر تم تجاهله",
-    "error": "خطأ",
-    "deferred": "مؤجَّل",
-    "synced": "تمت المزامنة",
+    "duplicate": "مستلم من قبل",
+    "error": "مشكلة",
+    "deferred": "لاحقًا",
+    "synced": "أُرسل",
     "sending": "جارٍ الإرسال…",
     "pending": "قيد الانتظار"
   },
@@ -33,20 +33,20 @@
     "CASH": "نقدًا",
     "BANK_TRANSFER": "تحويل بنكي",
     "CHECK": "شيك",
-    "CARD": "بطاقة",
-    "MOBILE_MONEY": "بنكيلي / مصرفي / سداد"
+    "CARD": "بطاقة بنكية",
+    "MOBILE_MONEY": "Bankily أو Masrvi أو Sedad"
   },
   "movements": {
     "IN": "وارد",
     "OUT": "صادر",
-    "TRANSFER": "تحويل",
-    "ADJUSTMENT": "تسوية",
+    "TRANSFER": "تغيير المخزن",
+    "ADJUSTMENT": "تصحيح",
     "RETURN": "مرتجع"
   },
   "partyTypes": {
     "CUSTOMER": "عميل",
     "SUPPLIER": "مورد",
-    "BOTH": "عميل ومورد",
-    "PROSPECT": "عميل محتمل"
+    "BOTH": "زبون ومورد",
+    "PROSPECT": "زبون محتمل"
   }
 }

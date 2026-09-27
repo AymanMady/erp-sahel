@@ -143,7 +143,7 @@ test.describe("whole application offline", () => {
     // instead of offering a second one, which would be rejected at synchronization.
     await test.step("opens /pos offline", async () => {
       await page.goto("/pos");
-      await expect(page.getByPlaceholder(/Scan a barcode/)).toBeVisible();
+      await expect(page.getByPlaceholder(/Scan the barcode/)).toBeVisible();
     });
 
     // Administration data is there (the screen used to be empty).

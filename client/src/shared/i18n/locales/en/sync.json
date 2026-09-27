@@ -1,64 +1,64 @@
 {
-  "title": "Synchronization",
-  "description": "This device's queue and the server ingestion journal.",
-  "retryErrors": "Retry errors",
-  "syncNow": "Synchronize",
-  "retried": "Failed operations queued again.",
-  "discard": "Discard",
-  "discarded": "Operation discarded.",
+  "title": "Sending data",
+  "description": "What is waiting to be sent from this device, and what has already been received.",
+  "retryErrors": "Try again what did not work",
+  "syncNow": "Send now",
+  "retried": "Trying again.",
+  "discard": "Drop it",
+  "discarded": "Dropped.",
   "never": "never",
   "stats": {
-    "pending": "Pending on this device",
-    "failed": "Failed",
-    "lastSync": "Last synchronization",
+    "pending": "To send from this device",
+    "failed": "Did not work",
+    "lastSync": "Last sending",
     "state": "Status"
   },
   "states": {
-    "offline": "Offline",
-    "syncing": "In progress",
-    "error": "Error",
-    "upToDate": "Up to date"
+    "offline": "No internet",
+    "syncing": "Sending",
+    "error": "Problem",
+    "upToDate": "Everything is sent"
   },
   "tabs": {
-    "outbox": "Local queue",
-    "journal": "Server journal",
+    "outbox": "To send",
+    "journal": "Already received",
     "devices": "Devices"
   },
   "columns": {
-    "operation": "Operation",
+    "operation": "What",
     "state": "Status",
-    "attempts": "Attempts",
-    "entity": "Entity",
-    "assignedNumber": "Assigned number",
+    "attempts": "Tries",
+    "entity": "Type",
+    "assignedNumber": "Number given",
     "device": "Device",
     "result": "Result",
     "detail": "Detail"
   },
   "outbox": {
-    "emptyTitle": "Queue empty",
-    "emptyDescription": "All operations of this device have been synchronized."
+    "emptyTitle": "Nothing to send",
+    "emptyDescription": "Everything done on this device has been sent."
   },
   "journal": {
-    "emptyTitle": "Journal empty",
-    "emptyDescription": "No offline operation has been ingested yet."
+    "emptyTitle": "Nothing yet",
+    "emptyDescription": "Nothing has been sent without internet yet."
   },
   "devices": {
-    "title": "Synchronized devices",
-    "description": "Last upload and last snapshot served, per device.",
-    "empty": "No device registered.",
-    "platform": "Platform: {{platform}}",
-    "lastPush": "Last upload: {{date}}",
-    "lastSnapshot": "Last snapshot: {{date}}"
+    "title": "Devices",
+    "description": "The last sending of each device.",
+    "empty": "No devices.",
+    "platform": "System: {{platform}}",
+    "lastPush": "Last sending: {{date}}",
+    "lastSnapshot": "Last received: {{date}}"
   },
   "entities": {
-    "party": "Party",
-    "product": "Product",
+    "party": "Customer or supplier",
+    "product": "Item",
     "quote": "Quote",
     "invoice": "Invoice",
     "payment": "Payment",
     "posSessionOpen": "Register opening",
-    "posSessionClose": "Register closing",
-    "stockMovement": "Stock movement",
-    "offlineEntry": "Offline entry"
+    "posSessionClose": "Closing of the cash register",
+    "stockMovement": "Stock change",
+    "offlineEntry": "Done without internet"
   }
 }

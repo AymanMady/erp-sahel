@@ -263,14 +263,12 @@ function AccountDialog({
 }) {
   const { t } = useTranslation("banking");
   const queryClient = useQueryClient();
-  const { company } = useSession();
   const [form, setForm] = useState({
     code: "",
     name: "",
     accountType: "BANK" as (typeof BANK_ACCOUNT_TYPES)[number],
     accountNumber: "",
     iban: "",
-    currency: company?.currency ?? "MRU",
     isDefault: false,
   });
 

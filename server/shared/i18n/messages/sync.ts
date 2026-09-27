@@ -13,8 +13,9 @@ export const syncMessages: MessageCatalog = {
       "Dépendance non encore synchronisée ({clientUuid}) : opération reportée au prochain cycle.",
     "The quote does not reference any customer.": "Le devis ne référence aucun client.",
     "The payment references neither a party nor an invoice: it cannot be allocated.":
-      "Le règlement ne référence ni tiers ni facture : impossible de l'imputer.",
-    "The closing does not reference any session.": "La clôture ne référence aucune session.",
+      "Ce paiement n'a ni client ni facture : impossible de savoir à quoi il correspond.",
+    "The closing does not reference any session.":
+      "Cette fermeture de caisse ne correspond à aucune ouverture.",
   },
   ar: {
     'Entity "{entity}" is not supported by this server.':

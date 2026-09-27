@@ -1,59 +1,58 @@
 {
-  "offlineUnavailable": "This party is not available offline.",
+  "offlineUnavailable": "Not available without internet.",
   "fields": {
-    "taxId": "Tax ID",
-    "creditLimit": "Credit limit",
-    "creditLimitHint": "0 = no limit",
-    "paymentTermsDays": "Payment terms (days)"
+    "taxId": "Tax identification number",
+    "creditLimit": "Most credit allowed",
+    "creditLimitHint": "Put 0 for no limit",
+    "paymentTermsDays": "Number of days to pay"
   },
   "addressTypes": {
-    "billing": "Billing",
-    "shipping": "Shipping",
+    "billing": "Address for the invoice",
+    "shipping": "Delivery address",
     "other": "Other"
   },
   "list": {
-    "title": "Parties",
-    "description": "The company's customers, suppliers and prospects.",
-    "new": "New party",
-    "searchPlaceholder": "Name, code, phone, tax ID…",
-    "allTypes": "All parties",
-    "taxIdShort": "Tax ID {{number}}",
-    "unlimited": "unlimited",
-    "termsDays": "{{days}} d",
-    "cash": "cash",
+    "title": "Customers and suppliers",
+    "description": "The people and companies you work with.",
+    "new": "Add",
+    "searchPlaceholder": "Name, code or phone…",
+    "allTypes": "Everyone",
+    "taxIdShort": "Tax number: {{number}}",
+    "unlimited": "no limit",
+    "cash": "pays right away",
     "columns": {
       "contact": "Contact",
-      "paymentTerms": "Terms"
+      "paymentTerms": "Time to pay"
     },
     "empty": {
-      "title": "No parties",
-      "description": "Create your first customer or supplier to start invoicing."
+      "title": "Nobody yet",
+      "description": "Add your first customer or supplier."
     }
   },
   "create": {
-    "title": "New party",
-    "description": "The code is generated automatically based on the type (CLI, FRN, PSP).",
+    "title": "New customer or supplier",
+    "description": "The code is given automatically.",
     "creating": "Creating…",
-    "submit": "Create party",
-    "created": "Party “{{name}}” created ({{code}}).",
-    "savedOffline": "Party “{{name}}” saved offline.",
-    "savedOfflineDescription": "It will be created on the server at the next synchronization."
+    "submit": "Add",
+    "created": "“{{name}}” added.",
+    "savedOffline": "“{{name}}” kept on this device (no internet).",
+    "savedOfflineDescription": "It will be sent when internet comes back."
   },
   "detail": {
-    "notFound": "Party not found.",
-    "outstanding": "Current outstanding balance",
-    "creditLimit": "Credit limit:",
-    "noCreditLimit": "No credit limit set.",
-    "paymentTerms": "Payment terms",
+    "notFound": "Not found.",
+    "outstanding": "Still owes",
+    "creditLimit": "Most credit:",
+    "noCreditLimit": "No credit limit.",
+    "paymentTerms": "Time to pay",
     "termsDays_one": "{{count}} day",
     "termsDays_other": "{{count}} days",
-    "cash": "Cash",
-    "leadTime_one": "Supplier lead time: {{count}} day",
-    "leadTime_other": "Supplier lead time: {{count}} days",
-    "noLeadTime": "No default lead time.",
-    "contactInfo": "Contact details",
+    "cash": "Pays right away",
+    "leadTime_one": "Delivers in {{count}} day",
+    "leadTime_other": "Delivers in {{count}} days",
+    "noLeadTime": "Delivery time not given.",
+    "contactInfo": "How to reach them",
     "noEmail": "No email",
-    "noTaxId": "No tax ID",
+    "noTaxId": "No tax number",
     "tabs": {
       "history": "History",
       "contacts": "Contacts ({{n}})",
@@ -61,12 +60,12 @@
     },
     "invoices": {
       "title": "Invoices",
-      "description": "Documents issued for this party.",
-      "empty": "No invoices for this party."
+      "description": "Invoices made for this person.",
+      "empty": "No invoices."
     },
     "payments": {
       "title": "Payments",
-      "empty": "No payments recorded."
+      "empty": "No payments."
     },
     "contacts": {
       "title": "Contacts",
@@ -78,22 +77,22 @@
     }
   },
   "edit": {
-    "title": "Edit party",
-    "saved": "Party updated."
+    "title": "Change",
+    "saved": "Changed."
   },
   "contact": {
-    "title": "New contact",
+    "title": "New person to contact",
     "added": "Contact added.",
     "firstName": "First name",
     "lastName": "Last name",
-    "role": "Job title",
-    "rolePlaceholder": "Purchasing manager, accountant…"
+    "role": "Their job",
+    "rolePlaceholder": "Buyer, accountant…"
   },
   "address": {
     "title": "New address",
     "added": "Address added.",
     "type": "Address type",
-    "street": "Street",
+    "street": "Neighborhood, street",
     "city": "City",
     "postalCode": "Postal code",
     "country": "Country",

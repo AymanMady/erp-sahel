@@ -1,12 +1,12 @@
 {
   "ui": {
-    "breadcrumb": "Breadcrumb",
+    "breadcrumb": "Where you are",
     "more": "More",
-    "commandPalette": "Command palette",
-    "commandPaletteDescription": "Search for a command to run…",
-    "sidebar": "Navigation",
-    "sidebarDescription": "Displays the mobile navigation menu.",
-    "toggleSidebar": "Show or hide the sidebar"
+    "commandPalette": "Go to a screen",
+    "commandPaletteDescription": "Type the name of a screen…",
+    "sidebar": "Menu",
+    "sidebarDescription": "Shows the menu.",
+    "toggleSidebar": "Show or hide the menu"
   },
   "searchInput": {
     "clear": "Clear search"
@@ -14,17 +14,17 @@
   "deleteDialog": {
     "defaultName": "this item",
     "title": "Delete {{name}}?",
-    "description": "This will permanently remove {{name}}. This action cannot be undone.",
+    "description": "{{name}} will be deleted forever. You cannot undo this.",
     "deleted": "{{name}} deleted",
-    "deletedDescription": "The record has been removed."
+    "deletedDescription": "It is deleted."
   },
   "resourceTable": {
     "emptyTitle": "No results",
-    "emptyDescription": "No item matches your search.",
+    "emptyDescription": "Nothing matches your search.",
     "itemCount_one": "{{count}} item",
     "itemCount_other": "{{count}} items",
-    "perPage": "Per page",
-    "pageOf": "Page {{page}} / {{pageCount}}",
+    "perPage": "Rows per page",
+    "pageOf": "Page {{page}} of {{pageCount}}",
     "firstPage": "First page",
     "previousPage": "Previous page",
     "nextPage": "Next page",

@@ -5,23 +5,23 @@
   },
   "sales": {
     "title": "تقرير المبيعات",
-    "description": "رقم الأعمال والأصناف والتحصيلات.",
-    "revenue": "رقم الأعمال",
-    "collected": "المحصَّل",
-    "outstanding": "المتبقي المستحق",
-    "dailyRevenue": "رقم الأعمال اليومي",
-    "noSales": "لا توجد مبيعات خلال الفترة.",
+    "description": "ما بعته والمال المستلم.",
+    "revenue": "مجموع المبيعات",
+    "collected": "المال المستلم",
+    "outstanding": "الباقي للاستلام",
+    "dailyRevenue": "مبيعات كل يوم",
+    "noSales": "لا توجد مبيعات في هذه الفترة.",
     "topSales": "الأكثر مبيعًا",
     "emptyTitle": "لا توجد مبيعات",
-    "emptyDescription": "لم يُبع أي صنف خلال الفترة.",
-    "collectionsByMethod": "التحصيلات حسب طريقة الدفع",
-    "noCollections": "لا توجد تحصيلات خلال الفترة.",
-    "paymentsCount_zero": "لا توجد تسويات",
-    "paymentsCount_one": "تسوية واحدة",
-    "paymentsCount_two": "تسويتان",
-    "paymentsCount_few": "{{count}} تسويات",
-    "paymentsCount_many": "{{count}} تسوية",
-    "paymentsCount_other": "{{count}} تسوية",
+    "emptyDescription": "لم تُبع أي سلعة في هذه الفترة.",
+    "collectionsByMethod": "المال المستلم، حسب طريقة الدفع",
+    "noCollections": "لم يُستلم أي مال في هذه الفترة.",
+    "paymentsCount_zero": "لا توجد دفعات",
+    "paymentsCount_one": "دفعة واحدة",
+    "paymentsCount_two": "دفعتان",
+    "paymentsCount_few": "{{count}} دفعات",
+    "paymentsCount_many": "{{count}} دفعة",
+    "paymentsCount_other": "{{count}} دفعة",
     "columns": {
       "item": "الصنف",
       "soldQuantity": "الكمية المباعة"
@@ -29,25 +29,25 @@
   },
   "stock": {
     "title": "تقرير المخزون",
-    "description": "التقييم بمتوسط التكلفة وتنبيهات نفاد المخزون.",
+    "description": "قيمة المخزون والسلع التي أوشكت على النفاد.",
     "allWarehouses": "جميع المخازن",
     "stockValue": "قيمة المخزون",
-    "skus": "المراجع",
+    "skus": "السلع",
     "totalQuantity": "الكمية الإجمالية",
-    "belowThreshold": "الأصناف دون حد التنبيه",
-    "emptyTitle": "لا توجد تنبيهات",
-    "emptyDescription": "جميع الأصناف المتابَعة فوق حد إعادة الطلب.",
+    "belowThreshold": "سلع أوشكت على النفاد",
+    "emptyTitle": "لا شيء للشراء من جديد",
+    "emptyDescription": "بقي ما يكفي من كل سلعة.",
     "columns": {
       "item": "الصنف",
-      "currentStock": "المخزون الحالي",
-      "alertThreshold": "حد التنبيه"
+      "currentStock": "الباقي في المخزون",
+      "alertThreshold": "التنبيه تحت"
     }
   },
   "purchases": {
     "title": "تقرير المشتريات",
-    "description": "حجم التموين خلال الفترة.",
+    "description": "ما اشتريته في هذه الفترة.",
     "ordersPlaced": "الطلبيات المُصدرة",
     "amount": "المبلغ",
-    "periodNote": "الفترة المحللة: من {{from}} إلى {{to}}. تشمل المبالغ جميع طلبيات الموردين، بما فيها تلك التي لم تُستلم بعد."
+    "periodNote": "من {{from}} إلى {{to}}. كل الطلبيات للموردين محسوبة، حتى لو لم تصل البضاعة بعد."
   }
 }

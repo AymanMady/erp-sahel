@@ -1,78 +1,78 @@
 {
-  "allStatuses": "All statuses",
+  "allStatuses": "All states",
   "searchPlaceholder": "Number or customer…",
   "invoices": {
     "title": "Customer invoices",
-    "description": "Validated sales documents and drafts.",
+    "description": "Your validated invoices and the ones being prepared.",
     "new": "New invoice",
-    "posBadge": "POS",
+    "posBadge": "Cash register",
     "columns": {
-      "remaining": "Balance due"
+      "remaining": "Left to pay"
     },
-    "unpaidOnly": "Unpaid only",
+    "unpaidOnly": "Only unpaid invoices",
     "emptyTitle": "No invoices",
-    "emptyDescription": "Invoice an order or create a direct invoice."
+    "emptyDescription": "Make an invoice from an order, or directly."
   },
   "invoice": {
     "documentTitle": "Invoice",
     "pageTitle": "Invoice {{number}}",
     "notFound": "Invoice not found.",
     "validated": "Invoice {{number}} validated.",
-    "collect": "Record payment",
-    "issueCreditNote": "Issue a credit note",
-    "draftNotice": "This document is a <strong>draft</strong>: it has no legal number yet, has not reduced stock and is not posted to the accounts.",
-    "payments": "Payments"
+    "collect": "Receive a payment",
+    "issueCreditNote": "Return of goods (make a credit note)",
+    "draftNotice": "This invoice is <strong>being prepared</strong>: it has no number yet, the stock has not moved and it is not in the accounts. Click “Validate” when it is ready.",
+    "payments": "Payments received"
   },
   "payment": {
-    "title": "Collect invoice payment",
+    "title": "Receive a payment",
     "remaining": "Amount due:",
-    "method": "Payment method",
-    "account": "Cash/bank account",
-    "defaultAccount": "Default account",
-    "referencePlaceholder": "Cheque no., transfer reference…",
-    "submit": "Record payment",
-    "savedOffline": "Payment saved offline.",
-    "savedOfflineDescription": "It will be applied to the invoice at the next sync.",
-    "saved": "Payment recorded: cash and accounting updated."
+    "method": "Paid how?",
+    "account": "Money received in",
+    "defaultAccount": "Usual cash box or account",
+    "referencePlaceholder": "Number of the cheque, bank transfer or transaction…",
+    "submit": "Save the payment",
+    "savedOffline": "Payment kept on this device (no internet).",
+    "savedOfflineDescription": "It will be added to the invoice when internet comes back.",
+    "saved": "Payment saved."
   },
   "creditNote": {
-    "title": "Issue a credit note",
-    "description": "A validated invoice cannot be edited: corrections go through a credit note, which covers all the lines.",
-    "reason": "Reason",
-    "reasonPlaceholder": "Returned goods, billing error…",
-    "restock": "Return the items to stock",
-    "submit": "Issue credit note",
-    "issued": "Credit note issued: reversing entry posted."
+    "title": "Return of goods (credit note)",
+    "description": "A validated invoice cannot be changed. To correct or cancel it, you make a credit note: it cancels the whole invoice.",
+    "reason": "Why?",
+    "reasonPlaceholder": "The customer brought the goods back, mistake on the invoice…",
+    "restock": "Put the items back in stock",
+    "submit": "Make the credit note",
+    "issued": "Credit note made: the invoice is cancelled."
   },
   "creditNotes": {
-    "title": "Credit notes",
-    "description": "Corrections of validated invoices: reversing entry and stock return.",
+    "title": "Returns of goods (credit notes)",
+    "description": "Cancelled or corrected invoices, with the items put back in stock.",
     "columns": {
-      "restock": "Returned to stock",
-      "reason": "Reason"
+      "restock": "Put back in stock",
+      "reason": "Why"
     },
-    "restocked": "Restocked",
-    "notRestocked": "no",
-    "emptyTitle": "No credit notes",
-    "emptyDescription": "Credit notes are issued from a validated invoice."
+    "restocked": "Yes",
+    "notRestocked": "No",
+    "emptyTitle": "No returns",
+    "emptyDescription": "To make a credit note, open a validated invoice."
   },
   "invoiceForm": {
     "title": "New invoice",
-    "description": "A draft has no effect; validation reduces stock and posts to the accounts.",
-    "saveDraft": "Save draft",
-    "processing": "Processing…",
+    "description": "Until it is validated, the invoice changes nothing. When you validate it, the stock goes down.",
+    "saveDraft": "Keep for later",
+    "processing": "In progress…",
     "validate": "Validate invoice",
-    "header": "Header",
-    "lines": "Lines",
+    "header": "Information",
+    "lines": "Items",
     "date": "Invoice date",
-    "warehouse": "Shipping warehouse",
-    "warehouseHint": "Determines which warehouse the stock leaves from.",
-    "defaultWarehouse": "Default warehouse",
-    "draftSavedOffline": "Invoice draft saved offline.",
-    "draftSavedOfflineDescription": "It will be created on the server at the next sync.",
-    "savedOffline": "Invoice {{number}} saved offline.",
-    "savedOfflineDescription": "It will be validated (stock and accounting) at the next sync.",
-    "draftSaved": "Invoice draft saved.",
-    "validated": "Invoice {{number}} validated: stock and accounting updated."
+    "warehouse": "Take the goods out of",
+    "warehouseHint": "The warehouse the items leave from.",
+    "defaultWarehouse": "Usual warehouse",
+    "draftSavedOffline": "Invoice kept on this device (no internet).",
+    "draftSavedOfflineDescription": "It will be sent when internet comes back.",
+    "savedOffline": "Invoice {{number}} kept on this device (no internet).",
+    "savedOfflineDescription": "It will be validated when internet comes back.",
+    "draftSaved": "Invoice kept for later.",
+    "validated": "Invoice {{number}} validated. The stock is updated."
   }
 }

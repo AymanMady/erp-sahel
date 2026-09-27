@@ -1,12 +1,12 @@
 {
   "ui": {
-    "breadcrumb": "Fil d'Ariane",
+    "breadcrumb": "Où vous êtes",
     "more": "Plus",
-    "commandPalette": "Palette de commandes",
-    "commandPaletteDescription": "Rechercher une commande à exécuter…",
-    "sidebar": "Navigation",
-    "sidebarDescription": "Affiche le menu de navigation mobile.",
-    "toggleSidebar": "Afficher ou masquer la barre latérale"
+    "commandPalette": "Aller à un écran",
+    "commandPaletteDescription": "Tapez le nom d'un écran…",
+    "sidebar": "Menu",
+    "sidebarDescription": "Affiche le menu.",
+    "toggleSidebar": "Afficher ou cacher le menu"
   },
   "searchInput": {
     "clear": "Effacer la recherche"
@@ -14,17 +14,17 @@
   "deleteDialog": {
     "defaultName": "cet élément",
     "title": "Supprimer {{name}} ?",
-    "description": "{{name}} sera supprimé définitivement. Cette action est irréversible.",
+    "description": "{{name}} sera supprimé pour toujours. Impossible de revenir en arrière.",
     "deleted": "{{name}} supprimé",
-    "deletedDescription": "L'enregistrement a été supprimé."
+    "deletedDescription": "C'est supprimé."
   },
   "resourceTable": {
     "emptyTitle": "Aucun résultat",
-    "emptyDescription": "Aucun élément ne correspond à votre recherche.",
+    "emptyDescription": "Rien ne correspond à votre recherche.",
     "itemCount_one": "{{count}} élément",
     "itemCount_other": "{{count}} éléments",
-    "perPage": "Par page",
-    "pageOf": "Page {{page}} / {{pageCount}}",
+    "perPage": "Lignes par page",
+    "pageOf": "Page {{page}} sur {{pageCount}}",
     "firstPage": "Première page",
     "previousPage": "Page précédente",
     "nextPage": "Page suivante",

@@ -1,64 +1,64 @@
 {
-  "title": "المزامنة",
-  "description": "قائمة انتظار هذا الجهاز وسجل استيعاب الخادم.",
-  "retryErrors": "إعادة محاولة الأخطاء",
-  "syncNow": "مزامنة",
-  "retried": "أُعيدت العمليات الفاشلة إلى قائمة الانتظار.",
-  "discard": "تجاهل",
-  "discarded": "تم تجاهل العملية.",
+  "title": "إرسال البيانات",
+  "description": "ما ينتظر الإرسال من هذا الجهاز، وما تم استلامه من قبل.",
+  "retryErrors": "إعادة المحاولة لما لم ينجح",
+  "syncNow": "الإرسال الآن",
+  "retried": "نعيد المحاولة.",
+  "discard": "التخلي عنه",
+  "discarded": "تم التخلي عنه.",
   "never": "أبدًا",
   "stats": {
-    "pending": "قيد الانتظار على هذا الجهاز",
-    "failed": "فاشلة",
-    "lastSync": "آخر مزامنة",
+    "pending": "للإرسال من هذا الجهاز",
+    "failed": "لم ينجح",
+    "lastSync": "آخر إرسال",
     "state": "الحالة"
   },
   "states": {
-    "offline": "دون اتصال",
-    "syncing": "جارية",
-    "error": "خطأ",
-    "upToDate": "محدّثة"
+    "offline": "لا يوجد إنترنت",
+    "syncing": "جارٍ الإرسال",
+    "error": "مشكلة",
+    "upToDate": "تم إرسال كل شيء"
   },
   "tabs": {
-    "outbox": "القائمة المحلية",
-    "journal": "سجل الخادم",
+    "outbox": "للإرسال",
+    "journal": "مستلم من قبل",
     "devices": "الأجهزة"
   },
   "columns": {
-    "operation": "العملية",
+    "operation": "ماذا",
     "state": "الحالة",
     "attempts": "المحاولات",
-    "entity": "الكيان",
-    "assignedNumber": "الرقم المخصص",
+    "entity": "النوع",
+    "assignedNumber": "الرقم المعطى",
     "device": "الجهاز",
     "result": "النتيجة",
     "detail": "التفاصيل"
   },
   "outbox": {
-    "emptyTitle": "القائمة فارغة",
-    "emptyDescription": "تمت مزامنة جميع عمليات هذا الجهاز."
+    "emptyTitle": "لا شيء للإرسال",
+    "emptyDescription": "كل ما تم على هذا الجهاز قد أُرسل."
   },
   "journal": {
-    "emptyTitle": "السجل فارغ",
-    "emptyDescription": "لم يُستوعب أي عملية دون اتصال بعد."
+    "emptyTitle": "لا شيء حتى الآن",
+    "emptyDescription": "لم يُرسل أي شيء تم بدون إنترنت بعد."
   },
   "devices": {
-    "title": "الأجهزة المُزامَنة",
-    "description": "آخر إرسال وآخر لقطة مقدَّمة، لكل جهاز.",
-    "empty": "لا يوجد جهاز مسجّل.",
-    "platform": "المنصة: {{platform}}",
+    "title": "الأجهزة",
+    "description": "آخر إرسال من كل جهاز.",
+    "empty": "لا يوجد أي جهاز.",
+    "platform": "النظام: {{platform}}",
     "lastPush": "آخر إرسال: {{date}}",
-    "lastSnapshot": "آخر لقطة: {{date}}"
+    "lastSnapshot": "آخر استلام: {{date}}"
   },
   "entities": {
-    "party": "طرف",
-    "product": "منتج",
+    "party": "زبون أو مورد",
+    "product": "سلعة",
     "quote": "عرض سعر",
     "invoice": "فاتورة",
     "payment": "دفعة",
     "posSessionOpen": "فتح الصندوق",
     "posSessionClose": "إغلاق الصندوق",
-    "stockMovement": "حركة مخزون",
-    "offlineEntry": "إدخال دون اتصال"
+    "stockMovement": "تغيير المخزون",
+    "offlineEntry": "تم بدون إنترنت"
   }
 }

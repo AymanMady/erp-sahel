@@ -8,7 +8,7 @@
  */
 
 import { todayInput } from "@shared/format";
-import { formatMoney } from "@shared/money";
+import { CURRENCY, formatMoney } from "@shared/money";
 import { buildPaymentPosting } from "@shared/accounting-rules";
 import type { Company, Payment, PaymentDirection, PaymentMethod } from "@shared/schema";
 import { runInTransaction, type Database } from "../../db";
@@ -77,7 +77,7 @@ class PaymentsApplication {
       if (input.amountCents > remaining) {
         throw new BusinessRuleError(
           tr("The payment exceeds the amount due ({amount}).", {
-            amount: formatMoney(remaining, invoice.currency),
+            amount: formatMoney(remaining),
           }),
           "OVERPAYMENT",
           { remainingCents: remaining }
@@ -110,7 +110,7 @@ class PaymentsApplication {
       paymentMethod: method,
       reference: input.reference ?? "",
       status: "CONFIRMED",
-      currency: company.currency,
+      currency: CURRENCY,
       notes: input.notes ?? "",
       posSessionId: input.posSessionId ?? null,
       userId: userId ?? null,

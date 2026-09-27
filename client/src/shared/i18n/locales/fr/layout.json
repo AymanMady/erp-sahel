@@ -1,45 +1,42 @@
 {
-  "companyBrand": {
-    "currency": "Devise {{currency}}"
-  },
   "moduleGate": {
     "title": "« {{module}} » n'est pas activé",
-    "canEnable": "Activez ce module pour utiliser cet écran. Vos données ne sont jamais effacées.",
-    "askAdmin": "Demandez à l'administrateur d'activer ce module.",
+    "canEnable": "Activez cette partie pour utiliser cet écran. Rien n'est effacé.",
+    "askAdmin": "Demandez au responsable d'activer cette partie.",
     "backHome": "Retour à l'accueil",
-    "manageModules": "Gérer les modules"
+    "manageModules": "Choisir les parties de l'application"
   },
   "userMenu": {
     "profile": "Mon profil",
-    "settings": "Paramètres",
+    "settings": "Réglages",
     "signOut": "Se déconnecter"
   },
   "sync": {
-    "offline": "Hors ligne",
+    "offline": "Pas d'internet",
     "errors_one": "{{count}} erreur",
     "errors_other": "{{count}} erreurs",
-    "syncing": "Synchronisation…",
-    "pendingCount_one": "{{count}} en attente",
-    "pendingCount_other": "{{count}} en attente",
-    "upToDate": "À jour",
-    "statusAria": "État de synchronisation : {{status}}",
-    "connected": "Connecté au serveur",
-    "offlineMode": "Mode hors ligne",
-    "onlineHint": "Les ventes sont remontées automatiquement.",
-    "offlineHint": "Les ventes sont enregistrées localement et remonteront au retour du réseau.",
-    "pending": "En attente",
-    "failed": "En erreur",
-    "lastSync": "Dernière synchro.",
+    "syncing": "Envoi en cours…",
+    "pendingCount_one": "{{count}} à envoyer",
+    "pendingCount_other": "{{count}} à envoyer",
+    "upToDate": "Tout est envoyé",
+    "statusAria": "Envoi des données : {{status}}",
+    "connected": "Internet fonctionne",
+    "offlineMode": "Pas d'internet",
+    "onlineHint": "Les ventes sont envoyées toutes seules.",
+    "offlineHint": "Les ventes sont gardées sur cet appareil et seront envoyées quand internet reviendra.",
+    "pending": "À envoyer",
+    "failed": "Problème",
+    "lastSync": "Dernier envoi",
     "never": "jamais",
-    "syncNow": "Synchroniser maintenant",
-    "viewQueue": "Voir la file d'attente"
+    "syncNow": "Envoyer maintenant",
+    "viewQueue": "Voir ce qui attend"
   },
-  "offlineBanner": "Mode hors ligne — vos saisies sont enregistrées sur ce poste et seront synchronisées automatiquement.",
+  "offlineBanner": "Pas d'internet — vous pouvez continuer à travailler. Tout sera envoyé quand internet reviendra.",
   "boot": {
-    "loading": "Chargement de l'ERP…"
+    "loading": "Chargement de l'application…"
   },
   "header": {
-    "toggleSidebar": "Afficher ou réduire le menu",
+    "toggleSidebar": "Afficher ou cacher le menu",
     "toggleMenu": "Afficher les raccourcis"
   }
 }

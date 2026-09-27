@@ -2,95 +2,95 @@
   "system": {
     "administrateur": {
       "name": "Administrateur",
-      "description": "Paramétrage société, utilisateurs, référentiels et comptabilité."
+      "description": "Peut tout faire : réglages, utilisateurs, comptes."
     },
     "responsable-magasin": {
       "name": "Responsable magasin",
-      "description": "Achats, stock, catalogue et rapports du magasin."
+      "description": "Achats, stock, articles et rapports."
     },
     "vendeur": {
       "name": "Vendeur / Caissier",
-      "description": "Ventes, devis, factures, encaissements et session de caisse."
+      "description": "Ventes, devis, factures, paiements et caisse."
     },
     "comptable": {
       "name": "Comptable",
-      "description": "Journal, grand livre, balance et rapprochement bancaire."
+      "description": "Les comptes de l'entreprise et la banque."
     },
     "consultation": {
-      "name": "Consultation",
-      "description": "Accès en lecture seule à l'ensemble des écrans autorisés."
+      "name": "Regarder seulement",
+      "description": "Peut tout voir mais ne peut rien changer."
     }
   },
   "groups": {
-    "masterData": "Référentiels",
-    "operations": "Opérations",
-    "accountingReporting": "Comptabilité & pilotage",
-    "administration": "Administration"
+    "masterData": "Informations de base",
+    "operations": "Travail de tous les jours",
+    "accountingReporting": "Comptes et rapports",
+    "administration": "Gestion de l'application"
   },
   "permissions": {
     "parties": {
-      "read": "Consulter les tiers",
-      "write": "Créer et modifier les tiers"
+      "read": "Voir les clients et fournisseurs",
+      "write": "Ajouter et modifier les clients et fournisseurs"
     },
     "catalog": {
-      "read": "Consulter le catalogue",
-      "write": "Créer et modifier les produits"
+      "read": "Voir les articles",
+      "write": "Ajouter et modifier les articles"
     },
     "services": {
-      "read": "Consulter les prestations",
-      "write": "Créer et modifier les prestations"
+      "read": "Voir les services",
+      "write": "Ajouter et modifier les services"
     },
     "inventory": {
-      "read": "Consulter le stock",
-      "write": "Mouvements et ajustements de stock"
+      "read": "Voir le stock",
+      "write": "Ajouter ou retirer du stock"
     },
     "purchasing": {
-      "read": "Consulter les achats",
-      "write": "Créer commandes et réceptions"
+      "read": "Voir les achats",
+      "write": "Faire des commandes et recevoir la marchandise"
     },
     "sales": {
-      "read": "Consulter devis et commandes",
-      "write": "Créer devis et commandes"
+      "read": "Voir les devis et commandes",
+      "write": "Faire des devis et des commandes"
     },
     "invoicing": {
-      "read": "Consulter les factures",
-      "write": "Créer et valider les factures",
-      "cancel": "Annuler une facture et émettre un avoir"
+      "read": "Voir les factures",
+      "write": "Faire et valider les factures",
+      "cancel": "Annuler une facture (faire un avoir)"
     },
     "payments": {
-      "read": "Consulter les règlements",
-      "write": "Enregistrer les règlements"
+      "read": "Voir les paiements",
+      "write": "Enregistrer les paiements"
     },
     "banking": {
-      "read": "Consulter la trésorerie",
-      "write": "Saisir et rapprocher les mouvements bancaires"
+      "read": "Voir la caisse et la banque",
+      "write": "Ajouter des entrées et sorties d'argent"
     },
     "pos": {
       "use": "Utiliser la caisse",
       "session": {
-        "close": "Clôturer une session de caisse"
+        "close": "Fermer la caisse"
       }
     },
     "accounting": {
-      "read": "Consulter la comptabilité",
-      "write": "Saisir des écritures"
+      "read": "Voir les comptes",
+      "write": "Écrire dans les comptes"
     },
     "reports": {
-      "read": "Consulter les rapports"
+      "read": "Voir les rapports"
     },
     "settings": {
-      "read": "Consulter les paramètres",
-      "write": "Modifier les paramètres de la société"
+      "read": "Voir les réglages",
+      "write": "Changer les réglages de la société"
     },
     "users": {
-      "read": "Consulter les utilisateurs",
-      "write": "Gérer utilisateurs et rôles"
+      "read": "Voir les utilisateurs",
+      "write": "Gérer les utilisateurs et leurs droits"
     },
     "modules": {
-      "manage": "Activer ou désactiver les modules"
+      "manage": "Activer ou cacher des parties de l'application"
     },
     "audit": {
-      "read": "Consulter le journal d'audit"
+      "read": "Voir l'historique des actions"
     }
   }
 }

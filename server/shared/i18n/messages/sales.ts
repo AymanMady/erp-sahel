@@ -20,7 +20,7 @@ export const salesMessages: MessageCatalog = {
     "The document must have at least one line.": "Le document doit comporter au moins une ligne.",
     "Line {line}: product not found or belongs to another company.":
       "Ligne {line} : produit introuvable ou appartenant à une autre société.",
-    "Line {line}: service not found.": "Ligne {line} : prestation introuvable.",
+    "Line {line}: service not found.": "Ligne {line} : service introuvable.",
     "Line {line}: the description is required.": "Ligne {line} : la désignation est obligatoire.",
     unit: "unité",
   },

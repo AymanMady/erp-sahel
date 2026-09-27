@@ -1,13 +1,10 @@
 {
-  "companyBrand": {
-    "currency": "العملة {{currency}}"
-  },
   "moduleGate": {
-    "title": "الوحدة «{{module}}» غير مفعّلة",
-    "canEnable": "فعّل هذه الوحدة لاستخدام هذه الشاشة. لا تُحذف بياناتك أبدًا.",
-    "askAdmin": "اطلب من المسؤول تفعيل هذه الوحدة.",
+    "title": "«{{module}}» غير مفعّل",
+    "canEnable": "فعّل هذا الجزء لاستعمال هذه الشاشة. لا يُمسح أي شيء.",
+    "askAdmin": "اطلب من المسؤول تفعيل هذا الجزء.",
     "backHome": "العودة إلى الرئيسية",
-    "manageModules": "إدارة الوحدات"
+    "manageModules": "اختيار أجزاء التطبيق"
   },
   "userMenu": {
     "profile": "ملفي الشخصي",
@@ -15,39 +12,39 @@
     "signOut": "تسجيل الخروج"
   },
   "sync": {
-    "offline": "غير متصل",
+    "offline": "لا يوجد إنترنت",
     "errors_zero": "لا أخطاء",
     "errors_one": "خطأ واحد",
     "errors_two": "خطآن",
     "errors_few": "{{count}} أخطاء",
     "errors_many": "{{count}} خطأً",
     "errors_other": "{{count}} خطأ",
-    "syncing": "جارٍ المزامنة…",
-    "pendingCount_zero": "لا عمليات معلّقة",
-    "pendingCount_one": "عملية واحدة معلّقة",
-    "pendingCount_two": "عمليتان معلّقتان",
-    "pendingCount_few": "{{count}} عمليات معلّقة",
-    "pendingCount_many": "{{count}} عملية معلّقة",
-    "pendingCount_other": "{{count}} عملية معلّقة",
-    "upToDate": "محدّث",
-    "statusAria": "حالة المزامنة: {{status}}",
-    "connected": "متصل بالخادم",
-    "offlineMode": "وضع عدم الاتصال",
-    "onlineHint": "تُرفع المبيعات تلقائيًا.",
-    "offlineHint": "تُحفظ المبيعات محليًا وستُرفع عند عودة الشبكة.",
-    "pending": "معلّقة",
-    "failed": "فاشلة",
-    "lastSync": "آخر مزامنة",
+    "syncing": "جارٍ الإرسال…",
+    "pendingCount_zero": "لا شيء للإرسال",
+    "pendingCount_one": "{{count}} للإرسال",
+    "pendingCount_two": "{{count}} للإرسال",
+    "pendingCount_few": "{{count}} للإرسال",
+    "pendingCount_many": "{{count}} للإرسال",
+    "pendingCount_other": "{{count}} للإرسال",
+    "upToDate": "تم إرسال كل شيء",
+    "statusAria": "إرسال البيانات: {{status}}",
+    "connected": "الإنترنت يعمل",
+    "offlineMode": "لا يوجد إنترنت",
+    "onlineHint": "المبيعات تُرسل وحدها.",
+    "offlineHint": "المبيعات محفوظة على هذا الجهاز وستُرسل عندما يعود الإنترنت.",
+    "pending": "للإرسال",
+    "failed": "مشكلة",
+    "lastSync": "آخر إرسال",
     "never": "أبدًا",
-    "syncNow": "المزامنة الآن",
-    "viewQueue": "عرض قائمة الانتظار"
+    "syncNow": "الإرسال الآن",
+    "viewQueue": "رؤية ما ينتظر"
   },
-  "offlineBanner": "وضع عدم الاتصال — تُحفظ إدخالاتك على هذا الجهاز وستُزامَن تلقائيًا.",
+  "offlineBanner": "لا يوجد إنترنت — يمكنك متابعة العمل. سيُرسل كل شيء عندما يعود الإنترنت.",
   "boot": {
-    "loading": "جارٍ تحميل نظام تخطيط الموارد…"
+    "loading": "جارٍ تحميل التطبيق…"
   },
   "header": {
-    "toggleSidebar": "إظهار القائمة أو طيها",
+    "toggleSidebar": "إظهار القائمة أو إخفاؤها",
     "toggleMenu": "إظهار الاختصارات"
   }
 }

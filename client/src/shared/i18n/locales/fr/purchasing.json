@@ -1,62 +1,62 @@
 {
   "orders": {
     "title": "Commandes fournisseurs",
-    "description": "Approvisionnement : la réception fait entrer la marchandise en stock.",
+    "description": "Ce que vous commandez aux fournisseurs. Le stock augmente quand la marchandise arrive.",
     "expectedDelivery": "Livraison prévue",
     "new": "Nouvelle commande",
     "searchPlaceholder": "Numéro ou fournisseur…",
-    "allStatuses": "Tous les statuts",
-    "emptyTitle": "Aucune commande d'achat",
-    "emptyDescription": "Créez une commande pour suivre vos approvisionnements."
+    "allStatuses": "Tous les états",
+    "emptyTitle": "Aucune commande",
+    "emptyDescription": "Faites une commande pour suivre ce que vous achetez."
   },
   "orderForm": {
     "title": "Nouvelle commande fournisseur",
-    "description": "La commande n'affecte pas le stock : c'est la réception qui le fait.",
+    "description": "La commande ne change pas le stock. Le stock augmente quand la marchandise arrive.",
     "created": "Commande {{number}} créée.",
-    "creating": "Création…",
+    "creating": "Création en cours…",
     "submit": "Créer la commande",
-    "header": "En-tête",
-    "selectSupplier": "Sélectionner un fournisseur",
-    "receivingWarehouse": "Magasin de réception",
-    "defaultWarehouse": "Magasin par défaut",
-    "lines": "Lignes"
+    "header": "Informations",
+    "selectSupplier": "Choisir un fournisseur",
+    "receivingWarehouse": "Mettre la marchandise dans",
+    "defaultWarehouse": "Magasin habituel",
+    "lines": "Articles"
   },
   "orderDetail": {
     "title": "Commande {{number}}",
-    "invoiceCreated": "Facture fournisseur enregistrée et comptabilisée.",
+    "invoiceCreated": "Facture du fournisseur enregistrée.",
     "notFound": "Commande introuvable.",
-    "receive": "Réceptionner",
-    "supplierInvoice": "Facture fournisseur",
-    "documentTitle": "Commande d'achat",
-    "receiptProgress": "Avancement des réceptions",
+    "receive": "La marchandise est arrivée",
+    "supplierInvoice": "Facture du fournisseur",
+    "documentTitle": "Commande au fournisseur",
+    "receiptProgress": "Marchandise déjà arrivée",
     "item": "Article",
     "ordered": "Commandé",
     "received": "Reçu",
-    "remaining": "Reste",
-    "receipts": "Bons de réception"
+    "remaining": "Pas encore arrivé",
+    "receipts": "Arrivées de marchandise"
   },
   "receiveDialog": {
-    "title": "Réception de marchandise",
-    "description": "Les quantités saisies entrent en stock au coût indiqué et alimentent le coût moyen pondéré.",
-    "validated": "Réception validée : stock mis à jour.",
-    "receiptDate": "Date de réception",
-    "unitCost": "Coût unitaire",
+    "title": "Arrivée de marchandise",
+    "description": "Écrivez ce qui est vraiment arrivé et le prix payé. Le stock augmente tout de suite.",
+    "validated": "Marchandise reçue : stock mis à jour.",
+    "receiptDate": "Date d'arrivée",
+    "unitCost": "Prix d'achat d'une unité",
     "lot": "Lot",
-    "optional": "optionnel",
-    "receivedValue": "Valeur réceptionnée",
-    "submit": "Valider la réception"
+    "optional": "pas obligatoire",
+    "receivedValue": "Valeur de la marchandise reçue",
+    "submit": "Confirmer l'arrivée"
   },
   "receipts": {
-    "title": "Réceptions",
-    "description": "Chaque réception validée crée les mouvements d'entrée en stock.",
-    "emptyTitle": "Aucune réception",
-    "emptyDescription": "Les réceptions se saisissent depuis une commande fournisseur."
+    "title": "Marchandise reçue",
+    "description": "Chaque arrivée de marchandise ajoutée au stock.",
+    "emptyTitle": "Rien de reçu",
+    "emptyDescription": "Ouvrez une commande fournisseur et cliquez sur « La marchandise est arrivée »."
   },
   "supplierInvoices": {
     "title": "Factures fournisseurs",
-    "description": "Dettes fournisseurs enregistrées.",
-    "supplierReference": "Réf. fournisseur",
+    "description": "Ce que vous devez à vos fournisseurs.",
+    "supplierReference": "Numéro de facture du fournisseur",
     "emptyTitle": "Aucune facture fournisseur",
-    "emptyDescription": "Elles se créent depuis une commande d'achat réceptionnée."
+    "emptyDescription": "Elles se font depuis une commande dont la marchandise est arrivée."
   }
 }

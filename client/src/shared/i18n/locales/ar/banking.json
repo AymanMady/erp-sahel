@@ -1,68 +1,68 @@
 {
-  "title": "الخزينة",
-  "description": "الحسابات والحركات والتسوية البنكية.",
-  "markReconciled": "تحديد كمُسوّى",
+  "title": "الصندوق والبنك",
+  "description": "أين يوجد مالك: الصندوق، البنك، Bankily، Masrvi، Sedad.",
+  "markReconciled": "تم التحقق في كشف البنك",
   "accountTypes": {
     "bank": "حساب بنكي",
     "cash": "صندوق نقدي",
-    "mobileMoney": "بنكيلي / مصرفي / سداد"
+    "mobileMoney": "Bankily أو Masrvi أو Sedad"
   },
   "transactionTypes": {
-    "deposit": "إيداع",
-    "withdrawal": "سحب",
-    "transfer": "تحويل"
+    "deposit": "مال داخل",
+    "withdrawal": "مال خارج",
+    "transfer": "نقل"
   },
   "columns": {
-    "account": "الحساب",
-    "label": "البيان",
-    "reconciled": "مُسوّى"
+    "account": "الصندوق أو الحساب",
+    "label": "الوصف",
+    "reconciled": "تم التحقق"
   },
   "actions": {
-    "transfer": "تحويل داخلي",
-    "newMovement": "تسجيل حركة",
-    "newAccount": "حساب جديد"
+    "transfer": "نقل المال",
+    "newMovement": "إضافة دخول أو خروج",
+    "newAccount": "صندوق جديد أو حساب جديد"
   },
   "stats": {
-    "total": "إجمالي الخزينة",
+    "total": "كل المال",
     "cash": "الصندوق",
     "bank": "البنك",
-    "mobile": "بنكيلي / مصرفي / سداد"
+    "mobile": "Bankily، Masrvi، Sedad"
   },
   "accounts": {
-    "title": "الحسابات",
-    "empty": "لا يوجد حساب خزينة. أنشئ حسابًا لتسجيل المدفوعات."
+    "title": "الصناديق والحسابات",
+    "empty": "لا يوجد صندوق ولا حساب. أضف واحدًا لتسجيل المدفوعات."
   },
   "filters": {
-    "allAccounts": "كل الحسابات"
+    "allAccounts": "كل الصناديق وكل الحسابات"
   },
   "empty": {
-    "title": "لا توجد حركات",
-    "description": "تُغذّي المدفوعات هذا السجل تلقائيًا."
+    "title": "لا يوجد دخول ولا خروج",
+    "description": "المدفوعات تُضاف هنا وحدها."
   },
   "accountDialog": {
-    "title": "حساب خزينة جديد",
+    "title": "صندوق جديد أو حساب جديد",
     "accountNumber": "رقم الحساب",
-    "iban": "رقم الآيبان (IBAN)",
-    "isDefault": "الحساب الافتراضي لهذا النوع من المدفوعات"
+    "iban": "رقم الحساب الدولي (إذا أعطاه البنك)",
+    "isDefault": "يُستعمل دائمًا لهذا النوع من الدفع"
   },
   "movementDialog": {
-    "title": "حركة خزينة",
-    "description": "لإيداع أو سحب دون فاتورة مرتبطة (مساهمة، رسوم بنكية…).",
-    "direction": "الاتجاه",
-    "deposit": "إيداع (+)",
-    "withdrawal": "سحب (−)"
+    "title": "دخول أو خروج مال",
+    "description": "لمال يدخل أو يخرج بدون فاتورة (مساهمة، مصاريف البنك…).",
+    "direction": "المال",
+    "deposit": "يدخل (+)",
+    "withdrawal": "يخرج (−)"
   },
   "transferDialog": {
-    "title": "تحويل داخلي",
-    "description": "تحويل بين حسابين للشركة (إيداع النقد في البنك مثلًا).",
-    "defaultDescription": "تحويل داخلي",
-    "from": "من",
-    "to": "إلى",
-    "submit": "تحويل"
+    "title": "نقل المال",
+    "description": "من صندوق أو حساب إلى آخر (مثلًا: وضع مال الصندوق في البنك).",
+    "defaultDescription": "مال منقول",
+    "from": "الأخذ من",
+    "to": "الوضع في",
+    "submit": "نقل"
   },
   "toasts": {
-    "accountCreated": "تم إنشاء الحساب.",
-    "movementSaved": "تم تسجيل الحركة.",
-    "transferDone": "تم التحويل."
+    "accountCreated": "تمت الإضافة.",
+    "movementSaved": "تم الحفظ.",
+    "transferDone": "تم نقل المال."
   }
 }

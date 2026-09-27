@@ -1,31 +1,31 @@
 {
   "labels": {
-    "DRAFT": "Draft",
-    "SENT": "Sent",
+    "DRAFT": "Being prepared",
+    "SENT": "Sent to the customer",
     "ACCEPTED": "Accepted",
     "REJECTED": "Rejected",
     "EXPIRED": "Expired",
-    "CONVERTED": "Converted",
+    "CONVERTED": "Became an order",
     "CONFIRMED": "Confirmed",
     "PROCESSING": "Processing",
-    "SHIPPED": "Shipped",
+    "SHIPPED": "On the way",
     "DELIVERED": "Delivered",
     "INVOICED": "Invoiced",
     "CANCELLED": "Cancelled",
     "VALIDATED": "Validated",
-    "PARTIALLY_PAID": "Partially paid",
+    "PARTIALLY_PAID": "Partly paid",
     "PAID": "Paid",
     "ORDERED": "Ordered",
-    "PARTIALLY_RECEIVED": "Partially received",
+    "PARTIALLY_RECEIVED": "Partly received",
     "RECEIVED": "Received",
     "OPEN": "Open",
     "CLOSED": "Closed",
     "PENDING": "Pending",
     "created": "Created",
-    "duplicate": "Duplicate ignored",
-    "error": "Error",
-    "deferred": "Deferred",
-    "synced": "Synced",
+    "duplicate": "Already received",
+    "error": "Problem",
+    "deferred": "Later",
+    "synced": "Sent",
     "sending": "Sending…",
     "pending": "Pending"
   },
@@ -33,20 +33,20 @@
     "CASH": "Cash",
     "BANK_TRANSFER": "Bank transfer",
     "CHECK": "Cheque",
-    "CARD": "Card",
-    "MOBILE_MONEY": "Bankily / Masrvi / Sedad"
+    "CARD": "Bank card",
+    "MOBILE_MONEY": "Bankily, Masrvi or Sedad"
   },
   "movements": {
     "IN": "In",
     "OUT": "Out",
-    "TRANSFER": "Transfer",
-    "ADJUSTMENT": "Adjustment",
+    "TRANSFER": "Change of warehouse",
+    "ADJUSTMENT": "Correction",
     "RETURN": "Return"
   },
   "partyTypes": {
     "CUSTOMER": "Customer",
     "SUPPLIER": "Supplier",
-    "BOTH": "Customer & supplier",
-    "PROSPECT": "Prospect"
+    "BOTH": "Customer and supplier",
+    "PROSPECT": "Possible customer"
   }
 }

@@ -1,21 +1,21 @@
 {
   "api": {
-    "requestFailed": "فشل الطلب.",
-    "serverUnreachable": "تعذّر الوصول إلى الخادم."
+    "requestFailed": "لم ينجح ذلك. حاول مرة أخرى.",
+    "serverUnreachable": "لا يوجد إنترنت."
   },
   "sync": {
-    "failed": "فشلت المزامنة."
+    "failed": "لم ينجح الإرسال."
   },
   "errors": {
-    "productNotSynced": "لم تتم مزامنة هذا المنتج بعد: يمكن تعديل مخزونه بعد المزامنة."
+    "productNotSynced": "هذه السلعة لم تُرسل بعد. يمكن تغيير مخزونها بعد الإرسال."
   },
   "write": {
     "label": "{{verb}} — {{resource}}",
     "labelNamed": "{{verb}} — {{resource}} «{{name}}»",
     "customAction": "إجراء «{{action}}»",
     "pendingNumber": "قيد الانتظار",
-    "savedOffline": "حُفظ دون اتصال",
-    "savedOfflineDescription": "سيُرسل التعديل إلى الخادم عند المزامنة التالية.",
+    "savedOffline": "تم الحفظ على هذا الجهاز",
+    "savedOfflineDescription": "سيُرسل عندما يعود الإنترنت.",
     "actions": {
       "create": "إنشاء",
       "update": "تعديل",
@@ -27,32 +27,32 @@
     "role": "دور",
     "setting": "إعداد",
     "company": "شركة",
-    "module": "وحدة",
+    "module": "جزء من التطبيق",
     "category": "فئة",
     "product": "منتج",
     "service": "خدمة",
-    "party": "طرف",
+    "party": "زبون أو مورد",
     "warehouse": "مستودع",
     "stock": "مخزون",
     "quote": "عرض سعر",
     "salesOrder": "طلب عميل",
     "invoice": "فاتورة",
-    "creditNote": "إشعار دائن",
+    "creditNote": "بضاعة مرتجعة",
     "payment": "دفعة",
     "purchaseOrder": "طلب شراء",
-    "goodsReceipt": "استلام بضائع",
+    "goodsReceipt": "بضاعة مستلمة",
     "supplierInvoice": "فاتورة مورد",
-    "treasury": "الخزينة",
+    "treasury": "الصندوق والبنك",
     "pos": "نقطة البيع",
     "accounting": "المحاسبة",
-    "write": "كتابة"
+    "write": "عملية"
   },
   "outboxLabels": {
-    "party": "طرف «{{name}}»",
-    "product": "منتج {{sku}} «{{name}}»",
+    "party": "«{{name}}»",
+    "product": "السلعة {{sku}} «{{name}}»",
     "quote": "عرض سعر {{number}}",
     "invoice": "فاتورة {{number}}",
-    "payment": "دفعة {{reference}}",
-    "stockAdjustment": "تسوية مخزون ({{quantity}})"
+    "payment": "الدفعة {{reference}}",
+    "stockAdjustment": "تغيير المخزون ({{quantity}})"
   }
 }

@@ -4,9 +4,9 @@ import type { MessageCatalog } from "./types";
 
 export const bankingMessages: MessageCatalog = {
   fr: {
-    "Cash/bank account not found.": "Compte de trésorerie introuvable.",
+    "Cash/bank account not found.": "Caisse ou compte introuvable.",
     "No cash/bank account is configured for this payment method. Create one in Treasury › Accounts.":
-      "Aucun compte de trésorerie n'est configuré pour ce mode de règlement. Créez-en un dans Trésorerie › Comptes.",
+      "Aucune caisse ni compte n'est prévu pour cette façon de payer. Ajoutez-en un dans Caisse et banque.",
     "A movement amount must be strictly positive.":
       "Le montant d'un mouvement doit être strictement positif.",
     "The source and destination accounts must differ.":

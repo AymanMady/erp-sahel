@@ -1,62 +1,62 @@
 {
   "orders": {
     "title": "Purchase orders",
-    "description": "Procurement: the receipt is what brings goods into stock.",
+    "description": "What you order from suppliers. The stock goes up when the goods arrive.",
     "expectedDelivery": "Expected delivery",
     "new": "New order",
     "searchPlaceholder": "Number or supplier…",
-    "allStatuses": "All statuses",
-    "emptyTitle": "No purchase orders",
-    "emptyDescription": "Create an order to track your procurement."
+    "allStatuses": "All states",
+    "emptyTitle": "No orders",
+    "emptyDescription": "Make an order to follow what you buy."
   },
   "orderForm": {
     "title": "New purchase order",
-    "description": "The order does not affect stock: the receipt does.",
+    "description": "The order does not change the stock. The stock goes up when the goods arrive.",
     "created": "Order {{number}} created.",
     "creating": "Creating…",
     "submit": "Create order",
-    "header": "Header",
-    "selectSupplier": "Select a supplier",
-    "receivingWarehouse": "Receiving warehouse",
-    "defaultWarehouse": "Default warehouse",
-    "lines": "Lines"
+    "header": "Information",
+    "selectSupplier": "Choose a supplier",
+    "receivingWarehouse": "Put the goods in",
+    "defaultWarehouse": "Usual warehouse",
+    "lines": "Items"
   },
   "orderDetail": {
     "title": "Order {{number}}",
-    "invoiceCreated": "Supplier invoice saved and posted.",
+    "invoiceCreated": "Supplier invoice saved.",
     "notFound": "Order not found.",
-    "receive": "Receive",
+    "receive": "The goods have arrived",
     "supplierInvoice": "Supplier invoice",
-    "documentTitle": "Purchase order",
-    "receiptProgress": "Receipt progress",
+    "documentTitle": "Order to the supplier",
+    "receiptProgress": "Goods already arrived",
     "item": "Item",
     "ordered": "Ordered",
     "received": "Received",
-    "remaining": "Remaining",
-    "receipts": "Goods receipts"
+    "remaining": "Not arrived yet",
+    "receipts": "Goods arrivals"
   },
   "receiveDialog": {
-    "title": "Goods receipt",
-    "description": "Entered quantities go into stock at the stated cost and feed the weighted average cost.",
-    "validated": "Receipt validated: stock updated.",
-    "receiptDate": "Receipt date",
-    "unitCost": "Unit cost",
+    "title": "Goods arrival",
+    "description": "Write what really arrived and the price paid. The stock goes up right away.",
+    "validated": "Goods received: stock updated.",
+    "receiptDate": "Arrival date",
+    "unitCost": "Buying price for one unit",
     "lot": "Lot",
-    "optional": "optional",
-    "receivedValue": "Received value",
-    "submit": "Validate receipt"
+    "optional": "not required",
+    "receivedValue": "Value of the goods received",
+    "submit": "Confirm the arrival"
   },
   "receipts": {
-    "title": "Goods receipts",
-    "description": "Each validated receipt creates the stock-in movements.",
-    "emptyTitle": "No goods receipts",
-    "emptyDescription": "Receipts are entered from a purchase order."
+    "title": "Goods received",
+    "description": "Each arrival of goods added to the stock.",
+    "emptyTitle": "Nothing received",
+    "emptyDescription": "Open a supplier order and click “The goods have arrived”."
   },
   "supplierInvoices": {
     "title": "Supplier invoices",
-    "description": "Recorded supplier payables.",
-    "supplierReference": "Supplier ref.",
+    "description": "What you owe your suppliers.",
+    "supplierReference": "Supplier's invoice number",
     "emptyTitle": "No supplier invoices",
-    "emptyDescription": "They are created from a received purchase order."
+    "emptyDescription": "They are made from an order whose goods have arrived."
   }
 }

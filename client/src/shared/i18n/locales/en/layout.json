@@ -1,13 +1,10 @@
 {
-  "companyBrand": {
-    "currency": "Currency {{currency}}"
-  },
   "moduleGate": {
     "title": "“{{module}}” is not enabled",
-    "canEnable": "Enable this module to use this screen. Your data is never deleted.",
-    "askAdmin": "Ask the administrator to enable this module.",
+    "canEnable": "Turn on this part to use this screen. Nothing is deleted.",
+    "askAdmin": "Ask the person in charge to turn on this part.",
     "backHome": "Back to home",
-    "manageModules": "Manage modules"
+    "manageModules": "Choose the parts of the application"
   },
   "userMenu": {
     "profile": "My profile",
@@ -15,31 +12,31 @@
     "signOut": "Sign out"
   },
   "sync": {
-    "offline": "Offline",
+    "offline": "No internet",
     "errors_one": "{{count}} error",
     "errors_other": "{{count}} errors",
-    "syncing": "Syncing…",
-    "pendingCount_one": "{{count}} pending",
-    "pendingCount_other": "{{count}} pending",
-    "upToDate": "Up to date",
-    "statusAria": "Sync status: {{status}}",
-    "connected": "Connected to the server",
-    "offlineMode": "Offline mode",
-    "onlineHint": "Sales are uploaded automatically.",
-    "offlineHint": "Sales are saved locally and will be uploaded when the network is back.",
-    "pending": "Pending",
-    "failed": "Failed",
-    "lastSync": "Last sync",
+    "syncing": "Sending…",
+    "pendingCount_one": "{{count}} to send",
+    "pendingCount_other": "{{count}} to send",
+    "upToDate": "Everything is sent",
+    "statusAria": "Sending data: {{status}}",
+    "connected": "Internet is working",
+    "offlineMode": "No internet",
+    "onlineHint": "Sales are sent by themselves.",
+    "offlineHint": "Sales are kept on this device and will be sent when internet comes back.",
+    "pending": "To send",
+    "failed": "Problem",
+    "lastSync": "Last sending",
     "never": "never",
-    "syncNow": "Sync now",
-    "viewQueue": "View the queue"
+    "syncNow": "Send now",
+    "viewQueue": "See what is waiting"
   },
-  "offlineBanner": "Offline mode — your entries are saved on this device and will be synchronized automatically.",
+  "offlineBanner": "No internet — you can keep working. Everything will be sent when internet comes back.",
   "boot": {
-    "loading": "Loading the ERP…"
+    "loading": "Loading the application…"
   },
   "header": {
-    "toggleSidebar": "Show or collapse the menu",
+    "toggleSidebar": "Show or hide the menu",
     "toggleMenu": "Show shortcuts"
   }
 }

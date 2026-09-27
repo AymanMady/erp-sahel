@@ -1,25 +1,25 @@
 {
   "title": "My profile",
-  "description": "Account information and security.",
+  "description": "Your account and your password.",
   "identity": {
-    "title": "Identity",
-    "activeModules": "Active modules",
-    "noModules": "No module enabled.",
-    "permissions": "Permissions ({{count}})"
+    "title": "Who you are",
+    "activeModules": "Parts of the application turned on",
+    "noModules": "None.",
+    "permissions": "What you are allowed to do ({{count}})"
   },
   "preferences": {
-    "title": "Preferences",
-    "description": "Stored on this device.",
+    "title": "My choices",
+    "description": "Kept on this device.",
     "language": "Language"
   },
   "password": {
     "title": "Password",
-    "description": "Changing it signs out all your sessions, including on other devices.",
+    "description": "After the change, you will have to sign in again on all your devices.",
     "current": "Current password",
     "new": "New password",
-    "hint": "At least 8 characters, with at least one letter and one digit.",
-    "confirm": "Confirmation",
-    "submit": "Change password",
-    "changed": "Password changed. Please sign in again."
+    "hint": "At least 8 characters, with letters and numbers.",
+    "confirm": "Type the new password again",
+    "submit": "Change the password",
+    "changed": "Password changed. Sign in again."
   }
 }

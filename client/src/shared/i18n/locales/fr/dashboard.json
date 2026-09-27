@@ -1,7 +1,7 @@
 {
   "greeting": "Bonjour",
   "greetingWithName": "Bonjour {{name}}",
-  "description": "Vue d'ensemble de l'activité de la société.",
+  "description": "Ce qui se passe dans votre commerce.",
   "lastDays_one": "{{count}} dernier jour",
   "lastDays_other": "{{count}} derniers jours",
   "periodLabel": "Période",
@@ -14,44 +14,44 @@
     "viewStock": "Voir le stock",
     "newCustomer": "Nouveau client"
   },
-  "offline": "Les indicateurs ne sont pas disponibles hors ligne. Ils réapparaîtront dès le retour du réseau.",
+  "offline": "Ces chiffres ont besoin d'internet. Ils reviendront avec la connexion.",
   "stats": {
-    "revenue": "Chiffre d'affaires",
-    "invoicesHint_one": "{{count}} facture sur la période",
-    "invoicesHint_other": "{{count}} factures sur la période",
-    "outstanding": "Restant à encaisser",
-    "outstandingHint": "Factures validées non soldées",
-    "treasury": "Trésorerie",
+    "revenue": "Total des ventes",
+    "invoicesHint_one": "{{count}} facture pendant cette période",
+    "invoicesHint_other": "{{count}} factures pendant cette période",
+    "outstanding": "Les clients vous doivent",
+    "outstandingHint": "Factures pas encore payées",
+    "treasury": "Argent disponible",
     "treasuryHint": "Caisse {{cash}} · Banque {{bank}}",
     "stockValue": "Valeur du stock",
-    "skusHint_one": "{{count}} référence en stock",
-    "skusHint_other": "{{count}} références en stock"
+    "skusHint_one": "{{count}} article en stock",
+    "skusHint_other": "{{count}} articles en stock"
   },
   "revenueChart": {
-    "title": "Évolution du chiffre d'affaires",
-    "description": "Montants des factures validées, du {{from}} au {{to}}.",
-    "empty": "Aucune vente enregistrée sur la période.",
-    "series": "CA"
+    "title": "Ventes jour après jour",
+    "description": "Factures validées, du {{from}} au {{to}}.",
+    "empty": "Aucune vente pendant cette période.",
+    "series": "Ventes"
   },
   "topSales": {
     "title": "Meilleures ventes",
-    "description": "Top 5 des articles sur la période.",
-    "empty": "Aucune vente sur la période.",
+    "description": "Les 5 articles les plus vendus pendant cette période.",
+    "empty": "Aucune vente pendant cette période.",
     "sold_one": "{{count}} vendu",
     "sold_other": "{{count}} vendus"
   },
   "restock": {
-    "title": "Alertes de réapprovisionnement",
-    "description": "Articles au seuil ou en dessous.",
+    "title": "Articles à racheter",
+    "description": "Il en reste peu.",
     "viewStock": "Voir le stock",
-    "empty": "Aucun article sous son seuil d'alerte."
+    "empty": "Rien à racheter pour le moment."
   },
   "counts": {
-    "title": "Référentiels",
-    "description": "Volumétrie de la société.",
+    "title": "En chiffres",
+    "description": "Ce qui est enregistré dans l'application.",
     "customers": "Clients",
     "suppliers": "Fournisseurs",
     "products": "Produits",
-    "services": "Prestations"
+    "services": "Services"
   }
 }

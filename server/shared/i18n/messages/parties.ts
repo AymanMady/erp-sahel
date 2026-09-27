@@ -4,7 +4,7 @@ import type { MessageCatalog } from "./types";
 
 export const partiesMessages: MessageCatalog = {
   fr: {
-    "Party not found.": "Tiers introuvable.",
+    "Party not found.": "Client ou fournisseur introuvable.",
     "Contact not found.": "Contact introuvable.",
     "Address not found.": "Adresse introuvable.",
     "Walk-in customer": "Client de passage",

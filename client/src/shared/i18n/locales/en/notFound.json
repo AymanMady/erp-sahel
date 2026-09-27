@@ -1,5 +1,5 @@
 {
   "title": "Page not found",
-  "description": "This address does not match any screen of the ERP. It may have been moved, or the corresponding module is not enabled for your company.",
+  "description": "This screen does not exist, or this part of the application is not turned on.",
   "backToDashboard": "Back to dashboard"
 }

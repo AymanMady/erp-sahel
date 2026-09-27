@@ -12,7 +12,7 @@
  */
 
 import { addDays, todayInput } from "@shared/format";
-import { formatMoney } from "@shared/money";
+import { CURRENCY, formatMoney } from "@shared/money";
 import { derivePaymentStatus } from "@shared/pricing";
 import { buildCreditNotePosting, buildSalesInvoicePosting } from "@shared/accounting-rules";
 import type { Company, SalesInvoice } from "@shared/schema";
@@ -51,7 +51,7 @@ class InvoicingApplication {
    */
   private async assertCreditLimit(
     tx: Database,
-    company: Pick<Company, "id" | "currency">,
+    company: Pick<Company, "id">,
     partyId: string,
     additionalCents: number
   ): Promise<void> {
@@ -64,8 +64,8 @@ class InvoicingApplication {
           "Credit limit exceeded for {party}: limit {limit}, outstanding after invoicing {outstanding}.",
           {
             party: party.name,
-            limit: formatMoney(party.creditLimitCents, company.currency),
-            outstanding: formatMoney(outstanding + additionalCents, company.currency),
+            limit: formatMoney(party.creditLimitCents),
+            outstanding: formatMoney(outstanding + additionalCents),
           }
         ),
         "CREDIT_LIMIT_EXCEEDED"
@@ -129,7 +129,7 @@ class InvoicingApplication {
       status: shouldValidate ? "VALIDATED" : "DRAFT",
       globalDiscountBp: input.globalDiscountBp ?? 0,
       totalCents: built.totalCents,
-      currency: company.currency,
+      currency: CURRENCY,
       notes: input.notes ?? "",
       isLocked: shouldValidate,
       userId: userId ?? null,
@@ -345,7 +345,7 @@ class InvoicingApplication {
         reason: input.reason ?? "",
         restock,
         totalCents: built.totalCents,
-        currency: company.currency,
+        currency: CURRENCY,
         isLocked: true,
         userId: userId ?? null,
       });

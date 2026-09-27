@@ -6,10 +6,10 @@ export const posMessages: MessageCatalog = {
   fr: {
     "Register not found.": "Caisse introuvable.",
     'Register "{register}" already has an open session. Close it before opening a new one.':
-      "La caisse « {register} » a déjà une session ouverte. Clôturez-la avant d'en ouvrir une nouvelle.",
+      "La caisse « {register} » est déjà ouverte. Fermez-la avant de la rouvrir.",
     "Register session not found.": "Session de caisse introuvable.",
     "The register session is closed: open a new one to take payments.":
-      "La session de caisse est clôturée : rouvrez-en une pour encaisser.",
+      "La caisse est fermée : ouvrez-la pour vendre.",
     "The amount collected ({paid}) must equal the ticket total ({total}).":
       "Le total encaissé ({paid}) doit être égal au total du ticket ({total}).",
     "Code is required": "Le code est obligatoire",
@@ -17,7 +17,7 @@ export const posMessages: MessageCatalog = {
     "Select a warehouse": "Sélectionnez un magasin",
     "Select a register": "Sélectionnez une caisse",
     "The cart is empty": "Le panier est vide",
-    "Specify at least one payment": "Indiquez au moins un règlement",
+    "Specify at least one payment": "Indiquez au moins un paiement",
     "Invalid identifier": "Identifiant invalide",
   },
   ar: {

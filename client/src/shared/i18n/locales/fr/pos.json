@@ -1,78 +1,78 @@
 {
   "exit": "Quitter la caisse",
-  "offline": "Hors ligne",
-  "openingBalance": "Fond de caisse",
+  "offline": "Pas d'internet",
+  "openingBalance": "Argent dans le tiroir au départ",
   "accessDenied": {
     "title": "Accès refusé",
-    "description": "Votre profil ne dispose pas de la permission d'utiliser la caisse.",
+    "description": "Vous n'avez pas le droit d'utiliser la caisse. Demandez au responsable.",
     "backToDashboard": "Retour au tableau de bord"
   },
   "search": {
-    "placeholder": "Scanner un code-barres ou rechercher un article…",
-    "searching": "Recherche…",
-    "noMatch": "Aucun article ne correspond.",
-    "startTyping": "Commencez à taper pour rechercher un article.",
-    "noSnapshot": "Aucun instantané local : connectez-vous une première fois au serveur."
+    "placeholder": "Scanner le code-barres ou taper le nom de l'article…",
+    "searching": "Recherche en cours…",
+    "noMatch": "Aucun article trouvé.",
+    "startTyping": "Tapez le nom de l'article pour le trouver.",
+    "noSnapshot": "Connectez-vous une première fois avec internet pour charger les articles."
   },
   "cart": {
-    "closeRegister": "Clôturer",
+    "closeRegister": "Fermer la caisse",
     "empty": "Le panier est vide.",
-    "decrease": "Diminuer",
-    "increase": "Augmenter",
-    "lastTicket": "Ticket {{number}} encaissé.",
-    "lastTicketOffline": "Ticket {{number}} encaissé (hors ligne, en attente de synchronisation).",
-    "checkout": "Encaisser {{amount}}"
+    "decrease": "Enlever un",
+    "increase": "Ajouter un",
+    "lastTicket": "Vente {{number}} payée.",
+    "lastTicketOffline": "Vente {{number}} payée (sans internet, sera envoyée plus tard).",
+    "checkout": "Payer {{amount}}"
   },
   "customer": {
     "walkIn": "Client de passage",
-    "title": "Client du ticket",
-    "description": "Sans sélection, la vente est rattachée au client de passage.",
-    "searchPlaceholder": "Nom, code, téléphone…"
+    "title": "Client de la vente",
+    "description": "Si vous ne choisissez personne, la vente va au client de passage.",
+    "searchPlaceholder": "Nom ou téléphone…"
   },
   "openSession": {
     "title": "Ouvrir la caisse",
-    "description": "Déclarez le fond de caisse présent dans le tiroir avant la première vente.",
-    "checking": "Vérification d'une session en cours…",
-    "offlineNotice": "Serveur injoignable : la session sera créée localement puis synchronisée.",
+    "description": "Comptez l'argent déjà dans le tiroir avant la première vente.",
+    "checking": "Vérification en cours…",
+    "offlineNotice": "Pas d'internet : la caisse s'ouvre quand même, tout sera envoyé plus tard.",
     "register": "Caisse",
-    "selectRegister": "Sélectionner une caisse",
-    "opening": "Ouverture…",
+    "selectRegister": "Choisir une caisse",
+    "opening": "Ouverture en cours…",
     "submit": "Ouvrir la caisse"
   },
   "payment": {
-    "title": "Encaissement",
-    "amountDue": "Total à régler :",
-    "method": "Mode de règlement",
-    "received": "Montant reçu",
+    "title": "Paiement",
+    "amountDue": "Le client doit payer :",
+    "method": "Payé comment ?",
+    "received": "Argent donné par le client",
     "change": "Monnaie à rendre",
-    "offlineNotice": "Hors ligne : le ticket recevra un numéro provisoire, remplacé par le numéro légal lors de la synchronisation.",
-    "processing": "Encaissement…"
+    "offlineNotice": "Pas d'internet : la vente reçoit un numéro provisoire. Le vrai numéro arrive quand internet revient.",
+    "processing": "Paiement en cours…"
   },
   "closeSession": {
-    "title": "Clôture de caisse",
-    "description": "Comptez le tiroir et saisissez le montant constaté.",
-    "cashReceipts": "Encaissements espèces",
+    "title": "Fermer la caisse",
+    "description": "Comptez l'argent dans le tiroir et écrivez le montant.",
+    "cashReceipts": "Argent liquide reçu",
     "totalSales": "Total des ventes",
-    "expected": "Attendu en caisse",
-    "counted": "Montant compté",
-    "difference": "Écart de caisse",
-    "pendingNotice": "La clôture sera transmise avec les ventes en attente ; l'écart définitif sera recalculé par le serveur.",
-    "closing": "Clôture…",
-    "submit": "Clôturer la caisse"
+    "expected": "Il devrait y avoir dans le tiroir",
+    "counted": "Argent compté dans le tiroir",
+    "difference": "Différence (manque ou surplus)",
+    "pendingNotice": "La fermeture sera envoyée avec les ventes quand internet reviendra. La différence sera recalculée à ce moment.",
+    "closing": "Fermeture en cours…",
+    "submit": "Fermer la caisse"
   },
   "toasts": {
-    "ticketPaid": "Ticket {{number}} encaissé.",
-    "ticketSavedOffline": "Ticket {{number}} enregistré hors ligne.",
+    "ticketPaid": "Vente {{number}} payée.",
+    "ticketSavedOffline": "Vente {{number}} gardée sur cet appareil (pas d'internet).",
     "sessionOpened": "Caisse ouverte.",
-    "sessionOpenedOffline": "Caisse ouverte hors ligne, synchronisation au retour du réseau.",
-    "closePending": "Clôture enregistrée, en attente de synchronisation.",
-    "closedBalanced": "Caisse clôturée sans écart.",
-    "closedWithDifference": "Caisse clôturée avec écart."
+    "sessionOpenedOffline": "Caisse ouverte sans internet. Tout sera envoyé quand internet reviendra.",
+    "closePending": "Caisse fermée. En attente d'internet pour l'envoi.",
+    "closedBalanced": "Caisse fermée. Le compte est juste.",
+    "closedWithDifference": "Caisse fermée. Attention : il y a une différence."
   },
   "outbox": {
-    "ticket": "Ticket {{number}}",
-    "payment": "Règlement {{number}}",
+    "ticket": "Vente {{number}}",
+    "payment": "Paiement {{number}}",
     "sessionOpen": "Ouverture de caisse",
-    "sessionClose": "Clôture de caisse"
+    "sessionClose": "Fermeture de caisse"
   }
 }

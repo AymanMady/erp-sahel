@@ -15,15 +15,15 @@ export const commonMessages: MessageCatalog = {
     "Not possible: this item is referenced by other data.":
       "Impossible : cet élément est référencé par d'autres données.",
     "A required field is missing.": "Un champ obligatoire est manquant.",
-    "A product with this SKU already exists.": "Un produit avec cette référence existe déjà.",
-    "A party with this code already exists.": "Un tiers avec ce code existe déjà.",
-    "A service with this code already exists.": "Une prestation avec ce code existe déjà.",
+    "A product with this SKU already exists.": "Un article avec ce code existe déjà.",
+    "A party with this code already exists.": "Un client ou fournisseur avec ce code existe déjà.",
+    "A service with this code already exists.": "Un service avec ce code existe déjà.",
     "A warehouse with this code already exists.": "Un magasin avec ce code existe déjà.",
     "An account with this number already exists.":
       "Un compte comptable avec ce numéro existe déjà.",
     "A journal with this code already exists.": "Un journal avec ce code existe déjà.",
     "A cash/bank account with this code already exists.":
-      "Un compte de trésorerie avec ce code existe déjà.",
+      "Une caisse ou un compte avec ce code existe déjà.",
     "A register with this code already exists.": "Une caisse avec ce code existe déjà.",
     "This username is already taken.": "Cet identifiant est déjà utilisé.",
     "This subdomain is already taken.": "Ce sous-domaine est déjà pris.",
@@ -39,9 +39,9 @@ export const commonMessages: MessageCatalog = {
       "Clé d'idempotence déjà utilisée pour une autre requête.",
     // Validation messages of the shared insert schemas (shared/schema).
     "Category name is required": "Le nom de la catégorie est obligatoire",
-    "Internal reference (SKU) is required": "La référence interne est obligatoire",
+    "Internal reference (SKU) is required": "Le code de l'article est obligatoire",
     "Product name is required": "La désignation est obligatoire",
-    "Party name is required": "Le nom du tiers est obligatoire",
+    "Party name is required": "Le nom est obligatoire",
     "Code is required": "Le code est obligatoire",
     "Label is required": "Le libellé est obligatoire",
   },

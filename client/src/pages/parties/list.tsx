@@ -114,7 +114,7 @@ export default function PartiesPage() {
       cell: (row) =>
         row.paymentTermsDays > 0 ? (
           <span className="tabular text-sm">
-            {t("list.termsDays", { days: row.paymentTermsDays })}
+            {t("detail.termsDays", { count: row.paymentTermsDays })}
           </span>
         ) : (
           <span className="text-sm text-muted-foreground">{t("list.cash")}</span>

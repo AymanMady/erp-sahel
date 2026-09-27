@@ -1,21 +1,21 @@
 {
   "api": {
-    "requestFailed": "La requête a échoué.",
-    "serverUnreachable": "Serveur injoignable."
+    "requestFailed": "Ça n'a pas marché. Réessayez.",
+    "serverUnreachable": "Pas de connexion internet."
   },
   "sync": {
-    "failed": "Échec de la synchronisation."
+    "failed": "L'envoi n'a pas marché."
   },
   "errors": {
-    "productNotSynced": "Ce produit n'est pas encore synchronisé : son stock pourra être ajusté après la synchronisation."
+    "productNotSynced": "Cet article n'est pas encore envoyé. Son stock pourra être changé après l'envoi."
   },
   "write": {
     "label": "{{verb}} — {{resource}}",
     "labelNamed": "{{verb}} — {{resource}} « {{name}} »",
     "customAction": "Action « {{action}} »",
     "pendingNumber": "En attente",
-    "savedOffline": "Enregistré hors ligne",
-    "savedOfflineDescription": "La modification sera envoyée au serveur à la prochaine synchronisation.",
+    "savedOffline": "Gardé sur cet appareil",
+    "savedOfflineDescription": "Ce sera envoyé quand internet reviendra.",
     "actions": {
       "create": "Création",
       "update": "Modification",
@@ -25,34 +25,34 @@
   "resources": {
     "user": "Utilisateur",
     "role": "Rôle",
-    "setting": "Paramètre",
+    "setting": "Réglage",
     "company": "Société",
-    "module": "Module",
+    "module": "Partie de l'application",
     "category": "Catégorie",
     "product": "Produit",
-    "service": "Prestation",
-    "party": "Tiers",
+    "service": "Service",
+    "party": "Client ou fournisseur",
     "warehouse": "Magasin",
     "stock": "Stock",
     "quote": "Devis",
     "salesOrder": "Commande client",
     "invoice": "Facture",
-    "creditNote": "Avoir",
-    "payment": "Règlement",
+    "creditNote": "Retour de marchandise",
+    "payment": "Paiement",
     "purchaseOrder": "Commande fournisseur",
-    "goodsReceipt": "Réception",
+    "goodsReceipt": "Marchandise reçue",
     "supplierInvoice": "Facture fournisseur",
-    "treasury": "Trésorerie",
+    "treasury": "Caisse et banque",
     "pos": "Caisse",
     "accounting": "Comptabilité",
-    "write": "Écriture"
+    "write": "Opération"
   },
   "outboxLabels": {
-    "party": "Tiers « {{name}} »",
-    "product": "Produit {{sku}} « {{name}} »",
+    "party": "« {{name}} »",
+    "product": "Article {{sku}} « {{name}} »",
     "quote": "Devis {{number}}",
     "invoice": "Facture {{number}}",
-    "payment": "Règlement {{reference}}",
-    "stockAdjustment": "Ajustement de stock ({{quantity}})"
+    "payment": "Paiement {{reference}}",
+    "stockAdjustment": "Changement de stock ({{quantity}})"
   }
 }

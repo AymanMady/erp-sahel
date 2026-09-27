@@ -1,147 +1,146 @@
 {
   "company": {
-    "title": "Company",
-    "description": "Identity, taxation and accounting framework.",
-    "saved": "Settings saved.",
-    "identity": "Identity",
-    "accounting": "Accounting",
-    "accountingDescription": "The accounting framework determines the chart installed; the accounts used by automatic postings remain editable in the chart of accounts.",
+    "title": "My company",
+    "description": "Name, address, logo and account settings.",
+    "saved": "Saved.",
+    "identity": "My company",
+    "accounting": "Accounts (for the accountant)",
+    "accountingDescription": "Leave these settings as they are if you are not an accountant.",
     "fields": {
-      "name": "Trade name",
-      "legalName": "Legal name",
-      "taxId": "Tax ID",
+      "name": "Company name",
+      "legalName": "Official name (on the papers)",
+      "taxId": "Tax identification number",
       "website": "Website",
       "city": "City",
       "country": "Country",
-      "currencyHint": "Three-letter ISO code.",
-      "accountingStandard": "Accounting framework",
-      "fiscalYearStart": "Fiscal year start"
+      "accountingStandard": "Accounts system",
+      "fiscalYearStart": "The year starts in"
     },
     "logo": {
       "title": "Logo",
-      "description": "Shown in the sidebar and on printed documents.",
+      "description": "Shown in the menu and on printed invoices.",
       "alt": "Company logo",
       "none": "No logo",
       "choose": "Choose an image",
       "remove": "Remove the logo",
-      "tooLarge": "Logo too large (400 KB maximum)."
+      "tooLarge": "Picture too big (400 kilobytes at most)."
     }
   },
   "numbering": {
     "title": "Numbering",
-    "description": "Legal sequences per document type and fiscal year.",
-    "info": "Numbers are assigned by the server at validation time, within the document's transaction: two devices cannot get the same one. Offline, a provisional number <code>{{code}}</code> is shown until synchronization.",
-    "emptyTitle": "No sequences",
-    "emptyDescription": "Sequences are created when the first document of each type is issued.",
+    "description": "How invoices, quotes and other papers are numbered.",
+    "info": "Each number is given only once: two devices cannot get the same one. Without internet, a temporary number <code>{{code}}</code> is shown while waiting.",
+    "emptyTitle": "No numbers",
+    "emptyDescription": "Numbers start with the first paper of each type.",
     "columns": {
       "documentType": "Document type",
-      "year": "Fiscal year",
-      "prefix": "Prefix",
+      "year": "Year",
+      "prefix": "Start of the number",
       "lastNumber": "Last number"
     },
     "documentTypes": {
       "QUOTE": "Quotes",
-      "SALES_ORDER": "Sales orders",
+      "SALES_ORDER": "Customer orders",
       "SALES_INVOICE": "Customer invoices",
-      "CREDIT_NOTE": "Credit notes",
+      "CREDIT_NOTE": "Returns of goods (credit notes)",
       "PURCHASE_ORDER": "Purchase orders",
-      "GOODS_RECEIPT": "Goods receipts",
+      "GOODS_RECEIPT": "Goods received",
       "SUPPLIER_INVOICE": "Supplier invoices",
       "PAYMENT": "Payments",
-      "JOURNAL_ENTRY": "Journal entries",
+      "JOURNAL_ENTRY": "Operations in the accounts",
       "INVENTORY_COUNT": "Stock counts",
-      "POS_TICKET": "POS receipts",
-      "PARTY": "Business partners"
+      "POS_TICKET": "Sales at the cash register",
+      "PARTY": "Customers and suppliers"
     }
   },
   "registers": {
     "title": "Cash registers",
-    "description": "Points of sale and session history.",
+    "description": "Your cash registers and the history of openings and closings.",
     "new": "New cash register",
-    "archived": "Cash register archived.",
-    "created": "Cash register created.",
+    "archived": "Cash register removed.",
+    "created": "Cash register added.",
     "tabs": {
       "registers": "Cash registers",
-      "sessions": "Sessions"
+      "sessions": "Openings and closings"
     },
     "columns": {
       "register": "Cash register",
-      "cashier": "Cashier",
-      "openedAt": "Opened",
-      "closedAt": "Closed",
+      "cashier": "Seller",
+      "openedAt": "Opened on",
+      "closedAt": "Closed on",
       "sales": "Sales",
       "difference": "Difference"
     },
     "emptyRegistersTitle": "No cash registers",
-    "emptyRegistersDescription": "A cash register is required to open a sales session.",
-    "emptySessionsTitle": "No sessions",
-    "emptySessionsDescription": "Sessions appear as soon as a cash register is first opened.",
+    "emptyRegistersDescription": "Add a cash register to start selling.",
+    "emptySessionsTitle": "Nothing yet",
+    "emptySessionsDescription": "Each opening of the cash register will appear here.",
     "dialog": {
-      "warehouse": "Linked warehouse",
-      "warehouseHint": "Determines where the sold stock comes from.",
-      "cashAccount": "Cash account",
-      "cashAccountHint": "Credited by cash collections.",
-      "defaultAccount": "Default account"
+      "warehouse": "Warehouse for this cash register",
+      "warehouseHint": "The items sold leave this warehouse.",
+      "cashAccount": "Where the cash goes",
+      "cashAccountHint": "The cash received is added here.",
+      "defaultAccount": "Usual cash box"
     }
   },
   "users": {
     "title": "Users",
-    "description": "Accounts attached to this company and the roles assigned to them.",
+    "description": "The people who use the application, and what they are allowed to do.",
     "new": "New user",
-    "updated": "User updated.",
-    "created": "User created.",
+    "updated": "Changed.",
+    "created": "User added.",
     "noRole": "none",
-    "allowed": "Allowed",
+    "allowed": "Yes",
     "never": "never",
     "activateAccount": "Enable the account",
     "emptyTitle": "No users",
-    "emptyDescription": "Create accounts for your salespeople, storekeepers and accountants.",
+    "emptyDescription": "Add an account for each seller, storekeeper or accountant.",
     "columns": {
       "user": "User",
-      "roles": "Roles",
-      "offlineLogin": "Offline sign-in",
+      "roles": "Rights",
+      "offlineLogin": "Can work without internet",
       "lastLogin": "Last sign-in"
     },
     "dialog": {
       "editTitle": "Edit user",
-      "description": "Assigned roles only apply to the current company.",
+      "description": "Choose what this person is allowed to do.",
       "username": "Username",
       "newPassword": "New password",
       "password": "Password",
-      "keepPasswordHint": "Leave empty to keep the current one.",
-      "passwordHint": "8 characters, letters and digits.",
+      "keepPasswordHint": "Leave empty to keep the old one.",
+      "passwordHint": "At least 8 characters, with letters and numbers.",
       "firstName": "First name",
       "lastName": "Last name",
-      "allowOffline": "Allow offline sign-in on a synchronized desktop device"
+      "allowOffline": "Can sign in without internet on a computer already used with internet"
     }
   },
   "roles": {
-    "title": "Roles & permissions",
-    "description": "Hiding things in the interface is a convenience; authorization is checked on every server call.",
+    "title": "Roles and rights",
+    "description": "Each role says what a person is allowed to do.",
     "new": "New role",
     "deleted": "Role deleted.",
-    "updated": "Role updated.",
-    "created": "Role created.",
-    "permissionCount_one": "{{count}} permission",
-    "permissionCount_other": "{{count}} permissions",
+    "updated": "Role changed.",
+    "created": "Role added.",
+    "permissionCount_one": "{{count}} right",
+    "permissionCount_other": "{{count}} rights",
     "dialog": {
-      "systemTitle": "System role — {{name}}",
+      "systemTitle": "Basic role — {{name}}",
       "editTitle": "Edit role"
     }
   },
   "modules": {
-    "title": "Modules",
-    "description": "Enable only what you use: the menu stays simple. Disabling a module never deletes your data.",
-    "enabled": "Module enabled.",
-    "disabled": "Module disabled.",
-    "presetApplied": "Level “{{name}}” applied.",
-    "step1Title": "1. Choose a level",
-    "step1Description": "For any kind of business. You can fine-tune afterwards.",
-    "step2Title": "2. Or fine-tune module by module",
-    "step2Description": "Products, customers, payments and settings are always available.",
-    "requires": "Requires: {{modules}}",
+    "title": "Parts of the application",
+    "description": "Turn on only what you need: the menu stays simple. Hiding a part deletes nothing.",
+    "enabled": "Turned on.",
+    "disabled": "Hidden.",
+    "presetApplied": "“{{name}}” chosen.",
+    "step1Title": "Step 1: choose what suits you",
+    "step1Description": "For any kind of shop. You can change later.",
+    "step2Title": "Step 2: or choose part by part",
+    "step2Description": "Items, customers, payments and settings are always there.",
+    "requires": "Needs: {{modules}}",
     "enableAria": "Enable {{name}}",
-    "confirmTitle": "Switch to the “{{name}}” level?",
-    "confirmDescription": "Enabled modules: {{modules}}. The others will be hidden, without any data loss."
+    "confirmTitle": "Choose “{{name}}”?",
+    "confirmDescription": "Parts turned on: {{modules}}. The others will be hidden. Nothing is deleted."
   }
 }

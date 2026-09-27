@@ -5,19 +5,19 @@
   },
   "sales": {
     "title": "Rapport des ventes",
-    "description": "Chiffre d'affaires, articles et encaissements.",
-    "revenue": "CA",
-    "collected": "Encaissé",
-    "outstanding": "Restant dû",
-    "dailyRevenue": "Chiffre d'affaires quotidien",
-    "noSales": "Aucune vente sur la période.",
+    "description": "Ce que vous avez vendu et l'argent reçu.",
+    "revenue": "Total des ventes",
+    "collected": "Argent reçu",
+    "outstanding": "Reste à recevoir",
+    "dailyRevenue": "Ventes de chaque jour",
+    "noSales": "Aucune vente pendant cette période.",
     "topSales": "Meilleures ventes",
     "emptyTitle": "Aucune vente",
-    "emptyDescription": "Aucun article vendu sur la période.",
-    "collectionsByMethod": "Encaissements par mode",
-    "noCollections": "Aucun encaissement sur la période.",
-    "paymentsCount_one": "{{count}} règlement",
-    "paymentsCount_other": "{{count}} règlements",
+    "emptyDescription": "Aucun article vendu pendant cette période.",
+    "collectionsByMethod": "Argent reçu, par façon de payer",
+    "noCollections": "Aucun argent reçu pendant cette période.",
+    "paymentsCount_one": "{{count}} paiement",
+    "paymentsCount_other": "{{count}} paiements",
     "columns": {
       "item": "Article",
       "soldQuantity": "Quantité vendue"
@@ -25,25 +25,25 @@
   },
   "stock": {
     "title": "Rapport de stock",
-    "description": "Valorisation au coût moyen et alertes de rupture.",
+    "description": "Valeur du stock et articles presque finis.",
     "allWarehouses": "Tous les magasins",
     "stockValue": "Valeur du stock",
-    "skus": "Références",
+    "skus": "Articles",
     "totalQuantity": "Quantité totale",
-    "belowThreshold": "Articles sous le seuil d'alerte",
-    "emptyTitle": "Aucune alerte",
-    "emptyDescription": "Tous les articles suivis sont au-dessus de leur seuil de réapprovisionnement.",
+    "belowThreshold": "Articles presque finis",
+    "emptyTitle": "Rien à racheter",
+    "emptyDescription": "Il reste assez de chaque article.",
     "columns": {
       "item": "Article",
-      "currentStock": "Stock actuel",
-      "alertThreshold": "Seuil d'alerte"
+      "currentStock": "Reste en stock",
+      "alertThreshold": "Prévenir sous"
     }
   },
   "purchases": {
     "title": "Rapport des achats",
-    "description": "Volume d'approvisionnement sur la période.",
+    "description": "Ce que vous avez acheté pendant la période.",
     "ordersPlaced": "Commandes passées",
     "amount": "Montant",
-    "periodNote": "Période analysée : du {{from}} au {{to}}. Les montants incluent toutes les commandes fournisseurs, y compris celles non encore réceptionnées."
+    "periodNote": "Du {{from}} au {{to}}. Toutes les commandes aux fournisseurs sont comptées, même si la marchandise n'est pas encore arrivée."
   }
 }

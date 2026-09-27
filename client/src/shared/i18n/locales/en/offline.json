@@ -1,21 +1,21 @@
 {
   "api": {
-    "requestFailed": "The request failed.",
-    "serverUnreachable": "Server unreachable."
+    "requestFailed": "It did not work. Try again.",
+    "serverUnreachable": "No internet connection."
   },
   "sync": {
-    "failed": "Synchronization failed."
+    "failed": "Sending did not work."
   },
   "errors": {
-    "productNotSynced": "This product is not synchronized yet: its stock can be adjusted after synchronization."
+    "productNotSynced": "This item is not sent yet. Its stock can be changed after it is sent."
   },
   "write": {
     "label": "{{verb}} — {{resource}}",
     "labelNamed": "{{verb}} — {{resource}} “{{name}}”",
     "customAction": "Action “{{action}}”",
     "pendingNumber": "Pending",
-    "savedOffline": "Saved offline",
-    "savedOfflineDescription": "The change will be sent to the server at the next synchronization.",
+    "savedOffline": "Kept on this device",
+    "savedOfflineDescription": "It will be sent when internet comes back.",
     "actions": {
       "create": "Creation",
       "update": "Update",
@@ -27,32 +27,32 @@
     "role": "Role",
     "setting": "Setting",
     "company": "Company",
-    "module": "Module",
+    "module": "Part of the application",
     "category": "Category",
     "product": "Product",
     "service": "Service",
-    "party": "Party",
+    "party": "Customer or supplier",
     "warehouse": "Warehouse",
     "stock": "Stock",
     "quote": "Quote",
     "salesOrder": "Sales order",
     "invoice": "Invoice",
-    "creditNote": "Credit note",
+    "creditNote": "Return of goods",
     "payment": "Payment",
     "purchaseOrder": "Purchase order",
-    "goodsReceipt": "Goods receipt",
+    "goodsReceipt": "Goods received",
     "supplierInvoice": "Supplier invoice",
-    "treasury": "Treasury",
+    "treasury": "Cash and bank",
     "pos": "Point of sale",
     "accounting": "Accounting",
-    "write": "Write"
+    "write": "Operation"
   },
   "outboxLabels": {
-    "party": "Party “{{name}}”",
-    "product": "Product {{sku}} “{{name}}”",
+    "party": "“{{name}}”",
+    "product": "Item {{sku}} “{{name}}”",
     "quote": "Quote {{number}}",
     "invoice": "Invoice {{number}}",
     "payment": "Payment {{reference}}",
-    "stockAdjustment": "Stock adjustment ({{quantity}})"
+    "stockAdjustment": "Stock change ({{quantity}})"
   }
 }

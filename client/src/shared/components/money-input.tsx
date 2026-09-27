@@ -48,7 +48,7 @@ export function MoneyInput({
       inputMode="decimal"
       disabled={disabled}
       className={cn("tabular text-end", className)}
-      placeholder={placeholder ?? `0${decimalSeparator()}00`}
+      placeholder={placeholder ?? "0"}
       value={text}
       onChange={(event) => {
         setText(event.target.value);
@@ -67,9 +67,11 @@ function decimalSeparator(): string {
   return part?.value ?? ".";
 }
 
+/** Round amounts are edited without decimals ("1250", not "1250,00"). */
 function formatForEdit(cents: number): string {
   if (!cents) return "";
-  return centsToMajor(cents).toFixed(2).replace(".", decimalSeparator());
+  const digits = cents % 100 === 0 ? 0 : 2;
+  return centsToMajor(cents).toFixed(digits).replace(".", decimalSeparator());
 }
 
 function formatPercentForEdit(bp: number): string {

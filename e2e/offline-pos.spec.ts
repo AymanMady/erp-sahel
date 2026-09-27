@@ -51,7 +51,7 @@ test.describe("offline sale at the counter", () => {
     if (await openButton.isVisible().catch(() => false)) {
       await openButton.click();
     }
-    await expect(page.getByPlaceholder(/Scan a barcode/)).toBeVisible();
+    await expect(page.getByPlaceholder(/Scan the barcode/)).toBeVisible();
 
     // The snapshot must be in place before the outage: without it, no product search
     // would be possible offline.
@@ -59,10 +59,10 @@ test.describe("offline sale at the counter", () => {
 
     // --- 2. Network outage --------------------------------------------------
     await context.setOffline(true);
-    await expect(page.getByText(/Offline mode/)).toBeVisible();
+    await expect(page.getByText(/you can keep working/)).toBeVisible();
 
     // --- 3. Offline sale ----------------------------------------------------
-    await page.getByPlaceholder(/Scan a barcode/).fill("FH");
+    await page.getByPlaceholder(/Scan the barcode/).fill("FH");
     await page.waitForTimeout(600);
     // Demo product name, as seeded (data, not UI text).
     await page
@@ -70,25 +70,25 @@ test.describe("offline sale at the counter", () => {
       .first()
       .click();
 
-    await page.getByRole("button", { name: /Charge/ }).click();
+    await page.getByRole("button", { name: /^Pay / }).click();
     await page.getByRole("button", { name: "Validate" }).click();
 
     // The ticket gets a provisional number, not a legal one. The selector targets the
     // cart confirmation, not the transient toast that shows similar text.
-    await expect(page.getByText(/Ticket OFFLINE-TKT-\d+ paid \(offline/)).toBeVisible();
+    await expect(page.getByText(/Sale OFFLINE-TKT-\d+ paid \(no internet/)).toBeVisible();
 
     // --- 4. Close / reopen ----------------------------------------------------
     await page.reload();
-    await expect(page.getByText(/Offline mode/)).toBeVisible();
+    await expect(page.getByText(/you can keep working/)).toBeVisible();
 
     await page.goto("/sync");
     // The local queue holds at least the invoice and its payment.
-    await expect(page.getByRole("tab", { name: "Local queue" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "To send" })).toBeVisible();
     await expect(page.getByText(/OFFLINE-TKT-\d+/).first()).toBeVisible();
 
     // --- 5. Network back ---------------------------------------------------
     await context.setOffline(false);
-    await page.getByRole("button", { name: "Synchronize" }).click();
+    await page.getByRole("button", { name: "Send now" }).click();
 
     // The queue empties and the legal number replaces the provisional one.
     await expect(page.getByText(/FAC-\d{4}-\d{4}/).first()).toBeVisible({ timeout: 20_000 });
@@ -100,7 +100,7 @@ test.describe("offline sale at the counter", () => {
 
     // Running another synchronization must not recreate anything ([BR-8]).
     await page.goto("/sync");
-    await page.getByRole("button", { name: "Synchronize" }).click();
+    await page.getByRole("button", { name: "Send now" }).click();
     await page.waitForTimeout(2000);
 
     await page.goto("/invoices");
@@ -118,7 +118,7 @@ test.describe("offline shell", () => {
     await page.goto("/");
 
     // The interface stays rendered: this is requirement [FR-SYNC-1].
-    await expect(page.getByText(/Offline mode/)).toBeVisible();
+    await expect(page.getByText(/you can keep working/)).toBeVisible();
     await expect(page.locator("#root")).not.toBeEmpty();
   });
 });

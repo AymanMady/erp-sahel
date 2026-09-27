@@ -1,53 +1,53 @@
 {
-  "allStatuses": "All statuses",
+  "allStatuses": "All states",
   "searchPlaceholder": "Number or customer…",
-  "statusUpdated": "Status updated.",
+  "statusUpdated": "State changed.",
   "quotes": {
     "title": "Quotes",
-    "description": "Current and archived sales proposals.",
+    "description": "The prices offered to your customers before the sale.",
     "new": "New quote",
     "columns": {
       "expiry": "Valid until"
     },
     "emptyTitle": "No quotes",
-    "emptyDescription": "Create a quote to formalize a proposal before the order."
+    "emptyDescription": "Make a quote to give a customer a price before they order."
   },
   "quote": {
     "documentTitle": "Quote",
     "pageTitle": "Quote {{number}}",
     "notFound": "Quote not found.",
-    "convert": "Convert to order",
+    "convert": "The customer agrees: create the order",
     "converted": "Order {{number}} created from the quote.",
-    "footerNote": "This quote is not an invoice. No stock movement or accounting entry is generated."
+    "footerNote": "This quote is not an invoice. It changes neither the stock nor the accounts."
   },
   "quoteForm": {
     "title": "New quote",
-    "description": "Sales proposal, with no effect on stock.",
+    "description": "A quote gives the customer a price. It does not change the stock.",
     "creating": "Creating…",
     "submit": "Create quote",
-    "header": "Header",
-    "lines": "Lines",
+    "header": "Information",
+    "lines": "Items",
     "date": "Quote date",
     "expiryDate": "Valid until",
-    "notesPlaceholder": "Special terms, lead times, notices…",
+    "notesPlaceholder": "Conditions, delivery time…",
     "created": "Quote {{number}} created.",
-    "savedOffline": "Quote {{number}} saved offline.",
-    "savedOfflineDescription": "It will get its final number at the next sync."
+    "savedOffline": "Quote {{number}} kept on this device (no internet).",
+    "savedOfflineDescription": "It will get its real number when internet comes back."
   },
   "orders": {
-    "title": "Sales orders",
-    "description": "Customer commitments, to be invoiced once delivered.",
+    "title": "Customer orders",
+    "description": "What customers have ordered. To invoice after delivery.",
     "columns": {
       "delivery": "Delivery"
     },
     "emptyTitle": "No orders",
-    "emptyDescription": "Orders are created by converting an accepted quote."
+    "emptyDescription": "An order is created when the customer accepts a quote."
   },
   "order": {
     "documentTitle": "Order",
     "pageTitle": "Order {{number}}",
     "notFound": "Order not found.",
-    "invoice": "Invoice",
-    "invoiced": "Draft invoice created from the order."
+    "invoice": "Make the invoice",
+    "invoiced": "Invoice prepared from the order (not validated yet)."
   }
 }

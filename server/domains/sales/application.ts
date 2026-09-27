@@ -7,6 +7,7 @@
  */
 
 import { addDays, todayInput } from "@shared/format";
+import { CURRENCY } from "@shared/money";
 import type { Company, Quote, SalesOrder } from "@shared/schema";
 import { runInTransaction, type Database } from "../../db";
 import { buildDocumentLines, type RawDocumentLine } from "../../shared/documents/line-builder";
@@ -71,7 +72,7 @@ class SalesApplication {
         status: "DRAFT",
         globalDiscountBp: input.globalDiscountBp ?? 0,
         totalCents: built.totalCents,
-        currency: company.currency,
+        currency: CURRENCY,
         notes: input.notes ?? "",
         userId: userId ?? null,
         clientUuid: input.clientUuid ?? null,
@@ -159,7 +160,7 @@ class SalesApplication {
         status: "DRAFT",
         globalDiscountBp: input.globalDiscountBp ?? 0,
         totalCents: built.totalCents,
-        currency: company.currency,
+        currency: CURRENCY,
         notes: input.notes ?? "",
         userId: userId ?? null,
         clientUuid: input.clientUuid ?? null,

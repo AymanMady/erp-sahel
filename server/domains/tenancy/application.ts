@@ -15,6 +15,7 @@ import {
   type InsertCompany,
 } from "@shared/schema";
 import { MODULE_PRESETS } from "@shared/modules-catalog";
+import { CURRENCY } from "@shared/money";
 import { runInTransaction, type Database } from "../../db";
 import { NotFoundError } from "../../shared/errors/app-error";
 import { currentLocale, SUPPORTED_LOCALES, tr, type Locale } from "../../shared/i18n";
@@ -85,7 +86,7 @@ class TenancyApplication {
         code: "CAISSE",
         name: tr("Main cash account", undefined, locale),
         accountType: "CASH",
-        currency: company.currency,
+        currency: CURRENCY,
         isDefault: true,
       })
       .onConflictDoNothing()

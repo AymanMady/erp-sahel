@@ -1,78 +1,78 @@
 {
   "exit": "Exit the register",
-  "offline": "Offline",
-  "openingBalance": "Opening float",
+  "offline": "No internet",
+  "openingBalance": "Money in the drawer at the start",
   "accessDenied": {
     "title": "Access denied",
-    "description": "Your profile does not have permission to use the register.",
+    "description": "You are not allowed to use the cash register. Ask the person in charge.",
     "backToDashboard": "Back to dashboard"
   },
   "search": {
-    "placeholder": "Scan a barcode or search for an item…",
+    "placeholder": "Scan the barcode or type the item name…",
     "searching": "Searching…",
-    "noMatch": "No matching item.",
-    "startTyping": "Start typing to search for an item.",
-    "noSnapshot": "No local snapshot: connect to the server at least once."
+    "noMatch": "No item found.",
+    "startTyping": "Type the item name to find it.",
+    "noSnapshot": "Sign in once with internet to load the items."
   },
   "cart": {
-    "closeRegister": "Close",
+    "closeRegister": "Close the cash register",
     "empty": "The cart is empty.",
-    "decrease": "Decrease",
-    "increase": "Increase",
-    "lastTicket": "Ticket {{number}} paid.",
-    "lastTicketOffline": "Ticket {{number}} paid (offline, awaiting synchronization).",
-    "checkout": "Charge {{amount}}"
+    "decrease": "Remove one",
+    "increase": "Add one",
+    "lastTicket": "Sale {{number}} paid.",
+    "lastTicketOffline": "Sale {{number}} paid (no internet, will be sent later).",
+    "checkout": "Pay {{amount}}"
   },
   "customer": {
     "walkIn": "Walk-in customer",
-    "title": "Ticket customer",
-    "description": "Without a selection, the sale is assigned to the walk-in customer.",
-    "searchPlaceholder": "Name, code, phone…"
+    "title": "Customer for the sale",
+    "description": "If you choose nobody, the sale goes to the walk-in customer.",
+    "searchPlaceholder": "Name or phone…"
   },
   "openSession": {
     "title": "Open the register",
-    "description": "Declare the opening float in the drawer before the first sale.",
-    "checking": "Checking for an open session…",
-    "offlineNotice": "Server unreachable: the session will be created locally and then synchronized.",
+    "description": "Count the money already in the drawer before the first sale.",
+    "checking": "Checking…",
+    "offlineNotice": "No internet: the cash register opens anyway, everything will be sent later.",
     "register": "Register",
-    "selectRegister": "Select a register",
+    "selectRegister": "Choose a cash register",
     "opening": "Opening…",
     "submit": "Open the register"
   },
   "payment": {
     "title": "Payment",
-    "amountDue": "Amount due:",
-    "method": "Payment method",
-    "received": "Amount received",
+    "amountDue": "The customer must pay:",
+    "method": "Paid how?",
+    "received": "Money given by the customer",
     "change": "Change due",
-    "offlineNotice": "Offline: the ticket will get a provisional number, replaced by the legal number during synchronization.",
-    "processing": "Processing…"
+    "offlineNotice": "No internet: the sale gets a temporary number. The real number comes when internet comes back.",
+    "processing": "Paying…"
   },
   "closeSession": {
-    "title": "Close the register",
-    "description": "Count the drawer and enter the amount found.",
-    "cashReceipts": "Cash receipts",
+    "title": "Close the cash register",
+    "description": "Count the money in the drawer and write the amount.",
+    "cashReceipts": "Cash received",
     "totalSales": "Total sales",
-    "expected": "Expected in drawer",
-    "counted": "Counted amount",
-    "difference": "Cash difference",
-    "pendingNotice": "The closing will be sent with the pending sales; the final difference will be recalculated by the server.",
+    "expected": "There should be in the drawer",
+    "counted": "Money counted in the drawer",
+    "difference": "Difference (missing or extra)",
+    "pendingNotice": "The closing will be sent with the sales when internet comes back. The difference will be counted again at that time.",
     "closing": "Closing…",
-    "submit": "Close the register"
+    "submit": "Close the cash register"
   },
   "toasts": {
-    "ticketPaid": "Ticket {{number}} paid.",
-    "ticketSavedOffline": "Ticket {{number}} saved offline.",
+    "ticketPaid": "Sale {{number}} paid.",
+    "ticketSavedOffline": "Sale {{number}} kept on this device (no internet).",
     "sessionOpened": "Register opened.",
-    "sessionOpenedOffline": "Register opened offline; it will sync when the network is back.",
-    "closePending": "Closing saved, awaiting synchronization.",
-    "closedBalanced": "Register closed with no difference.",
-    "closedWithDifference": "Register closed with a difference."
+    "sessionOpenedOffline": "Cash register opened without internet. Everything will be sent when internet comes back.",
+    "closePending": "Cash register closed. Waiting for internet to send.",
+    "closedBalanced": "Cash register closed. The count is correct.",
+    "closedWithDifference": "Cash register closed. Careful: there is a difference."
   },
   "outbox": {
-    "ticket": "Ticket {{number}}",
+    "ticket": "Sale {{number}}",
     "payment": "Payment {{number}}",
     "sessionOpen": "Register opening",
-    "sessionClose": "Register closing"
+    "sessionClose": "Closing of the cash register"
   }
 }

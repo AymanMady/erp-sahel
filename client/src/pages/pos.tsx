@@ -38,7 +38,7 @@ import type { Party, ProductListItem } from "@/entities/types";
 import { queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
 import { Field } from "@/shared/components/field";
-import { Money, useCurrency } from "@/shared/components/money";
+import { Money } from "@/shared/components/money";
 import { MoneyInput } from "@/shared/components/money-input";
 import { paymentMethodLabel } from "@/shared/components/status-badge";
 import { useDebounced } from "@/shared/hooks/use-debounced";
@@ -91,7 +91,6 @@ export default function PosPage() {
   const online = useOnline();
   const queryClient = useQueryClient();
   const { can } = useSession();
-  const currency = useCurrency();
   const searchRef = useRef<HTMLInputElement>(null);
 
   const [search, setSearch] = useState("");
@@ -382,7 +381,7 @@ export default function PosPage() {
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">{line.name}</p>
                       <p className="tabular text-xs text-muted-foreground">
-                        {line.sku} · {formatMoney(line.unitPriceCents, currency)} / {line.unit}
+                        {line.sku} · {formatMoney(line.unitPriceCents)} / {line.unit}
                       </p>
                     </div>
                     <Button
@@ -461,7 +460,7 @@ export default function PosPage() {
             onClick={() => setPayOpen(true)}
           >
             <IconCash className="size-5" />
-            {t("cart.checkout", { amount: formatMoney(totals.totalCents, currency) })}
+            {t("cart.checkout", { amount: formatMoney(totals.totalCents) })}
           </Button>
         </div>
       </aside>
@@ -733,7 +732,6 @@ function PaymentDialog({
   onConfirm: (payments: TicketPayment[]) => Promise<void>;
 }) {
   const { t } = useTranslation("pos");
-  const currency = useCurrency();
   const [method, setMethod] = useState<PaymentMethod>("CASH");
   const [receivedCents, setReceivedCents] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -750,7 +748,7 @@ function PaymentDialog({
         <DialogHeader>
           <DialogTitle>{t("payment.title")}</DialogTitle>
           <DialogDescription>
-            {t("payment.amountDue")} <strong>{formatMoney(totalCents, currency)}</strong>
+            {t("payment.amountDue")} <strong>{formatMoney(totalCents)}</strong>
           </DialogDescription>
         </DialogHeader>
 

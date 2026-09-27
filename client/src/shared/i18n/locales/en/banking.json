@@ -1,68 +1,68 @@
 {
-  "title": "Treasury",
-  "description": "Accounts, transactions and bank reconciliation.",
-  "markReconciled": "Mark as reconciled",
+  "title": "Cash and bank",
+  "description": "Where your money is: cash box, bank, Bankily, Masrvi, Sedad.",
+  "markReconciled": "Checked on the bank statement",
   "accountTypes": {
     "bank": "Bank account",
     "cash": "Cash",
-    "mobileMoney": "Bankily / Masrvi / Sedad"
+    "mobileMoney": "Bankily, Masrvi or Sedad"
   },
   "transactionTypes": {
-    "deposit": "Deposit",
-    "withdrawal": "Withdrawal",
+    "deposit": "Money in",
+    "withdrawal": "Money out",
     "transfer": "Transfer"
   },
   "columns": {
-    "account": "Account",
-    "label": "Label",
-    "reconciled": "Reconciled"
+    "account": "Cash box or account",
+    "label": "Description",
+    "reconciled": "Checked"
   },
   "actions": {
-    "transfer": "Internal transfer",
-    "newMovement": "Record a transaction",
-    "newAccount": "New account"
+    "transfer": "Move money",
+    "newMovement": "Add money in or money out",
+    "newAccount": "New cash box or new account"
   },
   "stats": {
-    "total": "Total treasury",
+    "total": "All the money",
     "cash": "Cash",
     "bank": "Bank",
-    "mobile": "Bankily / Masrvi / Sedad"
+    "mobile": "Bankily, Masrvi, Sedad"
   },
   "accounts": {
-    "title": "Accounts",
-    "empty": "No treasury account. Create one to record payments."
+    "title": "Cash boxes and accounts",
+    "empty": "No cash box or account. Add one to record payments."
   },
   "filters": {
-    "allAccounts": "All accounts"
+    "allAccounts": "All cash boxes and all accounts"
   },
   "empty": {
-    "title": "No transactions",
-    "description": "Payments feed this journal automatically."
+    "title": "No money in or out",
+    "description": "Payments are added here by themselves."
   },
   "accountDialog": {
-    "title": "New treasury account",
+    "title": "New cash box or new account",
     "accountNumber": "Account number",
-    "iban": "IBAN",
-    "isDefault": "Default account for this payment type"
+    "iban": "International account number (if the bank gives one)",
+    "isDefault": "Use by default for this type of payment"
   },
   "movementDialog": {
-    "title": "Treasury transaction",
-    "description": "For a deposit or withdrawal with no related invoice (capital contribution, bank fees…).",
-    "direction": "Direction",
-    "deposit": "Deposit (+)",
-    "withdrawal": "Withdrawal (−)"
+    "title": "Money in or money out",
+    "description": "For money that comes in or goes out without an invoice (money brought in, bank fees…).",
+    "direction": "The money",
+    "deposit": "Comes in (+)",
+    "withdrawal": "Goes out (−)"
   },
   "transferDialog": {
-    "title": "Internal transfer",
-    "description": "Transfer between two company accounts (depositing cash at the bank, for example).",
-    "defaultDescription": "Internal transfer",
-    "from": "From",
-    "to": "To",
-    "submit": "Transfer"
+    "title": "Move money",
+    "description": "From one cash box or account to another (for example: putting the cash box money in the bank).",
+    "defaultDescription": "Money moved",
+    "from": "Take from",
+    "to": "Put in",
+    "submit": "Move"
   },
   "toasts": {
-    "accountCreated": "Account created.",
-    "movementSaved": "Transaction recorded.",
-    "transferDone": "Transfer completed."
+    "accountCreated": "Added.",
+    "movementSaved": "Saved.",
+    "transferDone": "Money moved."
   }
 }
