@@ -77,7 +77,7 @@
     "emptySessionsDescription": "Chaque ouverture de caisse apparaîtra ici.",
     "dialog": {
       "warehouse": "Magasin de cette caisse",
-      "warehouseHint": "Les articles vendus sortent de ce magasin.",
+      "warehouseHint": "Les produits vendus sortent de ce magasin.",
       "cashAccount": "Où va l'argent liquide",
       "cashAccountHint": "L'argent liquide reçu est ajouté ici.",
       "defaultAccount": "Caisse habituelle"
@@ -146,7 +146,7 @@
     "step1Title": "Étape 1 : choisissez ce qui vous convient",
     "step1Description": "Pour tout type de commerce. Vous pourrez changer plus tard.",
     "step2Title": "Étape 2 : ou choisissez partie par partie",
-    "step2Description": "Les articles, les clients, les paiements et les réglages sont toujours là.",
+    "step2Description": "Les produits, les clients, les paiements et les réglages sont toujours là.",
     "requires": "A besoin de : {{modules}}",
     "enableAria": "Activer {{name}}",
     "confirmTitle": "Choisir « {{name}} » ?",

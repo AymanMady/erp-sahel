@@ -8,6 +8,7 @@ import type {
   PurchaseOrder,
   PurchaseOrderDetail,
   SupplierInvoice,
+  SupplierInvoiceLine,
 } from "@/entities/types";
 
 export interface PurchaseFilters {
@@ -35,9 +36,13 @@ export const purchasingApi = {
       purchaseOrderId,
     }),
   getReceipt: (id: string) =>
-    api.get<GoodsReceipt & { supplierName: string; lines: GoodsReceiptLine[] }>(
-      `/api/goods-receipts/${id}`
-    ),
+    api.get<
+      GoodsReceipt & {
+        supplierName: string;
+        purchaseOrderNumber: string | null;
+        lines: (GoodsReceiptLine & { productName: string; productSku: string })[];
+      }
+    >(`/api/goods-receipts/${id}`),
   createReceipt: (body: unknown) => api.post("/api/goods-receipts", body),
 
   listSupplierInvoices: (filters: { supplierId?: string | null; status?: string | null } = {}) =>
@@ -45,5 +50,14 @@ export const purchasingApi = {
       "/api/supplier-invoices",
       filters
     ),
+  getSupplierInvoice: (id: string) =>
+    api.get<
+      SupplierInvoice & {
+        supplierName: string;
+        purchaseOrderNumber: string | null;
+        receiptNumber: string | null;
+        lines: SupplierInvoiceLine[];
+      }
+    >(`/api/supplier-invoices/${id}`),
   createSupplierInvoice: (body: unknown) => api.post("/api/supplier-invoices", body),
 };

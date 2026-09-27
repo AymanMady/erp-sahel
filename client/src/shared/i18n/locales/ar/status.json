@@ -34,7 +34,7 @@
     "BANK_TRANSFER": "تحويل بنكي",
     "CHECK": "شيك",
     "CARD": "بطاقة بنكية",
-    "MOBILE_MONEY": "Bankily أو Masrvi أو Sedad"
+    "MOBILE_MONEY": "تطبيق بنكي"
   },
   "movements": {
     "IN": "وارد",

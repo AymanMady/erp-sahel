@@ -77,7 +77,7 @@
     "emptySessionsDescription": "كل فتح للصندوق سيظهر هنا.",
     "dialog": {
       "warehouse": "مخزن هذا الصندوق",
-      "warehouseHint": "السلع المبيعة تخرج من هذا المخزن.",
+      "warehouseHint": "المنتجات المبيعة تخرج من هذا المخزن.",
       "cashAccount": "أين يذهب المال النقدي",
       "cashAccountHint": "المال النقدي المستلم يُضاف هنا.",
       "defaultAccount": "الصندوق المعتاد"
@@ -150,7 +150,7 @@
     "step1Title": "الخطوة 1: اختر ما يناسبك",
     "step1Description": "لكل أنواع التجارة. يمكنك التغيير لاحقًا.",
     "step2Title": "الخطوة 2: أو اختر جزءًا جزءًا",
-    "step2Description": "السلع والزبائن والمدفوعات والإعدادات موجودة دائمًا.",
+    "step2Description": "المنتجات والزبائن والمدفوعات والإعدادات موجودة دائمًا.",
     "requires": "يحتاج إلى: {{modules}}",
     "enableAria": "تفعيل {{name}}",
     "confirmTitle": "اختيار «{{name}}»؟",

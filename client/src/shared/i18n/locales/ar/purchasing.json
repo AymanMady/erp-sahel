@@ -19,7 +19,7 @@
     "selectSupplier": "اختر موردًا",
     "receivingWarehouse": "وضع البضاعة في",
     "defaultWarehouse": "المخزن المعتاد",
-    "lines": "السلع"
+    "lines": "المنتجات"
   },
   "orderDetail": {
     "title": "الأمر {{number}}",
@@ -29,7 +29,7 @@
     "supplierInvoice": "فاتورة المورد",
     "documentTitle": "طلبية للمورد",
     "receiptProgress": "البضاعة التي وصلت",
-    "item": "الصنف",
+    "item": "المنتج",
     "ordered": "المطلوب",
     "received": "المستلم",
     "remaining": "لم يصل بعد",

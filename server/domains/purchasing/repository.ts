@@ -6,6 +6,7 @@ import {
   goodsReceiptLines,
   goodsReceipts,
   parties,
+  products,
   purchaseOrderLines,
   purchaseOrders,
   supplierInvoiceLines,
@@ -15,6 +16,7 @@ import {
   type PurchaseOrder,
   type PurchaseOrderLine,
   type SupplierInvoice,
+  type SupplierInvoiceLine,
 } from "@shared/schema";
 import { db, type Database } from "../../db";
 
@@ -24,8 +26,16 @@ export interface PurchaseOrderWithLines extends PurchaseOrder {
 }
 
 export interface GoodsReceiptWithLines extends GoodsReceipt {
-  lines: GoodsReceiptLine[];
+  lines: (GoodsReceiptLine & { productName: string; productSku: string })[];
   supplierName: string;
+  purchaseOrderNumber: string | null;
+}
+
+export interface SupplierInvoiceDetail extends SupplierInvoice {
+  lines: SupplierInvoiceLine[];
+  supplierName: string;
+  purchaseOrderNumber: string | null;
+  receiptNumber: string | null;
 }
 
 /** Orders that count as purchases: sent to the supplier, whether received or not. */
@@ -229,13 +239,35 @@ export class PurchasingRepository {
       .where(and(eq(goodsReceipts.companyId, companyId), eq(goodsReceipts.id, receiptId)))
       .limit(1);
     if (!row) return null;
-    const lines = await this.database
-      .select()
-      .from(goodsReceiptLines)
-      .where(
-        and(eq(goodsReceiptLines.companyId, companyId), eq(goodsReceiptLines.receiptId, receiptId))
-      );
-    return { ...row.receipt, lines, supplierName: row.supplierName };
+    const [lines, [order]] = await Promise.all([
+      this.database
+        .select({ line: goodsReceiptLines, productName: products.name, productSku: products.sku })
+        .from(goodsReceiptLines)
+        .leftJoin(products, eq(products.id, goodsReceiptLines.productId))
+        .where(
+          and(
+            eq(goodsReceiptLines.companyId, companyId),
+            eq(goodsReceiptLines.receiptId, receiptId)
+          )
+        ),
+      row.receipt.purchaseOrderId
+        ? this.database
+            .select({ number: purchaseOrders.number })
+            .from(purchaseOrders)
+            .where(eq(purchaseOrders.id, row.receipt.purchaseOrderId))
+            .limit(1)
+        : Promise.resolve([]),
+    ]);
+    return {
+      ...row.receipt,
+      lines: lines.map((entry) => ({
+        ...entry.line,
+        productName: entry.productName ?? "",
+        productSku: entry.productSku ?? "",
+      })),
+      supplierName: row.supplierName,
+      purchaseOrderNumber: order?.number ?? null,
+    };
   }
 
   async insertReceipt(values: typeof goodsReceipts.$inferInsert): Promise<GoodsReceipt> {
@@ -298,6 +330,53 @@ export class PurchasingRepository {
       .where(and(eq(supplierInvoices.companyId, companyId), eq(supplierInvoices.id, invoiceId)))
       .limit(1);
     return row ?? null;
+  }
+
+  /** Supplier invoice with its lines and the numbers of the order and receipt it comes from. */
+  async findSupplierInvoiceDetail(
+    companyId: string,
+    invoiceId: string
+  ): Promise<SupplierInvoiceDetail | null> {
+    const [row] = await this.database
+      .select({ invoice: supplierInvoices, supplierName: parties.name })
+      .from(supplierInvoices)
+      .innerJoin(parties, eq(parties.id, supplierInvoices.supplierId))
+      .where(and(eq(supplierInvoices.companyId, companyId), eq(supplierInvoices.id, invoiceId)))
+      .limit(1);
+    if (!row) return null;
+    const [lines, [order], [receipt]] = await Promise.all([
+      this.database
+        .select()
+        .from(supplierInvoiceLines)
+        .where(
+          and(
+            eq(supplierInvoiceLines.companyId, companyId),
+            eq(supplierInvoiceLines.invoiceId, invoiceId)
+          )
+        )
+        .orderBy(asc(supplierInvoiceLines.position)),
+      row.invoice.purchaseOrderId
+        ? this.database
+            .select({ number: purchaseOrders.number })
+            .from(purchaseOrders)
+            .where(eq(purchaseOrders.id, row.invoice.purchaseOrderId))
+            .limit(1)
+        : Promise.resolve([]),
+      row.invoice.receiptId
+        ? this.database
+            .select({ number: goodsReceipts.number })
+            .from(goodsReceipts)
+            .where(eq(goodsReceipts.id, row.invoice.receiptId))
+            .limit(1)
+        : Promise.resolve([]),
+    ]);
+    return {
+      ...row.invoice,
+      lines,
+      supplierName: row.supplierName,
+      purchaseOrderNumber: order?.number ?? null,
+      receiptNumber: receipt?.number ?? null,
+    };
   }
 
   /**

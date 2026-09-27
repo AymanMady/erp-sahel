@@ -8,6 +8,7 @@ import { useLocation } from "wouter";
 import { toast } from "sonner";
 
 import { PARTY_TYPES, type PartyType } from "@shared/schema";
+import { isValidPhone } from "@shared/phone";
 import { errorMessage } from "@/shared/api/api-error";
 import { partyApi, type PartyFilters } from "@/entities/party/api";
 import { onlineOrQueued, queuePartyCreate } from "@/shared/offline/offline-writes";
@@ -18,6 +19,7 @@ import { Field, FieldGrid } from "@/shared/components/field";
 import { Money } from "@/shared/components/money";
 import { MoneyInput } from "@/shared/components/money-input";
 import { PageHeader } from "@/shared/components/page-header";
+import { PhoneField } from "@/shared/components/phone-field";
 import { ResourceTable, type Column } from "@/shared/components/resource-table";
 import { SearchInput } from "@/shared/components/search-input";
 import { partyTypeLabel } from "@/shared/components/status-badge";
@@ -69,11 +71,6 @@ export default function PartiesPage() {
       cell: (row) => (
         <div className="min-w-0">
           <p className="truncate font-medium">{row.name}</p>
-          {row.taxId ? (
-            <p className="text-xs text-muted-foreground">
-              {t("list.taxIdShort", { number: row.taxId })}
-            </p>
-          ) : null}
         </div>
       ),
     },
@@ -88,9 +85,7 @@ export default function PartiesPage() {
       hideOnMobile: true,
       cell: (row) => (
         <div className="text-sm">
-          {row.phone ? <p>{row.phone}</p> : null}
-          {row.email ? <p className="text-xs text-muted-foreground">{row.email}</p> : null}
-          {!row.phone && !row.email ? <span className="text-muted-foreground">—</span> : null}
+          {row.phone ? <p>{row.phone}</p> : <span className="text-muted-foreground">—</span>}
         </div>
       ),
     },
@@ -203,9 +198,7 @@ export function PartyDialog({
   const [form, setForm] = useState({
     name: "",
     partyType: defaultType as PartyType,
-    email: "",
     phone: "",
-    taxId: "",
     creditLimitCents: 0,
     paymentTermsDays: 0,
     notes: "",
@@ -234,9 +227,7 @@ export function PartyDialog({
       setForm({
         name: "",
         partyType: defaultType,
-        email: "",
         phone: "",
-        taxId: "",
         creditLimitCents: 0,
         paymentTermsDays: 0,
         notes: "",
@@ -288,29 +279,11 @@ export function PartyDialog({
                 </SelectContent>
               </Select>
             </Field>
-            <Field label={t("common:labels.phone")} htmlFor="party-phone">
-              <Input
-                id="party-phone"
-                dir="ltr"
-                value={form.phone}
-                onChange={(event) => setForm({ ...form, phone: event.target.value })}
-              />
-            </Field>
-            <Field label={t("common:labels.email")} htmlFor="party-email">
-              <Input
-                id="party-email"
-                type="email"
-                value={form.email}
-                onChange={(event) => setForm({ ...form, email: event.target.value })}
-              />
-            </Field>
-            <Field label={t("fields.taxId")} htmlFor="party-tax-id">
-              <Input
-                id="party-tax-id"
-                value={form.taxId}
-                onChange={(event) => setForm({ ...form, taxId: event.target.value })}
-              />
-            </Field>
+            <PhoneField
+              id="party-phone"
+              value={form.phone}
+              onChange={(phone) => setForm({ ...form, phone })}
+            />
             <Field
               label={t("fields.creditLimit")}
               htmlFor="party-credit"
@@ -350,7 +323,10 @@ export function PartyDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t("common:actions.cancel")}
             </Button>
-            <Button type="submit" disabled={mutation.isPending || !form.name.trim()}>
+            <Button
+              type="submit"
+              disabled={mutation.isPending || !form.name.trim() || !isValidPhone(form.phone)}
+            >
               {mutation.isPending ? t("create.creating") : t("create.submit")}
             </Button>
           </DialogFooter>

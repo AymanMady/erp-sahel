@@ -6,7 +6,7 @@
     },
     "responsable-magasin": {
       "name": "Store manager",
-      "description": "Purchases, stock, items and reports."
+      "description": "Purchases, stock, products and reports."
     },
     "vendeur": {
       "name": "Salesperson / Cashier",
@@ -33,8 +33,8 @@
       "write": "Add and change customers and suppliers"
     },
     "catalog": {
-      "read": "See the items",
-      "write": "Add and change items"
+      "read": "See the products",
+      "write": "Add and change products"
     },
     "services": {
       "read": "See the services",

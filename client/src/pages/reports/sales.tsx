@@ -191,7 +191,7 @@ export default function SalesReportPage() {
                 {t("sales.noCollections")}
               </p>
             ) : (
-              data?.collections.map((row) => (
+              mergeCollections(data?.collections ?? []).map((row) => (
                 <div
                   key={row.paymentMethod}
                   className="flex items-center justify-between gap-3 rounded-md border px-3 py-2"
@@ -211,4 +211,17 @@ export default function SalesReportPage() {
       </div>
     </div>
   );
+}
+
+/** Cash on one side, every banking app / bank method on the other. */
+function mergeCollections(rows: { paymentMethod: string; totalCents: number; count: number }[]) {
+  const merged = new Map<string, { paymentMethod: string; totalCents: number; count: number }>();
+  for (const row of rows) {
+    const key = row.paymentMethod === "CASH" ? "CASH" : "MOBILE_MONEY";
+    const entry = merged.get(key) ?? { paymentMethod: key, totalCents: 0, count: 0 };
+    entry.totalCents += Number(row.totalCents);
+    entry.count += Number(row.count);
+    merged.set(key, entry);
+  }
+  return [...merged.values()];
 }

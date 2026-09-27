@@ -53,7 +53,7 @@
   },
   "entities": {
     "party": "Customer or supplier",
-    "product": "Item",
+    "product": "Product",
     "quote": "Quote",
     "invoice": "Invoice",
     "payment": "Payment",

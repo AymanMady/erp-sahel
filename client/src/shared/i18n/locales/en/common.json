@@ -86,5 +86,32 @@
       "description": "It will no longer be offered. What was already recorded with it stays as it is.",
       "confirm": "Yes, remove"
     }
+  },
+  "phone": {
+    "invalid": "The number must have 8 digits and start with 2, 3 or 4.",
+    "hint": "8 digits, starting with 2, 3 or 4"
+  },
+  "details": {
+    "purchaseOrder": "Order",
+    "receipt": "Goods received",
+    "invoice": "Invoice",
+    "supplierInvoice": "Supplier invoice",
+    "paid": "Already paid",
+    "remaining": "Left to pay",
+    "unitCost": "Purchase price of one unit",
+    "lot": "Batch number",
+    "direction": "Money received or paid",
+    "incoming": "Money received",
+    "outgoing": "Money paid",
+    "method": "Paid how",
+    "account": "Cash drawer or account",
+    "restock": "Put back in stock",
+    "reason": "Why",
+    "receiptTitle": "Goods received {{number}}",
+    "supplierInvoiceTitle": "Supplier invoice {{number}}",
+    "creditNoteTitle": "Goods returned {{number}}",
+    "paymentTitle": "Payment {{number}}",
+    "openInvoice": "See the invoice",
+    "openOrder": "See the order"
   }
 }

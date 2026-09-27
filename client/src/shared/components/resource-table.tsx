@@ -10,7 +10,7 @@
  *    people believe data was lost.
  */
 
-import type { ReactNode } from "react";
+import { useState, type MouseEvent, type ReactNode } from "react";
 import {
   IconChevronLeft,
   IconChevronRight,
@@ -20,6 +20,7 @@ import {
 } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 
+import { DetailDialog, DetailFields } from "@/shared/components/detail-dialog";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
@@ -47,7 +48,13 @@ export interface ResourceTableProps<T> {
   emptyTitle?: string;
   emptyDescription?: string;
   emptyAction?: ReactNode;
+  /**
+   * Opens the row's own detail (page or window). Without it, a click shows every column
+   * of the row in a detail window, so every table row can be opened.
+   */
   onRowClick?: (row: T) => void;
+  /** Title of the default detail window; defaults to the first column. */
+  detailTitle?: (row: T) => ReactNode;
   /** Server pagination; when omitted, the table simply shows every row. */
   pagination?: {
     total: number;
@@ -66,6 +73,17 @@ export interface ResourceTableProps<T> {
 
 const PAGE_SIZES = [10, 25, 50, 100];
 
+/** A click on a button, link or field inside a row must not also open the row. */
+const INTERACTIVE =
+  "button, a, input, select, textarea, label, [role='checkbox'], [role='combobox'], [role='menuitem'], [role='switch']";
+
+function isRowClick(event: MouseEvent<HTMLElement>): boolean {
+  const target = event.target as HTMLElement;
+  // Clicks inside a portal (menu, dialog) bubble through React but are not in the row.
+  if (!event.currentTarget.contains(target)) return false;
+  return !target.closest(INTERACTIVE);
+}
+
 export function ResourceTable<T>({
   columns,
   rows,
@@ -76,11 +94,15 @@ export function ResourceTable<T>({
   emptyDescription,
   emptyAction,
   onRowClick,
+  detailTitle,
   pagination,
   footer,
   minWidthClassName = "md:min-w-[720px]",
 }: ResourceTableProps<T>) {
   const { t } = useTranslation("components");
+  const [detailRow, setDetailRow] = useState<T | null>(null);
+  const openRow = onRowClick ?? setDetailRow;
+  const detailColumns = columns.filter((column) => column.id !== "actions" && column.header);
   const alignClass = (align: Column<T>["align"]) =>
     align === "end" ? "text-end" : align === "center" ? "text-center" : "text-start";
 
@@ -147,8 +169,10 @@ export function ResourceTable<T>({
               rows.map((row) => (
                 <TableRow
                   key={rowKey(row)}
-                  onClick={onRowClick ? () => onRowClick(row) : undefined}
-                  className={cn(onRowClick && "cursor-pointer")}
+                  onClick={(event) => {
+                    if (isRowClick(event)) openRow(row);
+                  }}
+                  className="cursor-pointer"
                 >
                   {columns.map((column) => (
                     <TableCell
@@ -169,6 +193,31 @@ export function ResourceTable<T>({
           </TableBody>
         </Table>
       </div>
+
+      {onRowClick ? null : (
+        <DetailDialog
+          open={detailRow !== null}
+          onOpenChange={(open) => {
+            if (!open) setDetailRow(null);
+          }}
+          title={
+            detailRow === null
+              ? ""
+              : detailTitle
+                ? detailTitle(detailRow)
+                : (detailColumns[0]?.cell(detailRow) ?? t("resourceTable.details"))
+          }
+        >
+          {detailRow === null ? null : (
+            <DetailFields
+              fields={detailColumns.map((column) => ({
+                label: column.header,
+                value: column.cell(detailRow),
+              }))}
+            />
+          )}
+        </DetailDialog>
+      )}
 
       {pagination ? (
         <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">

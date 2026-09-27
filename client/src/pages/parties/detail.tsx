@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 import { ADDRESS_TYPES, PARTY_TYPES, type PartyType } from "@shared/schema";
 import { formatDate } from "@shared/format";
+import { isValidPhone } from "@shared/phone";
 import { errorMessage } from "@/shared/api/api-error";
 import { partyApi } from "@/entities/party/api";
 import { queryKeys } from "@/shared/api/query-client";
@@ -17,6 +18,7 @@ import { Field, FieldGrid } from "@/shared/components/field";
 import { Money } from "@/shared/components/money";
 import { MoneyInput } from "@/shared/components/money-input";
 import { PageHeader } from "@/shared/components/page-header";
+import { PhoneField } from "@/shared/components/phone-field";
 import { StatusBadge, partyTypeLabel, paymentMethodLabel } from "@/shared/components/status-badge";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
@@ -122,10 +124,6 @@ export default function PartyDetailPage() {
               {data.phone || "—"}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-1 text-xs text-muted-foreground">
-            <p>{data.email || t("detail.noEmail")}</p>
-            <p>{data.taxId ? t("list.taxIdShort", { number: data.taxId }) : t("detail.noTaxId")}</p>
-          </CardContent>
         </Card>
       </div>
 
@@ -233,9 +231,7 @@ export default function PartyDetailPage() {
                       </p>
                       {contact.role ? <Badge variant="outline">{contact.role}</Badge> : null}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {[contact.phone, contact.email].filter(Boolean).join(" · ") || "—"}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{contact.phone || "—"}</p>
                   </div>
                 ))
               )}
@@ -317,9 +313,7 @@ function EditPartyDialog({
     id: string;
     name: string;
     partyType: string;
-    email: string;
     phone: string;
-    taxId: string;
     creditLimitCents: number;
     paymentTermsDays: number;
     notes: string;
@@ -330,9 +324,7 @@ function EditPartyDialog({
   const [form, setForm] = useState({
     name: party.name,
     partyType: party.partyType as PartyType,
-    email: party.email,
     phone: party.phone,
-    taxId: party.taxId,
     creditLimitCents: party.creditLimitCents,
     paymentTermsDays: party.paymentTermsDays,
     notes: party.notes,
@@ -386,25 +378,11 @@ function EditPartyDialog({
                 </SelectContent>
               </Select>
             </Field>
-            <Field label={t("common:labels.phone")}>
-              <Input
-                value={form.phone}
-                onChange={(event) => setForm({ ...form, phone: event.target.value })}
-              />
-            </Field>
-            <Field label={t("common:labels.email")}>
-              <Input
-                type="email"
-                value={form.email}
-                onChange={(event) => setForm({ ...form, email: event.target.value })}
-              />
-            </Field>
-            <Field label={t("fields.taxId")}>
-              <Input
-                value={form.taxId}
-                onChange={(event) => setForm({ ...form, taxId: event.target.value })}
-              />
-            </Field>
+            <PhoneField
+              id="edit-party-phone"
+              value={form.phone}
+              onChange={(phone) => setForm({ ...form, phone })}
+            />
             <Field label={t("fields.creditLimit")} hint={t("fields.creditLimitHint")}>
               <MoneyInput
                 valueCents={form.creditLimitCents}
@@ -434,7 +412,7 @@ function EditPartyDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t("common:actions.cancel")}
             </Button>
-            <Button type="submit" disabled={mutation.isPending}>
+            <Button type="submit" disabled={mutation.isPending || !isValidPhone(form.phone)}>
               {t("common:actions.save")}
             </Button>
           </DialogFooter>
@@ -459,7 +437,6 @@ function ContactDialog({
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
-    email: "",
     phone: "",
     role: "",
   });
@@ -470,7 +447,7 @@ function ContactDialog({
       toast.success(t("contact.added"));
       onSaved();
       onOpenChange(false);
-      setForm({ firstName: "", lastName: "", email: "", phone: "", role: "" });
+      setForm({ firstName: "", lastName: "", phone: "", role: "" });
     },
     onError: (error) => toast.error(errorMessage(error)),
   });
@@ -502,19 +479,11 @@ function ContactDialog({
                 onChange={(event) => setForm({ ...form, lastName: event.target.value })}
               />
             </Field>
-            <Field label={t("common:labels.phone")}>
-              <Input
-                value={form.phone}
-                onChange={(event) => setForm({ ...form, phone: event.target.value })}
-              />
-            </Field>
-            <Field label={t("common:labels.email")}>
-              <Input
-                type="email"
-                value={form.email}
-                onChange={(event) => setForm({ ...form, email: event.target.value })}
-              />
-            </Field>
+            <PhoneField
+              id="contact-phone"
+              value={form.phone}
+              onChange={(phone) => setForm({ ...form, phone })}
+            />
           </FieldGrid>
           <Field label={t("contact.role")}>
             <Input
@@ -527,7 +496,10 @@ function ContactDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t("common:actions.cancel")}
             </Button>
-            <Button type="submit" disabled={mutation.isPending || !form.firstName.trim()}>
+            <Button
+              type="submit"
+              disabled={mutation.isPending || !form.firstName.trim() || !isValidPhone(form.phone)}
+            >
               {t("common:actions.add")}
             </Button>
           </DialogFooter>

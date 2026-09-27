@@ -8,11 +8,11 @@
     "backToDashboard": "Back to home"
   },
   "search": {
-    "placeholder": "Scan the barcode or type the item name…",
+    "placeholder": "Scan the barcode or type the product name…",
     "searching": "Searching…",
-    "noMatch": "No item found.",
-    "startTyping": "Type the item name to find it.",
-    "noSnapshot": "Sign in once with internet to load the items.",
+    "noMatch": "No product found.",
+    "startTyping": "Type the product name to find it.",
+    "noSnapshot": "Sign in once with internet to load the products.",
     "inStock": "{{quantity}} in stock",
     "outOfStock": "Out of stock"
   },

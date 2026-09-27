@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { Link } from "wouter";
 
-import { PAYMENT_METHODS } from "@shared/schema";
 import { formatDate } from "@shared/format";
 import { errorMessage } from "@/shared/api/api-error";
 import { paymentApi, type PaymentFilters } from "@/entities/payment/api";
@@ -13,11 +13,15 @@ import { queryKeys } from "@/shared/api/query-client";
 import { Money } from "@/shared/components/money";
 import { PageHeader } from "@/shared/components/page-header";
 import { ResourceTable, type Column } from "@/shared/components/resource-table";
-import { paymentMethodLabel } from "@/shared/components/status-badge";
+import { StatusBadge, paymentMethodLabel } from "@/shared/components/status-badge";
+import { DetailDialog, DetailFields } from "@/shared/components/detail-dialog";
 import { Badge } from "@/shared/ui/badge";
+import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 
+/** Only two ways to pay: cash or a banking app. */
+const PAYMENT_CHOICES = ["CASH", "MOBILE_MONEY"] as const;
 const ALL = "ALL";
 
 export default function PaymentsPage() {
@@ -27,6 +31,7 @@ export default function PaymentsPage() {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [page, setPage] = useState({ limit: 25, offset: 0 });
+  const [selected, setSelected] = useState<PaymentRow | null>(null);
 
   const filters: PaymentFilters = {
     method: method === ALL ? null : method,
@@ -110,7 +115,7 @@ export default function PaymentsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL}>{t("filters.allMethods")}</SelectItem>
-            {PAYMENT_METHODS.map((entry) => (
+            {PAYMENT_CHOICES.map((entry) => (
               <SelectItem key={entry} value={entry}>
                 {paymentMethodLabel(entry)}
               </SelectItem>
@@ -145,7 +150,9 @@ export default function PaymentsPage() {
           offset: page.offset,
           onChange: setPage,
         }}
+        onRowClick={setSelected}
       />
+      <PaymentDetailDialog payment={selected} onClose={() => setSelected(null)} />
 
       {(data?.items.length ?? 0) > 0 ? (
         <p className="text-end text-sm text-muted-foreground">
@@ -153,5 +160,69 @@ export default function PaymentsPage() {
         </p>
       ) : null}
     </div>
+  );
+}
+
+function PaymentDetailDialog({
+  payment,
+  onClose,
+}: {
+  payment: PaymentRow | null;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation("payments");
+  return (
+    <DetailDialog
+      open={payment !== null}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title={payment ? t("common:details.paymentTitle", { number: payment.number }) : ""}
+      description={payment?.partyName}
+      actions={
+        payment?.invoiceId ? (
+          <Button variant="outline" asChild>
+            <Link href={`/invoices/${payment.invoiceId}`}>{t("common:details.openInvoice")}</Link>
+          </Button>
+        ) : null
+      }
+    >
+      {payment ? (
+        <DetailFields
+          fields={[
+            {
+              label: t("common:labels.amount"),
+              value: (
+                <Money
+                  cents={payment.direction === "IN" ? payment.amountCents : -payment.amountCents}
+                  tone="auto"
+                  className="text-base"
+                />
+              ),
+            },
+            {
+              label: t("common:details.direction"),
+              value:
+                payment.direction === "IN"
+                  ? t("common:details.incoming")
+                  : t("common:details.outgoing"),
+            },
+            { label: t("common:labels.date"), value: formatDate(payment.paymentDate) },
+            { label: t("common:labels.status"), value: <StatusBadge status={payment.status} /> },
+            {
+              label: t("common:details.method"),
+              value: paymentMethodLabel(payment.paymentMethod),
+            },
+            { label: t("common:details.account"), value: payment.bankAccountName },
+            {
+              label: t("common:details.invoice"),
+              value: payment.invoiceNumber ?? payment.supplierInvoiceNumber,
+            },
+            { label: t("common:labels.reference"), value: payment.reference },
+            { label: t("common:labels.notes"), value: payment.notes, wide: true },
+          ]}
+        />
+      ) : null}
+    </DetailDialog>
   );
 }

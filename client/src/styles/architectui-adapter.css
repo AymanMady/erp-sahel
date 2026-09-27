@@ -93,6 +93,34 @@ label {
 .vertical-nav-menu li a {
   cursor: pointer;
 }
+/* Long labels ("Commandes fournisseurs", bold when active) go to a second line instead
+   of running past the edge of the sidebar. */
+.vertical-nav-menu li a,
+.vertical-nav-menu ul > li > a {
+  height: auto;
+  line-height: 1.25;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.vertical-nav-menu li a {
+  min-height: 2.4rem;
+}
+.vertical-nav-menu ul > li > a {
+  min-height: 2rem;
+}
+.closed-sidebar .app-sidebar:hover .app-sidebar__inner ul li a,
+.sidebar-mobile-open .app-sidebar .app-sidebar__inner ul li a {
+  height: auto;
+  min-height: 2.3em;
+}
+/* Collapsed sidebar: icons only, the hidden label must stay on one line. */
+.closed-sidebar .app-sidebar:not(:hover) .vertical-nav-menu li a {
+  white-space: nowrap;
+  height: 2.4rem;
+}
+.closed-sidebar .app-sidebar:not(:hover) .vertical-nav-menu ul.mm-show > li > a {
+  min-height: 0;
+}
 .vertical-nav-menu i.metismenu-icon,
 .vertical-nav-menu i.metismenu-state-icon {
   display: flex;

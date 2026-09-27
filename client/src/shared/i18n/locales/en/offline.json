@@ -7,7 +7,7 @@
     "failed": "Sending did not work."
   },
   "errors": {
-    "productNotSynced": "This item is not sent yet. Its stock can be changed after it is sent."
+    "productNotSynced": "This product is not sent yet. Its stock can be changed after it is sent."
   },
   "write": {
     "label": "{{verb}} — {{resource}}",
@@ -49,7 +49,7 @@
   },
   "outboxLabels": {
     "party": "“{{name}}”",
-    "product": "Item {{sku}} “{{name}}”",
+    "product": "Product {{sku}} “{{name}}”",
     "quote": "Quote {{number}}",
     "invoice": "Invoice {{number}}",
     "payment": "Payment {{reference}}",

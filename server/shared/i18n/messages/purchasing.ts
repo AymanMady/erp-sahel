@@ -11,10 +11,10 @@ export const purchasingMessages: MessageCatalog = {
     "Supplier invoice {number}": "Facture fournisseur {number}",
     "Select a supplier": "Sélectionnez un fournisseur",
     "Add at least one line": "Ajoutez au moins une ligne",
-    "Specify at least one received item": "Indiquez au moins un article reçu",
+    "Specify at least one received item": "Indiquez au moins un produit reçu",
     "Invalid identifier": "Identifiant invalide",
     "Some goods of this order have already arrived. You can no longer change its items, its discount or its supplier.":
-      "Une partie des marchandises de cette commande est déjà arrivée. Vous ne pouvez plus changer ses articles, sa remise ou son fournisseur.",
+      "Une partie des marchandises de cette commande est déjà arrivée. Vous ne pouvez plus changer ses produits, sa remise ou son fournisseur.",
     "An order becomes received only when you record the goods that arrived.":
       "Une commande devient « reçue » seulement quand vous enregistrez les marchandises arrivées.",
     "Goods of this order have already arrived, or it was cancelled. Its state can no longer be changed.":
@@ -24,7 +24,7 @@ export const purchasingMessages: MessageCatalog = {
     "All the goods of this order have already been received.":
       "Toutes les marchandises de cette commande ont déjà été reçues.",
     "Line {line}: this item is not on the order.":
-      "Ligne {line} : cet article n'est pas dans la commande.",
+      "Ligne {line} : ce produit n'est pas dans la commande.",
     "{item}: only {remaining} left to receive on this order, but {requested} was entered.":
       "{item} : il reste seulement {remaining} à recevoir sur cette commande, mais vous avez saisi {requested}.",
     "Goods receipt not found.": "Réception introuvable.",
@@ -44,10 +44,10 @@ export const purchasingMessages: MessageCatalog = {
     "Supplier invoice {number}": "فاتورة المورد {number}",
     "Select a supplier": "اختر موردًا",
     "Add at least one line": "أضف سطرًا واحدًا على الأقل",
-    "Specify at least one received item": "حدد صنفًا مستلمًا واحدًا على الأقل",
+    "Specify at least one received item": "حدد منتجًا مستلمًا واحدًا على الأقل",
     "Invalid identifier": "معرّف غير صالح",
     "Some goods of this order have already arrived. You can no longer change its items, its discount or its supplier.":
-      "وصل جزء من بضاعة هذه الطلبية. لم يعد بإمكانك تغيير أصنافها أو تخفيضها أو موردها.",
+      "وصل جزء من بضاعة هذه الطلبية. لم يعد بإمكانك تغيير منتجاتها أو تخفيضها أو موردها.",
     "An order becomes received only when you record the goods that arrived.":
       "تصبح الطلبية «مستلمة» فقط عندما تسجل البضاعة التي وصلت.",
     "Goods of this order have already arrived, or it was cancelled. Its state can no longer be changed.":
@@ -55,7 +55,7 @@ export const purchasingMessages: MessageCatalog = {
     "This order was cancelled. Its goods can no longer be received.":
       "تم إلغاء هذه الطلبية. لم يعد بالإمكان استلام بضاعتها.",
     "All the goods of this order have already been received.": "تم استلام كل بضاعة هذه الطلبية.",
-    "Line {line}: this item is not on the order.": "السطر {line}: هذا الصنف ليس في الطلبية.",
+    "Line {line}: this item is not on the order.": "السطر {line}: هذا المنتج ليس في الطلبية.",
     "{item}: only {remaining} left to receive on this order, but {requested} was entered.":
       "{item}: بقي {remaining} فقط للاستلام في هذه الطلبية، لكنك أدخلت {requested}.",
     "Goods receipt not found.": "الاستلام غير موجود.",

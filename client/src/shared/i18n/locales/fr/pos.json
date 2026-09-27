@@ -8,11 +8,11 @@
     "backToDashboard": "Retour à l'accueil"
   },
   "search": {
-    "placeholder": "Scanner le code-barres ou taper le nom de l'article…",
+    "placeholder": "Scanner le code-barres ou taper le nom du produit…",
     "searching": "Recherche en cours…",
-    "noMatch": "Aucun article trouvé.",
-    "startTyping": "Tapez le nom de l'article pour le trouver.",
-    "noSnapshot": "Connectez-vous une première fois avec internet pour charger les articles.",
+    "noMatch": "Aucun produit trouvé.",
+    "startTyping": "Tapez le nom du produit pour le trouver.",
+    "noSnapshot": "Connectez-vous une première fois avec internet pour charger les produits.",
     "inStock": "{{quantity}} en stock",
     "outOfStock": "Plus en stock"
   },

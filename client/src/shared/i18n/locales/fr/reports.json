@@ -13,28 +13,28 @@
     "noSales": "Aucune vente pendant cette période.",
     "topSales": "Meilleures ventes",
     "emptyTitle": "Aucune vente",
-    "emptyDescription": "Aucun article vendu pendant cette période.",
+    "emptyDescription": "Aucun produit vendu pendant cette période.",
     "collectionsByMethod": "Argent reçu, par façon de payer",
     "noCollections": "Aucun argent reçu pendant cette période.",
     "paymentsCount_one": "{{count}} paiement",
     "paymentsCount_other": "{{count}} paiements",
     "columns": {
-      "item": "Article",
+      "item": "Produit",
       "soldQuantity": "Quantité vendue"
     }
   },
   "stock": {
     "title": "Rapport de stock",
-    "description": "Valeur du stock et articles presque finis.",
+    "description": "Valeur du stock et produits presque finis.",
     "allWarehouses": "Tous les magasins",
     "stockValue": "Valeur du stock",
-    "skus": "Articles",
+    "skus": "Produits",
     "totalQuantity": "Quantité totale",
-    "belowThreshold": "Articles presque finis",
+    "belowThreshold": "Produits presque finis",
     "emptyTitle": "Rien à racheter",
-    "emptyDescription": "Il reste assez de chaque article.",
+    "emptyDescription": "Il reste assez de chaque produit.",
     "columns": {
-      "item": "Article",
+      "item": "Produit",
       "currentStock": "Reste en stock",
       "alertThreshold": "Prévenir sous"
     }

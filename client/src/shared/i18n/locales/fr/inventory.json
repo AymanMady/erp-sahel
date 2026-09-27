@@ -15,8 +15,8 @@
   },
   "movements": {
     "title": "Entrées et sorties de stock",
-    "description": "Chaque article entré ou sorti, avec la raison.",
-    "item": "Article",
+    "description": "Chaque produit entré ou sorti, avec la raison.",
+    "item": "Produit",
     "origin": "Raison",
     "balanceAfter": "Reste après",
     "unitCost": "Prix d'achat d'une unité",
@@ -35,7 +35,7 @@
   },
   "stock": {
     "title": "Ce qui reste en stock",
-    "description": "Quantité de chaque article, par magasin.",
+    "description": "Quantité de chaque produit, par magasin.",
     "lot": "Numéro de fabrication",
     "averageCost": "Prix d'achat moyen",
     "value": "Valeur",
@@ -43,13 +43,13 @@
     "manualMovement": "Ajouter ou retirer du stock",
     "stockValue": "Valeur du stock",
     "stockValueHint": "Calculée avec le prix d'achat moyen",
-    "skuCount": "Articles en stock",
+    "skuCount": "Produits en stock",
     "totalQuantity": "Quantité totale",
     "searchPlaceholder": "Nom, code ou code-barres…",
-    "lowStockOnly": "Seulement les articles presque finis",
+    "lowStockOnly": "Seulement les produits presque finis",
     "emptyTitle": "Stock vide",
     "emptyDescription": "Le stock se remplit quand vous recevez de la marchandise, ou avec « Ajouter ou retirer du stock ».",
-    "selectItem": "Choisir un article",
+    "selectItem": "Choisir un produit",
     "movementDialog": {
       "title": "Ajouter ou retirer du stock",
       "description": "Écrivez toujours la raison, pour savoir plus tard ce qui s'est passé.",
@@ -61,7 +61,7 @@
       "out": "Retirer (−)",
       "unitCostHint": "Le prix payé pour une unité.",
       "reason": "Raison",
-      "reasonPlaceholder": "Comptage, article cassé, erreur…"
+      "reasonPlaceholder": "Comptage, produit cassé, erreur…"
     },
     "transferDialog": {
       "title": "Changer de magasin",

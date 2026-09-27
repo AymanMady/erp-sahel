@@ -58,7 +58,7 @@ export function listPartiesOffline(
       if (filters.role && party.partyType !== filters.role && party.partyType !== "BOTH") {
         return false;
       }
-      return !term || includesTerm(term, party.name, party.code, party.phone, party.email);
+      return !term || includesTerm(term, party.name, party.code, party.phone);
     })
     .sort(
       (a, b) =>

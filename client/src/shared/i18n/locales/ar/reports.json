@@ -13,7 +13,7 @@
     "noSales": "لا توجد مبيعات في هذه الفترة.",
     "topSales": "الأكثر مبيعًا",
     "emptyTitle": "لا توجد مبيعات",
-    "emptyDescription": "لم تُبع أي سلعة في هذه الفترة.",
+    "emptyDescription": "لم يُبع أي منتج في هذه الفترة.",
     "collectionsByMethod": "المال المستلم، حسب طريقة الدفع",
     "noCollections": "لم يُستلم أي مال في هذه الفترة.",
     "paymentsCount_zero": "لا توجد دفعات",
@@ -23,22 +23,22 @@
     "paymentsCount_many": "{{count}} دفعة",
     "paymentsCount_other": "{{count}} دفعة",
     "columns": {
-      "item": "الصنف",
+      "item": "المنتج",
       "soldQuantity": "الكمية المباعة"
     }
   },
   "stock": {
     "title": "تقرير المخزون",
-    "description": "قيمة المخزون والسلع التي أوشكت على النفاد.",
+    "description": "قيمة المخزون والمنتجات التي أوشكت على النفاد.",
     "allWarehouses": "جميع المخازن",
     "stockValue": "قيمة المخزون",
-    "skus": "السلع",
+    "skus": "المنتجات",
     "totalQuantity": "الكمية الإجمالية",
-    "belowThreshold": "سلع أوشكت على النفاد",
+    "belowThreshold": "منتجات أوشكت على النفاد",
     "emptyTitle": "لا شيء للشراء من جديد",
-    "emptyDescription": "بقي ما يكفي من كل سلعة.",
+    "emptyDescription": "بقي ما يكفي من كل منتج.",
     "columns": {
-      "item": "الصنف",
+      "item": "المنتج",
       "currentStock": "الباقي في المخزون",
       "alertThreshold": "التنبيه تحت"
     }

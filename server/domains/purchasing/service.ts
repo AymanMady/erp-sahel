@@ -1,5 +1,6 @@
 /** Application boundary of purchasing. */
 
+import { NotFoundError } from "../../shared/errors/app-error";
 import { tenancyApplication } from "../tenancy/application";
 import { purchasingApplication } from "./application";
 import { purchasingRepository } from "./repository";
@@ -51,7 +52,9 @@ export class PurchasingService {
 
   async getReceipt(companyId: string, id: unknown) {
     const { id: receiptId } = idParamSchema.parse({ id });
-    return purchasingRepository.findReceipt(companyId, receiptId);
+    const receipt = await purchasingRepository.findReceipt(companyId, receiptId);
+    if (!receipt) throw new NotFoundError("Goods receipt not found.");
+    return receipt;
   }
 
   async createReceipt(companyId: string, body: unknown, userId: string) {
@@ -64,6 +67,13 @@ export class PurchasingService {
       companyId,
       listSupplierInvoicesQuerySchema.parse(query ?? {})
     );
+  }
+
+  async getSupplierInvoice(companyId: string, id: unknown) {
+    const { id: invoiceId } = idParamSchema.parse({ id });
+    const invoice = await purchasingRepository.findSupplierInvoiceDetail(companyId, invoiceId);
+    if (!invoice) throw new NotFoundError("Supplier invoice not found.");
+    return invoice;
   }
 
   async createSupplierInvoice(companyId: string, body: unknown) {

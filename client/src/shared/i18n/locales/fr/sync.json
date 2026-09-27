@@ -53,7 +53,7 @@
   },
   "entities": {
     "party": "Client ou fournisseur",
-    "product": "Article",
+    "product": "Produit",
     "quote": "Devis",
     "invoice": "Facture",
     "payment": "Paiement",

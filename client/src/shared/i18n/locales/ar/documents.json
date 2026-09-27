@@ -4,7 +4,7 @@
     "dueDate": "يُدفع قبل: {{date}}",
     "recipient": "إلى",
     "columns": {
-      "description": "السلعة",
+      "description": "المنتج",
       "quantity": "الكمية",
       "unitPrice": "سعر القطعة الواحدة"
     },
@@ -14,16 +14,16 @@
   },
   "lineEditor": {
     "columns": {
-      "description": "السلعة"
+      "description": "المنتج"
     },
-    "empty": "لا توجد سلعة بعد. اضغط على «إضافة سلعة».",
-    "descriptionPlaceholder": "اسم السلعة أو الخدمة",
+    "empty": "لا يوجد منتج بعد. اضغط على «إضافة منتج».",
+    "descriptionPlaceholder": "اسم المنتج أو الخدمة",
     "removeLine": "حذف السطر",
-    "addItem": "إضافة صنف",
+    "addItem": "إضافة منتج",
     "freeLine": "إضافة سطر مكتوب باليد",
     "globalDiscount": "تخفيض على المجموع",
     "problems": {
-      "name": "اكتب اسم السلعة، وإلا فلن يُحفظ هذا السطر.",
+      "name": "اكتب اسم المنتج، وإلا فلن يُحفظ هذا السطر.",
       "quantity": "اكتب كمية أكبر من 0، وإلا فلن يُحفظ هذا السطر."
     },
     "ignoredLines_one": "سطر واحد فارغ أو غير مكتمل لن يُحفظ.",
@@ -35,13 +35,13 @@
     "blockers": {
       "noCustomer": "لتكمل، اختر الزبون أولًا.",
       "noSupplier": "لتكمل، اختر المورّد أولًا.",
-      "noLine": "لتكمل، أضف سلعة واحدة على الأقل مع اسمها وكميتها."
+      "noLine": "لتكمل، أضف منتجًا واحدًا على الأقل مع اسمها وكميتها."
     }
   },
   "productPicker": {
-    "title": "إضافة سلعة",
+    "title": "إضافة منتج",
     "description": "السعر يُملأ وحده. يمكنك تغييره.",
-    "searchPlaceholder": "اسم السلعة أو الخدمة…",
+    "searchPlaceholder": "اسم المنتج أو الخدمة…",
     "service": "خدمة",
     "stock": "الباقي {{quantity}}"
   },

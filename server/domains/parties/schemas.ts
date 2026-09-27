@@ -3,6 +3,15 @@
 import { z } from "zod";
 
 import { ADDRESS_TYPES, PARTY_TYPES } from "@shared/schema";
+import { isValidPhone, normalizePhone } from "@shared/phone";
+
+/** Optional phone: empty, or 8 digits starting with 2, 3 or 4. */
+const phoneSchema = z
+  .string()
+  .max(64)
+  .transform(normalizePhone)
+  .refine(isValidPhone, "The phone number must have 8 digits and start with 2, 3 or 4")
+  .default("");
 
 export const listPartiesQuerySchema = z.object({
   search: z.string().trim().max(200).optional(),
@@ -21,9 +30,7 @@ export const createPartySchema = z.object({
   code: z.string().trim().max(64).optional(),
   name: z.string().min(1, "Name is required").max(255),
   partyType: z.enum(PARTY_TYPES).default("CUSTOMER"),
-  email: z.string().email("Invalid email address").or(z.literal("")).default(""),
-  phone: z.string().max(64).default(""),
-  taxId: z.string().max(64).default(""),
+  phone: phoneSchema,
   creditLimitCents: z.number().int().min(0).default(0),
   paymentTermsDays: z.number().int().min(0).max(365).default(0),
   defaultLeadTimeDays: z.number().int().min(0).max(365).default(0),
@@ -36,8 +43,7 @@ export const updatePartySchema = createPartySchema.partial();
 export const contactSchema = z.object({
   firstName: z.string().min(1, "First name is required").max(100),
   lastName: z.string().max(100).default(""),
-  email: z.string().email("Invalid email address").or(z.literal("")).default(""),
-  phone: z.string().max(64).default(""),
+  phone: phoneSchema,
   role: z.string().max(100).default(""),
 });
 

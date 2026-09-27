@@ -1,13 +1,21 @@
 /** Payment persistence. */
 
-import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, lte, ne, sql } from "drizzle-orm";
 
-import { bankAccounts, parties, payments, salesInvoices, type Payment } from "@shared/schema";
+import {
+  bankAccounts,
+  parties,
+  payments,
+  salesInvoices,
+  supplierInvoices,
+  type Payment,
+} from "@shared/schema";
 import { db, type Database } from "../../db";
 
 export interface PaymentListItem extends Payment {
   partyName: string;
   invoiceNumber: string | null;
+  supplierInvoiceNumber: string | null;
   bankAccountName: string | null;
 }
 
@@ -60,7 +68,12 @@ export class PaymentsRepository {
       options.partyId ? eq(payments.partyId, options.partyId) : undefined,
       options.invoiceId ? eq(payments.invoiceId, options.invoiceId) : undefined,
       options.direction ? eq(payments.direction, options.direction) : undefined,
-      options.method ? eq(payments.paymentMethod, options.method) : undefined,
+      // Only two ways to pay are shown: cash, or a banking app (every other method).
+      options.method === "CASH"
+        ? eq(payments.paymentMethod, "CASH")
+        : options.method
+          ? ne(payments.paymentMethod, "CASH")
+          : undefined,
       options.posSessionId ? eq(payments.posSessionId, options.posSessionId) : undefined,
       options.fromDate ? gte(payments.paymentDate, options.fromDate) : undefined,
       options.toDate ? lte(payments.paymentDate, options.toDate) : undefined
@@ -72,11 +85,13 @@ export class PaymentsRepository {
           payment: payments,
           partyName: parties.name,
           invoiceNumber: salesInvoices.number,
+          supplierInvoiceNumber: supplierInvoices.number,
           bankAccountName: bankAccounts.name,
         })
         .from(payments)
         .innerJoin(parties, eq(parties.id, payments.partyId))
         .leftJoin(salesInvoices, eq(salesInvoices.id, payments.invoiceId))
+        .leftJoin(supplierInvoices, eq(supplierInvoices.id, payments.supplierInvoiceId))
         .leftJoin(bankAccounts, eq(bankAccounts.id, payments.bankAccountId))
         .where(where)
         .orderBy(desc(payments.paymentDate), desc(payments.createdAt))
@@ -93,6 +108,7 @@ export class PaymentsRepository {
         ...row.payment,
         partyName: row.partyName,
         invoiceNumber: row.invoiceNumber,
+        supplierInvoiceNumber: row.supplierInvoiceNumber,
         bankAccountName: row.bankAccountName,
       })),
       total: countRow?.value ?? 0,

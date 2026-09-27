@@ -15,8 +15,8 @@
   },
   "movements": {
     "title": "Stock in and out",
-    "description": "Each item that came in or went out, with the reason.",
-    "item": "Item",
+    "description": "Each product that came in or went out, with the reason.",
+    "item": "Product",
     "origin": "Reason",
     "balanceAfter": "Left after",
     "unitCost": "Buying price for one unit",
@@ -35,7 +35,7 @@
   },
   "stock": {
     "title": "What is left in stock",
-    "description": "Quantity of each item, by warehouse.",
+    "description": "Quantity of each product, by warehouse.",
     "lot": "Batch number",
     "averageCost": "Average buying price",
     "value": "Value",
@@ -43,13 +43,13 @@
     "manualMovement": "Add or remove stock",
     "stockValue": "Stock value",
     "stockValueHint": "Counted with the average buying price",
-    "skuCount": "Items in stock",
+    "skuCount": "Products in stock",
     "totalQuantity": "Total quantity",
     "searchPlaceholder": "Name, code or barcode…",
-    "lowStockOnly": "Only items almost finished",
+    "lowStockOnly": "Only products almost finished",
     "emptyTitle": "Stock is empty",
     "emptyDescription": "Stock fills up when you receive goods, or with “Add or remove stock”.",
-    "selectItem": "Choose an item",
+    "selectItem": "Choose a product",
     "movementDialog": {
       "title": "Add or remove stock",
       "description": "Always write the reason, so you know later what happened.",
@@ -61,7 +61,7 @@
       "out": "Remove (−)",
       "unitCostHint": "The price paid for one unit.",
       "reason": "Reason",
-      "reasonPlaceholder": "Count, broken item, mistake…"
+      "reasonPlaceholder": "Count, broken product, mistake…"
     },
     "transferDialog": {
       "title": "Change warehouse",

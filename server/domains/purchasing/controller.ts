@@ -46,6 +46,10 @@ export class PurchasingController {
     res.json(await this.service.listSupplierInvoices(authOf(req).companyId, req.query));
   };
 
+  getSupplierInvoice = async (req: Request, res: Response): Promise<void> => {
+    res.json(await this.service.getSupplierInvoice(authOf(req).companyId, req.params.id));
+  };
+
   createSupplierInvoice = async (req: Request, res: Response): Promise<void> => {
     res.status(201).json(await this.service.createSupplierInvoice(authOf(req).companyId, req.body));
   };

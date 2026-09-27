@@ -65,7 +65,8 @@
     "transferDone": "Argent déplacé."
   },
   "picker": {
-    "cash": "Espèces"
+    "cash": "Cash",
+    "bankApp": "Application bancaire"
   },
   "history": {
     "all": "Tout l'argent entré et sorti",

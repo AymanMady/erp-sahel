@@ -13,28 +13,28 @@
     "noSales": "No sales during this period.",
     "topSales": "Best sellers",
     "emptyTitle": "No sales",
-    "emptyDescription": "No items sold during this period.",
+    "emptyDescription": "No products sold during this period.",
     "collectionsByMethod": "Money received, by way of paying",
     "noCollections": "No money received during this period.",
     "paymentsCount_one": "{{count}} payment",
     "paymentsCount_other": "{{count}} payments",
     "columns": {
-      "item": "Item",
+      "item": "Product",
       "soldQuantity": "Quantity sold"
     }
   },
   "stock": {
     "title": "Stock report",
-    "description": "Value of the stock and items almost finished.",
+    "description": "Value of the stock and products almost finished.",
     "allWarehouses": "All warehouses",
     "stockValue": "Stock value",
-    "skus": "Items",
+    "skus": "Products",
     "totalQuantity": "Total quantity",
-    "belowThreshold": "Items almost finished",
+    "belowThreshold": "Products almost finished",
     "emptyTitle": "Nothing to buy again",
-    "emptyDescription": "There is enough left of each item.",
+    "emptyDescription": "There is enough left of each product.",
     "columns": {
-      "item": "Item",
+      "item": "Product",
       "currentStock": "Left in stock",
       "alertThreshold": "Warn below"
     }

@@ -30,11 +30,11 @@
     "pending": "En attente"
   },
   "paymentMethods": {
-    "CASH": "Argent liquide",
+    "CASH": "Cash",
     "BANK_TRANSFER": "Virement bancaire",
     "CHECK": "Chèque",
     "CARD": "Carte bancaire",
-    "MOBILE_MONEY": "Bankily, Masrvi ou Sedad"
+    "MOBILE_MONEY": "Application bancaire"
   },
   "movements": {
     "IN": "Entrée",

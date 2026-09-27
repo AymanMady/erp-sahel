@@ -24,7 +24,7 @@
     "payments": "Payments received",
     "confirmValidate": {
       "title": "Validate the invoice of {{amount}}?",
-      "description": "It can no longer be changed. The items will leave the stock and the customer will owe the amount."
+      "description": "It can no longer be changed. The products will leave the stock and the customer will owe the amount."
     }
   },
   "payment": {
@@ -39,10 +39,10 @@
   },
   "creditNote": {
     "title": "Return of goods",
-    "description": "A validated invoice cannot be changed. Write how many of each item the customer brings back. The price is the one on the invoice.",
+    "description": "A validated invoice cannot be changed. Write how many of each product the customer brings back. The price is the one on the invoice.",
     "reason": "Why?",
     "reasonPlaceholder": "The customer brought the goods back, mistake on the invoice…",
-    "restock": "Put the items back in stock",
+    "restock": "Put the products back in stock",
     "submit": "Record the return",
     "issued": "Return recorded.",
     "returnable": "Can still be brought back: {{quantity}} {{unit}}",
@@ -51,7 +51,7 @@
   },
   "creditNotes": {
     "title": "Returns of goods",
-    "description": "Cancelled or corrected invoices, with the items put back in stock.",
+    "description": "Cancelled or corrected invoices, with the products put back in stock.",
     "columns": {
       "restock": "Put back in stock",
       "reason": "Why"
@@ -68,10 +68,10 @@
     "processing": "In progress…",
     "validate": "Validate invoice",
     "header": "Information",
-    "lines": "Items",
+    "lines": "Products",
     "date": "Invoice date",
     "warehouse": "Take the goods out of",
-    "warehouseHint": "The warehouse the items leave from.",
+    "warehouseHint": "The warehouse the products leave from.",
     "defaultWarehouse": "Usual warehouse",
     "draftSavedOffline": "Invoice kept on this device (no internet).",
     "draftSavedOfflineDescription": "It will be sent when internet comes back.",
@@ -81,7 +81,7 @@
     "validated": "Invoice {{number}} validated. The stock is updated.",
     "confirmValidate": {
       "title": "Validate the invoice of {{amount}}?",
-      "description": "It can no longer be changed. The items will leave the stock and the customer will owe the amount."
+      "description": "It can no longer be changed. The products will leave the stock and the customer will owe the amount."
     }
   }
 }

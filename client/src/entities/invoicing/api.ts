@@ -34,6 +34,8 @@ export const invoicingApi = {
   listCreditNotes: (filters: { invoiceId?: string | null; limit?: number; offset?: number } = {}) =>
     api.get<Paginated<CreditNote & { partyName: string }>>("/api/credit-notes", filters),
   getCreditNote: (id: string) =>
-    api.get<CreditNote & { partyName: string; lines: CreditNoteLine[] }>(`/api/credit-notes/${id}`),
+    api.get<
+      CreditNote & { partyName: string; invoiceNumber: string | null; lines: CreditNoteLine[] }
+    >(`/api/credit-notes/${id}`),
   createCreditNote: (body: unknown) => api.post("/api/credit-notes", body),
 };

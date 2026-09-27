@@ -86,5 +86,32 @@
       "description": "Il ne sera plus proposé. Ce qui a déjà été enregistré avec reste en place.",
       "confirm": "Oui, retirer"
     }
+  },
+  "phone": {
+    "invalid": "Le numéro doit avoir 8 chiffres et commencer par 2, 3 ou 4.",
+    "hint": "8 chiffres, commence par 2, 3 ou 4"
+  },
+  "details": {
+    "purchaseOrder": "Commande",
+    "receipt": "Arrivée de marchandise",
+    "invoice": "Facture",
+    "supplierInvoice": "Facture fournisseur",
+    "paid": "Déjà payé",
+    "remaining": "Reste à payer",
+    "unitCost": "Prix d'achat d'une unité",
+    "lot": "Numéro de fabrication",
+    "direction": "Argent reçu ou payé",
+    "incoming": "Argent reçu",
+    "outgoing": "Argent payé",
+    "method": "Payé comment",
+    "account": "Caisse ou compte",
+    "restock": "Remis en stock",
+    "reason": "Pourquoi",
+    "receiptTitle": "Marchandise reçue {{number}}",
+    "supplierInvoiceTitle": "Facture fournisseur {{number}}",
+    "creditNoteTitle": "Retour de marchandise {{number}}",
+    "paymentTitle": "Paiement {{number}}",
+    "openInvoice": "Voir la facture",
+    "openOrder": "Voir la commande"
   }
 }

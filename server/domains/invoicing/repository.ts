@@ -291,9 +291,10 @@ export class InvoicingRepository {
 
   async findCreditNote(companyId: string, creditNoteId: string) {
     const [row] = await this.database
-      .select({ note: creditNotes, partyName: parties.name })
+      .select({ note: creditNotes, partyName: parties.name, invoiceNumber: salesInvoices.number })
       .from(creditNotes)
       .innerJoin(parties, eq(parties.id, creditNotes.partyId))
+      .leftJoin(salesInvoices, eq(salesInvoices.id, creditNotes.invoiceId))
       .where(and(eq(creditNotes.companyId, companyId), eq(creditNotes.id, creditNoteId)))
       .limit(1);
     if (!row) return null;
@@ -307,7 +308,7 @@ export class InvoicingRepository {
         )
       )
       .orderBy(asc(creditNoteLines.position));
-    return { ...row.note, partyName: row.partyName, lines };
+    return { ...row.note, partyName: row.partyName, invoiceNumber: row.invoiceNumber, lines };
   }
 
   async insertCreditNote(values: typeof creditNotes.$inferInsert): Promise<CreditNote> {

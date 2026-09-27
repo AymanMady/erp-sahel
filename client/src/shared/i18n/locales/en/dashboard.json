@@ -22,8 +22,8 @@
     "treasury": "Money available",
     "treasuryHint": "Cash {{cash}} · Bank {{bank}}",
     "stockValue": "Stock value",
-    "skusHint_one": "{{count}} item in stock",
-    "skusHint_other": "{{count}} items in stock"
+    "skusHint_one": "{{count}} product in stock",
+    "skusHint_other": "{{count}} products in stock"
   },
   "revenueChart": {
     "title": "Sales day by day",
@@ -33,13 +33,13 @@
   },
   "topSales": {
     "title": "Best sellers",
-    "description": "The 5 items sold the most during this period.",
+    "description": "The 5 products sold the most during this period.",
     "empty": "No sales during this period.",
     "sold_one": "{{count}} sold",
     "sold_other": "{{count}} sold"
   },
   "restock": {
-    "title": "Items to buy again",
+    "title": "Products to buy again",
     "description": "Only a few are left.",
     "viewStock": "View stock",
     "empty": "Nothing to buy again for now.",

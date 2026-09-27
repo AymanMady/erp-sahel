@@ -19,6 +19,7 @@ import { purchasingApi } from "@/entities/purchasing/api";
 import { invalidateMoneyAndStock, queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
 import { DocumentView } from "@/features/documents/document-view";
+import { ReceiptDetailDialog } from "@/pages/purchasing/receipts";
 import { Field } from "@/shared/components/field";
 import { Money, Quantity } from "@/shared/components/money";
 import { MoneyInput, QuantityInput } from "@/shared/components/money-input";
@@ -44,6 +45,7 @@ export default function PurchaseOrderDetailPage() {
   const queryClient = useQueryClient();
   const { can } = useSession();
   const [receiveOpen, setReceiveOpen] = useState(false);
+  const [openReceiptId, setOpenReceiptId] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.purchaseOrder(params.id),
@@ -193,16 +195,22 @@ export default function PurchaseOrderDetailPage() {
             <div className="space-y-1">
               <p className="text-sm font-medium">{t("orderDetail.receipts")}</p>
               {receipts?.map((receipt) => (
-                <div key={receipt.id} className="rounded-md border px-3 py-2 text-sm">
+                <button
+                  key={receipt.id}
+                  type="button"
+                  onClick={() => setOpenReceiptId(receipt.id)}
+                  className="block w-full rounded-md border px-3 py-2 text-start text-sm transition-colors hover:bg-muted"
+                >
                   <span className="tabular font-medium">{receipt.number}</span>
                   <span className="ms-2 text-muted-foreground">{formatDate(receipt.date)}</span>
-                </div>
+                </button>
               ))}
             </div>
           ) : null}
         </CardContent>
       </Card>
 
+      <ReceiptDetailDialog receiptId={openReceiptId} onClose={() => setOpenReceiptId(null)} />
       <ReceiveDialog
         open={receiveOpen}
         onOpenChange={setReceiveOpen}

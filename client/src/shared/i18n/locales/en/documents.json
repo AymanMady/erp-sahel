@@ -4,7 +4,7 @@
     "dueDate": "To pay before: {{date}}",
     "recipient": "For",
     "columns": {
-      "description": "Item",
+      "description": "Product",
       "quantity": "Quantity",
       "unitPrice": "Price for one unit"
     },
@@ -14,30 +14,30 @@
   },
   "lineEditor": {
     "columns": {
-      "description": "Item"
+      "description": "Product"
     },
-    "empty": "No items yet. Click “Add an item”.",
-    "descriptionPlaceholder": "Name of the item or service",
+    "empty": "No products yet. Click “Add a product”.",
+    "descriptionPlaceholder": "Name of the product or service",
     "removeLine": "Remove line",
-    "addItem": "Add an item",
+    "addItem": "Add a product",
     "freeLine": "Add a line written by hand",
     "globalDiscount": "Discount on the total",
     "problems": {
-      "name": "Write the name of the item, or this line will not be saved.",
+      "name": "Write the name of the product, or this line will not be saved.",
       "quantity": "Write a quantity above 0, or this line will not be saved."
     },
     "blockers": {
       "noCustomer": "To continue, first choose the customer.",
       "noSupplier": "To continue, first choose the supplier.",
-      "noLine": "To continue, add at least one item with its name and a quantity."
+      "noLine": "To continue, add at least one product with its name and a quantity."
     },
     "ignoredLines_one": "1 empty or unfinished line will not be saved.",
     "ignoredLines_other": "{{count}} empty or unfinished lines will not be saved."
   },
   "productPicker": {
-    "title": "Add an item",
+    "title": "Add a product",
     "description": "The price is filled in by itself. You can change it.",
-    "searchPlaceholder": "Name of the item or service…",
+    "searchPlaceholder": "Name of the product or service…",
     "service": "service",
     "stock": "{{quantity}} left"
   },

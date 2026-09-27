@@ -34,7 +34,8 @@ const variantSchema = z.object({
 });
 
 export const createProductSchema = z.object({
-  sku: z.string().min(1, "Internal SKU is required").max(64),
+  /** When left empty, the code is assigned automatically (`PRD-0001`). */
+  sku: z.string().trim().max(64).optional(),
   name: z.string().min(1, "Product name is required").max(255),
   description: z.string().max(4000).default(""),
   categoryId: z.string().uuid().nullish(),

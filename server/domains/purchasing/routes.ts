@@ -38,6 +38,12 @@ export function registerPurchasingRoutes(app: Express): void {
     canRead,
     asyncHandler(controller.listSupplierInvoices)
   );
+  app.get(
+    "/api/supplier-invoices/:id",
+    requireAuth,
+    canRead,
+    asyncHandler(controller.getSupplierInvoice)
+  );
   app.post(
     "/api/supplier-invoices",
     requireAuth,

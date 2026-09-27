@@ -8,7 +8,7 @@ export const catalogMessages: MessageCatalog = {
     "Category not found.": "Catégorie introuvable.",
     "No product matches this barcode.": "Aucun produit ne correspond à ce code-barres.",
     "Variant SKU is required": "Le code de la variante est obligatoire",
-    "Internal SKU is required": "Le code de l'article est obligatoire",
+    "Internal SKU is required": "Le code du produit est obligatoire",
     "Product name is required": "La désignation est obligatoire",
     "Name is required": "Le nom est obligatoire",
     "Invalid identifier": "Identifiant invalide",

@@ -65,7 +65,8 @@
     "transferDone": "Money moved."
   },
   "picker": {
-    "cash": "Cash"
+    "cash": "Cash",
+    "bankApp": "Banking app"
   },
   "history": {
     "all": "All money in and out",

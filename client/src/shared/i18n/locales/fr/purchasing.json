@@ -19,7 +19,7 @@
     "selectSupplier": "Choisir un fournisseur",
     "receivingWarehouse": "Mettre la marchandise dans",
     "defaultWarehouse": "Magasin habituel",
-    "lines": "Articles"
+    "lines": "Produits"
   },
   "orderDetail": {
     "title": "Commande {{number}}",
@@ -29,7 +29,7 @@
     "supplierInvoice": "Facture du fournisseur",
     "documentTitle": "Commande au fournisseur",
     "receiptProgress": "Marchandise déjà arrivée",
-    "item": "Article",
+    "item": "Produit",
     "ordered": "Commandé",
     "received": "Reçu",
     "remaining": "Pas encore arrivé",

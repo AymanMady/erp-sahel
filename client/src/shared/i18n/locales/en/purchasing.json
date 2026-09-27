@@ -19,7 +19,7 @@
     "selectSupplier": "Choose a supplier",
     "receivingWarehouse": "Put the goods in",
     "defaultWarehouse": "Usual warehouse",
-    "lines": "Items"
+    "lines": "Products"
   },
   "orderDetail": {
     "title": "Order {{number}}",
@@ -29,7 +29,7 @@
     "supplierInvoice": "Supplier invoice",
     "documentTitle": "Order to the supplier",
     "receiptProgress": "Goods already arrived",
-    "item": "Item",
+    "item": "Product",
     "ordered": "Ordered",
     "received": "Received",
     "remaining": "Not arrived yet",

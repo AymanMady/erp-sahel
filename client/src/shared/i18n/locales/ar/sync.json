@@ -53,7 +53,7 @@
   },
   "entities": {
     "party": "زبون أو مورد",
-    "product": "سلعة",
+    "product": "منتج",
     "quote": "عرض سعر",
     "invoice": "فاتورة",
     "payment": "دفعة",

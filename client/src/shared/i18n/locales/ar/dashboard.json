@@ -30,12 +30,12 @@
     "treasury": "المال الموجود",
     "treasuryHint": "الصندوق {{cash}} · البنك {{bank}}",
     "stockValue": "قيمة المخزون",
-    "skusHint_zero": "لا توجد سلع في المخزون",
-    "skusHint_one": "سلعة واحدة في المخزون",
-    "skusHint_two": "سلعتان في المخزون",
-    "skusHint_few": "{{count}} سلع في المخزون",
-    "skusHint_many": "{{count}} سلعة في المخزون",
-    "skusHint_other": "{{count}} سلعة في المخزون"
+    "skusHint_zero": "لا توجد منتجات في المخزون",
+    "skusHint_one": "منتج واحد في المخزون",
+    "skusHint_two": "منتجان في المخزون",
+    "skusHint_few": "{{count}} منتجات في المخزون",
+    "skusHint_many": "{{count}} منتجًا في المخزون",
+    "skusHint_other": "{{count}} منتج في المخزون"
   },
   "revenueChart": {
     "title": "المبيعات يومًا بعد يوم",
@@ -45,7 +45,7 @@
   },
   "topSales": {
     "title": "الأكثر مبيعًا",
-    "description": "أكثر 5 سلع بيعًا في هذه الفترة.",
+    "description": "أكثر 5 منتجات مبيعًا في هذه الفترة.",
     "empty": "لا توجد مبيعات في هذه الفترة.",
     "sold_zero": "لم يُبع شيء",
     "sold_one": "بيعت وحدة واحدة",
@@ -55,7 +55,7 @@
     "sold_other": "بيعت {{count}} وحدة"
   },
   "restock": {
-    "title": "سلع يجب شراؤها من جديد",
+    "title": "منتجات يجب شراؤها من جديد",
     "description": "بقي منها القليل.",
     "viewStock": "عرض المخزون",
     "empty": "لا شيء للشراء الآن.",

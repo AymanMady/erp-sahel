@@ -77,7 +77,7 @@
     "emptySessionsDescription": "Each opening of the cash register will appear here.",
     "dialog": {
       "warehouse": "Warehouse for this cash register",
-      "warehouseHint": "The items sold leave this warehouse.",
+      "warehouseHint": "The products sold leave this warehouse.",
       "cashAccount": "Where the cash goes",
       "cashAccountHint": "The cash received is added here.",
       "defaultAccount": "Usual cash box"
@@ -146,7 +146,7 @@
     "step1Title": "Step 1: choose what suits you",
     "step1Description": "For any kind of shop. You can change later.",
     "step2Title": "Step 2: or choose part by part",
-    "step2Description": "Items, customers, payments and settings are always there.",
+    "step2Description": "Products, customers, payments and settings are always there.",
     "requires": "Needs: {{modules}}",
     "enableAria": "Enable {{name}}",
     "confirmTitle": "Choose “{{name}}”?",

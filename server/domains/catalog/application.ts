@@ -87,7 +87,7 @@ class CatalogApplication {
       const product = await repository.insert({
         clientUuid: options.clientUuid ?? null,
         companyId,
-        sku: input.sku.trim(),
+        sku: input.sku?.trim() || (await repository.nextSku(companyId, input.isService)),
         name: input.name.trim(),
         description: input.description,
         categoryId: input.categoryId ?? null,

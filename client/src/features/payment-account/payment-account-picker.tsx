@@ -1,10 +1,10 @@
 /**
- * "Where does the money arrive?" — a single choice instead of a payment method plus an
- * account: the cashier taps Cash, Bankily, Masrvi, Sedad or the bank, and the payment
- * method follows from the kind of account.
+ * "How is it paid?" — only two ways: cash or a banking app. When several banking apps
+ * (Bankily, Masrvi, Sedad…) or several cash drawers exist, a second row asks which one;
+ * the payment method follows from the kind of account.
  */
 
-import { IconBuildingBank, IconCash, IconDeviceMobile } from "@tabler/icons-react";
+import { IconCash, IconDeviceMobile } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 
 import type { BankAccountType, PaymentMethod } from "@shared/schema";
@@ -26,13 +26,8 @@ const METHOD_BY_TYPE: Record<BankAccountType, PaymentMethod> = {
   BANK: "BANK_TRANSFER",
 };
 
-const TYPE_ORDER: BankAccountType[] = ["CASH", "MOBILE_MONEY", "BANK"];
-
-const ICONS: Record<BankAccountType, typeof IconCash> = {
-  CASH: IconCash,
-  MOBILE_MONEY: IconDeviceMobile,
-  BANK: IconBuildingBank,
-};
+/** Bank accounts are not offered: a payment is either cash or a banking app. */
+const TYPE_ORDER: BankAccountType[] = ["CASH", "MOBILE_MONEY"];
 
 /**
  * One choice per account, so a banking app added later shows up by itself. With
@@ -83,29 +78,72 @@ export function PaymentAccountPicker({
   value: string;
   onChange: (choice: PaymentChoice) => void;
 }) {
+  const { t } = useTranslation("banking");
+  const selected = choices.find((choice) => choice.key === value);
+  const selectedType = selected?.accountType === "CASH" ? "CASH" : "MOBILE_MONEY";
+  const groups = [
+    { type: "CASH" as const, label: t("picker.cash"), icon: IconCash },
+    { type: "MOBILE_MONEY" as const, label: t("picker.bankApp"), icon: IconDeviceMobile },
+  ]
+    .map((group) => ({
+      ...group,
+      choices: choices.filter((choice) =>
+        group.type === "CASH" ? choice.accountType === "CASH" : choice.accountType !== "CASH"
+      ),
+    }))
+    .filter((group) => group.choices.length > 0);
+  const subChoices = groups.find((group) => group.type === selectedType)?.choices ?? [];
+
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-      {choices.map((choice) => {
-        const Icon = ICONS[choice.accountType];
-        const selected = choice.key === value;
-        return (
-          <button
-            key={choice.key}
-            type="button"
-            aria-pressed={selected}
-            onClick={() => onChange(choice)}
-            className={cn(
-              "flex min-h-14 items-center gap-2 rounded-md border px-3 py-2 text-start text-sm font-medium transition-colors",
-              selected
-                ? "border-primary bg-primary text-primary-foreground"
-                : "bg-background hover:bg-muted"
-            )}
-          >
-            <Icon className="size-5 shrink-0" />
-            <span className="min-w-0 break-words">{choice.label}</span>
-          </button>
-        );
-      })}
+    <div className="space-y-2">
+      <div className="grid grid-cols-2 gap-2">
+        {groups.map((group) => {
+          const Icon = group.icon;
+          const active = selected ? group.type === selectedType : false;
+          return (
+            <button
+              key={group.type}
+              type="button"
+              aria-pressed={active}
+              onClick={() => {
+                if (!active) onChange(group.choices[0]);
+              }}
+              className={cn(
+                "flex min-h-14 items-center gap-2 rounded-md border px-3 py-2 text-start text-sm font-medium transition-colors",
+                active
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "bg-background hover:bg-muted"
+              )}
+            >
+              <Icon className="size-5 shrink-0" />
+              <span className="min-w-0 break-words">{group.label}</span>
+            </button>
+          );
+        })}
+      </div>
+      {subChoices.length > 1 ? (
+        <div className="flex flex-wrap gap-2">
+          {subChoices.map((choice) => {
+            const active = choice.key === value;
+            return (
+              <button
+                key={choice.key}
+                type="button"
+                aria-pressed={active}
+                onClick={() => onChange(choice)}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                  active
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "bg-background hover:bg-muted"
+                )}
+              >
+                {choice.label}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -70,6 +70,7 @@ export type {
   StockItem,
   StockMovement,
   SupplierInvoice,
+  SupplierInvoiceLine,
   SyncOperation,
   Warehouse,
 } from "@shared/schema";
@@ -163,6 +164,7 @@ export interface MovementRow extends StockMovement {
 export interface PaymentRow extends Payment {
   partyName: string;
   invoiceNumber: string | null;
+  supplierInvoiceNumber: string | null;
   bankAccountName: string | null;
 }
 

@@ -6,7 +6,7 @@
     },
     "responsable-magasin": {
       "name": "Responsable magasin",
-      "description": "Achats, stock, articles et rapports."
+      "description": "Achats, stock, produits et rapports."
     },
     "vendeur": {
       "name": "Vendeur / Caissier",
@@ -33,8 +33,8 @@
       "write": "Ajouter et modifier les clients et fournisseurs"
     },
     "catalog": {
-      "read": "Voir les articles",
-      "write": "Ajouter et modifier les articles"
+      "read": "Voir les produits",
+      "write": "Ajouter et modifier les produits"
     },
     "services": {
       "read": "Voir les services",

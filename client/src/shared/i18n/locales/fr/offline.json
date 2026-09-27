@@ -7,7 +7,7 @@
     "failed": "L'envoi n'a pas marché."
   },
   "errors": {
-    "productNotSynced": "Cet article n'est pas encore envoyé. Son stock pourra être changé après l'envoi."
+    "productNotSynced": "Ce produit n'est pas encore envoyé. Son stock pourra être changé après l'envoi."
   },
   "write": {
     "label": "{{verb}} — {{resource}}",
@@ -49,7 +49,7 @@
   },
   "outboxLabels": {
     "party": "« {{name}} »",
-    "product": "Article {{sku}} « {{name}} »",
+    "product": "Produit {{sku}} « {{name}} »",
     "quote": "Devis {{number}}",
     "invoice": "Facture {{number}}",
     "payment": "Paiement {{reference}}",

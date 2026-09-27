@@ -33,7 +33,7 @@ export const invoicingMessages: MessageCatalog = {
     "The date cannot be before that of the last validated invoice ({date}): numbers must follow the dates.":
       "La date ne peut pas être avant celle de la dernière facture validée ({date}) : les numéros doivent suivre les dates.",
     "Line {line}: this item is not on the invoice.":
-      "Ligne {line} : cet article n'est pas sur la facture.",
+      "Ligne {line} : ce produit n'est pas sur la facture.",
     "Everything on this invoice has already been returned.":
       "Tout ce qui est sur cette facture a déjà été rendu.",
     "{item}: only {quantity} can still be returned.":
@@ -55,7 +55,7 @@ export const invoicingMessages: MessageCatalog = {
     "A validated invoice cannot be modified: issue a credit note to correct it.":
       "لا يمكن تعديل فاتورة مؤكدة: قم بإرجاع لتصحيحها.",
     "A validated invoice cannot be cancelled: issue a credit note.":
-      "لا يمكن إلغاء فاتورة مؤكدة: قم بإرجاع السلع.",
+      "لا يمكن إلغاء فاتورة مؤكدة: قم بإرجاع المنتجات.",
     "A credit note can only apply to a validated invoice.": "لا يمكن الإرجاع إلا على فاتورة مؤكدة.",
     "The credit note amount exceeds that of the original invoice.":
       "مبلغ الإرجاع أكبر من مبلغ الفاتورة.",
@@ -70,7 +70,7 @@ export const invoicingMessages: MessageCatalog = {
     "Credit note {number} (invoice {invoice})": "إرجاع {number} (فاتورة {invoice})",
     "The date cannot be before that of the last validated invoice ({date}): numbers must follow the dates.":
       "لا يمكن أن يكون التاريخ قبل تاريخ آخر فاتورة مؤكدة ({date}): يجب أن تتبع الأرقام التواريخ.",
-    "Line {line}: this item is not on the invoice.": "السطر {line}: هذه السلعة ليست في الفاتورة.",
+    "Line {line}: this item is not on the invoice.": "السطر {line}: هذا المنتج ليس في الفاتورة.",
     "Everything on this invoice has already been returned.":
       "كل ما في هذه الفاتورة تم إرجاعه من قبل.",
     "{item}: only {quantity} can still be returned.": "{item}: يمكن إرجاع {quantity} فقط.",

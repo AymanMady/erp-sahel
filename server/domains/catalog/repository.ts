@@ -117,6 +117,23 @@ export class CatalogRepository {
     return row ?? null;
   }
 
+  /** Next automatic code: `PRD-0001` for goods, `SRV-0001` for services. */
+  async nextSku(companyId: string, isService = false): Promise<string> {
+    const prefix = isService ? "SRV" : "PRD";
+    const [row] = await this.database
+      .select({
+        maxSuffix: sql<number>`coalesce(max(nullif(regexp_replace(${products.sku}, '^' || ${prefix} || '-', ''), '')::int), 0)`,
+      })
+      .from(products)
+      .where(
+        and(
+          eq(products.companyId, companyId),
+          sql`${products.sku} ~ ('^' || ${prefix} || '-[0-9]+$')`
+        )
+      );
+    return `${prefix}-${String((row?.maxSuffix ?? 0) + 1).padStart(4, "0")}`;
+  }
+
   async findBySku(companyId: string, sku: string): Promise<Product | null> {
     const [row] = await this.database
       .select()

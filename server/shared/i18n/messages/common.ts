@@ -15,7 +15,7 @@ export const commonMessages: MessageCatalog = {
     "Not possible: this item is referenced by other data.":
       "Impossible : cet élément est référencé par d'autres données.",
     "A required field is missing.": "Un champ obligatoire est manquant.",
-    "A product with this SKU already exists.": "Un article avec ce code existe déjà.",
+    "A product with this SKU already exists.": "Un produit avec ce code existe déjà.",
     "A party with this code already exists.": "Un client ou fournisseur avec ce code existe déjà.",
     "A service with this code already exists.": "Un service avec ce code existe déjà.",
     "A warehouse with this code already exists.": "Un magasin avec ce code existe déjà.",
@@ -39,7 +39,7 @@ export const commonMessages: MessageCatalog = {
       "Clé d'idempotence déjà utilisée pour une autre requête.",
     // Validation messages of the shared insert schemas (shared/schema).
     "Category name is required": "Le nom de la catégorie est obligatoire",
-    "Internal reference (SKU) is required": "Le code de l'article est obligatoire",
+    "Internal reference (SKU) is required": "Le code du produit est obligatoire",
     "Product name is required": "La désignation est obligatoire",
     "Party name is required": "Le nom est obligatoire",
     "Code is required": "Le code est obligatoire",

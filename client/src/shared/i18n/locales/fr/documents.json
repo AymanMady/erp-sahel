@@ -4,7 +4,7 @@
     "dueDate": "À payer avant le : {{date}}",
     "recipient": "Pour",
     "columns": {
-      "description": "Article",
+      "description": "Produit",
       "quantity": "Quantité",
       "unitPrice": "Prix d'une unité"
     },
@@ -14,30 +14,30 @@
   },
   "lineEditor": {
     "columns": {
-      "description": "Article"
+      "description": "Produit"
     },
-    "empty": "Aucun article pour le moment. Cliquez sur « Ajouter un article ».",
-    "descriptionPlaceholder": "Nom de l'article ou du service",
+    "empty": "Aucun produit pour le moment. Cliquez sur « Ajouter un produit ».",
+    "descriptionPlaceholder": "Nom du produit ou du service",
     "removeLine": "Supprimer la ligne",
-    "addItem": "Ajouter un article",
+    "addItem": "Ajouter un produit",
     "freeLine": "Ajouter une ligne écrite à la main",
     "globalDiscount": "Remise sur le total",
     "problems": {
-      "name": "Écrivez le nom de l'article, sinon cette ligne ne sera pas enregistrée.",
+      "name": "Écrivez le nom du produit, sinon cette ligne ne sera pas enregistrée.",
       "quantity": "Écrivez une quantité plus grande que 0, sinon cette ligne ne sera pas enregistrée."
     },
     "blockers": {
       "noCustomer": "Pour continuer, choisissez d'abord le client.",
       "noSupplier": "Pour continuer, choisissez d'abord le fournisseur.",
-      "noLine": "Pour continuer, ajoutez au moins un article avec son nom et une quantité."
+      "noLine": "Pour continuer, ajoutez au moins un produit avec son nom et une quantité."
     },
     "ignoredLines_one": "1 ligne vide ou pas finie ne sera pas enregistrée.",
     "ignoredLines_other": "{{count}} lignes vides ou pas finies ne seront pas enregistrées."
   },
   "productPicker": {
-    "title": "Ajouter un article",
+    "title": "Ajouter un produit",
     "description": "Le prix est rempli tout seul. Vous pouvez le changer.",
-    "searchPlaceholder": "Nom de l'article ou du service…",
+    "searchPlaceholder": "Nom du produit ou du service…",
     "service": "service",
     "stock": "reste {{quantity}}"
   },

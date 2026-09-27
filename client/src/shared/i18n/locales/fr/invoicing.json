@@ -24,7 +24,7 @@
     "payments": "Paiements reçus",
     "confirmValidate": {
       "title": "Valider la facture de {{amount}} ?",
-      "description": "Elle ne pourra plus être modifiée. Les articles sortiront du stock et la somme sera due par le client."
+      "description": "Elle ne pourra plus être modifiée. Les produits sortiront du stock et la somme sera due par le client."
     }
   },
   "payment": {
@@ -39,10 +39,10 @@
   },
   "creditNote": {
     "title": "Retour de marchandise",
-    "description": "Une facture validée ne peut plus être changée. Écrivez combien de chaque article le client rapporte. Le prix est celui de la facture.",
+    "description": "Une facture validée ne peut plus être changée. Écrivez combien de chaque produit le client rapporte. Le prix est celui de la facture.",
     "reason": "Pourquoi ?",
     "reasonPlaceholder": "Le client a rendu la marchandise, erreur sur la facture…",
-    "restock": "Remettre les articles dans le stock",
+    "restock": "Remettre les produits dans le stock",
     "submit": "Enregistrer le retour",
     "issued": "Retour enregistré.",
     "returnable": "Peut encore être rendu : {{quantity}} {{unit}}",
@@ -51,7 +51,7 @@
   },
   "creditNotes": {
     "title": "Retours de marchandise",
-    "description": "Factures annulées ou corrigées, avec les articles remis en stock.",
+    "description": "Factures annulées ou corrigées, avec les produits remis en stock.",
     "columns": {
       "restock": "Remis en stock",
       "reason": "Pourquoi"
@@ -68,10 +68,10 @@
     "processing": "En cours…",
     "validate": "Valider la facture",
     "header": "Informations",
-    "lines": "Articles",
+    "lines": "Produits",
     "date": "Date de la facture",
     "warehouse": "Sortir la marchandise de",
-    "warehouseHint": "Le magasin d'où partent les articles.",
+    "warehouseHint": "Le magasin d'où partent les produits.",
     "defaultWarehouse": "Magasin habituel",
     "draftSavedOffline": "Facture gardée sur cet appareil (pas d'internet).",
     "draftSavedOfflineDescription": "Elle sera envoyée quand internet reviendra.",
@@ -81,7 +81,7 @@
     "validated": "Facture {{number}} validée. Le stock est mis à jour.",
     "confirmValidate": {
       "title": "Valider la facture de {{amount}} ?",
-      "description": "Elle ne pourra plus être modifiée. Les articles sortiront du stock et la somme sera due par le client."
+      "description": "Elle ne pourra plus être modifiée. Les produits sortiront du stock et la somme sera due par le client."
     }
   }
 }

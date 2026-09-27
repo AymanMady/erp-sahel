@@ -85,8 +85,9 @@ export function StatusBadge({ status, className }: { status: string; className?:
   );
 }
 
+/** Only two ways to pay are shown: cash, or a banking app (any other method is a bank one). */
 export function paymentMethodLabel(method: string): string {
-  return lookup("paymentMethods", method);
+  return lookup("paymentMethods", method === "CASH" ? "CASH" : "MOBILE_MONEY");
 }
 
 export function movementLabel(type: string): string {

@@ -28,7 +28,7 @@ export const salesMessages: MessageCatalog = {
     "Line {line}: the price must be zero or more.":
       "Ligne {line} : le prix ne peut pas être négatif.",
     "Line {line}: this model does not belong to the chosen product.":
-      "Ligne {line} : ce modèle ne correspond pas à l'article choisi.",
+      "Ligne {line} : ce modèle ne correspond pas au produit choisi.",
     "Line {line}: {item} is no longer sold.": "Ligne {line} : {item} n'est plus vendu.",
     "Line {line}: you are not allowed to change the price of {item}.":
       "Ligne {line} : vous n'avez pas le droit de changer le prix de {item}.",
@@ -61,7 +61,7 @@ export const salesMessages: MessageCatalog = {
     "Line {line}: the price must be zero or more.":
       "السطر {line}: لا يمكن أن يكون السعر أقل من صفر.",
     "Line {line}: this model does not belong to the chosen product.":
-      "السطر {line}: هذا النوع لا يخص السلعة المختارة.",
+      "السطر {line}: هذا النوع لا يخص المنتج المختار.",
     "Line {line}: {item} is no longer sold.": "السطر {line}: {item} لم يعد يُباع.",
     "Line {line}: you are not allowed to change the price of {item}.":
       "السطر {line}: لا يحق لك تغيير سعر {item}.",

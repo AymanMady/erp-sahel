@@ -86,5 +86,32 @@
       "description": "لن يظهر للاختيار بعد الآن. ما سُجّل به من قبل يبقى كما هو.",
       "confirm": "نعم، أزل"
     }
+  },
+  "phone": {
+    "invalid": "يجب أن يتكون الرقم من 8 أرقام وأن يبدأ بـ 2 أو 3 أو 4.",
+    "hint": "8 أرقام، يبدأ بـ 2 أو 3 أو 4"
+  },
+  "details": {
+    "purchaseOrder": "الطلبية",
+    "receipt": "وصول البضاعة",
+    "invoice": "الفاتورة",
+    "supplierInvoice": "فاتورة المورد",
+    "paid": "المدفوع",
+    "remaining": "الباقي للدفع",
+    "unitCost": "سعر شراء الوحدة",
+    "lot": "رقم التصنيع",
+    "direction": "مال مستلم أو مدفوع",
+    "incoming": "مال مستلم",
+    "outgoing": "مال مدفوع",
+    "method": "طريقة الدفع",
+    "account": "الصندوق أو الحساب",
+    "restock": "أُعيد إلى المخزون",
+    "reason": "السبب",
+    "receiptTitle": "البضاعة المستلمة {{number}}",
+    "supplierInvoiceTitle": "فاتورة المورد {{number}}",
+    "creditNoteTitle": "إرجاع البضاعة {{number}}",
+    "paymentTitle": "الدفعة {{number}}",
+    "openInvoice": "عرض الفاتورة",
+    "openOrder": "عرض الطلبية"
   }
 }
