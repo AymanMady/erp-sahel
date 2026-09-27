@@ -249,10 +249,15 @@ describe("synchronization rights (§3.2, §3.3)", () => {
       );
     const after = await call("GET", "/api/sync/snapshot?platform=desktop", token);
     const afterBody = (await after.json()) as {
-      offlineAuthUsers: { username: string; isSuperuser: boolean }[];
+      offlineAuthUsers: { username: string; isSuperuser: boolean; permissions: string[] }[];
     };
     const names = afterBody.offlineAuthUsers.map((user) => user.username);
     expect(names).toContain(cashier.username);
+    // The offline session is rebuilt from these rights: the cashier's own, at least the till.
+    const cashierEntry = afterBody.offlineAuthUsers.find(
+      (user) => user.username === cashier.username
+    );
+    expect(cashierEntry?.permissions).toContain("pos.use");
     // Only cashiers: no administrator of the shop, no platform administrator.
     for (const user of afterBody.offlineAuthUsers) expect(user.isSuperuser).toBe(false);
     const admins = await db

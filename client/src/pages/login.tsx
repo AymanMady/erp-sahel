@@ -34,7 +34,7 @@ import { UpdateBanner } from "@/widgets/layout/update-banner";
 
 export default function LoginPage() {
   const { t } = useTranslation("auth");
-  const { login, refresh } = useSession();
+  const { login, refresh, unlockOffline } = useSession();
   const online = useOnline();
   const cached = getCachedSession();
   const [username, setUsername] = useState("");
@@ -63,10 +63,7 @@ export default function LoginPage() {
       // unlock the interface, without an API token.
       if (!online && offlineLoginReady) {
         const accepted = await verifyOfflineLogin(username.trim(), password);
-        if (accepted) {
-          await refresh();
-          return;
-        }
+        if (accepted && (await unlockOffline(username))) return;
         setError(t("login.offlineInvalidCredentials"));
         return;
       }

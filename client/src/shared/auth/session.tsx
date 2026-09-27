@@ -25,6 +25,7 @@ import { api } from "@/shared/api/http";
 import { ApiError } from "@/shared/api/api-error";
 import { i18n } from "@/shared/i18n";
 import { clearOfflineStorage } from "@/shared/offline/db";
+import { readSnapshot } from "@/shared/offline/snapshot";
 import {
   clearSession,
   getCachedSession,
@@ -72,6 +73,12 @@ export interface SessionValue {
   can(permission: PermissionCode | PermissionCode[]): boolean;
   hasModule(code: string): boolean;
   login(input: { username: string; password: string }): Promise<void>;
+  /**
+   * Opens the till without network, for an account whose password the desktop shell
+   * has just checked against the synchronized copy. No API token: the server asks for a
+   * real sign-in once the network is back. False if the copy does not know the account.
+   */
+  unlockOffline(username: string): Promise<boolean>;
   logout(): Promise<void>;
   refresh(): Promise<void>;
 }
@@ -209,6 +216,39 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [applyFresh]
   );
 
+  const unlockOffline = useCallback(
+    async (username: string) => {
+      const snapshot = await readSnapshot();
+      const wanted = username.trim().toLowerCase();
+      const account = snapshot?.offlineAuthUsers?.find(
+        (user) => user.username.toLowerCase() === wanted
+      );
+      if (!snapshot?.company || !account) return false;
+      const session = {
+        user: {
+          id: account.id,
+          username: account.username,
+          firstName: account.firstName,
+          lastName: account.lastName,
+          isSuperuser: false,
+        },
+        company: {
+          id: snapshot.company.id,
+          name: snapshot.company.name,
+          currency: snapshot.company.currency,
+          logo: snapshot.company.logo,
+        },
+        // Accounts offered offline all work at the till; older copies carry no rights.
+        permissions: account.permissions ?? ["pos.use"],
+        modules: snapshot.modules.map((module) => module.code),
+      };
+      setCachedSession(session);
+      applyCached({ ...session, cachedAt: new Date().toISOString() });
+      return true;
+    },
+    [applyCached]
+  );
+
   const logout = useCallback(async () => {
     const refreshToken = getRefreshToken();
     try {
@@ -241,10 +281,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         return state.modules.includes(code);
       },
       login,
+      unlockOffline,
       logout,
       refresh: loadSession,
     };
-  }, [state, login, logout, loadSession]);
+  }, [state, login, unlockOffline, logout, loadSession]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

@@ -290,24 +290,39 @@ struct SnapshotAuth {
     offline_auth_users: Option<Vec<OfflineAuthUser>>,
 }
 
+/// Key under which the web application stores the sync snapshot
+/// (`SNAPSHOT_KEY` in `client/src/shared/offline/snapshot.ts`). Both sides must agree:
+/// with any other key, the offline login never finds the accounts.
+const SNAPSHOT_KEY: &str = "sync.snapshot";
+
+fn snapshot_users(raw: Option<String>) -> Vec<OfflineAuthUser> {
+    raw.and_then(|raw| serde_json::from_str::<SnapshotAuth>(&raw).ok())
+        .and_then(|snapshot| snapshot.offline_auth_users)
+        .unwrap_or_default()
+}
+
+fn login_available(users: &[OfflineAuthUser]) -> bool {
+    users.iter().any(|user| user.password_hash.is_some())
+}
+
+fn verify_login(users: &[OfflineAuthUser], username: &str, password: &str) -> Result<bool, String> {
+    let candidate = users
+        .iter()
+        .find(|user| user.username.eq_ignore_ascii_case(username.trim()));
+    match candidate.and_then(|user| user.password_hash.as_ref()) {
+        Some(hash) => bcrypt::verify(password, hash).map_err(|error| error.to_string()),
+        None => Ok(false),
+    }
+}
+
 /// Tells whether an offline cold login is possible on this workstation.
 ///
 /// Used to show an honest message ("this workstation has never been synced") rather
 /// than a login form that cannot succeed.
 #[tauri::command]
 pub fn offline_login_available(app: AppHandle) -> Result<bool, String> {
-    let raw = match offline_cache_read(app, "pos_sync_snapshot".to_string())? {
-        Some(value) => value,
-        None => return Ok(false),
-    };
-    let snapshot: SnapshotAuth = match serde_json::from_str(&raw) {
-        Ok(value) => value,
-        Err(_) => return Ok(false),
-    };
-    Ok(snapshot
-        .offline_auth_users
-        .map(|users| users.iter().any(|user| user.password_hash.is_some()))
-        .unwrap_or(false))
+    let raw = offline_cache_read(app, SNAPSHOT_KEY.to_string())?;
+    Ok(login_available(&snapshot_users(raw)))
 }
 
 /// Verifies a password against the bcrypt hash from the latest snapshot.
@@ -316,26 +331,8 @@ pub fn offline_login_available(app: AppHandle) -> Result<bool, String> {
 /// This check only unlocks the local interface.
 #[tauri::command]
 pub fn offline_try_login(app: AppHandle, username: String, password: String) -> Result<bool, String> {
-    let raw = match offline_cache_read(app, "pos_sync_snapshot".to_string())? {
-        Some(value) => value,
-        None => return Ok(false),
-    };
-    let snapshot: SnapshotAuth =
-        serde_json::from_str(&raw).map_err(|error| error.to_string())?;
-
-    let users = match snapshot.offline_auth_users {
-        Some(users) => users,
-        None => return Ok(false),
-    };
-
-    let candidate = users
-        .iter()
-        .find(|user| user.username.eq_ignore_ascii_case(username.trim()));
-
-    match candidate.and_then(|user| user.password_hash.as_ref()) {
-        Some(hash) => bcrypt::verify(password, hash).map_err(|error| error.to_string()),
-        None => Ok(false),
-    }
+    let raw = offline_cache_read(app, SNAPSHOT_KEY.to_string())?;
+    verify_login(&snapshot_users(raw), &username, &password)
 }
 
 #[cfg(test)]
@@ -408,5 +405,45 @@ mod tests {
             .unwrap();
         reset(&connection).unwrap();
         assert_eq!(unsent_count(&connection).unwrap(), 0);
+    }
+
+    /// Snapshot as the web application writes it: through `offline_cache_write`, under
+    /// its own key, with the accounts of the desktop platform.
+    fn store_snapshot(connection: &Connection, key: &str, hash: &str) {
+        let snapshot = format!(
+            r#"{{"cursor":"c","products":[],"offlineAuthUsers":[{{"id":"u1","username":"Caissier","passwordHash":"{hash}"}}]}}"#
+        );
+        connection
+            .execute(
+                "INSERT INTO kv_cache (k, v, updated_at) VALUES (?1, ?2, 1)",
+                params![key, snapshot],
+            )
+            .unwrap();
+    }
+
+    fn read(connection: &Connection, key: &str) -> Option<String> {
+        connection
+            .query_row("SELECT v FROM kv_cache WHERE k = ?1", params![key], |row| row.get(0))
+            .ok()
+    }
+
+    #[test]
+    fn offline_login_reads_the_snapshot_the_web_app_writes() {
+        let mut connection = Connection::open_in_memory().unwrap();
+        migrate(&mut connection).unwrap();
+        let hash = bcrypt::hash("secret123", 4).unwrap();
+        store_snapshot(&connection, "sync.snapshot", &hash);
+
+        let users = snapshot_users(read(&connection, SNAPSHOT_KEY));
+        assert!(login_available(&users));
+        assert!(verify_login(&users, " caissier ", "secret123").unwrap());
+        assert!(!verify_login(&users, "caissier", "wrong").unwrap());
+        assert!(!verify_login(&users, "someone-else", "secret123").unwrap());
+    }
+
+    #[test]
+    fn offline_login_is_unavailable_before_the_first_sync() {
+        assert!(!login_available(&snapshot_users(None)));
+        assert!(!login_available(&snapshot_users(Some("not json".to_string()))));
     }
 }

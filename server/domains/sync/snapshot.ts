@@ -200,8 +200,10 @@ async function buildOfflineAuthUsers(companyId: string) {
     password_hash: string;
     first_name: string;
     last_name: string;
+    permissions: string[];
   }>(sql`
-    select u.id, u.username, u.password_hash, u.first_name, u.last_name
+    select u.id, u.username, u.password_hash, u.first_name, u.last_name,
+           array_agg(distinct p.code) as permissions
     from ${users} u
     join ${userCompanies} uc on uc.user_id = u.id and uc.company_id = ${companyId} and uc.is_active
     join ${userRoles} ur on ur.user_id = u.id and ur.company_id = ${companyId}
@@ -220,5 +222,7 @@ async function buildOfflineAuthUsers(companyId: string) {
     isSuperuser: false,
     firstName: row.first_name,
     lastName: row.last_name,
+    /** What the offline session may show: the account's own rights, nothing more. */
+    permissions: row.permissions,
   }));
 }

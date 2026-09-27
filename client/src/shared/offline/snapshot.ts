@@ -18,6 +18,7 @@ import { api } from "@/shared/api/http";
 import { devicePlatform } from "@/shared/desktop/desktop";
 import { readSnapshotCache, writeSnapshotCache } from "./storage";
 
+/** Also read by the desktop shell for the offline login (`SNAPSHOT_KEY` in `offline_db.rs`). */
 const SNAPSHOT_KEY = "sync.snapshot";
 
 export interface SnapshotStock {
@@ -67,6 +68,17 @@ export interface OfflineSnapshot {
   session: PosSession | null;
   modules: { code: string; name: string }[];
   syncEntities: string[];
+  /**
+   * Cashier accounts allowed to sign in without network (desktop only). The password
+   * check itself is done by the desktop shell; the hashes are not typed here on purpose.
+   */
+  offlineAuthUsers?: {
+    id: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    permissions?: string[];
+  }[];
 }
 
 /** Downloads a fresh snapshot and persists it. */
