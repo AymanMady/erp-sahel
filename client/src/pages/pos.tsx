@@ -18,6 +18,7 @@ import {
   IconLock,
   IconMinus,
   IconPlus,
+  IconPrinter,
   IconSearch,
   IconShoppingCartOff,
   IconTrash,
@@ -36,8 +37,11 @@ import { partyApi } from "@/entities/party/api";
 import { posApi } from "@/entities/pos/api";
 import { settingsApi } from "@/entities/settings/api";
 import type { Party, PosSession, ProductListItem, Service } from "@/entities/types";
+import { receiptRows, type PaidSale } from "@/features/pos/receipt";
+import { printTicket } from "@/features/printing/ticket";
 import { invalidateMoneyAndStock, queryKeys } from "@/shared/api/query-client";
 import { useSession } from "@/shared/auth/session";
+import { printerSettings } from "@/shared/desktop/device-config";
 import { Field } from "@/shared/components/field";
 import { Money } from "@/shared/components/money";
 import { MoneyInput } from "@/shared/components/money-input";
@@ -156,7 +160,7 @@ export default function PosPage() {
   const { t } = useTranslation("pos");
   const online = useOnline();
   const queryClient = useQueryClient();
-  const { can, hasModule } = useSession();
+  const { can, hasModule, company, user } = useSession();
   const searchRef = useRef<HTMLInputElement>(null);
 
   const [search, setSearch] = useState("");
@@ -168,12 +172,31 @@ export default function PosPage() {
   const [localSession, setLocalSession] = useState<LocalSession | null>(null);
   /** The session was closed elsewhere (another device): explained on the opening screen. */
   const [sessionClosedElsewhere, setSessionClosedElsewhere] = useState(false);
-  const [lastTicket, setLastTicket] = useState<{
-    number: string;
-    mode: string;
-    totalCents: number;
-  } | null>(null);
+  const [lastTicket, setLastTicket] = useState<PaidSale | null>(null);
+  const [printing, setPrinting] = useState(false);
   const debouncedSearch = useDebounced(search, 200);
+
+  // --- Ticket printing -------------------------------------------------------
+  const printSale = useCallback(
+    async (sale: PaidSale) => {
+      setPrinting(true);
+      try {
+        await printTicket(
+          receiptRows(sale, {
+            companyName: company?.name ?? t("common:appName"),
+            cashierName: user ? `${user.firstName} ${user.lastName}`.trim() || user.username : null,
+          })
+        );
+      } catch (error) {
+        // The sale itself is recorded: only the paper is missing.
+        toast.error(t("receipt.failed", { detail: errorMessage(error) }));
+      } finally {
+        setPrinting(false);
+        searchRef.current?.focus();
+      }
+    },
+    [company, user, t]
+  );
 
   // --- Register session -----------------------------------------------------
   const {
@@ -619,11 +642,23 @@ export default function PosPage() {
           </div>
 
           {lastTicket ? (
-            <p className="rounded-md bg-status-success-bg px-3 py-2 text-xs text-status-success">
-              {lastTicket.mode === "offline"
-                ? t("cart.lastTicketOffline", { number: lastTicket.number })
-                : t("cart.lastTicket", { number: lastTicket.number })}
-            </p>
+            <div className="flex items-center gap-2 rounded-md bg-status-success-bg px-3 py-2 text-xs text-status-success">
+              <p className="min-w-0 flex-1">
+                {lastTicket.offline
+                  ? t("cart.lastTicketOffline", { number: lastTicket.number })
+                  : t("cart.lastTicket", { number: lastTicket.number })}
+              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                className="shrink-0"
+                disabled={printing}
+                onClick={() => void printSale(lastTicket)}
+              >
+                <IconPrinter className="size-4" />
+                {printing ? t("receipt.printing") : t("receipt.print")}
+              </Button>
+            </div>
           ) : null}
 
           <Button
@@ -668,11 +703,15 @@ export default function PosPage() {
               { online }
             );
             await writeMeta(TICKET_SEQ_KEY, String(seq));
-            setLastTicket({
+            const sale: PaidSale = {
               number: result.number,
-              mode: result.mode,
-              totalCents: result.totalCents,
-            });
+              offline: result.mode === "offline",
+              paidAt: new Date(),
+              lines: cart,
+              payments,
+              customerName: customer?.name ?? null,
+            };
+            setLastTicket(sale);
             setCart([]);
             setCustomer(null);
             setPayOpen(false);
@@ -683,7 +722,8 @@ export default function PosPage() {
                 ? t("toasts.ticketPaid", { number: result.number })
                 : t("toasts.ticketSavedOffline", { number: result.number })
             );
-            searchRef.current?.focus();
+            if (printerSettings().autoPrint) void printSale(sale);
+            else searchRef.current?.focus();
           } catch (error) {
             if (
               error instanceof ApiError &&

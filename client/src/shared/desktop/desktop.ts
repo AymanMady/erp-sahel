@@ -17,16 +17,34 @@ declare global {
 
 /** Static build targeting the desktop shell (defined by Vite). */
 declare const __DESKTOP_BUILD__: boolean;
-/** Server origin of the desktop build; empty on the web (same-origin API). */
+/** Server pre-filled at build time in the desktop shell; empty on the web (same-origin API). */
 declare const __API_BASE_URL__: string;
+/** Release number, from `package.json` (defined by Vite). */
+declare const __APP_VERSION__: string;
+
+/** Release of this application — the web build and the desktop shell share it. */
+export const APP_VERSION = typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "0.0.0";
+
+/** Server pre-filled in this build, if any (`DESKTOP_API_URL`). */
+export const BUILD_SERVER_URL = typeof __API_BASE_URL__ !== "undefined" ? __API_BASE_URL__ : "";
+
+/**
+ * Server origin the API calls go to. Empty on the web (same origin). In the desktop
+ * shell it is the server chosen at first launch, loaded before the first render
+ * (`device-config.ts`).
+ */
+let apiBase = BUILD_SERVER_URL;
+
+export function setApiBase(origin: string): void {
+  apiBase = origin.replace(/\/+$/, "");
+}
 
 /**
  * Absolute URL of an API path. The desktop shell is served from `tauri://localhost`,
  * so its calls must target the configured server; on the web the path stays relative.
  */
 export function apiUrl(path: string): string {
-  const base = typeof __API_BASE_URL__ !== "undefined" ? __API_BASE_URL__ : "";
-  return base ? `${base}${path}` : path;
+  return apiBase ? `${apiBase}${path}` : path;
 }
 
 export function isDesktopBuild(): boolean {
@@ -58,6 +76,21 @@ async function loadInvoke(): Promise<InvokeFn | null> {
   const internals = window.__TAURI_INTERNALS__;
   cachedInvoke = internals?.invoke ? internals.invoke.bind(internals) : null;
   return cachedInvoke;
+}
+
+/**
+ * Calls a Rust command and lets its failure through: for actions whose error the user
+ * must see (update, printing, settings). Throws outside the desktop shell.
+ */
+export async function tauriCommand<T>(command: string, args?: Record<string, unknown>): Promise<T> {
+  const invoke = await loadInvoke();
+  if (!invoke) throw new Error("Desktop application only.");
+  try {
+    return await invoke<T>(command, args);
+  } catch (error) {
+    // Rust commands reject with a plain string.
+    throw error instanceof Error ? error : new Error(String(error));
+  }
 }
 
 /**

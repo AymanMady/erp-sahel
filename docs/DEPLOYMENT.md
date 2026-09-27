@@ -25,20 +25,22 @@
 
 ## 2. Variables d'environnement
 
-| Variable                 | Obligatoire       | Rôle                                                           |
-| ------------------------ | ----------------- | -------------------------------------------------------------- |
-| `DATABASE_URL`           | oui               | `postgresql://user:pass@hôte:5432/base`                        |
-| `JWT_SECRET`             | oui en production | Signature des jetons d'accès                                   |
-| `NODE_ENV`               | —                 | `production` active sécurité et service des fichiers statiques |
-| `PORT`                   | —                 | Port d'écoute (5000 par défaut)                                |
-| `APP_URL`                | —                 | Origine publique                                               |
-| `CORS_ORIGINS`           | —                 | Origines autorisées, séparées par des virgules                 |
-| `ACCESS_TOKEN_TTL`       | —                 | Durée du jeton d'accès (`15m` par défaut)                      |
-| `REFRESH_TOKEN_TTL_DAYS` | —                 | Durée du jeton de rafraîchissement (30 jours)                  |
-| `DATABASE_POOL_MAX`      | —                 | Taille du pool (10 par défaut)                                 |
-| `LOG_LEVEL`              | —                 | `debug` · `info` · `warn` · `error`                            |
-| `APP_TIMEZONE`           | —                 | Fuseau des dates des documents (`UTC` par défaut)              |
-| `SKIP_MIGRATIONS`        | —                 | `true` : le build Vercel n'applique pas les migrations         |
+| Variable                      | Obligatoire       | Rôle                                                           |
+| ----------------------------- | ----------------- | -------------------------------------------------------------- |
+| `DATABASE_URL`                | oui               | `postgresql://user:pass@hôte:5432/base`                        |
+| `JWT_SECRET`                  | oui en production | Signature des jetons d'accès                                   |
+| `NODE_ENV`                    | —                 | `production` active sécurité et service des fichiers statiques |
+| `PORT`                        | —                 | Port d'écoute (5000 par défaut)                                |
+| `APP_URL`                     | —                 | Origine publique                                               |
+| `CORS_ORIGINS`                | —                 | Origines autorisées, séparées par des virgules                 |
+| `ACCESS_TOKEN_TTL`            | —                 | Durée du jeton d'accès (`15m` par défaut)                      |
+| `REFRESH_TOKEN_TTL_DAYS`      | —                 | Durée du jeton de rafraîchissement (30 jours)                  |
+| `DATABASE_POOL_MAX`           | —                 | Taille du pool (10 par défaut)                                 |
+| `LOG_LEVEL`                   | —                 | `debug` · `info` · `warn` · `error`                            |
+| `APP_TIMEZONE`                | —                 | Fuseau des dates des documents (`UTC` par défaut)              |
+| `DESKTOP_UPDATE_MANIFEST_URL` | —                 | `latest.json` de la version desktop proposée aux postes (§ 5)  |
+| `DESKTOP_MIN_VERSION`         | —                 | Plus ancienne version desktop acceptée (§ 5)                   |
+| `SKIP_MIGRATIONS`             | —                 | `true` : le build Vercel n'applique pas les migrations         |
 
 La coquille desktop appelle l'API depuis `tauri://localhost` : ces origines sont autorisées
 par défaut, inutile de les ajouter à `CORS_ORIGINS`.
@@ -142,6 +144,8 @@ Utile là où la connexion est franchement mauvaise : le cache hors ligne vit al
 fichier SQLite applicatif que le système n'évince pas, et une **connexion à froid sans
 réseau** devient possible sur un poste déjà synchronisé.
 
+### Construire en local
+
 Prérequis de compilation (Linux) :
 
 ```bash
@@ -154,7 +158,111 @@ rustup default stable
 npm run tauri:build     # produit .deb, .AppImage (Linux) ; .msi (Windows) ; .dmg (macOS)
 ```
 
-L'application pointe vers l'URL du serveur configurée au premier lancement.
+Le numéro de version vient de `package.json` (et de lui seul). Une construction locale ne
+produit pas de paquets de mise à jour : ils ne sont faits que par le workflow de
+publication, qui détient la clé de signature.
+
+### Adresse du serveur
+
+**Un seul installateur pour tous les clients** : au premier lancement, l'application
+demande l'adresse du serveur, vérifie qu'il répond (`/api/health`) et la garde dans
+`device.json` (dossier de configuration de l'application). L'écran **Cet appareil** et
+l'écran de connexion permettent d'en changer ; tout ce que le poste gardait pour l'ancien
+serveur est alors effacé, et le changement est refusé tant que des ventes n'ont pas été
+envoyées.
+
+`DESKTOP_API_URL` (dans `.env.desktop`) reste possible pour un installateur dédié à un
+seul client : l'adresse est alors pré-remplie.
+
+### Publier une version
+
+1. Monter la version dans `package.json` (ex. `1.2.0`), committer.
+2. Pousser le tag correspondant : `git tag v1.2.0 && git push origin v1.2.0`.
+3. Le workflow **Desktop release** construit les installateurs Windows et Linux, les
+   signe et crée une release GitHub **brouillon** avec `latest.json`. La vérifier, puis
+   la publier.
+
+Secrets GitHub nécessaires :
+
+| Secret                               | Rôle                                                  |
+| ------------------------------------ | ----------------------------------------------------- |
+| `TAURI_SIGNING_PRIVATE_KEY`          | Clé de signature des mises à jour (contenu du `.key`) |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | Son mot de passe (vide s'il n'y en a pas)             |
+| `WINDOWS_CERTIFICATE`                | Facultatif : certificat de signature `.pfx` en base64 |
+| `WINDOWS_CERTIFICATE_PASSWORD`       | Facultatif : son mot de passe                         |
+
+La clé publique correspondante est dans `src-tauri/tauri.conf.json`
+(`plugins.updater.pubkey`) : un poste refuse tout paquet qui n'a pas été signé par la clé
+privée. **Perdre la clé privée, c'est ne plus pouvoir mettre à jour les postes installés**
+(il faudrait les réinstaller à la main) : la garder aussi hors de GitHub, en lieu sûr.
+Nouvelle paire : `npx tauri signer generate -w ~/.tauri/erp-sahel-updater.key`.
+
+### Signature Windows (SmartScreen)
+
+Sans signature, Windows affiche « Windows a protégé votre ordinateur » au premier
+lancement de l'installateur. Deux voies :
+
+- **Certificat de signature de code** (`.pfx`, acheté chez une autorité reconnue) : le
+  mettre dans les secrets ci-dessus, le workflow signe tout seul. Depuis 2024, même un
+  certificat « EV » ne supprime plus l'avertissement d'emblée : la réputation se construit
+  avec le nombre d'installations.
+- **Azure Trusted Signing** (service Microsoft, abonnement mensuel modeste) : remplacer
+  l'étape certificat par `bundle.windows.signCommand` (voir la documentation Tauri,
+  « Windows Code Signing »).
+
+### Mises à jour des postes
+
+Chaque poste demande **à son propre serveur** s'il existe une nouvelle version
+(`GET /api/desktop/update/...`), au démarrage puis toutes les six heures ; l'écran **Cet
+appareil** permet aussi de vérifier à la main. Le serveur relaie le `latest.json` indiqué
+par `DESKTOP_UPDATE_MANIFEST_URL`, par exemple :
+
+```
+DESKTOP_UPDATE_MANIFEST_URL=https://github.com/<compte>/<dépôt>/releases/latest/download/latest.json
+```
+
+C'est donc chaque installation qui décide quand ses postes changent de version : mettre à
+jour le serveur **d'abord**, puis renseigner (ou laisser suivre) cette adresse. Un poste
+ne tourne ainsi jamais avec une version plus récente que son serveur. Si le dépôt GitHub
+est privé, ses fichiers ne sont pas téléchargeables par les postes : copier `latest.json`
+et les installateurs sur un espace web public, et adapter les adresses dans `latest.json`.
+
+L'installation est vérifiée (signature), puis l'application redémarre. Les ventes pas
+encore envoyées sont dans la base SQLite du poste, que la mise à jour ne touche pas.
+
+### Version minimale
+
+Un poste trop ancien est refusé (HTTP 426, code `CLIENT_UPGRADE_REQUIRED`) : il continue
+de vendre sur sa copie locale, ses ventes attendent sur le poste, et un bandeau rouge
+propose la mise à jour. Le plancher est `MIN_DESKTOP_VERSION` dans
+`shared/app-version.ts` — **à monter dans le même commit** que tout changement qu'un
+ancien poste comprendrait mal (format de synchronisation, route supprimée, calcul fait
+côté poste). `DESKTOP_MIN_VERSION` permet à un serveur de le monter encore.
+
+### Base locale du poste
+
+Le schéma du fichier `offline.sqlite` est versionné (`PRAGMA user_version`, liste
+`MIGRATIONS` dans `src-tauri/src/offline_db.rs`) : une modification des tables s'ajoute
+**à la fin** de la liste, jamais en changeant une entrée déjà publiée. Une version plus
+ancienne réinstallée par-dessus refuse d'ouvrir un fichier plus récent plutôt que de
+l'abîmer.
+
+### Imprimante de tickets
+
+Écran **Cet appareil** → _Imprimante de tickets_ :
+
+- **Fenêtre d'impression habituelle** : n'importe quelle imprimante installée ;
+- **Directement sur l'imprimante de tickets** (ESC/POS, 58 ou 80 mm), sans fenêtre, avec
+  ouverture du tiroir-caisse possible. Adresse de l'imprimante :
+  - réseau : `tcp://192.168.1.50:9100` ;
+  - Windows, USB : partager l'imprimante (pilote « Generic / Text Only ») sous un nom,
+    par ex. `TICKET`, puis `\\localhost\TICKET` ;
+  - Linux, USB : `/dev/usb/lp0` (l'utilisateur doit être dans le groupe `lp`).
+
+Le ticket est envoyé comme une image : l'arabe s'imprime correctement même sur les
+imprimantes dont les jeux de caractères ne le connaissent pas. L'impression peut être
+automatique après chaque vente, ou faite avec le bouton **Imprimer le ticket** de la
+caisse.
 
 ---
 
@@ -204,3 +312,6 @@ sudo systemctl restart erp-sahel
 
 Le Service Worker détecte la nouvelle version et l'active sans attendre la fermeture de
 tous les onglets — un poste de caisse reste ouvert des journées entières.
+
+Les postes desktop ne suivent pas tout seuls : une fois le serveur à jour, publier la
+version desktop correspondante et la proposer aux postes (§ 5, _Mises à jour des postes_).

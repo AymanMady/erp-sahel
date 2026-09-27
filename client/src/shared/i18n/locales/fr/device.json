@@ -1,0 +1,77 @@
+{
+  "setup": {
+    "title": "Adresse du serveur",
+    "description": "Entrez l'adresse du serveur de votre commerce. La personne qui a installé l'application vous la donne.",
+    "label": "Adresse du serveur",
+    "placeholder": "erp.mon-commerce.com",
+    "hint": "Par exemple : erp.mon-commerce.com ou 192.168.1.10:5000",
+    "submit": "Continuer",
+    "checking": "Vérification…"
+  },
+  "errors": {
+    "invalid": "Cette adresse n'est pas valide.",
+    "unreachable": "Le serveur ne répond pas. Vérifiez l'adresse et la connexion internet.",
+    "notErp": "Cette adresse ne correspond pas à un serveur ERP Sahel.",
+    "unsent_one": "{{count}} opération faite sur cet appareil n'a pas encore été envoyée. Attendez qu'elle soit envoyée avant de changer de serveur.",
+    "unsent_other": "{{count}} opérations faites sur cet appareil n'ont pas encore été envoyées. Attendez qu'elles soient envoyées avant de changer de serveur.",
+    "saveFailed": "L'adresse n'a pas pu être enregistrée : {{detail}}"
+  },
+  "change": {
+    "button": "Changer de serveur",
+    "title": "Changer de serveur",
+    "description": "Ce qui est gardé sur cet appareil pour l'ancien serveur sera effacé, et il faudra se reconnecter. Les ventes pas encore envoyées doivent d'abord partir.",
+    "submit": "Changer"
+  },
+  "page": {
+    "title": "Cet appareil",
+    "description": "Réglages de cet ordinateur : serveur, mises à jour et imprimante de tickets."
+  },
+  "app": {
+    "title": "Application",
+    "keptData": "Pendant une mise à jour, les ventes pas encore envoyées restent gardées sur cet appareil.",
+    "version": "Version installée",
+    "check": "Rechercher une mise à jour",
+    "checking": "Recherche…",
+    "upToDate": "L'application est à jour.",
+    "available": "La version {{version}} est disponible.",
+    "install": "Installer et redémarrer",
+    "installing": "Installation… l'application va redémarrer.",
+    "checkFailed": "Impossible de vérifier les mises à jour. Vérifiez la connexion internet.",
+    "installFailed": "La mise à jour n'a pas pu être installée. Réessayez plus tard."
+  },
+  "server": {
+    "title": "Serveur",
+    "address": "Adresse"
+  },
+  "printer": {
+    "title": "Imprimante de tickets",
+    "description": "Comment imprimer les tickets de caisse sur cet ordinateur.",
+    "mode": "Façon d'imprimer",
+    "modes": {
+      "system": "Avec la fenêtre d'impression habituelle",
+      "direct": "Directement sur l'imprimante de tickets"
+    },
+    "target": "Adresse de l'imprimante",
+    "targetHint": "Imprimante branchée au réseau : tcp://192.168.1.50:9100. Windows, imprimante USB partagée sous le nom TICKET : \\\\localhost\\TICKET. Linux : /dev/usb/lp0.",
+    "paperWidth": "Largeur du papier",
+    "paper58": "58 mm (petit rouleau)",
+    "paper80": "80 mm (grand rouleau)",
+    "autoPrint": "Imprimer le ticket dès que la vente est payée",
+    "openDrawer": "Ouvrir le tiroir-caisse à chaque impression",
+    "save": "Enregistrer",
+    "saved": "Réglages de l'imprimante enregistrés.",
+    "test": "Imprimer un ticket d'essai",
+    "testSent": "Ticket d'essai envoyé à l'imprimante.",
+    "testTitle": "Ticket d'essai",
+    "testBody": "L'imprimante fonctionne. Les chiffres ci-dessous doivent être complets :",
+    "failed": "L'imprimante n'a pas répondu : {{detail}}"
+  },
+  "banner": {
+    "requiredTitle": "Mise à jour obligatoire",
+    "required": "Cette version est trop ancienne pour le serveur. Vos ventes restent gardées sur cet appareil et seront envoyées après la mise à jour.",
+    "available": "Une nouvelle version ({{version}}) est disponible.",
+    "install": "Installer maintenant",
+    "later": "Plus tard",
+    "reload": "Recharger la page"
+  }
+}

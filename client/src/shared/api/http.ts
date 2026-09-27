@@ -17,13 +17,15 @@ import {
   setAccessToken,
   setRefreshToken,
 } from "@/shared/auth/token-store";
-import { apiUrl, devicePlatform } from "@/shared/desktop/desktop";
+import { APP_VERSION_HEADER, UPGRADE_REQUIRED_CODE } from "@shared/app-version";
+import { APP_VERSION, apiUrl, devicePlatform } from "@/shared/desktop/desktop";
 import { readCachedResponse, storeCachedResponse } from "@/shared/offline/http-cache";
 import { isQueueableWrite, queueHttpWrite } from "@/shared/offline/offline-http";
 import { currentLanguage, i18n } from "@/shared/i18n";
 import { newUuid } from "@/shared/offline/outbox";
 import { ApiError } from "./api-error";
 import { isBrowserOnline, reportNetworkResult } from "./network";
+import { notifyUpgradeRequired } from "./upgrade";
 
 /**
  * Query parameters. Typed `object` rather than `Record<string, …>`: a declared
@@ -221,6 +223,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       Accept: "application/json",
       "X-Device-Id": getDeviceId(),
       "X-Device-Platform": devicePlatform(),
+      [APP_VERSION_HEADER]: APP_VERSION,
     };
     // Server messages (errors, exports) come back in the UI language.
     headers["Accept-Language"] = currentLanguage();
@@ -328,6 +331,23 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   if (response.status === 429 && offlineReadable) {
     const cached = await readCachedResponse(url);
     if (cached !== undefined) return cached as T;
+  }
+
+  // Release too old for the server: carry on as without network — reads from the local
+  // copy, writes to the queue — until the update is installed. Flagged as a network
+  // failure so that screens with their own queue (POS, offline forms) switch to it.
+  if (response.status === 426) {
+    const refused = await parseError(response);
+    notifyUpgradeRequired(refused.details);
+    const fallback = await offlineFallback();
+    if (fallback) return fallback.value;
+    throw new ApiError({
+      status: 426,
+      code: UPGRADE_REQUIRED_CODE,
+      message: refused.message,
+      details: refused.details,
+      isNetworkError: true,
+    });
   }
 
   if (response.status === 401 && !anonymous && !skipRefresh) {

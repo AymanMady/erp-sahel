@@ -16,6 +16,7 @@ import { AppHeader } from "./app-header";
 import { AppSidebar } from "./app-sidebar";
 import { LayoutStateProvider, useLayoutState } from "./layout-state";
 import { OfflineBanner } from "./sync-indicator";
+import { UpdateBanner } from "./update-banner";
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const syncStatus = useSyncEngine(true);
@@ -29,6 +30,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <AppSidebar />
             <SidebarOverlay />
             <div className="app-main__outer min-w-0">
+              <UpdateBanner />
               <OfflineBanner />
               <main className="app-main__inner min-w-0">{children}</main>
               <AppFooter syncStatus={syncStatus} />
@@ -74,6 +76,7 @@ export function FullscreenLayout({ children }: { children: ReactNode }) {
   return (
     <TooltipProvider delayDuration={0}>
       <div className="pos-shell flex flex-col bg-background">
+        <UpdateBanner />
         <OfflineBanner />
         {children}
       </div>

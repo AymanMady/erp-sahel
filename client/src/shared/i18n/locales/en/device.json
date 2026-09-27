@@ -1,0 +1,77 @@
+{
+  "setup": {
+    "title": "Server address",
+    "description": "Enter the address of your shop's server. The person who installed the application can give it to you.",
+    "label": "Server address",
+    "placeholder": "erp.my-shop.com",
+    "hint": "For example: erp.my-shop.com or 192.168.1.10:5000",
+    "submit": "Continue",
+    "checking": "Checking…"
+  },
+  "errors": {
+    "invalid": "This address is not valid.",
+    "unreachable": "The server does not answer. Check the address and the internet connection.",
+    "notErp": "This address is not an ERP Sahel server.",
+    "unsent_one": "{{count}} operation made on this device has not been sent yet. Wait until it is sent before changing server.",
+    "unsent_other": "{{count}} operations made on this device have not been sent yet. Wait until they are sent before changing server.",
+    "saveFailed": "The address could not be saved: {{detail}}"
+  },
+  "change": {
+    "button": "Change server",
+    "title": "Change server",
+    "description": "What this device keeps for the old server will be erased, and you will have to sign in again. Sales not yet sent must go first.",
+    "submit": "Change"
+  },
+  "page": {
+    "title": "This device",
+    "description": "Settings of this computer: server, updates and ticket printer."
+  },
+  "app": {
+    "title": "Application",
+    "keptData": "During an update, sales not yet sent stay on this device.",
+    "version": "Installed version",
+    "check": "Look for an update",
+    "checking": "Looking…",
+    "upToDate": "The application is up to date.",
+    "available": "Version {{version}} is available.",
+    "install": "Install and restart",
+    "installing": "Installing… the application will restart.",
+    "checkFailed": "Updates could not be checked. Check the internet connection.",
+    "installFailed": "The update could not be installed. Try again later."
+  },
+  "server": {
+    "title": "Server",
+    "address": "Address"
+  },
+  "printer": {
+    "title": "Ticket printer",
+    "description": "How receipts are printed on this computer.",
+    "mode": "How to print",
+    "modes": {
+      "system": "With the usual print window",
+      "direct": "Straight to the ticket printer"
+    },
+    "target": "Printer address",
+    "targetHint": "Network printer: tcp://192.168.1.50:9100. Windows, USB printer shared as TICKET: \\\\localhost\\TICKET. Linux: /dev/usb/lp0.",
+    "paperWidth": "Paper width",
+    "paper58": "58 mm (small roll)",
+    "paper80": "80 mm (large roll)",
+    "autoPrint": "Print the receipt as soon as the sale is paid",
+    "openDrawer": "Open the cash drawer on every print",
+    "save": "Save",
+    "saved": "Printer settings saved.",
+    "test": "Print a test ticket",
+    "testSent": "Test ticket sent to the printer.",
+    "testTitle": "Test ticket",
+    "testBody": "The printer works. The digits below must be complete:",
+    "failed": "The printer did not answer: {{detail}}"
+  },
+  "banner": {
+    "requiredTitle": "Update required",
+    "required": "This version is too old for the server. Your sales stay on this device and will be sent after the update.",
+    "available": "A new version ({{version}}) is available.",
+    "install": "Install now",
+    "later": "Later",
+    "reload": "Reload the page"
+  }
+}

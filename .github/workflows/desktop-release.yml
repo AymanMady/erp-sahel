@@ -1,0 +1,118 @@
+name: Desktop release
+
+# Builds the desktop installers, signs them and publishes them as a GitHub release
+# (a draft: check it, then publish it by hand). Started by pushing a tag `v1.2.0`
+# matching the version in package.json, or by hand from the Actions tab.
+#
+# Secrets (Settings → Secrets and variables → Actions):
+#  - TAURI_SIGNING_PRIVATE_KEY           required: the update signing key (contents of
+#                                        the .key file made by `tauri signer generate`)
+#  - TAURI_SIGNING_PRIVATE_KEY_PASSWORD  its password, empty if it has none
+#  - WINDOWS_CERTIFICATE                 optional: code signing certificate (.pfx), in base64
+#  - WINDOWS_CERTIFICATE_PASSWORD        optional: its password
+# Without the Windows certificate the installers are still built, but unsigned:
+# Windows SmartScreen then warns on first install.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+          - platform: ubuntu-22.04
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file \
+            libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - run: npm ci
+
+      # The tag and package.json must agree: the updater compares the installed release
+      # with the one in the manifest, which comes from package.json.
+      - name: Tag matches the version
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        run: |
+          version="v$(node -p "require('./package.json').version")"
+          if [ "$version" != "${GITHUB_REF_NAME}" ]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match package.json (${version})."
+            exit 1
+          fi
+
+      # Release settings on top of tauri.conf.json: update packages (.sig files and
+      # latest.json) are only made here, where the signing key is available.
+      - name: Release configuration
+        shell: bash
+        run: echo '{"bundle":{"createUpdaterArtifacts":true}}' > src-tauri/tauri.release.json
+
+      - name: Windows code signing certificate
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          if (-not $env:CERTIFICATE) {
+            Write-Output "No certificate: the Windows installers will not be signed."
+            exit 0
+          }
+          $pfx = Join-Path $env:RUNNER_TEMP "certificate.pfx"
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:CERTIFICATE))
+          $password = ConvertTo-SecureString -String $env:CERTIFICATE_PASSWORD -Force -AsPlainText
+          $certificate = Import-PfxCertificate -FilePath $pfx -CertStoreLocation Cert:\CurrentUser\My -Password $password
+          Remove-Item $pfx
+          $config = @{
+            bundle = @{
+              createUpdaterArtifacts = $true
+              windows = @{
+                certificateThumbprint = $certificate.Thumbprint
+                digestAlgorithm = "sha256"
+                timestampUrl = "http://timestamp.digicert.com"
+              }
+            }
+          } | ConvertTo-Json -Depth 5
+          Set-Content -Path src-tauri/tauri.release.json -Value $config
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # One installer for every customer: the server is chosen at first launch.
+          DESKTOP_API_URL: ""
+        with:
+          tagName: v__VERSION__
+          releaseName: "ERP Sahel __VERSION__"
+          releaseBody: "Installateurs de l'application desktop. Voir docs/DEPLOYMENT.md, section 5."
+          releaseDraft: true
+          prerelease: false
+          includeUpdaterJson: true
+          args: --config src-tauri/tauri.release.json

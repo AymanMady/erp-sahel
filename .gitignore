@@ -13,5 +13,6 @@ test-results/
 src-tauri/target/
 src-tauri/dist/
 src-tauri/gen/
+src-tauri/tauri.release.json
 .vite/
 .vercel/

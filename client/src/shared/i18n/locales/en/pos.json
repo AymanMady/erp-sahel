@@ -90,5 +90,17 @@
     "payment": "Payment {{number}}",
     "sessionOpen": "Register opening",
     "sessionClose": "Closing of the cash register"
+  },
+  "receipt": {
+    "print": "Print receipt",
+    "printing": "Printing…",
+    "failed": "The receipt could not be printed (the sale is recorded): {{detail}}",
+    "number": "Ticket no. {{number}}",
+    "provisional": "Provisional number: sale made without internet",
+    "cashier": "Cashier: {{name}}",
+    "customer": "Customer: {{name}}",
+    "discount": "Discount",
+    "total": "Total",
+    "thanks": "Thank you for your visit"
   }
 }

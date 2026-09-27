@@ -90,5 +90,17 @@
     "payment": "Paiement {{number}}",
     "sessionOpen": "Ouverture de caisse",
     "sessionClose": "Fermeture de caisse"
+  },
+  "receipt": {
+    "print": "Imprimer le ticket",
+    "printing": "Impression…",
+    "failed": "Le ticket n'a pas pu être imprimé (la vente est bien enregistrée) : {{detail}}",
+    "number": "Ticket n° {{number}}",
+    "provisional": "Numéro provisoire : vente faite sans internet",
+    "cashier": "Caissier : {{name}}",
+    "customer": "Client : {{name}}",
+    "discount": "Remise",
+    "total": "Total",
+    "thanks": "Merci de votre visite"
   }
 }

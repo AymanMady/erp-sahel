@@ -23,6 +23,7 @@ import {
   IconChartBar,
   IconClipboardList,
   IconDatabase,
+  IconDeviceDesktop,
   IconFileInvoice,
   IconLayoutDashboard,
   IconPackages,
@@ -36,6 +37,7 @@ import {
 
 import type { PermissionCode } from "@shared/rbac";
 import type { ModuleCode } from "@shared/schema";
+import { isTauriDesktop } from "@/shared/desktop/desktop";
 
 export interface NavChild {
   /** i18n key in the `nav` namespace. */
@@ -56,6 +58,8 @@ export interface NavItem {
   module?: ModuleCode;
   /** Technical entry: shown to the platform super-administrator only. */
   superuserOnly?: boolean;
+  /** Settings of the workstation itself: only in the desktop application. */
+  desktopOnly?: boolean;
   items?: NavChild[];
 }
 
@@ -217,6 +221,7 @@ export const navGroups: NavGroup[] = [
           },
         ],
       },
+      { titleKey: "items.device", url: "/device", icon: IconDeviceDesktop, desktopOnly: true },
     ],
   },
   {
@@ -307,6 +312,7 @@ export function visibleNavGroups(
       items: group.items
         .filter((item) => {
           if (item.superuserOnly && !isSuperuser) return false;
+          if (item.desktopOnly && !isTauriDesktop()) return false;
           if (item.module && !hasModule(item.module)) return false;
           if (item.permission && !can(item.permission)) return false;
           return true;

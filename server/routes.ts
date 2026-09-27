@@ -1,8 +1,8 @@
 /**
  * Composition root of the HTTP routes.
  *
- * Deliberate order: security → rate limiting → health → core domains → modules →
- * API 404 → error handler. The error handler must remain **the last** mounted
+ * Deliberate order: security → health → client version → rate limiting → core domains →
+ * modules → API 404 → error handler. The error handler must remain **the last** mounted
  * middleware, otherwise exceptions from later routes would escape it.
  */
 
@@ -11,12 +11,14 @@ import express, { type Express, type NextFunction, type Request, type Response }
 import { apiRateLimit } from "./middleware/rate-limit";
 import { idempotency } from "./middleware/idempotency";
 import { apiNotFound, errorHandler } from "./middleware/error-handler";
+import { clientVersionGate } from "./middleware/client-version";
 import { corsMiddleware, securityHeaders } from "./middleware/security";
 import { pool } from "./db";
 import { registerAccountingRoutes } from "./domains/accounting/routes";
 import { registerAuthRoutes } from "./domains/auth/routes";
 import { registerBankingRoutes } from "./domains/banking/routes";
 import { registerCatalogRoutes } from "./domains/catalog/routes";
+import { registerDesktopRoutes } from "./domains/desktop/routes";
 import { registerInventoryRoutes } from "./domains/inventory/routes";
 import { registerInvoicingRoutes } from "./domains/invoicing/routes";
 import { registerPartiesRoutes } from "./domains/parties/routes";
@@ -79,6 +81,10 @@ export function registerRoutes(app: Express): void {
     res.json({ status: "ok", time: new Date().toISOString() });
   });
 
+  // Desktop workstations older than the supported release: refused before anything
+  // else, so no outdated payload reaches a domain.
+  app.use("/api", clientVersionGate);
+
   app.use("/api", apiRateLimit);
   // Bodies are read only once the request has passed rate limiting.
   app.use("/api", bodyParsers);
@@ -120,6 +126,7 @@ export function registerRoutes(app: Express): void {
   registerReportsRoutes(app);
   registerSyncRoutes(app);
   registerSystemRoutes(app);
+  registerDesktopRoutes(app);
 
   app.use(apiNotFound);
   app.use(errorHandler);

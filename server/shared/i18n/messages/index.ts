@@ -5,6 +5,7 @@ import { authMessages } from "./auth";
 import { bankingMessages } from "./banking";
 import { catalogMessages } from "./catalog";
 import { commonMessages } from "./common";
+import { desktopMessages } from "./desktop";
 import { inventoryMessages } from "./inventory";
 import { invoicingMessages } from "./invoicing";
 import { numberingMessages } from "./numbering";
@@ -29,6 +30,7 @@ const ALL: MessageCatalog[] = [
   bankingMessages,
   catalogMessages,
   commonMessages,
+  desktopMessages,
   inventoryMessages,
   invoicingMessages,
   numberingMessages,

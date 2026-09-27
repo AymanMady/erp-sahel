@@ -1,3 +1,4 @@
+import { UPGRADE_REQUIRED_CODE } from "@shared/app-version";
 import { i18n } from "@/shared/i18n";
 
 /**
@@ -51,6 +52,9 @@ export class ApiError extends Error {
 /** Displayable message for any error. */
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
+    // Also flagged as a network failure (so work goes to the queue), but the reason
+    // to show is the server's: update the application.
+    if (error.code === UPGRADE_REQUIRED_CODE) return error.message;
     if (error.isNetworkError) {
       return i18n.t("common:errors.serverUnreachable");
     }

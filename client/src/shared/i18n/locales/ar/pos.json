@@ -90,5 +90,17 @@
     "payment": "الدفعة {{number}}",
     "sessionOpen": "فتح الصندوق",
     "sessionClose": "إغلاق الصندوق"
+  },
+  "receipt": {
+    "print": "طباعة التذكرة",
+    "printing": "جارٍ الطباعة…",
+    "failed": "تعذّرت طباعة التذكرة (البيع مسجَّل): {{detail}}",
+    "number": "تذكرة رقم {{number}}",
+    "provisional": "رقم مؤقت: بيع تم دون إنترنت",
+    "cashier": "أمين الصندوق: {{name}}",
+    "customer": "الزبون: {{name}}",
+    "discount": "تخفيض",
+    "total": "المجموع",
+    "thanks": "شكرًا لزيارتكم"
   }
 }

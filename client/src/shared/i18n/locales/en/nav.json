@@ -50,7 +50,8 @@
     "accounts": "Accounts",
     "roles": "Roles and permissions",
     "sync": "Sending data",
-    "database": "Database"
+    "database": "Database",
+    "device": "This device"
   },
   "palette": {
     "title": "Go to a screen",

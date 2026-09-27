@@ -50,7 +50,8 @@
     "accounts": "Comptes",
     "roles": "Rôles et droits",
     "sync": "Envoi des données",
-    "database": "Base de données"
+    "database": "Base de données",
+    "device": "Cet appareil"
   },
   "palette": {
     "title": "Aller à un écran",

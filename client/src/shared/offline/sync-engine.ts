@@ -205,7 +205,8 @@ async function sendHttp(
     remember(maps, record, serverId);
     return true;
   } catch (error) {
-    // Network, expired session or rate limit: nothing is lost, we will retry.
+    // Network, expired session, rate limit or release too old for the server (426,
+    // flagged as a network failure): nothing is lost, we will retry.
     if (
       !(error instanceof ApiError) ||
       error.isNetworkError ||

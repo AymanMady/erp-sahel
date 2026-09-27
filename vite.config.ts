@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -6,6 +7,10 @@ import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv } from "vite";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
+/** Single source of the release number: the web app, the desktop shell and its installers. */
+const appVersion = (
+  JSON.parse(fs.readFileSync(path.resolve(rootDir, "package.json"), "utf8")) as { version: string }
+).version;
 
 export default defineConfig(({ mode }) => {
   /**
@@ -15,16 +20,14 @@ export default defineConfig(({ mode }) => {
    */
   const isDesktop = mode === "desktop";
   /**
-   * Server the desktop shell talks to (e.g. `https://erp.example.com`). Read from
-   * `DESKTOP_API_URL` in the environment or in `.env.desktop`. Empty on the web build:
-   * the API is then same-origin.
+   * Optional server pre-filled in the desktop shell (e.g. `https://erp.example.com`),
+   * read from `DESKTOP_API_URL` in the environment or in `.env.desktop`. Left empty,
+   * one installer serves every customer: the server is asked at first launch. Always
+   * empty on the web build: the API is then same-origin.
    */
   const desktopApiUrl = isDesktop
     ? (process.env.DESKTOP_API_URL ?? loadEnv(mode, rootDir, "DESKTOP_").DESKTOP_API_URL ?? "")
     : "";
-  if (isDesktop && !desktopApiUrl) {
-    throw new Error("Desktop build: set DESKTOP_API_URL (environment or .env.desktop).");
-  }
 
   return {
     base: isDesktop ? "./" : "/",
@@ -33,6 +36,7 @@ export default defineConfig(({ mode }) => {
     define: {
       __DESKTOP_BUILD__: JSON.stringify(isDesktop),
       __API_BASE_URL__: JSON.stringify(desktopApiUrl.replace(/\/+$/, "")),
+      __APP_VERSION__: JSON.stringify(appVersion),
     },
     resolve: {
       alias: {
