@@ -5,7 +5,7 @@
   "accountTypes": {
     "bank": "Compte bancaire",
     "cash": "Caisse",
-    "mobileMoney": "Bankily, Masrvi ou Sedad"
+    "mobileMoney": "Application bancaire"
   },
   "transactionTypes": {
     "deposit": "Argent entré",

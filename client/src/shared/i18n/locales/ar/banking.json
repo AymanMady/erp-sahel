@@ -5,7 +5,7 @@
   "accountTypes": {
     "bank": "حساب بنكي",
     "cash": "صندوق نقدي",
-    "mobileMoney": "Bankily أو Masrvi أو Sedad"
+    "mobileMoney": "تطبيق بنكي"
   },
   "transactionTypes": {
     "deposit": "مال داخل",

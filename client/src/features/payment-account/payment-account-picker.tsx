@@ -35,29 +35,26 @@ const ICONS: Record<BankAccountType, typeof IconCash> = {
 };
 
 /**
- * One choice per account. With `registerCash`, the cash accounts are replaced by a single
- * "Cash" choice: the money goes into the drawer of the register being used. A kind of
- * account missing from the list (for instance offline, before the list was ever loaded)
- * still gets a generic choice, so a sale is never blocked.
+ * One choice per account, so a banking app added later shows up by itself. With
+ * `registerCash`, the cash accounts are replaced by a single "Cash" choice: the money goes
+ * into the drawer of the register being used. Cash is always offered, even before the
+ * list is loaded, so a sale is never blocked; `types` limits the other choices.
  */
 export function usePaymentChoices(
   accounts: PaymentAccount[] | undefined,
-  options: { registerCash?: boolean } = {}
+  options: { registerCash?: boolean; types?: BankAccountType[] } = {}
 ): PaymentChoice[] {
   const { t } = useTranslation("banking");
-  const genericLabels: Record<BankAccountType, string> = {
-    CASH: t("picker.cash"),
-    MOBILE_MONEY: t("accountTypes.mobileMoney"),
-    BANK: t("accountTypes.bank"),
-  };
+  const types = options.types ?? TYPE_ORDER;
 
   const choices: PaymentChoice[] = [];
   for (const type of TYPE_ORDER) {
+    if (type !== "CASH" && !types.includes(type)) continue;
     const ofType = (accounts ?? []).filter((account) => account.accountType === type);
-    if (ofType.length === 0 || (type === "CASH" && options.registerCash)) {
+    if (type === "CASH" && (ofType.length === 0 || options.registerCash)) {
       choices.push({
         key: type,
-        label: genericLabels[type],
+        label: t("picker.cash"),
         accountType: type,
         method: METHOD_BY_TYPE[type],
         bankAccountId: null,

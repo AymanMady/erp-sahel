@@ -739,8 +739,11 @@ function PaymentDialog({
     queryKey: queryKeys.paymentAccounts,
     queryFn: () => bankingApi.listPaymentAccounts(),
     enabled: open,
+    // Reloaded at each opening: a banking app added in the meantime appears right away.
+    staleTime: 0,
   });
-  const choices = usePaymentChoices(accounts, { registerCash: true });
+  // At the counter: cash or a banking app (Bankily, Masrvi, Sedad…), never a bank account.
+  const choices = usePaymentChoices(accounts, { registerCash: true, types: ["MOBILE_MONEY"] });
   const [choiceKey, setChoiceKey] = useState("CASH");
   const [receivedCents, setReceivedCents] = useState(0);
   const [reference, setReference] = useState("");
