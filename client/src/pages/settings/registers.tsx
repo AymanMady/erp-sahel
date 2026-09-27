@@ -180,7 +180,7 @@ export default function RegistersSettingsPage() {
             rowKey={(row) => row.id}
             emptyTitle={t("registers.emptySessionsTitle")}
             emptyDescription={t("registers.emptySessionsDescription")}
-            minWidthClassName="min-w-[900px]"
+            minWidthClassName="md:min-w-[900px]"
           />
         </TabsContent>
       </Tabs>

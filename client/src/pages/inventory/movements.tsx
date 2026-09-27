@@ -172,7 +172,7 @@ export default function MovementsPage() {
           offset: page.offset,
           onChange: setPage,
         }}
-        minWidthClassName="min-w-[960px]"
+        minWidthClassName="md:min-w-[960px]"
       />
     </div>
   );

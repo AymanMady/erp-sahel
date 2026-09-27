@@ -162,7 +162,7 @@ export default function LedgerPage() {
           offset: page.offset,
           onChange: setPage,
         }}
-        minWidthClassName="min-w-[980px]"
+        minWidthClassName="md:min-w-[980px]"
       />
     </div>
   );

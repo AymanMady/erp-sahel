@@ -162,7 +162,7 @@ export default function InvoicesPage() {
           offset: page.offset,
           onChange: setPage,
         }}
-        minWidthClassName="min-w-[860px]"
+        minWidthClassName="md:min-w-[860px]"
       />
     </div>
   );

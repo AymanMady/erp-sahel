@@ -166,7 +166,7 @@ export default function UsersSettingsPage() {
         error={error ? errorMessage(error) : null}
         emptyTitle={t("users.emptyTitle")}
         emptyDescription={t("users.emptyDescription")}
-        minWidthClassName="min-w-[900px]"
+        minWidthClassName="md:min-w-[900px]"
       />
 
       <UserDialog

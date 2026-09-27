@@ -151,7 +151,7 @@ export default function PurchaseOrderDetailPage() {
         <CardContent className="space-y-3 pt-6">
           <p className="text-sm font-medium">{t("orderDetail.receiptProgress")}</p>
           <div className="overflow-x-auto rounded-md border">
-            <Table className="min-w-[600px]">
+            <Table className="md:min-w-[600px]">
               <TableHeader>
                 <TableRow className="bg-muted/40">
                   <TableHead>{t("orderDetail.item")}</TableHead>
@@ -302,7 +302,7 @@ function ReceiveDialog({
         </Field>
 
         <div className="overflow-x-auto rounded-md border">
-          <Table className="min-w-[560px]">
+          <Table className="md:min-w-[560px]">
             <TableHeader>
               <TableRow className="bg-muted/40">
                 <TableHead>{t("orderDetail.item")}</TableHead>

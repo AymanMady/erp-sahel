@@ -57,6 +57,10 @@ export interface ResourceTableProps<T> {
   };
   /** Footer row (totals) rendered below the data. */
   footer?: ReactNode;
+  /**
+   * Minimum table width, prefixed with `md:` so phones are not forced into a wide
+   * table: there, the table takes the width of its content and scrolls sideways.
+   */
   minWidthClassName?: string;
 }
 
@@ -74,7 +78,7 @@ export function ResourceTable<T>({
   onRowClick,
   pagination,
   footer,
-  minWidthClassName = "min-w-[720px]",
+  minWidthClassName = "md:min-w-[720px]",
 }: ResourceTableProps<T>) {
   const { t } = useTranslation("components");
   const alignClass = (align: Column<T>["align"]) =>
@@ -86,7 +90,8 @@ export function ResourceTable<T>({
   return (
     <div className="space-y-4">
       <div className="overflow-x-auto rounded-lg border">
-        <Table className={minWidthClassName}>
+        {/* Without rows, no minimum width: the empty message stays centered on screen. */}
+        <Table className={cn(rows.length > 0 && minWidthClassName)}>
           <TableHeader>
             <TableRow className="bg-muted/40">
               {columns.map((column) => (

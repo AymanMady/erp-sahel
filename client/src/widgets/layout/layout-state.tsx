@@ -11,6 +11,9 @@ import { useLocation } from "wouter";
 /** Width under which the template collapses the sidebar (`resizeClass` in `app.js`). */
 const COLLAPSE_BELOW = 1250;
 
+/** Width under which the sidebar becomes a slide-in menu (Bootstrap `md`). */
+const MOBILE_BELOW = 768;
+
 interface LayoutState {
   closedSidebar: boolean;
   toggleSidebar: () => void;
@@ -36,6 +39,8 @@ export function LayoutStateProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let narrow = isNarrow();
     const onResize = () => {
+      // The mobile menu (and its scroll lock) has no meaning on a wide screen.
+      if (window.innerWidth >= MOBILE_BELOW) setMobileSidebarOpen(false);
       // Only react when crossing the threshold, so a manual choice is kept.
       if (isNarrow() !== narrow) {
         narrow = isNarrow();
@@ -51,6 +56,21 @@ export function LayoutStateProvider({ children }: { children: ReactNode }) {
     setMobileSidebarOpen(false);
     setMobileHeaderOpen(false);
   }, [pathname]);
+
+  // While the mobile menu is open: Escape closes it and the page behind does not scroll.
+  useEffect(() => {
+    if (!mobileSidebarOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileSidebarOpen(false);
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [mobileSidebarOpen]);
 
   const value = useMemo<LayoutState>(
     () => ({

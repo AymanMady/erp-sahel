@@ -27,6 +27,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <AppHeader syncStatus={syncStatus} />
           <div className="app-main">
             <AppSidebar />
+            <SidebarOverlay />
             <div className="app-main__outer min-w-0">
               <OfflineBanner />
               <main className="app-main__inner min-w-0">{children}</main>
@@ -40,7 +41,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
 }
 
 function AppContainer({ children }: { children: ReactNode }) {
-  const { closedSidebar, mobileSidebarOpen, closeMobileSidebar } = useLayoutState();
+  const { closedSidebar, mobileSidebarOpen } = useLayoutState();
   return (
     <div
       className={cn(
@@ -50,9 +51,18 @@ function AppContainer({ children }: { children: ReactNode }) {
       )}
     >
       {children}
-      <div className="sidebar-mobile-overlay" onClick={closeMobileSidebar} aria-hidden />
     </div>
   );
+}
+
+/**
+ * Dims the page behind the open mobile menu; a tap closes it. It lives inside
+ * `.app-main`, next to the sidebar: `.app-main` is its own stacking context, so an
+ * overlay placed outside it would cover the sidebar and swallow every tap on it.
+ */
+function SidebarOverlay() {
+  const { closeMobileSidebar } = useLayoutState();
+  return <div className="sidebar-mobile-overlay" onClick={closeMobileSidebar} aria-hidden />;
 }
 
 /**

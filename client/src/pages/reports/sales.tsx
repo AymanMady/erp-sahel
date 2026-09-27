@@ -176,7 +176,7 @@ export default function SalesReportPage() {
               error={error ? errorMessage(error) : null}
               emptyTitle={t("sales.emptyTitle")}
               emptyDescription={t("sales.emptyDescription")}
-              minWidthClassName="min-w-[560px]"
+              minWidthClassName="md:min-w-[560px]"
             />
           </CardContent>
         </Card>

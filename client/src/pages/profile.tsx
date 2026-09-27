@@ -87,7 +87,11 @@ export default function ProfilePage() {
               </p>
               <div className="flex flex-wrap gap-1">
                 {permissions.map((permission) => (
-                  <Badge key={permission} variant="secondary" className="text-[10px]">
+                  <Badge
+                    key={permission}
+                    variant="secondary"
+                    className="max-w-full text-[10px] text-start whitespace-normal"
+                  >
                     {permissionLabel(permission)}
                   </Badge>
                 ))}

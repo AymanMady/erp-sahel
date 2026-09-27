@@ -74,7 +74,7 @@ export default function SupplierInvoicesPage() {
         error={error ? errorMessage(error) : null}
         emptyTitle={t("supplierInvoices.emptyTitle")}
         emptyDescription={t("supplierInvoices.emptyDescription")}
-        minWidthClassName="min-w-[860px]"
+        minWidthClassName="md:min-w-[860px]"
       />
     </div>
   );

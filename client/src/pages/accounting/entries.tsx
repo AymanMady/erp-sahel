@@ -130,7 +130,7 @@ export default function EntriesPage() {
                   </div>
                 </div>
                 <div className="overflow-x-auto rounded-md border">
-                  <Table className="min-w-[560px]">
+                  <Table className="md:min-w-[560px]">
                     <TableHeader>
                       <TableRow className="bg-muted/40">
                         <TableHead>{t("columns.account")}</TableHead>
@@ -273,7 +273,7 @@ function ManualEntryDialog({
         </Field>
 
         <div className="overflow-x-auto rounded-md border">
-          <Table className="min-w-[640px]">
+          <Table className="md:min-w-[640px]">
             <TableHeader>
               <TableRow className="bg-muted/40">
                 <TableHead>{t("columns.account")}</TableHead>

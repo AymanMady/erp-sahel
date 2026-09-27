@@ -131,6 +131,17 @@ label {
 .app-header .search-wrapper .search-input {
   cursor: pointer;
 }
+/* Shortcuts stay on one line; where they no longer fit (tablets), they are hidden:
+   the sidebar and the search give the same screens. */
+.app-header .header-menu {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+@media (max-width: 1099.98px) {
+  .app-header .app-header-left .header-menu {
+    display: none;
+  }
+}
 
 /* --- Page title icon: Tabler SVG instead of an icon-font glyph. ------------ */
 
@@ -201,6 +212,26 @@ label {
 }
 [dir="rtl"] .closed-sidebar .app-sidebar:not(:hover) .vertical-nav-menu ul {
   padding: 0;
+}
+/* Expanded again (collapsed sidebar under the mouse, or mobile menu open): the
+   template's rules for these states are more specific than the ones above. */
+[dir="rtl"] .closed-sidebar .app-sidebar:hover .app-sidebar__inner ul li a,
+[dir="rtl"] .sidebar-mobile-open .app-sidebar .app-sidebar__inner ul li a {
+  padding: 0 45px 0 1.5rem;
+}
+[dir="rtl"] .closed-sidebar .app-sidebar:hover .app-sidebar__inner ul ul li a,
+[dir="rtl"] .sidebar-mobile-open .app-sidebar .app-sidebar__inner ul ul li a {
+  padding: 0 1em 0 1.5rem;
+}
+[dir="rtl"] .closed-sidebar .app-sidebar:hover .app-sidebar__inner .metismenu-icon,
+[dir="rtl"] .sidebar-mobile-open .app-sidebar .app-sidebar__inner .metismenu-icon {
+  left: auto;
+  right: 5px;
+  margin-right: 0;
+}
+[dir="rtl"] .closed-sidebar .app-sidebar:hover .app-sidebar__inner ul.mm-show,
+[dir="rtl"] .sidebar-mobile-open .app-sidebar .app-sidebar__inner ul.mm-show {
+  padding: 0.5em 2rem 0 0;
 }
 [dir="rtl"] .app-header-right {
   margin-left: 0;

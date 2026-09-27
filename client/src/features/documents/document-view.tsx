@@ -97,7 +97,7 @@ export function DocumentView({
       </section>
 
       <div className="overflow-x-auto rounded-md border">
-        <Table className="min-w-[640px]">
+        <Table className="md:min-w-[640px]">
           <TableHeader>
             <TableRow className="bg-muted/40">
               <TableHead>{t("view.columns.description")}</TableHead>

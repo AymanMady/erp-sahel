@@ -270,7 +270,7 @@ export default function SyncPage() {
             loading={loadingOutbox}
             emptyTitle={t("outbox.emptyTitle")}
             emptyDescription={t("outbox.emptyDescription")}
-            minWidthClassName="min-w-[840px]"
+            minWidthClassName="md:min-w-[840px]"
           />
         </TabsContent>
 
@@ -282,7 +282,7 @@ export default function SyncPage() {
             error={journalError ? errorMessage(journalError) : null}
             emptyTitle={t("journal.emptyTitle")}
             emptyDescription={t("journal.emptyDescription")}
-            minWidthClassName="min-w-[900px]"
+            minWidthClassName="md:min-w-[900px]"
           />
         </TabsContent>
 

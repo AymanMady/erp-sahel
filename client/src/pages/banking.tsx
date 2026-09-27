@@ -257,7 +257,7 @@ export default function BankingPage() {
             offset: page.offset,
             onChange: setPage,
           }}
-          minWidthClassName="min-w-[640px]"
+          minWidthClassName="md:min-w-[640px]"
         />
       </div>
 

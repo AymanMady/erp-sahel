@@ -203,7 +203,7 @@ export default function InventoryPage() {
           offset: page.offset,
           onChange: setPage,
         }}
-        minWidthClassName="min-w-[880px]"
+        minWidthClassName="md:min-w-[880px]"
       />
 
       <MovementDialog open={adjustOpen} onOpenChange={setAdjustOpen} />

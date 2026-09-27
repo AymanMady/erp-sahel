@@ -113,7 +113,7 @@ export default function BalancePage() {
             </TableRow>
           ) : null
         }
-        minWidthClassName="min-w-[820px]"
+        minWidthClassName="md:min-w-[820px]"
       />
     </div>
   );

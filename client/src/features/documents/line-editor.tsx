@@ -155,17 +155,18 @@ export function LineEditor({
   // instead of disappearing silently when the document is saved.
   const ignoredCount = readOnly ? 0 : lines.filter((line) => !isComplete(line)).length;
   const showIgnored = ignoredCount > 0 && lines.some((line) => isComplete(line) || isStarted(line));
-  // Same columns for the header and the lines, from tablet width upward. On a phone
+  // Same columns for the header and the lines once the editor is wide enough (a
+  // container query: the sidebar takes room on tablets). On a phone
   // each line is a card with its own labels: no sideways scrolling.
   const columns = cn(
-    "md:grid md:items-start md:gap-3",
+    "@3xl:grid @3xl:items-start @3xl:gap-3",
     readOnly
-      ? "md:grid-cols-[minmax(10rem,1fr)_6rem_8rem_6rem_8rem]"
-      : "md:grid-cols-[minmax(10rem,1fr)_6rem_8rem_6rem_8rem_2.5rem]"
+      ? "@3xl:grid-cols-[minmax(10rem,1fr)_6rem_8rem_6rem_8rem]"
+      : "@3xl:grid-cols-[minmax(10rem,1fr)_6rem_8rem_6rem_8rem_2.5rem]"
   );
 
   return (
-    <div className="space-y-4">
+    <div className="@container space-y-4">
       <div className="rounded-lg border">
         <div
           className={cn(
@@ -189,7 +190,7 @@ export function LineEditor({
               const problem = readOnly || !isStarted(line) ? null : lineProblem(line);
               return (
                 <li key={line.key} className={cn("grid grid-cols-2 gap-3 p-3", columns)}>
-                  <div className="col-span-2 md:col-span-1">
+                  <div className="col-span-2 @3xl:col-span-1">
                     <Input
                       value={line.description}
                       onChange={(event) => update(line.key, { description: event.target.value })}
@@ -239,7 +240,7 @@ export function LineEditor({
                     />
                   </LineField>
                   {!readOnly ? (
-                    <div className="col-span-2 flex justify-end md:col-span-1">
+                    <div className="col-span-2 flex justify-end @3xl:col-span-1">
                       <Button
                         size="icon"
                         variant="ghost"
@@ -308,8 +309,8 @@ export function LineEditor({
 /** One value of a line; its label is only shown on a phone (the header row says it otherwise). */
 function LineField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="block space-y-1 md:space-y-0">
-      <span className="text-xs text-muted-foreground md:hidden">{label}</span>
+    <label className="block space-y-1 @3xl:space-y-0">
+      <span className="text-xs text-muted-foreground @3xl:hidden">{label}</span>
       {children}
     </label>
   );
