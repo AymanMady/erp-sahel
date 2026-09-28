@@ -126,6 +126,8 @@ self.addEventListener("fetch", (event) => {
   // The API is never served from the cache: a stale invoice displayed as fresh would
   // be worse than an explicit network error.
   if (url.pathname.startsWith("/api/")) return;
+  // Desktop installers: large files, downloaded once, never kept for offline use.
+  if (url.pathname.startsWith("/downloads/")) return;
 
   if (request.mode === "navigate") {
     event.respondWith(

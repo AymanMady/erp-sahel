@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 import { nodeFileTrace } from "@vercel/nft";
 import { build } from "esbuild";
 
-import { writePrecacheManifest } from "./precache";
+import { copyDesktopDownloads, writePrecacheManifest } from "./precache";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outputDir = path.join(rootDir, ".vercel", "output");
@@ -37,6 +37,7 @@ async function buildClient(): Promise<void> {
 
   const publicDir = path.join(rootDir, "dist", "public");
   writePrecacheManifest(publicDir);
+  copyDesktopDownloads(publicDir);
   fs.cpSync(publicDir, path.join(outputDir, "static"), { recursive: true });
 }
 

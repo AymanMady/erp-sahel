@@ -197,6 +197,30 @@ privée. **Perdre la clé privée, c'est ne plus pouvoir mettre à jour les post
 (il faudrait les réinstaller à la main) : la garder aussi hors de GitHub, en lieu sûr.
 Nouvelle paire : `npx tauri signer generate -w ~/.tauri/erp-sahel-updater.key`.
 
+### Publier une version sans GitHub
+
+Si GitHub Actions n'est pas disponible (compte bloqué, plus de minutes), les installateurs
+se fabriquent sur un poste Linux et sont servis par le site lui-même, à `/downloads/` :
+
+```
+# Linux (.deb)
+TAURI_SIGNING_PRIVATE_KEY=~/.tauri/erp-sahel-updater.key TAURI_SIGNING_PRIVATE_KEY_PASSWORD="" \
+  npx tauri build --bundles deb --config '{"bundle":{"createUpdaterArtifacts":true}}'
+
+# Windows (.exe), depuis Linux : sudo apt install nsis lld llvm, puis une fois
+# rustup target add x86_64-pc-windows-msvc && cargo install --locked cargo-xwin
+TAURI_SIGNING_PRIVATE_KEY=~/.tauri/erp-sahel-updater.key TAURI_SIGNING_PRIVATE_KEY_PASSWORD="" \
+  npx tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc --bundles nsis \
+  --config '{"bundle":{"createUpdaterArtifacts":true}}'
+
+# Dossier downloads/ (installateurs + latest.json), remplacé à chaque version
+npm run desktop:release -- https://erp-sahel.vercel.app/downloads
+```
+
+Committer `downloads/` et déployer, avec
+`DESKTOP_UPDATE_MANIFEST_URL=https://erp-sahel.vercel.app/downloads/latest.json` sur le serveur.
+Les fichiers ne vont pas dans `client/public` : l'application desktop embarque ce dossier.
+
 ### Signature Windows (SmartScreen)
 
 Sans signature, Windows affiche « Windows a protégé votre ordinateur » au premier

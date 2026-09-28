@@ -34,3 +34,15 @@ export function writePrecacheManifest(publicDir: string): void {
   );
   console.log(`  ${urls.length} assets added to the precache.`);
 }
+
+/**
+ * Desktop installers (`downloads/`, made by `npm run desktop:release`), served by the
+ * web app at `/downloads/`. Copied after the precache manifest: they are never cached
+ * for offline use. Kept out of `client/public`, which the desktop shell embeds too.
+ */
+export function copyDesktopDownloads(publicDir: string): void {
+  const source = path.resolve(publicDir, "..", "..", "downloads");
+  if (!fs.existsSync(source)) return;
+  fs.cpSync(source, path.join(publicDir, "downloads"), { recursive: true });
+  console.log(`  Desktop installers copied to /downloads/.`);
+}

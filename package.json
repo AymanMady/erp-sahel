@@ -32,7 +32,8 @@
     "build:desktop": "vite build --mode desktop",
     "tauri": "tauri",
     "tauri:dev": "npm run build:desktop && tauri dev",
-    "tauri:build": "npm run build:desktop && tauri build"
+    "tauri:build": "npm run build:desktop && tauri build",
+    "desktop:release": "tsx scripts/desktop-release.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

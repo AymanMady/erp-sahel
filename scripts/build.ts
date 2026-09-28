@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
 
 import { build } from "esbuild";
 
-import { writePrecacheManifest } from "./precache";
+import { copyDesktopDownloads, writePrecacheManifest } from "./precache";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -29,6 +29,7 @@ async function main(): Promise<void> {
 
   console.log("→ Generating precache manifest…");
   writePrecacheManifest(path.join(rootDir, "dist", "public"));
+  copyDesktopDownloads(path.join(rootDir, "dist", "public"));
 
   console.log("→ Building server (esbuild)…");
   await build({
