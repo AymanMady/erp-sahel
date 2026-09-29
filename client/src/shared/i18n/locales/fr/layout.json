@@ -32,6 +32,15 @@
     "viewQueue": "Voir ce qui attend"
   },
   "offlineBanner": "Pas d'internet — vous pouvez continuer à travailler. Tout sera envoyé quand internet reviendra.",
+  "offlineReady": {
+    "preparing": "Préparation de cet appareil pour travailler sans internet… {{percent}} %. Gardez internet jusqu'à la fin.",
+    "preparingShort": "En préparation ({{percent}} %)",
+    "ready": "Prêt",
+    "notReady": "Pas encore prêt",
+    "label": "Travail sans internet",
+    "done": "Cet appareil peut maintenant travailler sans internet.",
+    "offlineNotReady": "Pas d'internet — vous pouvez continuer à travailler. Cet appareil n'avait pas fini de tout charger : certaines pages peuvent être vides."
+  },
   "boot": {
     "loading": "Chargement de l'application…"
   },

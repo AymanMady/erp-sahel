@@ -32,6 +32,15 @@
     "viewQueue": "See what is waiting"
   },
   "offlineBanner": "No internet — you can keep working. Everything will be sent when internet comes back.",
+  "offlineReady": {
+    "preparing": "Getting this device ready to work without internet… {{percent}}%. Keep internet on until it finishes.",
+    "preparingShort": "Getting ready ({{percent}}%)",
+    "ready": "Ready",
+    "notReady": "Not ready yet",
+    "label": "Working without internet",
+    "done": "This device can now work without internet.",
+    "offlineNotReady": "No internet — you can keep working. This device had not finished loading everything: some pages may be empty."
+  },
   "boot": {
     "loading": "Loading the application…"
   },

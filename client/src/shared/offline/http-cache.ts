@@ -80,10 +80,60 @@ function describe(url: string) {
   };
 }
 
+/**
+ * Summaries computed over a period ending today (dashboard, reports). Their dates move
+ * every day: offline the next morning, "the last 30 days" no longer match the dates
+ * kept yesterday. The latest copy of the same length is shown instead — the banner
+ * already says the figures are those of the last connection.
+ */
+const PERIOD_PATHS = new Set(["/api/dashboard", "/api/reports/sales", "/api/reports/purchases"]);
+
+interface Period {
+  /** Other parameters (warehouse…), which must match exactly. */
+  otherKey: string;
+  days: number;
+  toDate: string;
+}
+
+function periodOf(filterKey: string): Period | null {
+  const params = new URLSearchParams(filterKey);
+  const from = params.get("fromDate");
+  const to = params.get("toDate");
+  if (!from || !to) return null;
+  const days = Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000);
+  if (!Number.isFinite(days)) return null;
+  params.delete("fromDate");
+  params.delete("toDate");
+  return { otherKey: params.toString(), days, toDate: to };
+}
+
+/** Same kind of period (same length, same other filters) as `wanted`. */
+function samePeriodKind(filterKey: string, wanted: Period): Period | null {
+  const period = periodOf(filterKey);
+  return period && period.days === wanted.days && period.otherKey === wanted.otherKey
+    ? period
+    : null;
+}
+
+/** Keeps only the latest copy of a moving period: one per day would pile up. */
+async function forgetOlderPeriods(path: string, filterKey: string): Promise<void> {
+  const wanted = periodOf(filterKey);
+  if (!wanted) return;
+  const rows = await offlineDb.cache.where("key").startsWith(`${PREFIX}${path}?`).toArray();
+  const older = rows
+    .filter((row) => {
+      const period = samePeriodKind((row.value as CachedResponse).filterKey, wanted);
+      return period !== null && period.toDate < wanted.toDate;
+    })
+    .map((row) => row.key);
+  if (older.length > 0) await offlineDb.cache.bulkDelete(older);
+}
+
 export async function storeCachedResponse(url: string, body: unknown): Promise<void> {
   const info = describe(url);
   if (!isCacheable(info.path)) return;
   try {
+    if (PERIOD_PATHS.has(info.path)) await forgetOlderPeriods(info.path, info.filterKey);
     await offlineDb.cache.put({
       key: info.key,
       value: {
@@ -249,6 +299,16 @@ export async function readCachedResponse(url: string): Promise<unknown> {
       const rows = filterRows(rowsOf(base.body), remaining);
       if (rows === null) continue;
       return paginate(base.body, rows, info.limit, info.offset);
+    }
+
+    // Moving period (dashboard, reports): the latest copy of the same length.
+    const wantedPeriod = PERIOD_PATHS.has(info.path) ? periodOf(info.filterKey) : null;
+    if (wantedPeriod) {
+      const latest = candidates
+        .map((cached) => ({ cached, period: samePeriodKind(cached.filterKey, wantedPeriod) }))
+        .filter((row) => row.period !== null)
+        .sort((a, b) => b.period!.toDate.localeCompare(a.period!.toDate))[0];
+      if (latest) return latest.cached.body;
     }
   } catch {
     // Read impossible: let the original network error propagate.

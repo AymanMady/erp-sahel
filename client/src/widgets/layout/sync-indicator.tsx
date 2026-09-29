@@ -6,12 +6,21 @@
  * last sync date, and a manual retry action.
  */
 
-import { IconAlertTriangle, IconCloudCheck, IconCloudOff, IconRefresh } from "@tabler/icons-react";
+import { useEffect, useRef } from "react";
+import {
+  IconAlertTriangle,
+  IconCloudCheck,
+  IconCloudDownload,
+  IconCloudOff,
+  IconRefresh,
+} from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { Link } from "wouter";
 
 import { formatDateTime } from "@shared/format";
 import { useSession } from "@/shared/auth/session";
+import { useOfflineReadiness } from "@/shared/hooks/use-offline-readiness";
 import { useOnline } from "@/shared/hooks/use-online";
 import { runSync } from "@/shared/offline/sync-engine";
 import type { SyncStatus } from "@/shared/offline/sync-engine";
@@ -30,6 +39,7 @@ import {
 export function SyncIndicator({ status }: { status: SyncStatus }) {
   const online = useOnline();
   const { isSuperuser } = useSession();
+  const readiness = useOfflineReadiness();
   const { t } = useTranslation("layout");
   const pending = status.pending;
   const failed = status.failed;
@@ -108,6 +118,17 @@ export function SyncIndicator({ status }: { status: SyncStatus }) {
             label={t("sync.lastSync")}
             value={status.lastSyncAt ? formatDateTime(status.lastSyncAt) : t("sync.never")}
           />
+          <Row
+            label={t("offlineReady.label")}
+            value={
+              readiness.state === "ready"
+                ? t("offlineReady.ready")
+                : readiness.running
+                  ? t("offlineReady.preparingShort", { percent: readiness.percent })
+                  : t("offlineReady.notReady")
+            }
+            tone={readiness.state === "ready" ? undefined : "danger"}
+          />
         </div>
         {status.lastError ? (
           <p className="px-2 pb-1.5 text-xs text-status-danger">{status.lastError}</p>
@@ -144,9 +165,13 @@ function Row({ label, value, tone }: { label: string; value: string; tone?: "dan
   );
 }
 
-/** Permanent banner shown while the device works without network. */
+/**
+ * Permanent banner shown while the device works without network. It warns when the
+ * device had not finished downloading everything before the network dropped.
+ */
 export function OfflineBanner() {
   const online = useOnline();
+  const readiness = useOfflineReadiness();
   const { t } = useTranslation("layout");
   if (online) return null;
   return (
@@ -155,7 +180,37 @@ export function OfflineBanner() {
       className="flex items-center justify-center gap-2 bg-offline px-4 py-1.5 text-center text-xs font-medium text-offline-foreground print-hidden"
     >
       <IconCloudOff className="size-3.5" />
-      {t("offlineBanner")}
+      {readiness.state === "preparing" ? t("offlineReady.offlineNotReady") : t("offlineBanner")}
+    </div>
+  );
+}
+
+/**
+ * First download after sign-in: says how far it is, and when the device can work
+ * without network. Without it, a user could leave the shop with a device that only
+ * knows the screens already opened.
+ */
+export function OfflinePreparationBanner() {
+  const online = useOnline();
+  const readiness = useOfflineReadiness();
+  const { t } = useTranslation("layout");
+
+  const previous = useRef(readiness.state);
+  useEffect(() => {
+    if (previous.current === "preparing" && readiness.state === "ready") {
+      toast.success(t("offlineReady.done"));
+    }
+    previous.current = readiness.state;
+  }, [readiness.state, t]);
+
+  if (!online || readiness.state !== "preparing" || !readiness.running) return null;
+  return (
+    <div
+      role="status"
+      className="flex items-center justify-center gap-2 bg-primary/10 px-4 py-1.5 text-center text-xs font-medium text-primary print-hidden"
+    >
+      <IconCloudDownload className="size-3.5 shrink-0" />
+      {t("offlineReady.preparing", { percent: readiness.percent })}
     </div>
   );
 }

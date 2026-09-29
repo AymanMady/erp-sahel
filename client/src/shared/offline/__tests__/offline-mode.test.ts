@@ -99,6 +99,58 @@ describe("read cache", () => {
     )) as { items: { id: string }[] };
     expect(search.items.map((row) => row.id)).toEqual(["3"]);
   });
+
+  it("serves a list downloaded in several pages as one, beyond the first 200", async () => {
+    const items = Array.from({ length: 450 }, (_, index) => ({ id: String(index) }));
+    await storeCachedResponse("/api/invoices?limit=450&offset=0", {
+      items,
+      total: 450,
+      limit: 450,
+      offset: 0,
+    });
+
+    const lastPage = (await readCachedResponse("/api/invoices?limit=25&offset=425")) as {
+      items: { id: string }[];
+      total: number;
+    };
+    expect(lastPage.items.map((row) => row.id)).toEqual(items.slice(425).map((row) => row.id));
+    expect(lastPage.total).toBe(450);
+  });
+
+  it("shows the latest dashboard of the same length the next day", async () => {
+    await storeCachedResponse("/api/dashboard?fromDate=2026-09-01&toDate=2026-09-30", {
+      period: "30 days to Sept. 30",
+    });
+    await storeCachedResponse("/api/dashboard?fromDate=2026-09-24&toDate=2026-09-30", {
+      period: "7 days to Sept. 30",
+    });
+
+    // Next morning, offline: the dates asked for have moved by one day.
+    expect(
+      await readCachedResponse("/api/dashboard?fromDate=2026-09-02&toDate=2026-10-01")
+    ).toEqual({ period: "30 days to Sept. 30" });
+    expect(
+      await readCachedResponse("/api/dashboard?fromDate=2026-09-25&toDate=2026-10-01")
+    ).toEqual({ period: "7 days to Sept. 30" });
+    // A period of another length is never shown in its place.
+    expect(
+      await readCachedResponse("/api/dashboard?fromDate=2026-07-04&toDate=2026-10-01")
+    ).toBeUndefined();
+  });
+
+  it("keeps a single copy of a moving period", async () => {
+    await storeCachedResponse("/api/reports/sales?fromDate=2026-09-01&toDate=2026-09-30", {
+      day: 1,
+    });
+    await storeCachedResponse("/api/reports/sales?fromDate=2026-09-02&toDate=2026-10-01", {
+      day: 2,
+    });
+    const keys = (await offlineDb.cache.toArray()).map((row) => row.key);
+    expect(keys.filter((key) => key.startsWith("http:/api/reports/sales?"))).toHaveLength(1);
+    expect(
+      await readCachedResponse("/api/reports/sales?fromDate=2026-09-03&toDate=2026-10-02")
+    ).toEqual({ day: 2 });
+  });
 });
 
 describe("offline creations", () => {

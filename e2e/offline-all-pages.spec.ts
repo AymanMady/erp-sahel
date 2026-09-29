@@ -66,7 +66,8 @@ const ROUTES = [
   "/profile",
 ];
 
-const NETWORK_ERRORS = /Server unreachable|not available offline|Failed to fetch/;
+/** Messages of a screen that could not get its data (English UI, `offline:api.*`). */
+const NETWORK_ERRORS = /No internet connection\.|not available offline|Failed to fetch/;
 
 async function login(page: Page): Promise<void> {
   await page.goto("/login");
@@ -113,31 +114,23 @@ test.describe("whole application offline", () => {
       .poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller)))
       .toBe(true);
 
-    // Prefetch complete: administration and monitoring included.
-    await expect
-      .poll(
-        async () => {
-          const keys = await cachedKeys(page);
-          return ["/api/roles?", "/api/users?", "/api/sync/journal?"]
-            .map((path) => keys.some((key) => key.startsWith(`http:${path}`)))
-            .every(Boolean);
-        },
-        { timeout: 60_000 }
-      )
-      .toBe(true);
-    // The prefetch pass is over when it records its end time: no request of it is
-    // still in flight. (Waiting for "network idle" never ends: the app checks the
-    // server every few seconds.)
+    // The device says when everything is downloaded (administration included). The
+    // pass records it only once over: no request of it is still in flight. (Waiting for
+    // "network idle" never ends: the app checks the server every few seconds.)
     await expect
       .poll(
         async () => {
           const meta = await readStore(page, "meta");
-          const lastRun = meta.find((row) => row.key === "prefetch.lastRunAt")?.value;
-          return Number(lastRun ?? 0) > 0;
+          const completedAt = meta.find((row) => row.key === "prefetch.completedAt")?.value;
+          return Boolean(completedAt);
         },
         { timeout: 120_000 }
       )
       .toBe(true);
+    const keys = await cachedKeys(page);
+    for (const path of ["/api/roles?", "/api/users?"]) {
+      expect(keys.some((key) => key.startsWith(`http:${path}`))).toBe(true);
+    }
 
     // --- Outage ---------------------------------------------------------------
     await context.setOffline(true);

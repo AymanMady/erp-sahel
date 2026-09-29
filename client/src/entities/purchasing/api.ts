@@ -45,7 +45,14 @@ export const purchasingApi = {
     >(`/api/goods-receipts/${id}`),
   createReceipt: (body: unknown) => api.post("/api/goods-receipts", body),
 
-  listSupplierInvoices: (filters: { supplierId?: string | null; status?: string | null } = {}) =>
+  listSupplierInvoices: (
+    filters: {
+      supplierId?: string | null;
+      status?: string | null;
+      limit?: number;
+      offset?: number;
+    } = {}
+  ) =>
     api.get<Paginated<SupplierInvoice & { supplierName: string }>>(
       "/api/supplier-invoices",
       filters

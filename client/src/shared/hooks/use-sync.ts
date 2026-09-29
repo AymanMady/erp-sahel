@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { prefetchForOffline } from "@/shared/offline/offline-prefetch";
+import { initialiseOfflineReadiness, prefetchForOffline } from "@/shared/offline/offline-prefetch";
 import {
   getSyncStatus,
   initialiseSyncStatus,
@@ -27,12 +27,13 @@ export function useSyncEngine(enabled: boolean): SyncStatus {
   useEffect(() => {
     if (!enabled) return;
     const unsubscribe = onSyncStatusChange(setStatus);
-    // After a successful synchronization, prefetch pages for offline use
-    // (limited to one pass per half hour by `prefetchForOffline`).
+    // After a successful synchronization, download what every page needs for offline
+    // use: right away until the device is ready, then every 15 minutes at most.
     const syncThenPrefetch = async () => {
       const result = await runSync();
       if (result.state === "idle") void prefetchForOffline();
     };
+    void initialiseOfflineReadiness();
     void initialiseSyncStatus().then(syncThenPrefetch);
 
     const trigger = () => void syncThenPrefetch();

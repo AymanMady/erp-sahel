@@ -15,7 +15,7 @@ import { AppFooter } from "./app-footer";
 import { AppHeader } from "./app-header";
 import { AppSidebar } from "./app-sidebar";
 import { LayoutStateProvider, useLayoutState } from "./layout-state";
-import { OfflineBanner } from "./sync-indicator";
+import { OfflineBanner, OfflinePreparationBanner } from "./sync-indicator";
 import { UpdateBanner } from "./update-banner";
 
 export function AppLayout({ children }: { children: ReactNode }) {
@@ -32,6 +32,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <div className="app-main__outer min-w-0">
               <UpdateBanner />
               <OfflineBanner />
+              <OfflinePreparationBanner />
               <main className="app-main__inner min-w-0">{children}</main>
               <AppFooter syncStatus={syncStatus} />
             </div>
@@ -78,6 +79,7 @@ export function FullscreenLayout({ children }: { children: ReactNode }) {
       <div className="pos-shell flex flex-col bg-background">
         <UpdateBanner />
         <OfflineBanner />
+        <OfflinePreparationBanner />
         {children}
       </div>
     </TooltipProvider>

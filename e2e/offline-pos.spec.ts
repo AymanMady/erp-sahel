@@ -40,6 +40,22 @@ async function login(page: Page): Promise<void> {
   await expect(page.getByText("Total sales").first()).toBeVisible();
 }
 
+/** Operations kept on the device, waiting to be sent (IndexedDB `outbox`). */
+function readOutbox(page: Page) {
+  return page.evaluate(
+    () =>
+      new Promise<{ status: string }[]>((resolve, reject) => {
+        const request = indexedDB.open("erp-sahel-offline");
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const all = request.result.transaction("outbox").objectStore("outbox").getAll();
+          all.onsuccess = () => resolve(all.result);
+          all.onerror = () => reject(all.error);
+        };
+      })
+  );
+}
+
 test.describe("offline sale at the counter", () => {
   test("charges without network, persists, then synchronizes without duplicate", async ({
     page,
@@ -57,7 +73,27 @@ test.describe("offline sale at the counter", () => {
 
     // The snapshot must be in place before the outage: without it, no product search
     // would be possible offline.
-    await page.waitForTimeout(1500);
+    await expect
+      .poll(
+        () =>
+          page.evaluate(
+            () =>
+              new Promise<boolean>((resolve) => {
+                const request = indexedDB.open("erp-sahel-offline");
+                request.onerror = () => resolve(false);
+                request.onsuccess = () => {
+                  const get = request.result
+                    .transaction("cache")
+                    .objectStore("cache")
+                    .get("sync.snapshot");
+                  get.onsuccess = () => resolve(Boolean(get.result));
+                  get.onerror = () => resolve(false);
+                };
+              })
+          ),
+        { timeout: 30_000 }
+      )
+      .toBe(true);
 
     // --- 2. Network outage --------------------------------------------------
     await context.setOffline(true);
@@ -83,26 +119,31 @@ test.describe("offline sale at the counter", () => {
     await page.reload();
     await expect(page.getByText(/you can keep working/)).toBeVisible();
 
-    await page.goto("/sync");
-    // The local queue holds at least the invoice and its payment.
-    await expect(page.getByRole("tab", { name: "To send" })).toBeVisible();
-    await expect(page.getByText(/OFFLINE-TKT-\d+/).first()).toBeVisible();
+    // The local queue holds at least the invoice and its payment. (The queue screen is
+    // for the super-administrator only: the device storage is read directly.)
+    const waiting = (await readOutbox(page)).filter((row) => row.status !== "synced");
+    expect(waiting.length).toBeGreaterThanOrEqual(1);
 
     // --- 5. Network back ---------------------------------------------------
     await context.setOffline(false);
-    await page.getByRole("button", { name: "Send now" }).click();
+    await page.evaluate(() => window.dispatchEvent(new Event("online")));
+    await expect
+      .poll(async () => (await readOutbox(page)).every((row) => row.status === "synced"), {
+        timeout: 60_000,
+      })
+      .toBe(true);
 
-    // The queue empties and the legal number replaces the provisional one.
+    // The legal number replaces the provisional one.
+    await page.goto("/invoices");
     await expect(page.getByText(/FAC-\d{4}-\d{4}/).first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText(/OFFLINE-TKT-\d+/)).toHaveCount(0);
 
     // --- Duplicate check -------------------------------------------------------
-    await page.goto("/invoices");
     const ticketRows = page.getByRole("row").filter({ hasText: "POS" });
     const countBefore = await ticketRows.count();
 
     // Running another synchronization must not recreate anything ([BR-8]).
-    await page.goto("/sync");
-    await page.getByRole("button", { name: "Send now" }).click();
+    await page.evaluate(() => window.dispatchEvent(new Event("online")));
     await page.waitForTimeout(2000);
 
     await page.goto("/invoices");
