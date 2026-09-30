@@ -19,12 +19,16 @@ import {
 } from "@/shared/auth/token-store";
 import { APP_VERSION_HEADER, UPGRADE_REQUIRED_CODE } from "@shared/app-version";
 import { APP_VERSION, apiUrl, devicePlatform } from "@/shared/desktop/desktop";
-import { readCachedResponse, storeCachedResponse } from "@/shared/offline/http-cache";
+import {
+  isSnapshotBacked,
+  readCachedResponse,
+  storeCachedResponse,
+} from "@/shared/offline/http-cache";
 import { isQueueableWrite, queueHttpWrite } from "@/shared/offline/offline-http";
 import { currentLanguage, i18n } from "@/shared/i18n";
 import { newUuid } from "@/shared/offline/outbox";
 import { ApiError } from "./api-error";
-import { isBrowserOnline, reportNetworkResult } from "./network";
+import { isBrowserOnline, lastKnownOnline, probeServer, reportNetworkResult } from "./network";
 import { notifyUpgradeRequired } from "./upgrade";
 
 /**
@@ -201,7 +205,86 @@ export async function refreshSession(): Promise<boolean> {
   return refreshInFlight;
 }
 
+/**
+ * With a local copy of a read at hand, the server gets this long to answer before the
+ * copy is shown. A Wi-Fi whose Internet link is down does not fail requests, it lets
+ * them hang: without this limit every screen would stay blank for the full timeout.
+ */
+const CACHED_READ_DEADLINE_MS = 4000;
+
+function networkError(): ApiError {
+  return new ApiError({
+    status: 0,
+    code: "NETWORK_ERROR",
+    message: i18n.t("offline:api.serverUnreachable"),
+    isNetworkError: true,
+  });
+}
+
+/**
+ * Sends a request — **local copy first** once the device knows it is offline:
+ *  - offline, a read is answered from the local copy right away, and a write is queued
+ *    right away (or fails right away for screens with their own queue), without waiting
+ *    for a network that is known to be absent;
+ *  - online, a read whose server is too slow is answered from the local copy; the late
+ *    answer still refreshes the copy for next time.
+ */
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const method = options.method ?? "GET";
+  const url = buildUrl(path, options.query);
+  const offlineReadable = method === "GET" && !options.anonymous && options.responseType !== "blob";
+  const isWrite = method !== "GET" && !options.anonymous;
+
+  if (!lastKnownOnline()) {
+    if (offlineReadable) {
+      const cached = await readCachedResponse(url);
+      // The periodic check brings the device back online; this one only speeds it up.
+      void probeServer();
+      if (cached !== undefined) return cached as T;
+      // No copy of this answer: the screen's own fallback (snapshot) or its offline
+      // message, right away.
+      throw networkError();
+    } else if (isWrite) {
+      if (options.queueOffline !== false && isQueueableWrite(method, url)) {
+        return (await queueHttpWrite(
+          { method: method as "POST" | "PATCH" | "PUT" | "DELETE", url, body: options.body },
+          options.idempotencyKey ?? newUuid()
+        )) as T;
+      }
+      void probeServer();
+      throw networkError();
+    }
+  }
+
+  const network = networkRequest<T>(path, options);
+  if (!offlineReadable) return network;
+
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const early = await Promise.race([
+    network.then(
+      (value) => ({ value }),
+      (error: unknown) => ({ error })
+    ),
+    new Promise<null>((resolve) => {
+      timer = setTimeout(() => resolve(null), CACHED_READ_DEADLINE_MS);
+    }),
+  ]);
+  clearTimeout(timer);
+  if (early) {
+    if ("error" in early) throw early.error;
+    return early.value;
+  }
+  const cached = await readCachedResponse(url);
+  const snapshotBacked = isSnapshotBacked(url);
+  if (cached === undefined && !snapshotBacked) return network;
+  // The request goes on in the background: its answer refreshes the local copy.
+  network.catch(() => undefined);
+  reportNetworkResult(false);
+  if (cached === undefined) throw networkError();
+  return cached as T;
+}
+
+async function networkRequest<T>(path: string, options: RequestOptions): Promise<T> {
   const { method = "GET", body, query, signal, anonymous, skipRefresh } = options;
   const wantsFile = options.responseType === "blob";
   // A file (Excel import) is sent as-is, not as JSON.
@@ -298,12 +381,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
         await wait(retryDelay(null));
         continue;
       }
-      throw new ApiError({
-        status: 0,
-        code: "NETWORK_ERROR",
-        message: i18n.t("offline:api.serverUnreachable"),
-        isNetworkError: true,
-      });
+      throw networkError();
     }
     inProgress = Boolean(idempotencyKey) && (await isInProgress(response));
     if (inProgress && inProgressRetries < MAX_IN_PROGRESS_RETRIES) {

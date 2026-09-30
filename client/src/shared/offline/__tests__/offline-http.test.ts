@@ -144,7 +144,7 @@ describe("replay at synchronization", () => {
     online = true;
     calls = [];
     routes = (call) => {
-      if (call.url === "/api/health") return json({ status: "ok" });
+      if (call.url === "/api/health/db") return json({ status: "ok" });
       if (call.url.startsWith("/api/sync/snapshot")) {
         return json({ cursor: "c1", products: [], parties: [], modules: [] });
       }
@@ -177,7 +177,7 @@ describe("replay at synchronization", () => {
 
     online = true;
     routes = (call) => {
-      if (call.url === "/api/health") return json({ status: "ok" });
+      if (call.url === "/api/health/db") return json({ status: "ok" });
       if (call.url.startsWith("/api/sync/snapshot")) return json({ cursor: "c1" });
       if (call.url === "/api/warehouses") {
         return json({ error: "Code is required", code: "VALIDATION_ERROR" }, 422);

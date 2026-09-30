@@ -77,7 +77,7 @@ describe("reads", () => {
   it("stays online after a single failed read", async () => {
     const { network, http } = await load();
     fetchMock.mockImplementation(async (url: string) => {
-      if (url === "/api/health") return reply(200, { status: "ok" });
+      if (url === "/api/health/db") return reply(200, { status: "ok" });
       throw new TypeError("Failed to fetch");
     });
     await expect(http.api.get("/api/reports/sales")).rejects.toMatchObject({

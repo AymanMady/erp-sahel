@@ -3,8 +3,9 @@
  *
  * `navigator.onLine` only says "a network interface exists": a device connected
  * to a shop's Wi-Fi whose Internet link is down believes it is online. So we
- * confirm with a **server ping** (`GET /api/health`), as prescribed by
- * `SYNC_STRATEGY.md` §8.
+ * confirm with a **server ping**, as prescribed by `SYNC_STRATEGY.md` §8. The ping
+ * also checks the server's database (`GET /api/health/db`): a server that answers but
+ * cannot reach its data is of no use, the device must work from its local copy.
  *
  * Going offline is a heavy switch (banner, cached data, queued writes), so it is
  * only declared once **confirmed**: a single slow request or a single lost ping
@@ -13,6 +14,7 @@
 
 import { apiUrl } from "@/shared/desktop/desktop";
 
+const HEALTH_PATH = "/api/health/db";
 /** Generous: a serverless instance starting cold can take several seconds. */
 const HEALTH_TIMEOUT_MS = 8000;
 /** Validity period of a ping result: avoids flooding the server. */
@@ -43,7 +45,7 @@ async function pingOnce(): Promise<boolean> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), HEALTH_TIMEOUT_MS);
   try {
-    const response = await fetch(apiUrl("/api/health"), {
+    const response = await fetch(apiUrl(HEALTH_PATH), {
       method: "GET",
       signal: controller.signal,
       cache: "no-store",
@@ -56,7 +58,7 @@ async function pingOnce(): Promise<boolean> {
   }
 }
 
-/** Queries `/api/health` with a short timeout. Never throws. */
+/** Queries the health endpoint with a short timeout. Never throws. */
 export async function probeServer(force = false): Promise<boolean> {
   if (!isBrowserOnline()) {
     updateProbe(false);

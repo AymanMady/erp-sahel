@@ -168,9 +168,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const me = await api.get<MeResponse>("/api/auth/me");
       applyFresh(me);
     } catch (error) {
-      // Offline: keep the cached session, the user keeps working.
-      if (error instanceof ApiError && error.isNetworkError && cached) return;
-      clearSession();
+      // Only a refusal of the server closes the session. Offline, a server without its
+      // database, a server busy or restarting: the user keeps working on this device.
+      const refused = error instanceof ApiError && (error.status === 401 || error.status === 403);
+      if (!refused && cached) return;
+      if (refused) clearSession();
       setState({
         status: "anonymous",
         user: null,

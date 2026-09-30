@@ -44,6 +44,9 @@ const largeJson = express.json({ limit: "10mb" });
 const companyJson = express.json({ limit: "3mb" });
 const formBody = express.urlencoded({ extended: false, limit: "1mb" });
 
+/** Beyond this, the database is reported unreachable (the pool itself waits 15 s). */
+const DB_PROBE_TIMEOUT_MS = 3000;
+
 function bodyParsers(req: Request, res: Response, next: NextFunction): void {
   // A database backup is read by its own route, as raw bytes and with a larger limit.
   if (req.path === "/system/restore") {
@@ -95,12 +98,27 @@ export function registerRoutes(app: Express): void {
     else void idempotency(req, res, next);
   });
 
+  // Probed by devices to decide whether they work online: a server that cannot reach
+  // its database is of no use to them. Answers within a few seconds, whatever the
+  // database does, so that a device switches to its local copy quickly.
   app.get("/api/health/db", async (_req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
-      await pool.query("select 1");
+      await Promise.race([
+        pool.query("select 1"),
+        new Promise((_, reject) => {
+          timer = setTimeout(
+            () => reject(new Error("database probe timed out")),
+            DB_PROBE_TIMEOUT_MS
+          );
+        }),
+      ]);
       res.json({ status: "ok", database: "up" });
     } catch {
       res.status(503).json({ status: "degraded", database: "down", code: "DB_CONNECTION" });
+    } finally {
+      clearTimeout(timer);
     }
   });
 

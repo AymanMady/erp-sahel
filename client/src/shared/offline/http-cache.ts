@@ -56,6 +56,14 @@ interface CachedResponse {
   body: unknown;
 }
 
+/**
+ * True for the lists read from the synchronization snapshot: offline, their screens
+ * need the request to **fail** (quickly) so that `withOfflineFallback` takes over.
+ */
+export function isSnapshotBacked(url: string): boolean {
+  return SNAPSHOT_BACKED_PATHS.has(new URL(url, "http://local").pathname);
+}
+
 function isCacheable(path: string): boolean {
   return (
     path.startsWith("/api/") &&
