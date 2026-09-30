@@ -43,6 +43,13 @@
       "when": 1790700000002,
       "tag": "0005_refresh_token_rotation",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790760558683,
+      "tag": "0006_sync_changes",
+      "breakpoints": true
     }
   ]
 }

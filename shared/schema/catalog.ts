@@ -10,13 +10,14 @@ import { boolean, index, jsonb, pgTable, text, uniqueIndex, uuid } from "drizzle
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { baseColumns, clientUuid, moneyCents, quantity } from "./_base";
+import { baseColumns, clientUuid, moneyCents, quantity, syncVersion } from "./_base";
 import { companies } from "./tenancy";
 
 export const categories = pgTable(
   "categories",
   {
     ...baseColumns,
+    version: syncVersion(),
     companyId: uuid("company_id")
       .notNull()
       .references(() => companies.id, { onDelete: "cascade" }),
@@ -38,6 +39,7 @@ export const products = pgTable(
   "products",
   {
     ...baseColumns,
+    version: syncVersion(),
     companyId: uuid("company_id")
       .notNull()
       .references(() => companies.id, { onDelete: "cascade" }),

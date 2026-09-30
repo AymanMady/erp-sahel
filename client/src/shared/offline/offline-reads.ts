@@ -127,6 +127,7 @@ export function listStockOffline(
           reservedQuantity: "0",
           averageCostCents: 0,
           isActive: true,
+          version: 0,
           createdAt: product.createdAt,
           updatedAt: product.updatedAt,
           productSku: product.sku,

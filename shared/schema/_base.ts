@@ -28,6 +28,14 @@ export const baseColumns = {
   isActive: boolean("is_active").default(true).notNull(),
 };
 
+/**
+ * Row version of a table synchronized with the offline workstations (`docs/OFFLINE_SYNC.md`).
+ * Incremented by a PostgreSQL trigger on every change (migration 0006), **never** by
+ * application code: a workstation compares it with the version its offline edit started
+ * from to detect a concurrent change.
+ */
+export const syncVersion = () => integer("version").default(1).notNull();
+
 /** Quantity stored with 3 decimals; on the JS side it is a `string` (never a float). */
 export const quantity = (name: string) => numeric(name, { precision: 16, scale: 3 });
 
