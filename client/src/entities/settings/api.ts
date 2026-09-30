@@ -2,6 +2,13 @@
 
 import { api, apiRequest } from "@/shared/api/http";
 import { listServicesOffline, withOfflineFallback } from "@/shared/offline/offline-reads";
+import { listServicesLocal, readLocalFirst } from "@/shared/offline/local/local-reads";
+import {
+  archiveLocal,
+  createLocal,
+  updateLocal,
+  writeLocalFirst,
+} from "@/shared/offline/local/local-writes";
 import type {
   Company,
   ModuleDescriptor,
@@ -47,13 +54,34 @@ export const settingsApi = {
     api.get<{ id: string; code: string; label: string; moduleCode: string }[]>("/api/permissions"),
 
   listServices: (filters: { search?: string; limit?: number; offset?: number } = {}) =>
-    withOfflineFallback(
-      () => api.get<Paginated<Service>>("/api/services", filters),
-      (snapshot) => listServicesOffline(snapshot, filters)
+    readLocalFirst(
+      ["services"],
+      () => listServicesLocal(filters),
+      () =>
+        withOfflineFallback(
+          () => api.get<Paginated<Service>>("/api/services", filters),
+          (snapshot) => listServicesOffline(snapshot, filters)
+        )
     ),
-  createService: (body: unknown) => api.post<Service>("/api/services", body),
-  updateService: (id: string, body: unknown) => api.patch<Service>(`/api/services/${id}`, body),
-  archiveService: (id: string) => api.delete(`/api/services/${id}`),
+  // Offline-first desktop: written here and queued, in one transaction (`local-writes.ts`).
+  createService: (body: unknown) =>
+    writeLocalFirst(
+      "services",
+      () => createLocal<Service>("services", body as Record<string, unknown>),
+      () => api.post<Service>("/api/services", body)
+    ),
+  updateService: (id: string, body: unknown) =>
+    writeLocalFirst(
+      "services",
+      () => updateLocal<Service>("services", id, body as Record<string, unknown>),
+      () => api.patch<Service>(`/api/services/${id}`, body)
+    ),
+  archiveService: (id: string) =>
+    writeLocalFirst(
+      "services",
+      () => archiveLocal("services", id),
+      () => api.delete(`/api/services/${id}`)
+    ),
 
   changePassword: (body: unknown) => api.post("/api/auth/change-password", body),
 };

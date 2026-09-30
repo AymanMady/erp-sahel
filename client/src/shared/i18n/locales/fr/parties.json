@@ -99,5 +99,6 @@
     "postalCode": "Code postal",
     "country": "Pays",
     "defaultCountry": "Mauritanie"
-  }
+  },
+  "notFound": "Tiers introuvable."
 }

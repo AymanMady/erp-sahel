@@ -2,6 +2,7 @@
 
 import { api } from "@/shared/api/http";
 import { withOfflineFallback } from "@/shared/offline/offline-reads";
+import { listRegistersLocal, readLocalFirst } from "@/shared/offline/local/local-reads";
 import type { InvoiceDetail, PosRegister, PosSession } from "@/entities/types";
 
 export interface SessionSummary extends PosSession {
@@ -16,9 +17,11 @@ export interface SessionSummary extends PosSession {
 
 export const posApi = {
   listRegisters: () =>
-    withOfflineFallback(
-      () => api.get<PosRegister[]>("/api/pos/registers"),
-      (snapshot) => snapshot.registers
+    readLocalFirst(["pos_registers"], listRegistersLocal, () =>
+      withOfflineFallback(
+        () => api.get<PosRegister[]>("/api/pos/registers"),
+        (snapshot) => snapshot.registers
+      )
     ),
   createRegister: (body: unknown) => api.post<PosRegister>("/api/pos/registers", body),
   updateRegister: (id: string, body: unknown) =>

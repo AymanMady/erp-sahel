@@ -328,8 +328,9 @@ async function pullDelta(): Promise<void> {
 
 /** Offline-first desktop: send the local queue, receive the changes. */
 async function localCycle(): Promise<{ synced: number; replayedHttp: string[] }> {
-  const pushed = await runLocalCycle();
-  return { synced: pushed.succeeded, replayedHttp: pushed.replayedHttp };
+  const cycle = await runLocalCycle();
+  // Changes from other workstations are on screen once the lists are read again.
+  return { synced: cycle.succeeded + cycle.pulled, replayedHttp: cycle.replayedHttp };
 }
 
 /**

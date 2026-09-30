@@ -45,6 +45,24 @@ interface ServerRow {
   data?: Record<string, unknown> | null;
 }
 
+interface QuerySpec {
+  entity: string;
+  filters?: { column: string; op: string; value?: unknown }[];
+  search?: { term: string; columns: string[]; exactColumns?: string[] } | null;
+  orderBy?: { column: string; desc?: boolean }[];
+  limit?: number;
+  offset?: number;
+  includeDeleted?: boolean;
+}
+
+/** Computed columns whose JSON key is not the camelCase of their name. */
+const COLUMN_KEYS: Record<string, Record<string, string>> = {
+  payments: { date: "paymentDate" },
+  purchase_orders: { party_id: "supplierId" },
+  goods_receipts: { party_id: "supplierId" },
+  supplier_invoices: { party_id: "supplierId" },
+};
+
 export class FakeLocalDb {
   company: string | null = null;
   tables = new Map<string, Map<string, Row>>();
@@ -128,6 +146,89 @@ export class FakeLocalDb {
     if (!this.company) throw "The local database is not open";
     if (args.companyId !== this.company)
       throw "Refused: the local database open is another company's";
+  }
+
+  /** Value of a column (`name`, `json:salePriceCents`) for a row, as SQLite would read it. */
+  private column(entity: string, row: Row, column: string): unknown {
+    if (column === "id") return row.id;
+    if (column === "pending") return row.pending ? 1 : 0;
+    const key = column.startsWith("json:")
+      ? column.slice(5)
+      : (COLUMN_KEYS[entity]?.[column] ??
+        column.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase()));
+    const value = row.data[key];
+    return typeof value === "boolean" ? (value ? 1 : 0) : value;
+  }
+
+  query(spec: QuerySpec) {
+    const sqlValue = (value: unknown) => (typeof value === "boolean" ? (value ? 1 : 0) : value);
+    let rows = [...this.table(spec.entity).values()].filter(
+      (row) => spec.includeDeleted || !row.deletedAt
+    );
+    for (const filter of spec.filters ?? []) {
+      rows = rows.filter((row) => {
+        if (filter.op === "arrayHas") {
+          const { key, equals } = filter.value as { key: string; equals: unknown };
+          const list = row.data[filter.column.slice(5)];
+          return (
+            Array.isArray(list) &&
+            list.some((item) => (item as Record<string, unknown>)[key] === equals)
+          );
+        }
+        const value = this.column(spec.entity, row, filter.column);
+        const wanted = sqlValue(filter.value);
+        switch (filter.op) {
+          case "eq":
+            return value === wanted;
+          case "ne":
+            return value !== wanted;
+          case "gt":
+            return Number(value) > Number(wanted);
+          case "gte":
+            return Number(value) >= Number(wanted);
+          case "lt":
+            return Number(value) < Number(wanted);
+          case "lte":
+            return Number(value) <= Number(wanted);
+          case "in":
+            return (filter.value as unknown[]).includes(value);
+          case "isNull":
+            return value == null;
+          case "notNull":
+            return value != null;
+          default:
+            throw `Unknown filter ${filter.op}`;
+        }
+      });
+    }
+    const search = spec.search?.term.trim().toLowerCase();
+    if (search) {
+      rows = rows.filter(
+        (row) =>
+          spec.search!.columns.some((column) =>
+            String(this.column(spec.entity, row, column) ?? "")
+              .toLowerCase()
+              .includes(search)
+          ) ||
+          (spec.search!.exactColumns ?? []).some(
+            (column) => this.column(spec.entity, row, column) === spec.search!.term.trim()
+          )
+      );
+    }
+    const order = [...(spec.orderBy ?? []), { column: "id", desc: false }];
+    rows.sort((a, b) => {
+      for (const item of order) {
+        const left = this.column(spec.entity, a, item.column) as string | number;
+        const right = this.column(spec.entity, b, item.column) as string | number;
+        if (left === right) continue;
+        const compared = left == null ? -1 : right == null ? 1 : left < right ? -1 : 1;
+        return item.desc ? -compared : compared;
+      }
+      return 0;
+    });
+    const offset = spec.offset ?? 0;
+    const end = spec.limit == null ? undefined : offset + spec.limit;
+    return { rows: rows.slice(offset, end), total: rows.length };
   }
 
   /** `window.__TAURI_INTERNALS__.invoke` */
@@ -243,13 +344,8 @@ export class FakeLocalDb {
         return (args.ids as string[]).flatMap(
           (id) => this.table(String(args.entity)).get(id) ?? []
         );
-      case "local_query": {
-        const spec = args.spec as { entity: string; includeDeleted?: boolean };
-        const rows = [...this.table(spec.entity).values()].filter(
-          (row) => spec.includeDeleted || !row.deletedAt
-        );
-        return { rows, total: rows.length };
-      }
+      case "local_query":
+        return this.query(args.spec as QuerySpec);
       case "local_queue_ready": {
         const now = new Date().toISOString();
         return [...this.queue.values()]

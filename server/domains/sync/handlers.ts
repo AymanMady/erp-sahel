@@ -81,7 +81,6 @@ syncDispatcher.register("catalog.product", ["catalog.write"], async (context, pa
     context.company.id,
     {
       ...data,
-      imageUrls: [],
       variants: [],
       minStock: String(data.minStock),
     },

@@ -20,7 +20,8 @@
       "create": "إنشاء",
       "update": "تعديل",
       "delete": "حذف"
-    }
+    },
+    "defaultUnit": "وحدة"
   },
   "resources": {
     "user": "مستخدم",
@@ -54,5 +55,14 @@
     "invoice": "فاتورة {{number}}",
     "payment": "الدفعة {{reference}}",
     "stockAdjustment": "تغيير المخزون ({{quantity}})"
+  },
+  "local": {
+    "products": "منتج",
+    "parties": "عميل أو مورد",
+    "categories": "فئة",
+    "services": "خدمة",
+    "created": "تم الإنشاء",
+    "updated": "تم التعديل",
+    "archived": "تمت الأرشفة"
   }
 }

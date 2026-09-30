@@ -20,7 +20,8 @@
       "create": "Creation",
       "update": "Update",
       "delete": "Deletion"
-    }
+    },
+    "defaultUnit": "unit"
   },
   "resources": {
     "user": "User",
@@ -54,5 +55,14 @@
     "invoice": "Invoice {{number}}",
     "payment": "Payment {{reference}}",
     "stockAdjustment": "Stock change ({{quantity}})"
+  },
+  "local": {
+    "products": "Product",
+    "parties": "Customer or supplier",
+    "categories": "Category",
+    "services": "Service",
+    "created": "created",
+    "updated": "changed",
+    "archived": "archived"
   }
 }

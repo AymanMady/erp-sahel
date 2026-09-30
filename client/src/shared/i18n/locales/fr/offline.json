@@ -20,7 +20,8 @@
       "create": "Création",
       "update": "Modification",
       "delete": "Suppression"
-    }
+    },
+    "defaultUnit": "unité"
   },
   "resources": {
     "user": "Utilisateur",
@@ -54,5 +55,14 @@
     "invoice": "Facture {{number}}",
     "payment": "Paiement {{reference}}",
     "stockAdjustment": "Changement de stock ({{quantity}})"
+  },
+  "local": {
+    "products": "Produit",
+    "parties": "Client ou fournisseur",
+    "categories": "Catégorie",
+    "services": "Prestation",
+    "created": "créé",
+    "updated": "modifié",
+    "archived": "archivé"
   }
 }

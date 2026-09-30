@@ -836,3 +836,47 @@ fn a_new_download_of_an_entity_drops_its_old_rows_but_not_local_changes() {
         ids(&store::query(&connection, &spec(json!({ "entity": "" }))).unwrap());
     assert_eq!(left, vec!["a", "mine"]);
 }
+
+#[test]
+fn a_query_matches_a_barcode_whole_and_finds_a_row_by_an_element_of_a_list() {
+    let mut connection = database();
+    let rows = vec![
+        ServerRow {
+            entity: "products".into(),
+            id: "a".into(),
+            version: 1,
+            data: Some(
+                json!({ "id": "a", "companyId": COMPANY, "name": "Riz", "barcode": "6001",
+                               "variants": [{ "barcode": "7001", "isActive": true }] }),
+            ),
+        },
+        ServerRow {
+            entity: "products".into(),
+            id: "b".into(),
+            version: 1,
+            data: Some(
+                json!({ "id": "b", "companyId": COMPANY, "name": "Sucre 6001 g", "barcode": "60011" }),
+            ),
+        },
+    ];
+    store::apply(
+        &mut connection,
+        COMPANY,
+        &ApplyBatch {
+            rows,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+
+    let whole = store::query(&connection, &spec(json!({ "entity": "", "search": { "term": "6001", "columns": ["sku"], "exactColumns": ["barcode"] } }))).unwrap();
+    assert_eq!(ids(&whole), vec!["a"]);
+
+    let by_variant = store::query(&connection, &spec(json!({ "entity": "", "filters": [{ "column": "json:variants", "op": "arrayHas", "value": { "key": "barcode", "equals": "7001" } }] }))).unwrap();
+    assert_eq!(ids(&by_variant), vec!["a"]);
+
+    let injected = spec(
+        json!({ "entity": "", "filters": [{ "column": "json:variants", "op": "arrayHas", "value": { "key": "x') OR 1=1 --", "equals": 1 } }] }),
+    );
+    assert!(store::query(&connection, &injected).is_err());
+}

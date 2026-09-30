@@ -137,9 +137,9 @@ export function isLocalMode(): boolean {
 }
 
 /** One cycle: send the queue, then receive the changes. Throws on a network failure. */
-export async function runLocalCycle(): Promise<PushSummary> {
+export async function runLocalCycle(): Promise<PushSummary & { pulled: number }> {
   const pushed = await pushLocalQueue();
-  await pullIntoLocal();
+  const { changes } = await pullIntoLocal();
   await localDb.queuePurge(KEEP_SYNCED_DAYS);
-  return pushed;
+  return { ...pushed, pulled: changes };
 }

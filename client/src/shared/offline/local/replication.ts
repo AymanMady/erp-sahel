@@ -21,6 +21,7 @@ import {
   type SyncTable,
 } from "@shared/sync-protocol";
 import { api } from "@/shared/api/http";
+import { queryClient } from "@/shared/api/query-client";
 import { devicePlatform } from "@/shared/desktop/desktop";
 import { localCompanyId, localDb, type BootstrapProgress } from "./local-db";
 
@@ -95,7 +96,11 @@ export async function refreshReadiness(): Promise<Set<SyncTable>> {
     [...next].some((entity) => !ready.has(entity));
   ready = next;
   readyCompany = companyId;
-  if (changed) for (const listener of readyListeners) listener();
+  if (changed) {
+    for (const listener of readyListeners) listener();
+    // Screens switch source (local database or server): read them again.
+    void queryClient.invalidateQueries();
+  }
   return next;
 }
 

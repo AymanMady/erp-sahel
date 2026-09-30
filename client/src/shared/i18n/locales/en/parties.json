@@ -99,5 +99,6 @@
     "postalCode": "Postal code",
     "country": "Country",
     "defaultCountry": "Mauritania"
-  }
+  },
+  "notFound": "Party not found."
 }

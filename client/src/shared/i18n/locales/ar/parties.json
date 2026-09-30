@@ -107,5 +107,6 @@
     "postalCode": "الرمز البريدي",
     "country": "البلد",
     "defaultCountry": "موريتانيا"
-  }
+  },
+  "notFound": "الطرف غير موجود."
 }

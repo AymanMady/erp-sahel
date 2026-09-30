@@ -1100,7 +1100,9 @@ pub struct Filter {
     /// A column of the table (computed ones included) or `json:<key>` for any field of
     /// the server row.
     pub column: String,
-    /// `eq`, `ne`, `lt`, `lte`, `gt`, `gte`, `in`, `isNull`, `notNull`.
+    /// `eq`, `ne`, `lt`, `lte`, `gt`, `gte`, `in`, `isNull`, `notNull`, or `arrayHas`:
+    /// `column` is `json:<list>` and `value` is `{ "key": …, "equals": … }` — an element
+    /// of the list whose `key` equals the value (a variant with this barcode).
     pub op: String,
     #[serde(default)]
     pub value: Value,
@@ -1110,7 +1112,11 @@ pub struct Filter {
 #[serde(rename_all = "camelCase")]
 pub struct Search {
     pub term: String,
+    /// Columns that contain the term (case-insensitive).
     pub columns: Vec<String>,
+    /// Columns equal to the term (a barcode is matched whole).
+    #[serde(default)]
+    pub exact_columns: Vec<String>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -1152,13 +1158,17 @@ pub struct QueryResult {
 /// the table, or `json:<key>` read from `data`. Nothing else reaches the SQL text.
 fn column_sql(columns: &[String], column: &str) -> Result<String, String> {
     if let Some(key) = column.strip_prefix("json:") {
-        if !key.is_empty() && key.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+        if is_json_key(key) {
             return Ok(format!("json_extract(data, '$.{key}')"));
         }
     } else if columns.iter().any(|known| known == column) {
         return Ok(format!("\"{column}\""));
     }
     Err(format!("Unknown column \"{column}\""))
+}
+
+fn is_json_key(key: &str) -> bool {
+    !key.is_empty() && key.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
 }
 
 fn table_columns(connection: &Connection, table: &str) -> Result<Vec<String>, String> {
@@ -1211,6 +1221,28 @@ pub fn query(connection: &Connection, spec: &QuerySpec) -> Result<QueryResult, S
                 conditions.push(format!("{column} IS NOT NULL"));
                 continue;
             }
+            "arrayHas" => {
+                let list = filter
+                    .column
+                    .strip_prefix("json:")
+                    .filter(|key| is_json_key(key))
+                    .ok_or("`arrayHas` needs a json:<list> column")?;
+                let key = filter
+                    .value
+                    .get("key")
+                    .and_then(Value::as_str)
+                    .filter(|key| is_json_key(key))
+                    .ok_or("`arrayHas` needs a key")?;
+                values.push(sql_value(
+                    filter.value.get("equals").unwrap_or(&Value::Null),
+                )?);
+                conditions.push(format!(
+                    "EXISTS (SELECT 1 FROM json_each(data, '$.{list}') element
+                             WHERE json_extract(element.value, '$.{key}') = ?{})",
+                    values.len()
+                ));
+                continue;
+            }
             "in" => {
                 let items = filter.value.as_array().ok_or("`in` needs a list")?;
                 if items.is_empty() {
@@ -1250,6 +1282,13 @@ pub fn query(connection: &Connection, spec: &QuerySpec) -> Result<QueryResult, S
                 "lower(COALESCE({}, '')) LIKE ?{mark} ESCAPE '\\'",
                 column_sql(&columns, column)?
             ));
+        }
+        if !search.exact_columns.is_empty() {
+            values.push(rusqlite::types::Value::Text(search.term.trim().to_string()));
+            let exact = values.len();
+            for column in &search.exact_columns {
+                alternatives.push(format!("{} = ?{exact}", column_sql(&columns, column)?));
+            }
         }
         if !alternatives.is_empty() {
             conditions.push(format!("({})", alternatives.join(" OR ")));

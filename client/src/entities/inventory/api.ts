@@ -6,6 +6,12 @@ import {
   lowStockOffline,
   withOfflineFallback,
 } from "@/shared/offline/offline-reads";
+import {
+  listStockLocal,
+  listWarehousesLocal,
+  lowStockLocal,
+  readLocalFirst,
+} from "@/shared/offline/local/local-reads";
 import type { MovementRow, Paginated, StockRow, Warehouse } from "@/entities/types";
 
 export interface StockFilters {
@@ -26,10 +32,16 @@ export interface MovementFilters {
 }
 
 export const inventoryApi = {
+  // Offline-first desktop: from the local database once downloaded (`local-reads.ts`).
   listStock: (filters: StockFilters = {}) =>
-    withOfflineFallback<{ items: StockRow[]; total: number }>(
-      () => api.get<{ items: StockRow[]; total: number }>("/api/inventory/stock", filters),
-      (snapshot) => listStockOffline(snapshot, filters)
+    readLocalFirst(
+      ["stock_items", "products", "warehouses"],
+      () => listStockLocal(filters),
+      () =>
+        withOfflineFallback<{ items: StockRow[]; total: number }>(
+          () => api.get<{ items: StockRow[]; total: number }>("/api/inventory/stock", filters),
+          (snapshot) => listStockOffline(snapshot, filters)
+        )
     ),
   listMovements: (filters: MovementFilters = {}) =>
     api.get<{ items: MovementRow[]; total: number }>("/api/inventory/movements", filters),
@@ -41,18 +53,22 @@ export const inventoryApi = {
       { warehouseId }
     ),
   lowStock: () =>
-    withOfflineFallback(
-      () =>
-        api.get<
-          { productId: string; sku: string; name: string; minStock: string; quantity: string }[]
-        >("/api/inventory/low-stock"),
-      lowStockOffline
+    readLocalFirst(["products", "stock_items"], lowStockLocal, () =>
+      withOfflineFallback(
+        () =>
+          api.get<
+            { productId: string; sku: string; name: string; minStock: string; quantity: string }[]
+          >("/api/inventory/low-stock"),
+        lowStockOffline
+      )
     ),
 
   listWarehouses: () =>
-    withOfflineFallback(
-      () => api.get<Warehouse[]>("/api/warehouses"),
-      (snapshot) => snapshot.warehouses
+    readLocalFirst(["warehouses"], listWarehousesLocal, () =>
+      withOfflineFallback(
+        () => api.get<Warehouse[]>("/api/warehouses"),
+        (snapshot) => snapshot.warehouses
+      )
     ),
   createWarehouse: (body: unknown) => api.post<Warehouse>("/api/warehouses", body),
   updateWarehouse: (id: string, body: unknown) =>

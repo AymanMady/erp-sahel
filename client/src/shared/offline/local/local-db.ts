@@ -104,12 +104,17 @@ export interface Ack {
 
 export interface QuerySpec {
   entity: SyncTable;
+  /**
+   * `column`: a column of the local table or `json:<key>` of the server row.
+   * `arrayHas`: `column` is `json:<list>`, `value` is `{ key, equals }`.
+   */
   filters?: {
     column: string;
-    op: "eq" | "ne" | "lt" | "lte" | "gt" | "gte" | "in" | "isNull" | "notNull";
+    op: "eq" | "ne" | "lt" | "lte" | "gt" | "gte" | "in" | "isNull" | "notNull" | "arrayHas";
     value?: unknown;
   }[];
-  search?: { term: string; columns: string[] } | null;
+  /** `columns` contain the term; `exactColumns` equal it. */
+  search?: { term: string; columns: string[]; exactColumns?: string[] } | null;
   orderBy?: { column: string; desc?: boolean }[];
   limit?: number;
   offset?: number;
