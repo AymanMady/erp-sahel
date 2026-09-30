@@ -8,17 +8,18 @@
 
 import type { Product } from "@shared/schema";
 import { runInTransaction, type Database } from "../../db";
-import { NotFoundError } from "../../shared/errors/app-error";
+import { NotFoundError, ValidationError } from "../../shared/errors/app-error";
 import { tr } from "../../shared/i18n";
 import { matchByName, type ImportResult } from "../../shared/spreadsheet/workbook";
 import { inventoryApplication } from "../inventory/application";
 import {
+  type CatalogRepository,
   catalogRepository,
   categoriesRepository,
   type ProductExportRow,
   type ProductSearchOptions,
 } from "./repository";
-import type { CreateProductInput, UpdateProductInput } from "./schemas";
+import type { CreateProductInput, UpdateProductInput, VariantInput } from "./schemas";
 import type { ProductImportRow } from "./spreadsheet";
 
 export interface ProductListItem extends Product {
@@ -31,6 +32,81 @@ export interface ProductDetail extends Product {
   variants: Awaited<ReturnType<typeof catalogRepository.listVariants>>;
   suppliers: Awaited<ReturnType<typeof catalogRepository.listProductSuppliers>>;
   stockQuantity: number;
+}
+
+const DUPLICATE_VARIANT_SKU = "Two variants of this product cannot share the same SKU.";
+
+/**
+ * Brings the variants of a product to the submitted list **in place**.
+ *
+ * A variant is never deleted: stock lines (`stock_items.variant_id`, cascading), sales
+ * lines and offline workstations refer to its id. So:
+ *  - a submitted variant is matched to an existing one by `id`, otherwise by SKU, and
+ *    updated where it stands — its id does not change;
+ *  - an unmatched one is created;
+ *  - an existing variant left out of the list is **withdrawn** (`is_active = false`),
+ *    and comes back with the same id if its SKU is submitted again.
+ */
+async function saveVariants(
+  repository: CatalogRepository,
+  companyId: string,
+  productId: string,
+  submitted: VariantInput[]
+): Promise<void> {
+  const existing = await repository.listVariants(companyId, productId, { includeArchived: true });
+  const byId = new Map(existing.map((row) => [row.id, row]));
+
+  const skus = new Set<string>();
+  for (const variant of submitted) {
+    if (skus.has(variant.sku)) throw new ValidationError(DUPLICATE_VARIANT_SKU);
+    skus.add(variant.sku);
+  }
+
+  // Explicit ids first, so that a SKU match never takes a variant claimed by its id.
+  const matched = new Map<string, VariantInput>();
+  const unmatched: VariantInput[] = [];
+  for (const variant of submitted) {
+    if (!variant.id) continue;
+    if (!byId.has(variant.id)) throw new NotFoundError("Variant not found.");
+    matched.set(variant.id, variant);
+  }
+  for (const variant of submitted) {
+    if (variant.id) continue;
+    const row = existing.find((candidate) => candidate.sku === variant.sku);
+    if (row && !matched.has(row.id)) matched.set(row.id, variant);
+    else unmatched.push(variant);
+  }
+
+  const left = existing.filter((row) => !matched.has(row.id));
+  // A withdrawn variant keeps its SKU: a submitted variant cannot take it over.
+  if (left.some((row) => skus.has(row.sku))) throw new ValidationError(DUPLICATE_VARIANT_SKU);
+
+  // SKUs may be exchanged between two variants: free them first, or the unique index
+  // (product, SKU) would refuse the first update.
+  for (const [id, variant] of matched) {
+    if (byId.get(id)?.sku !== variant.sku) {
+      await repository.updateVariant(companyId, id, { sku: `~${id}` });
+    }
+  }
+  for (const [id, variant] of matched) {
+    await repository.updateVariant(companyId, id, { ...variantValues(variant), isActive: true });
+  }
+  await repository.insertVariants(companyId, productId, unmatched.map(variantValues));
+  for (const row of left) {
+    if (row.isActive) {
+      await repository.updateVariant(companyId, row.id, { isActive: false, isDefault: false });
+    }
+  }
+}
+
+function variantValues(variant: VariantInput) {
+  return {
+    sku: variant.sku,
+    barcode: variant.barcode ?? "",
+    attributes: variant.attributes ?? {},
+    salePriceCents: variant.salePriceCents ?? null,
+    isDefault: variant.isDefault ?? false,
+  };
 }
 
 class CatalogApplication {
@@ -111,18 +187,7 @@ class CatalogApplication {
       });
 
       if (input.variants.length > 0) {
-        await repository.replaceVariants(
-          tx,
-          companyId,
-          product.id,
-          input.variants.map((variant) => ({
-            sku: variant.sku,
-            barcode: variant.barcode,
-            attributes: variant.attributes,
-            salePriceCents: variant.salePriceCents ?? null,
-            isDefault: variant.isDefault,
-          }))
-        );
+        await saveVariants(repository, companyId, product.id, input.variants);
       }
 
       if (input.initialStock && !input.isService) {
@@ -162,18 +227,7 @@ class CatalogApplication {
       if (!product) throw new NotFoundError("Product not found.");
 
       if (variants) {
-        await repository.replaceVariants(
-          tx,
-          companyId,
-          productId,
-          variants.map((variant) => ({
-            sku: variant.sku,
-            barcode: variant.barcode ?? "",
-            attributes: variant.attributes ?? {},
-            salePriceCents: variant.salePriceCents ?? null,
-            isDefault: variant.isDefault ?? false,
-          }))
-        );
+        await saveVariants(repository, companyId, productId, variants);
       }
 
       return product;

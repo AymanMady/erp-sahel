@@ -33,6 +33,8 @@ const variantSchema = z.object({
   isDefault: z.boolean().default(false),
 });
 
+export type VariantInput = z.input<typeof variantSchema>;
+
 export const createProductSchema = z.object({
   /** When left empty, the code is assigned automatically (`PRD-0001`). */
   sku: z.string().trim().max(64).optional(),
