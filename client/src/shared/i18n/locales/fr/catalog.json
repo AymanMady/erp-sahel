@@ -14,7 +14,9 @@
     "emptyDescription": "Ajoutez vos produits pour les vendre et suivre ce qui reste.",
     "offlineUnavailable": "Ce produit n'est pas disponible sans internet.",
     "fileName": "produits",
-    "importHint": "Les quantités en stock ne sont pas importées : utilisez « Entrées et sorties » dans le menu Stock. Les catégories qui n'existent pas encore sont créées."
+    "importHint": "Les quantités en stock ne sont pas importées : utilisez « Entrées et sorties » dans le menu Stock. Les catégories qui n'existent pas encore sont créées.",
+    "notFound": "Produit introuvable.",
+    "barcodeNotFound": "Aucun produit ne correspond à ce code-barres."
   },
   "productForm": {
     "defaultUnit": "pièce",

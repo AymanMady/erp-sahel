@@ -20,7 +20,8 @@
       "create": "Creation",
       "update": "Update",
       "delete": "Deletion"
-    }
+    },
+    "defaultUnit": "unit"
   },
   "resources": {
     "user": "User",
@@ -54,5 +55,38 @@
     "invoice": "Invoice {{number}}",
     "payment": "Payment {{reference}}",
     "stockAdjustment": "Stock change ({{quantity}})"
+  },
+  "local": {
+    "products": "Product",
+    "parties": "Customer or supplier",
+    "categories": "Category",
+    "services": "Service",
+    "created": "created",
+    "updated": "changed",
+    "archived": "archived"
+  },
+  "issues": {
+    "title": "To settle",
+    "description": "These changes made on this device could not be sent as they are. Choose what to do for each one.",
+    "conflictsTitle": "Also changed on another device",
+    "conflictHint": "While this device worked without internet, the same information was changed elsewhere.",
+    "mine": "On this device",
+    "server": "Saved elsewhere",
+    "keepMine": "Keep my version",
+    "keepServer": "Keep the other version",
+    "refusedTitle": "Refused",
+    "retry": "Try again",
+    "discard": "Give up",
+    "discardConfirm": "Give up this change? It will be lost.",
+    "empty": "Nothing to settle.",
+    "done": "Settled.",
+    "fields": {
+      "salePriceCents": "Sale price",
+      "purchasePriceCents": "Purchase price",
+      "variants": "Variants",
+      "creditLimitCents": "Credit limit",
+      "paymentTermsDays": "Payment terms (days)",
+      "priceCents": "Price"
+    }
   }
 }

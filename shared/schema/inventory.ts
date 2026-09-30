@@ -12,7 +12,7 @@ import { boolean, index, pgTable, text, timestamp, uniqueIndex, uuid } from "dri
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { baseColumns, clientUuid, moneyCents, quantity } from "./_base";
+import { baseColumns, clientUuid, moneyCents, quantity, syncVersion } from "./_base";
 import { users } from "./accounts";
 import { products, productVariants } from "./catalog";
 import { companies } from "./tenancy";
@@ -21,6 +21,7 @@ export const warehouses = pgTable(
   "warehouses",
   {
     ...baseColumns,
+    version: syncVersion(),
     companyId: uuid("company_id")
       .notNull()
       .references(() => companies.id, { onDelete: "cascade" }),
@@ -69,6 +70,7 @@ export const stockItems = pgTable(
   "stock_items",
   {
     ...baseColumns,
+    version: syncVersion(),
     companyId: uuid("company_id")
       .notNull()
       .references(() => companies.id, { onDelete: "cascade" }),

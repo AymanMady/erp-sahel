@@ -9,7 +9,7 @@
 import { boolean, jsonb, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
-import { baseColumns } from "./_base";
+import { baseColumns, syncVersion } from "./_base";
 import { companies } from "./tenancy";
 
 export const MODULE_CODES = [
@@ -31,6 +31,7 @@ export const companyPlugins = pgTable(
   "company_plugins",
   {
     ...baseColumns,
+    version: syncVersion(),
     companyId: uuid("company_id")
       .notNull()
       .references(() => companies.id, { onDelete: "cascade" }),

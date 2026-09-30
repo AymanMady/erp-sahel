@@ -20,7 +20,8 @@
       "create": "Création",
       "update": "Modification",
       "delete": "Suppression"
-    }
+    },
+    "defaultUnit": "unité"
   },
   "resources": {
     "user": "Utilisateur",
@@ -54,5 +55,38 @@
     "invoice": "Facture {{number}}",
     "payment": "Paiement {{reference}}",
     "stockAdjustment": "Changement de stock ({{quantity}})"
+  },
+  "local": {
+    "products": "Produit",
+    "parties": "Client ou fournisseur",
+    "categories": "Catégorie",
+    "services": "Prestation",
+    "created": "créé",
+    "updated": "modifié",
+    "archived": "archivé"
+  },
+  "issues": {
+    "title": "À régler",
+    "description": "Ces changements faits sur cet appareil n'ont pas pu être envoyés tels quels. Choisissez quoi faire pour chacun.",
+    "conflictsTitle": "Changé aussi sur un autre appareil",
+    "conflictHint": "Pendant que cet appareil travaillait sans internet, la même information a été changée ailleurs.",
+    "mine": "Sur cet appareil",
+    "server": "Enregistré ailleurs",
+    "keepMine": "Garder ma version",
+    "keepServer": "Garder l'autre version",
+    "refusedTitle": "Refusé",
+    "retry": "Réessayer",
+    "discard": "Abandonner",
+    "discardConfirm": "Abandonner ce changement ? Il sera perdu.",
+    "empty": "Rien à régler.",
+    "done": "C'est réglé.",
+    "fields": {
+      "salePriceCents": "Prix de vente",
+      "purchasePriceCents": "Prix d'achat",
+      "variants": "Variantes",
+      "creditLimitCents": "Limite de crédit",
+      "paymentTermsDays": "Délai de paiement (jours)",
+      "priceCents": "Prix"
+    }
   }
 }

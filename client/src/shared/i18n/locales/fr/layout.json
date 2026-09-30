@@ -29,7 +29,11 @@
     "lastSync": "Dernier envoi",
     "never": "jamais",
     "syncNow": "Envoyer maintenant",
-    "viewQueue": "Voir ce qui attend"
+    "viewQueue": "Voir ce qui attend",
+    "conflicts_one": "{{count}} changement à vérifier",
+    "conflicts_other": "{{count}} changements à vérifier",
+    "conflictsRow": "À vérifier",
+    "resolve": "Voir ce qu'il faut régler"
   },
   "offlineBanner": "Pas d'internet — vous pouvez continuer à travailler. Tout sera envoyé quand internet reviendra.",
   "offlineReady": {

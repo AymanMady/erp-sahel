@@ -4,7 +4,7 @@ import { index, integer, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { baseColumns, clientUuid, moneyCents } from "./_base";
+import { baseColumns, clientUuid, moneyCents, syncVersion } from "./_base";
 import { users } from "./accounts";
 import { companies } from "./tenancy";
 
@@ -15,6 +15,7 @@ export const parties = pgTable(
   "parties",
   {
     ...baseColumns,
+    version: syncVersion(),
     companyId: uuid("company_id")
       .notNull()
       .references(() => companies.id, { onDelete: "cascade" }),

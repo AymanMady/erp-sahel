@@ -61,5 +61,32 @@
     "posSessionClose": "Fermeture de caisse",
     "stockMovement": "Changement de stock",
     "offlineEntry": "Fait sans internet"
+  },
+  "deviceLog": {
+    "tab": "Journal du poste",
+    "empty": "Rien dans le journal de ce poste.",
+    "at": "Quand",
+    "event": "Ce qui s'est passé",
+    "detail": "Détail",
+    "events": {
+      "sync.started": "Envoi commencé",
+      "sync.completed": "Envoi terminé",
+      "sync.offline": "Pas d'internet",
+      "sync.failed": "L'envoi n'a pas marché",
+      "push.completed": "Changements envoyés",
+      "push.retry": "Nouvel essai prévu",
+      "pull.completed": "Changements reçus",
+      "pull.resync": "Tout est téléchargé à nouveau",
+      "bootstrap.started": "Premier chargement commencé",
+      "bootstrap.resumed": "Premier chargement repris",
+      "bootstrap.completed": "Premier chargement terminé",
+      "entity.stale": "Données plus mises à jour pour cette personne",
+      "entity.downloaded": "Données téléchargées",
+      "queue.recovered": "Envois interrompus remis en attente",
+      "legacy.imported": "Anciens envois en attente repris",
+      "legacy.other_company": "Envois en attente d'une autre société",
+      "conflict.resolved": "Changement vérifié",
+      "operation.discarded": "Changement abandonné"
+    }
   }
 }

@@ -445,7 +445,7 @@ export function substituteIds<T>(value: T, ids: Map<string, string>): T {
 
 /** Request to replay for a queue record, with identifiers resolved. */
 export function replayRequest(
-  record: OutboxRecord,
+  record: Pick<OutboxRecord, "clientUuid" | "payload">,
   ids: Map<string, string>
 ): HttpWritePayload & { idempotencyKey: string } {
   const payload = record.payload as unknown as HttpWritePayload;

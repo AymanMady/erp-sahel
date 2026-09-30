@@ -4,13 +4,14 @@ import { integer, pgTable, text, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { baseColumns } from "./_base";
+import { baseColumns, syncVersion } from "./_base";
 
 export const ACCOUNTING_STANDARDS = ["OHADA", "PCG", "CGNC", "IFRS"] as const;
 export type AccountingStandard = (typeof ACCOUNTING_STANDARDS)[number];
 
 export const companies = pgTable("companies", {
   ...baseColumns,
+  version: syncVersion(),
   name: text("name").notNull(),
   /** Tenant resolution by subdomain [FR-PLAT-7]. */
   subdomain: text("subdomain").notNull().unique(),
@@ -55,6 +56,7 @@ export type Company = typeof companies.$inferSelect;
 /** Stores / points of sale of a company (multi-store included in multi-tenant). */
 export const companySettings = pgTable("company_settings", {
   ...baseColumns,
+  version: syncVersion(),
   companyId: uuid("company_id")
     .notNull()
     .references(() => companies.id, { onDelete: "cascade" }),

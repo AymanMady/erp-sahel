@@ -9,6 +9,17 @@ import {
 import { offlineNotFound } from "@/shared/api/api-error";
 import { i18n } from "@/shared/i18n";
 import { pendingParties } from "@/shared/offline/offline-writes";
+import {
+  getPartyLocal,
+  listPartiesLocal,
+  readLocalFirst,
+} from "@/shared/offline/local/local-reads";
+import {
+  archiveLocal,
+  createLocal,
+  updateLocal,
+  writeLocalFirst,
+} from "@/shared/offline/local/local-writes";
 import type {
   Contact,
   ImportResult,
@@ -28,23 +39,51 @@ export interface PartyFilters {
 }
 
 export const partyApi = {
+  // Offline-first desktop: from the local database once downloaded (`local-reads.ts`).
   list: (filters: PartyFilters = {}) =>
-    withOfflineFallback(
-      () => api.get<Paginated<Party>>("/api/parties", filters),
-      async (snapshot) => listPartiesOffline(snapshot, await pendingParties(), filters)
+    readLocalFirst(
+      ["parties"],
+      () => listPartiesLocal(filters),
+      () =>
+        withOfflineFallback(
+          () => api.get<Paginated<Party>>("/api/parties", filters),
+          async (snapshot) => listPartiesOffline(snapshot, await pendingParties(), filters)
+        )
     ),
   get: (id: string) =>
-    withOfflineFallback(
-      () => api.get<PartyDetail>(`/api/parties/${id}`),
-      async (snapshot) => {
-        const detail = partyDetailOffline(snapshot, id, await pendingParties());
-        if (!detail) throw offlineNotFound(i18n.t("parties:offlineUnavailable"));
-        return detail as PartyDetail;
-      }
+    readLocalFirst(
+      // The detail shows the customer's invoices, payments and balance.
+      ["parties", "sales_invoices", "payments"],
+      () => getPartyLocal(id),
+      () =>
+        withOfflineFallback(
+          () => api.get<PartyDetail>(`/api/parties/${id}`),
+          async (snapshot) => {
+            const detail = partyDetailOffline(snapshot, id, await pendingParties());
+            if (!detail) throw offlineNotFound(i18n.t("parties:offlineUnavailable"));
+            return detail as PartyDetail;
+          }
+        )
     ),
-  create: (body: unknown) => api.post<Party>("/api/parties", body),
-  update: (id: string, body: unknown) => api.patch<Party>(`/api/parties/${id}`, body),
-  archive: (id: string) => api.delete<{ success: true }>(`/api/parties/${id}`),
+  // Offline-first desktop: written here and queued, in one transaction (`local-writes.ts`).
+  create: (body: unknown) =>
+    writeLocalFirst(
+      "parties",
+      () => createLocal<Party>("parties", body as Record<string, unknown>),
+      () => api.post<Party>("/api/parties", body)
+    ),
+  update: (id: string, body: unknown) =>
+    writeLocalFirst(
+      "parties",
+      () => updateLocal<Party>("parties", id, body as Record<string, unknown>),
+      () => api.patch<Party>(`/api/parties/${id}`, body)
+    ),
+  archive: (id: string) =>
+    writeLocalFirst(
+      "parties",
+      () => archiveLocal("parties", id),
+      () => api.delete<{ success: true }>(`/api/parties/${id}`)
+    ),
 
   createContact: (partyId: string, body: unknown) =>
     api.post<Contact>(`/api/parties/${partyId}/contacts`, body),

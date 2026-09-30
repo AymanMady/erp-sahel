@@ -9,6 +9,9 @@ export const syncMessages: MessageCatalog = {
     "Waiting for {dependency} to be synchronized.":
       "En attente de la synchronisation de {dependency}.",
     "Unknown error during ingestion.": "Erreur inconnue à l'ingestion.",
+    "Changed meanwhile on the server: {fields}.": "Modifié entre-temps sur le serveur : {fields}.",
+    "The change does not name the record it applies to.":
+      "La modification n'indique pas l'élément qu'elle concerne.",
     "Dependency not synchronized yet ({clientUuid}): operation postponed to the next cycle.":
       "Dépendance non encore synchronisée ({clientUuid}) : opération reportée au prochain cycle.",
     "The quote does not reference any customer.": "Le devis ne référence aucun client.",
@@ -25,6 +28,8 @@ export const syncMessages: MessageCatalog = {
       "العملية «{entity}» غير معروفة في التطبيق.",
     "Waiting for {dependency} to be synchronized.": "في انتظار مزامنة {dependency}.",
     "Unknown error during ingestion.": "خطأ غير معروف أثناء الاستيعاب.",
+    "Changed meanwhile on the server: {fields}.": "تم تعديله في الأثناء على الخادم: {fields}.",
+    "The change does not name the record it applies to.": "التعديل لا يحدد العنصر المعني.",
     "Dependency not synchronized yet ({clientUuid}): operation postponed to the next cycle.":
       "تبعية لم تتم مزامنتها بعد ({clientUuid}): تم تأجيل العملية إلى الدورة التالية.",
     "The quote does not reference any customer.": "عرض السعر لا يشير إلى أي عميل.",

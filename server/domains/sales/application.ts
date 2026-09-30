@@ -10,6 +10,7 @@ import { addDays, todayInput } from "@shared/format";
 import { CURRENCY } from "@shared/money";
 import type { Company, Quote, SalesOrder } from "@shared/schema";
 import { runInTransaction, type Database } from "../../db";
+import { offlineId } from "../../shared/db/offline-id";
 import { buildDocumentLines, type RawDocumentLine } from "../../shared/documents/line-builder";
 import { BusinessRuleError, NotFoundError } from "../../shared/errors/app-error";
 import { invoicingApplication } from "../invoicing/application";
@@ -79,6 +80,7 @@ class SalesApplication {
         notes: input.notes ?? "",
         userId: userId ?? null,
         clientUuid: input.clientUuid ?? null,
+        ...offlineId(input.clientUuid),
       });
       await repository.replaceQuoteLines(company.id, quote.id, built.lines);
       return (await repository.findQuote(company.id, quote.id))!;
@@ -183,6 +185,7 @@ class SalesApplication {
         notes: input.notes ?? "",
         userId: userId ?? null,
         clientUuid: input.clientUuid ?? null,
+        ...offlineId(input.clientUuid),
       });
       await repository.replaceOrderLines(company.id, order.id, built.lines);
       return (await repository.findOrder(company.id, order.id))!;

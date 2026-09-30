@@ -102,5 +102,6 @@
     "discount": "Discount",
     "total": "Total",
     "thanks": "Thank you for your visit"
-  }
+  },
+  "sessionNotFound": "Register session not found."
 }

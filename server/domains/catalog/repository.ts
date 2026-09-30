@@ -165,7 +165,13 @@ export class CatalogRepository {
       .select({ product: products })
       .from(productVariants)
       .innerJoin(products, eq(products.id, productVariants.productId))
-      .where(and(eq(productVariants.companyId, companyId), eq(productVariants.barcode, barcode)))
+      .where(
+        and(
+          eq(productVariants.companyId, companyId),
+          eq(productVariants.isActive, true),
+          eq(productVariants.barcode, barcode)
+        )
+      )
       .limit(1);
     return viaVariant?.product ?? null;
   }
@@ -197,31 +203,45 @@ export class CatalogRepository {
     return rows.length > 0;
   }
 
-  async listVariants(companyId: string, productId: string): Promise<ProductVariant[]> {
+  /** Variants offered for sale; `includeArchived` also returns the withdrawn ones. */
+  async listVariants(
+    companyId: string,
+    productId: string,
+    options: { includeArchived?: boolean } = {}
+  ): Promise<ProductVariant[]> {
     return this.database
       .select()
       .from(productVariants)
       .where(
-        and(eq(productVariants.companyId, companyId), eq(productVariants.productId, productId))
+        and(
+          eq(productVariants.companyId, companyId),
+          eq(productVariants.productId, productId),
+          options.includeArchived ? undefined : eq(productVariants.isActive, true)
+        )
       )
       .orderBy(asc(productVariants.sku));
   }
 
-  async replaceVariants(
-    tx: Database,
+  async insertVariants(
     companyId: string,
     productId: string,
     variants: Omit<typeof productVariants.$inferInsert, "companyId" | "productId">[]
   ): Promise<void> {
-    await tx
-      .delete(productVariants)
-      .where(
-        and(eq(productVariants.companyId, companyId), eq(productVariants.productId, productId))
-      );
     if (variants.length === 0) return;
-    await tx
+    await this.database
       .insert(productVariants)
       .values(variants.map((variant) => ({ ...variant, companyId, productId })));
+  }
+
+  async updateVariant(
+    companyId: string,
+    variantId: string,
+    patch: Partial<typeof productVariants.$inferInsert>
+  ): Promise<void> {
+    await this.database
+      .update(productVariants)
+      .set({ ...patch, updatedAt: new Date() })
+      .where(and(eq(productVariants.companyId, companyId), eq(productVariants.id, variantId)));
   }
 
   /** Suppliers listed for a product, with their purchase price ([FR-ACH-1]). */

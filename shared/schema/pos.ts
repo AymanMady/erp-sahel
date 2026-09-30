@@ -8,7 +8,7 @@
 
 import { boolean, index, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
-import { baseColumns, clientUuid, moneyCents } from "./_base";
+import { baseColumns, clientUuid, moneyCents, syncVersion } from "./_base";
 import { users } from "./accounts";
 import { bankAccounts } from "./banking";
 import { warehouses } from "./inventory";
@@ -18,6 +18,7 @@ export const posRegisters = pgTable(
   "pos_registers",
   {
     ...baseColumns,
+    version: syncVersion(),
     companyId: uuid("company_id")
       .notNull()
       .references(() => companies.id, { onDelete: "cascade" }),
@@ -44,6 +45,7 @@ export const posSessions = pgTable(
   "pos_sessions",
   {
     ...baseColumns,
+    version: syncVersion(),
     companyId: uuid("company_id")
       .notNull()
       .references(() => companies.id, { onDelete: "cascade" }),

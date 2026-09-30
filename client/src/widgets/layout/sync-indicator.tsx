@@ -6,7 +6,7 @@
  * last sync date, and a manual retry action.
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   IconAlertTriangle,
   IconCloudCheck,
@@ -20,7 +20,9 @@ import { Link } from "wouter";
 
 import { formatDateTime } from "@shared/format";
 import { useSession } from "@/shared/auth/session";
+import { useLocalBootstrap } from "@/shared/hooks/use-local-bootstrap";
 import { useOfflineReadiness } from "@/shared/hooks/use-offline-readiness";
+import { isLocalMode } from "@/shared/offline/local/local-sync";
 import { useOnline } from "@/shared/hooks/use-online";
 import { runSync } from "@/shared/offline/sync-engine";
 import type { SyncStatus } from "@/shared/offline/sync-engine";
@@ -35,40 +37,48 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/ui/dropdown-menu";
+import { SyncIssuesDialog } from "./sync-issues-dialog";
 
 export function SyncIndicator({ status }: { status: SyncStatus }) {
   const online = useOnline();
   const { isSuperuser } = useSession();
   const readiness = useOfflineReadiness();
+  const bootstrap = useLocalBootstrap();
   const { t } = useTranslation("layout");
+  const [issuesOpen, setIssuesOpen] = useState(false);
   const pending = status.pending;
   const failed = status.failed;
+  const conflicts = status.conflicts;
 
   const tone = !online
     ? "offline"
-    : failed > 0
-      ? "error"
-      : status.state === "syncing"
-        ? "syncing"
-        : pending > 0
-          ? "pending"
-          : "idle";
+    : conflicts > 0
+      ? "conflict"
+      : failed > 0
+        ? "error"
+        : status.state === "syncing"
+          ? "syncing"
+          : pending > 0
+            ? "pending"
+            : "idle";
 
   const label =
     tone === "offline"
       ? t("sync.offline")
-      : tone === "error"
-        ? t("sync.errors", { count: failed })
-        : tone === "syncing"
-          ? t("sync.syncing")
-          : pending > 0
-            ? t("sync.pendingCount", { count: pending })
-            : t("sync.upToDate");
+      : tone === "conflict"
+        ? t("sync.conflicts", { count: conflicts })
+        : tone === "error"
+          ? t("sync.errors", { count: failed })
+          : tone === "syncing"
+            ? t("sync.syncing")
+            : pending > 0
+              ? t("sync.pendingCount", { count: pending })
+              : t("sync.upToDate");
 
   const Icon =
     tone === "offline"
       ? IconCloudOff
-      : tone === "error"
+      : tone === "error" || tone === "conflict"
         ? IconAlertTriangle
         : tone === "syncing"
           ? IconRefresh
@@ -82,7 +92,7 @@ export function SyncIndicator({ status }: { status: SyncStatus }) {
           size="sm"
           className={cn(
             "gap-2",
-            tone === "offline" && "text-status-pending",
+            (tone === "offline" || tone === "conflict") && "text-status-pending",
             tone === "error" && "text-status-danger",
             tone === "idle" && "text-muted-foreground"
           )}
@@ -114,6 +124,9 @@ export function SyncIndicator({ status }: { status: SyncStatus }) {
             value={String(failed)}
             tone={failed > 0 ? "danger" : undefined}
           />
+          {conflicts > 0 ? (
+            <Row label={t("sync.conflictsRow")} value={String(conflicts)} tone="danger" />
+          ) : null}
           <Row
             label={t("sync.lastSync")}
             value={status.lastSyncAt ? formatDateTime(status.lastSyncAt) : t("sync.never")}
@@ -121,13 +134,15 @@ export function SyncIndicator({ status }: { status: SyncStatus }) {
           <Row
             label={t("offlineReady.label")}
             value={
-              readiness.state === "ready"
-                ? t("offlineReady.ready")
-                : readiness.running
-                  ? t("offlineReady.preparingShort", { percent: readiness.percent })
-                  : t("offlineReady.notReady")
+              bootstrap.running
+                ? t("offlineReady.preparingShort", { percent: bootstrap.percent })
+                : readiness.state === "ready"
+                  ? t("offlineReady.ready")
+                  : readiness.running
+                    ? t("offlineReady.preparingShort", { percent: readiness.percent })
+                    : t("offlineReady.notReady")
             }
-            tone={readiness.state === "ready" ? undefined : "danger"}
+            tone={readiness.state === "ready" && !bootstrap.running ? undefined : "danger"}
           />
         </div>
         {status.lastError ? (
@@ -144,12 +159,19 @@ export function SyncIndicator({ status }: { status: SyncStatus }) {
           <IconRefresh className="size-4" />
           {t("sync.syncNow")}
         </DropdownMenuItem>
+        {isLocalMode() && conflicts + failed > 0 ? (
+          <DropdownMenuItem onSelect={() => setIssuesOpen(true)}>
+            <IconAlertTriangle className="size-4" />
+            {t("sync.resolve")}
+          </DropdownMenuItem>
+        ) : null}
         {isSuperuser ? (
           <DropdownMenuItem asChild>
             <Link href="/sync">{t("sync.viewQueue")}</Link>
           </DropdownMenuItem>
         ) : null}
       </DropdownMenuContent>
+      <SyncIssuesDialog open={issuesOpen} onOpenChange={setIssuesOpen} />
     </DropdownMenu>
   );
 }
@@ -193,6 +215,7 @@ export function OfflineBanner() {
 export function OfflinePreparationBanner() {
   const online = useOnline();
   const readiness = useOfflineReadiness();
+  const bootstrap = useLocalBootstrap();
   const { t } = useTranslation("layout");
 
   const previous = useRef(readiness.state);
@@ -203,14 +226,18 @@ export function OfflinePreparationBanner() {
     previous.current = readiness.state;
   }, [readiness.state, t]);
 
-  if (!online || readiness.state !== "preparing" || !readiness.running) return null;
+  // Offline-first desktop: the first download of the local database comes first.
+  const preparing = bootstrap.running || (readiness.state === "preparing" && readiness.running);
+  if (!online || !preparing) return null;
   return (
     <div
       role="status"
       className="flex items-center justify-center gap-2 bg-primary/10 px-4 py-1.5 text-center text-xs font-medium text-primary print-hidden"
     >
       <IconCloudDownload className="size-3.5 shrink-0" />
-      {t("offlineReady.preparing", { percent: readiness.percent })}
+      {t("offlineReady.preparing", {
+        percent: bootstrap.running ? bootstrap.percent : readiness.percent,
+      })}
     </div>
   );
 }

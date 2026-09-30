@@ -14,6 +14,8 @@
 
 import { isTauriDesktop, tauriInvoke } from "@/shared/desktop/desktop";
 import { getCache, getMeta, offlineDb, setCache, setMeta, type OutboxRecord } from "./db";
+import { localCompanyId, localDb } from "./local/local-db";
+import { queueEntryOf } from "./local/queue-entry";
 
 export interface OutboxStorage {
   /** Backend name, shown on the synchronization screen. */
@@ -133,6 +135,31 @@ const sqliteStorage: OutboxStorage = {
   },
 };
 
+/**
+ * Offline-first desktop (`local/`): the company database's `sync_queue` is **the**
+ * queue. It is written first — the durable copy the engine sends — then mirrored into
+ * IndexedDB for the screens that still read it; a failed mirror loses nothing.
+ * Acknowledgements are stored by the engine (`local-push.ts`); here they only update
+ * the mirror.
+ */
+const localQueueStorage: OutboxStorage = {
+  kind: "sqlite",
+  async put(record) {
+    await localDb.write({ queue: [{ ...queueEntryOf(record), seq: undefined }] });
+    await indexedDbStorage.put(record).catch(() => undefined);
+  },
+  async pending() {
+    // Sent from `sync_queue` by the engine, never from the mirror.
+    return [];
+  },
+  async mark(clientUuid, patch) {
+    await indexedDbStorage.mark(clientUuid, patch);
+  },
+  async purgeSynced(olderThanDays) {
+    return indexedDbStorage.purgeSynced(olderThanDays);
+  },
+};
+
 function safeParse(value: string, fallback: unknown): unknown {
   try {
     return JSON.parse(value);
@@ -142,6 +169,7 @@ function safeParse(value: string, fallback: unknown): unknown {
 }
 
 export function outboxStorage(): OutboxStorage {
+  if (localCompanyId()) return localQueueStorage;
   return isTauriDesktop() ? sqliteStorage : indexedDbStorage;
 }
 

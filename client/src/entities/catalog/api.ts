@@ -6,6 +6,19 @@ import { productDetailOffline, withOfflineFallback } from "@/shared/offline/offl
 import { offlineNotFound } from "@/shared/api/api-error";
 import { pendingProducts } from "@/shared/offline/offline-writes";
 import { listProductsOffline } from "@/shared/offline/snapshot";
+import {
+  findByBarcodeLocal,
+  getProductLocal,
+  listCategoriesLocal,
+  listProductsLocal,
+  readLocalFirst,
+} from "@/shared/offline/local/local-reads";
+import {
+  archiveLocal,
+  createLocal,
+  updateLocal,
+  writeLocalFirst,
+} from "@/shared/offline/local/local-writes";
 import type {
   Category,
   ImportResult,
@@ -26,49 +39,95 @@ export interface ProductFilters {
 }
 
 export const catalogApi = {
+  // Offline-first desktop: from the local database once downloaded (`local-reads.ts`).
   listProducts: (filters: ProductFilters = {}) =>
-    withOfflineFallback(
-      () => api.get<Paginated<ProductListItem>>("/api/catalog/products", filters),
-      async (snapshot) =>
-        listProductsOffline(
-          snapshot,
-          {
-            search: filters.search,
-            categoryId: filters.categoryId,
-            isService: filters.isService,
-            includeArchived: filters.includeArchived,
-            orderBy: filters.orderBy,
-            limit: filters.limit,
-            offset: filters.offset,
-          },
-          await pendingProducts()
+    readLocalFirst(
+      ["products", "categories", ...(filters.withStock ? (["stock_items"] as const) : [])],
+      () => listProductsLocal(filters) as Promise<Paginated<ProductListItem>>,
+      () =>
+        withOfflineFallback(
+          () => api.get<Paginated<ProductListItem>>("/api/catalog/products", filters),
+          async (snapshot) =>
+            listProductsOffline(
+              snapshot,
+              {
+                search: filters.search,
+                categoryId: filters.categoryId,
+                isService: filters.isService,
+                includeArchived: filters.includeArchived,
+                orderBy: filters.orderBy,
+                limit: filters.limit,
+                offset: filters.offset,
+              },
+              await pendingProducts()
+            )
         )
     ),
   getProduct: (id: string) =>
-    withOfflineFallback(
-      () => api.get<ProductDetail>(`/api/catalog/products/${id}`),
-      async (snapshot) => {
-        const detail = productDetailOffline(snapshot, id, await pendingProducts());
-        if (!detail) throw offlineNotFound(i18n.t("catalog:products.offlineUnavailable"));
-        return detail as unknown as ProductDetail;
-      }
+    readLocalFirst(
+      ["products", "parties", "stock_items"],
+      () => getProductLocal(id),
+      () =>
+        withOfflineFallback(
+          () => api.get<ProductDetail>(`/api/catalog/products/${id}`),
+          async (snapshot) => {
+            const detail = productDetailOffline(snapshot, id, await pendingProducts());
+            if (!detail) throw offlineNotFound(i18n.t("catalog:products.offlineUnavailable"));
+            return detail as unknown as ProductDetail;
+          }
+        )
     ),
   findByBarcode: (barcode: string) =>
-    api.get<ProductListItem>(`/api/catalog/products/barcode/${encodeURIComponent(barcode)}`),
-  createProduct: (body: unknown) => api.post<ProductListItem>("/api/catalog/products", body),
+    readLocalFirst(
+      ["products"],
+      () => findByBarcodeLocal(barcode),
+      () => api.get<ProductListItem>(`/api/catalog/products/barcode/${encodeURIComponent(barcode)}`)
+    ),
+  // Offline-first desktop: written here and queued, in one transaction (`local-writes.ts`).
+  createProduct: (body: unknown) =>
+    writeLocalFirst(
+      "products",
+      () => createLocal<ProductListItem>("products", body as Record<string, unknown>),
+      () => api.post<ProductListItem>("/api/catalog/products", body)
+    ),
   updateProduct: (id: string, body: unknown) =>
-    api.patch<ProductListItem>(`/api/catalog/products/${id}`, body),
-  archiveProduct: (id: string) => api.delete<{ success: true }>(`/api/catalog/products/${id}`),
+    writeLocalFirst(
+      "products",
+      () => updateLocal<ProductListItem>("products", id, body as Record<string, unknown>),
+      () => api.patch<ProductListItem>(`/api/catalog/products/${id}`, body)
+    ),
+  archiveProduct: (id: string) =>
+    writeLocalFirst(
+      "products",
+      () => archiveLocal("products", id),
+      () => api.delete<{ success: true }>(`/api/catalog/products/${id}`)
+    ),
 
   listCategories: () =>
-    withOfflineFallback(
-      () => api.get<Category[]>("/api/catalog/categories"),
-      (snapshot) => snapshot.categories
+    readLocalFirst(["categories"], listCategoriesLocal, () =>
+      withOfflineFallback(
+        () => api.get<Category[]>("/api/catalog/categories"),
+        (snapshot) => snapshot.categories
+      )
     ),
-  createCategory: (body: unknown) => api.post<Category>("/api/catalog/categories", body),
+  createCategory: (body: unknown) =>
+    writeLocalFirst(
+      "categories",
+      () => createLocal<Category>("categories", body as Record<string, unknown>),
+      () => api.post<Category>("/api/catalog/categories", body)
+    ),
   updateCategory: (id: string, body: unknown) =>
-    api.patch<Category>(`/api/catalog/categories/${id}`, body),
-  archiveCategory: (id: string) => api.delete<{ success: true }>(`/api/catalog/categories/${id}`),
+    writeLocalFirst(
+      "categories",
+      () => updateLocal<Category>("categories", id, body as Record<string, unknown>),
+      () => api.patch<Category>(`/api/catalog/categories/${id}`, body)
+    ),
+  archiveCategory: (id: string) =>
+    writeLocalFirst(
+      "categories",
+      () => archiveLocal("categories", id),
+      () => api.delete<{ success: true }>(`/api/catalog/categories/${id}`)
+    ),
 
   listProductSuppliers: (productId: string) =>
     api.get<ProductDetail["suppliers"]>(`/api/catalog/products/${productId}/suppliers`),

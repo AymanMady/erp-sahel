@@ -2,7 +2,7 @@
 
 import { date, index, integer, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
-import { baseColumns, clientUuid, moneyCents, quantity, rateBp } from "./_base";
+import { baseColumns, clientUuid, moneyCents, quantity, rateBp, syncVersion } from "./_base";
 import { users } from "./accounts";
 import { products } from "./catalog";
 import { parties } from "./parties";
@@ -23,6 +23,7 @@ export const quotes = pgTable(
   "quotes",
   {
     ...baseColumns,
+    version: syncVersion(),
     companyId: uuid("company_id")
       .notNull()
       .references(() => companies.id, { onDelete: "cascade" }),
@@ -102,6 +103,7 @@ export const salesOrders = pgTable(
   "sales_orders",
   {
     ...baseColumns,
+    version: syncVersion(),
     companyId: uuid("company_id")
       .notNull()
       .references(() => companies.id, { onDelete: "cascade" }),

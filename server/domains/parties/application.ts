@@ -9,6 +9,7 @@ import { asc, eq } from "drizzle-orm";
 
 import { parties, type Party, type PartyType } from "@shared/schema";
 import { db, runInTransaction, type Database } from "../../db";
+import { offlineId } from "../../shared/db/offline-id";
 import { NotFoundError } from "../../shared/errors/app-error";
 import { tr } from "../../shared/i18n";
 import { matchByName, type ImportResult } from "../../shared/spreadsheet/workbook";
@@ -69,7 +70,12 @@ class PartiesApplication {
       (await partiesExtraRepository
         .withTransaction(database)
         .nextCode(companyId, codePrefix(partyType)));
-    return repository.create(companyId, { ...input, partyType, code }) as Promise<Party>;
+    return repository.create(companyId, {
+      ...input,
+      ...offlineId(input.clientUuid),
+      partyType,
+      code,
+    }) as Promise<Party>;
   }
 
   async getDetail(companyId: string, partyId: string) {
@@ -84,14 +90,21 @@ class PartiesApplication {
     return { ...party, contacts, addresses, history, outstandingCents };
   }
 
-  async update(companyId: string, partyId: string, patch: Record<string, unknown>) {
-    const party = await partiesRepository.update(companyId, partyId, patch);
+  async update(
+    companyId: string,
+    partyId: string,
+    patch: Record<string, unknown>,
+    database: Database = db
+  ) {
+    const party = await partiesRepository
+      .withTransaction(database)
+      .update(companyId, partyId, patch);
     if (!party) throw new NotFoundError("Party not found.");
     return party;
   }
 
-  async archive(companyId: string, partyId: string) {
-    const archived = await partiesRepository.archive(companyId, partyId);
+  async archive(companyId: string, partyId: string, database: Database = db) {
+    const archived = await partiesRepository.withTransaction(database).archive(companyId, partyId);
     if (!archived) throw new NotFoundError("Party not found.");
   }
 

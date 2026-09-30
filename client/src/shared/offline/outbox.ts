@@ -11,6 +11,7 @@
 
 import { offlineDb, type OutboxEntity, type OutboxRecord, type OutboxStatus } from "./db";
 import { outboxStorage, readMeta, writeMeta } from "./storage";
+import { localCompanyId, localDb } from "./local/local-db";
 
 /**
  * Statuses not yet held by the server. "sending" is included: an operation in flight
@@ -169,6 +170,10 @@ export async function purgeSynced(olderThanDays = 7): Promise<number> {
 
 /** Requeues failed operations (the UI's "Retry" button). */
 export async function retryFailed(): Promise<number> {
+  if (localCompanyId()) {
+    // Offline-first desktop: the local queue is the one sent.
+    for (const row of await localDb.queueList(["failed"], 1000)) await localDb.queueRetry(row.id);
+  }
   return offlineDb.outbox
     .where("status")
     .equals("error")
@@ -181,6 +186,10 @@ export async function retryFailed(): Promise<number> {
  * loss, never an automatic action.
  */
 export async function discard(clientUuid: string): Promise<void> {
+  if (localCompanyId()) {
+    const { discardOperation } = await import("./local/sync-issues");
+    await discardOperation(clientUuid).catch(() => undefined);
+  }
   await offlineDb.outbox.delete(clientUuid);
 }
 

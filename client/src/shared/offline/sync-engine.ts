@@ -35,6 +35,8 @@ import {
   releaseSending,
 } from "./outbox";
 import { applyDelta, pullSnapshot, readSnapshot } from "./snapshot";
+import { localDb } from "./local/local-db";
+import { isLocalMode, runLocalCycle } from "./local/local-sync";
 
 const CURSOR_KEY = "sync.cursor";
 /** Batch size: large enough to be efficient, small enough to fit in a POST. */
@@ -46,6 +48,8 @@ export interface SyncStatus {
   state: SyncState;
   pending: number;
   failed: number;
+  /** Offline changes refused because the server changed the same data (desktop). */
+  conflicts: number;
   lastSyncAt: string | null;
   lastError: string | null;
 }
@@ -54,6 +58,7 @@ let current: SyncStatus = {
   state: "idle",
   pending: 0,
   failed: 0,
+  conflicts: 0,
   lastSyncAt: null,
   lastError: null,
 };
@@ -80,8 +85,18 @@ export function onSyncStatusChange(listener: (status: SyncStatus) => void): () =
 
 /** Recounts the queue and publishes the state — called after each offline write. */
 export async function refreshCounters(): Promise<void> {
+  if (isLocalMode()) {
+    // Offline-first desktop: the local queue is the reference, not its mirror.
+    try {
+      const counts = await localDb.queueCounts();
+      emit({ pending: counts.pending, failed: counts.failed, conflicts: counts.conflicts });
+      return;
+    } catch {
+      // Database closed meanwhile (company switch): fall back on the mirror.
+    }
+  }
   const [pending, failed] = await Promise.all([countPending(), countFailed()]);
-  emit({ pending, failed });
+  emit({ pending, failed, conflicts: 0 });
 }
 
 /**
@@ -311,6 +326,13 @@ async function pullDelta(): Promise<void> {
   await writeMeta(CURSOR_KEY, delta.cursor);
 }
 
+/** Offline-first desktop: send the local queue, receive the changes. */
+async function localCycle(): Promise<{ synced: number; replayedHttp: string[] }> {
+  const cycle = await runLocalCycle();
+  // Changes from other workstations are on screen once the lists are read again.
+  return { synced: cycle.succeeded + cycle.pulled, replayedHttp: cycle.replayedHttp };
+}
+
 /**
  * Runs a full cycle. Never throws: a synchronization failure must not interrupt the
  * sale in progress.
@@ -333,8 +355,11 @@ export async function runSync(options: { force?: boolean } = {}): Promise<SyncSt
     }
 
     emit({ state: "syncing", lastError: null });
+    const local = isLocalMode();
     try {
-      const { synced, replayedHttp } = await flushOutbox();
+      if (local) await localDb.log("info", "sync.started");
+      // Offline-first desktop: the local queue and database; otherwise the former outbox.
+      const { synced, replayedHttp } = local ? await localCycle() : await flushOutbox();
 
       if (replayedHttp.length > 0) {
         // Generic writes also touch what the delta does not cover (categories,
@@ -355,9 +380,17 @@ export async function runSync(options: { force?: boolean } = {}): Promise<SyncSt
       backoffMs = 0;
       const now = new Date().toISOString();
       await writeMeta("sync.lastSyncAt", now);
+      if (local) await localDb.log("info", "sync.completed");
       emit({ state: "idle", lastSyncAt: now, lastError: null });
     } catch (error) {
       const message = error instanceof ApiError ? error.message : i18n.t("offline:sync.failed");
+      if (local) {
+        const offline = error instanceof ApiError && error.isNetworkError;
+        // Never a token nor a password here: the message of the failure only.
+        await localDb
+          .log(offline ? "warn" : "error", offline ? "sync.offline" : "sync.failed", message)
+          .catch(() => undefined);
+      }
       // Exponential backoff 2s → 4s → … → 60s (`SYNC_STRATEGY.md` §8).
       backoffMs = Math.min(60_000, backoffMs === 0 ? 2000 : backoffMs * 2);
       setTimeout(() => {

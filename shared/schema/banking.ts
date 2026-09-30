@@ -2,7 +2,7 @@
 
 import { boolean, date, index, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
-import { baseColumns, moneyCents } from "./_base";
+import { baseColumns, moneyCents, syncVersion } from "./_base";
 import { companies } from "./tenancy";
 
 export const BANK_ACCOUNT_TYPES = ["BANK", "CASH", "MOBILE_MONEY"] as const;
@@ -12,6 +12,7 @@ export const bankAccounts = pgTable(
   "bank_accounts",
   {
     ...baseColumns,
+    version: syncVersion(),
     companyId: uuid("company_id")
       .notNull()
       .references(() => companies.id, { onDelete: "cascade" }),

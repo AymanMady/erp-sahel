@@ -8,6 +8,9 @@ export const catalogMessages: MessageCatalog = {
     "Category not found.": "Catégorie introuvable.",
     "No product matches this barcode.": "Aucun produit ne correspond à ce code-barres.",
     "Variant SKU is required": "Le code de la variante est obligatoire",
+    "Variant not found.": "Variante introuvable.",
+    "Two variants of this product cannot share the same SKU.":
+      "Deux variantes de ce produit ne peuvent pas avoir le même code.",
     "Internal SKU is required": "Le code du produit est obligatoire",
     "Product name is required": "La désignation est obligatoire",
     "Name is required": "Le nom est obligatoire",
@@ -20,6 +23,9 @@ export const catalogMessages: MessageCatalog = {
     "Category not found.": "الفئة غير موجودة.",
     "No product matches this barcode.": "لا يوجد منتج يطابق هذا الرمز الشريطي.",
     "Variant SKU is required": "مرجع المتغير إلزامي",
+    "Variant not found.": "المتغير غير موجود.",
+    "Two variants of this product cannot share the same SKU.":
+      "لا يمكن أن يكون لمتغيرين من هذا المنتج نفس المرجع.",
     "Internal SKU is required": "المرجع الداخلي إلزامي",
     "Product name is required": "اسم المنتج إلزامي",
     "Name is required": "الاسم إلزامي",

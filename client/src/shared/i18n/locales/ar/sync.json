@@ -61,5 +61,32 @@
     "posSessionClose": "إغلاق الصندوق",
     "stockMovement": "تغيير المخزون",
     "offlineEntry": "تم بدون إنترنت"
+  },
+  "deviceLog": {
+    "tab": "سجل الجهاز",
+    "empty": "لا شيء في سجل هذا الجهاز.",
+    "at": "متى",
+    "event": "ما حدث",
+    "detail": "التفاصيل",
+    "events": {
+      "sync.started": "بدأ الإرسال",
+      "sync.completed": "انتهى الإرسال",
+      "sync.offline": "لا يوجد إنترنت",
+      "sync.failed": "فشل الإرسال",
+      "push.completed": "تم إرسال التغييرات",
+      "push.retry": "محاولة جديدة مبرمجة",
+      "pull.completed": "تم استلام التغييرات",
+      "pull.resync": "تم تنزيل كل شيء من جديد",
+      "bootstrap.started": "بدأ التحميل الأول",
+      "bootstrap.resumed": "استُؤنف التحميل الأول",
+      "bootstrap.completed": "انتهى التحميل الأول",
+      "entity.stale": "لم تعد البيانات تُحدَّث لهذا الشخص",
+      "entity.downloaded": "تم تنزيل البيانات",
+      "queue.recovered": "أُعيدت الإرسالات المنقطعة إلى الانتظار",
+      "legacy.imported": "تم استرجاع الإرسالات القديمة المنتظرة",
+      "legacy.other_company": "إرسالات منتظرة لشركة أخرى",
+      "conflict.resolved": "تم التحقق من التغيير",
+      "operation.discarded": "تم التخلي عن التغيير"
+    }
   }
 }

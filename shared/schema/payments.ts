@@ -8,7 +8,7 @@
 
 import { date, index, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
-import { baseColumns, clientUuid, moneyCents } from "./_base";
+import { baseColumns, clientUuid, moneyCents, syncVersion } from "./_base";
 import { users } from "./accounts";
 import { bankAccounts } from "./banking";
 import { salesInvoices } from "./invoicing";
@@ -30,6 +30,7 @@ export const payments = pgTable(
   "payments",
   {
     ...baseColumns,
+    version: syncVersion(),
     companyId: uuid("company_id")
       .notNull()
       .references(() => companies.id, { onDelete: "cascade" }),

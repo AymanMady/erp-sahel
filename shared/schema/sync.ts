@@ -7,7 +7,9 @@
  */
 
 import {
+  bigserial,
   boolean,
+  customType,
   index,
   integer,
   jsonb,
@@ -26,7 +28,14 @@ import { companies } from "./tenancy";
  * `pending`: an HTTP write whose idempotency key is taken while the request runs, so that
  * a second copy arriving at the same moment waits instead of running twice.
  */
-export const SYNC_STATUSES = ["created", "duplicate", "error", "deferred", "pending"] as const;
+export const SYNC_STATUSES = [
+  "created",
+  "duplicate",
+  "error",
+  "deferred",
+  "pending",
+  "conflict",
+] as const;
 export type SyncStatus = (typeof SYNC_STATUSES)[number];
 
 export const syncOperations = pgTable(
@@ -92,3 +101,56 @@ export const syncDevices = pgTable(
 );
 
 export type SyncDevice = typeof syncDevices.$inferSelect;
+
+/**
+ * 64-bit transaction id (`pg_current_xact_id()`). Never wraps around; read as text.
+ */
+const xid8 = customType<{ data: string; driverData: string }>({
+  dataType: () => "xid8",
+});
+
+/**
+ * Change log read by the offline workstations (`GET /api/sync/pull`).
+ *
+ * Filled **only by PostgreSQL triggers** (migration 0006) on the synchronized tables:
+ * every insert, update and delete is recorded, including physical deletes and writes
+ * whose code forgot `updated_at`. A line change is recorded on its document (`entity`
+ * is always a root table), which the workstation then reloads whole.
+ *
+ * The pull cursor is a transaction id, not `seq`: a transaction commits in no particular
+ * order relative to the sequence it drew from, so a cursor on `seq` could step over a
+ * change still being written. See `docs/OFFLINE_SYNC.md` §Cursor.
+ *
+ * No foreign key on `company_id`: deleting a company logs the deletion of its rows in
+ * the same statement.
+ */
+export const syncChanges = pgTable(
+  "sync_changes",
+  {
+    seq: bigserial("seq", { mode: "number" }).primaryKey(),
+    txid: xid8("txid").notNull(),
+    companyId: uuid("company_id").notNull(),
+    /** Root table name (`products`, `sales_invoices`…). */
+    entity: text("entity").notNull(),
+    entityId: uuid("entity_id").notNull(),
+    /** `I`nsert, `U`pdate or `D`elete — informative: the pull reads the current row. */
+    op: text("op").$type<"I" | "U" | "D">().notNull(),
+    changedAt: timestamp("changed_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_sync_changes_company_txid").on(table.companyId, table.txid, table.seq),
+    index("idx_sync_changes_changed_at").on(table.changedAt),
+  ]
+);
+
+export type SyncChange = typeof syncChanges.$inferSelect;
+
+/**
+ * How far the change log has been purged: a workstation whose cursor is older must
+ * download everything again (`resync`). A single row.
+ */
+export const syncHorizon = pgTable("sync_horizon", {
+  id: integer("id").primaryKey().default(1),
+  purgedTxid: xid8("purged_txid").default("0").notNull(),
+  purgedAt: timestamp("purged_at", { withTimezone: true }),
+});

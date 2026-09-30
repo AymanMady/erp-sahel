@@ -1,6 +1,7 @@
 /** Treasury (banking) API access. */
 
 import { api } from "@/shared/api/http";
+import { listPaymentAccountsLocal, readLocalFirst } from "@/shared/offline/local/local-reads";
 import type { BankAccount, BankTransaction } from "@/entities/types";
 
 /** Where a payment can land — readable by cashiers, so without the balance. */
@@ -11,7 +12,12 @@ export type PaymentAccount = Pick<
 
 export const bankingApi = {
   listAccounts: () => api.get<BankAccount[]>("/api/banking/accounts"),
-  listPaymentAccounts: () => api.get<PaymentAccount[]>("/api/banking/payment-accounts"),
+  listPaymentAccounts: () =>
+    readLocalFirst(
+      ["bank_accounts"],
+      () => listPaymentAccountsLocal() as Promise<PaymentAccount[]>,
+      () => api.get<PaymentAccount[]>("/api/banking/payment-accounts")
+    ),
   createAccount: (body: unknown) => api.post<BankAccount>("/api/banking/accounts", body),
   updateAccount: (id: string, body: unknown) =>
     api.patch<BankAccount>(`/api/banking/accounts/${id}`, body),

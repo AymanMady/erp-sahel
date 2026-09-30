@@ -10,7 +10,7 @@
 
 import { boolean, date, index, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
-import { baseColumns, clientUuid, moneyCents, rateBp } from "./_base";
+import { baseColumns, clientUuid, moneyCents, rateBp, syncVersion } from "./_base";
 import { users } from "./accounts";
 import { products } from "./catalog";
 import { warehouses } from "./inventory";
@@ -35,6 +35,7 @@ export const salesInvoices = pgTable(
   "sales_invoices",
   {
     ...baseColumns,
+    version: syncVersion(),
     companyId: uuid("company_id")
       .notNull()
       .references(() => companies.id, { onDelete: "cascade" }),
@@ -108,6 +109,7 @@ export const creditNotes = pgTable(
   "credit_notes",
   {
     ...baseColumns,
+    version: syncVersion(),
     companyId: uuid("company_id")
       .notNull()
       .references(() => companies.id, { onDelete: "cascade" }),

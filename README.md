@@ -141,6 +141,7 @@ Documents de référence :
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — règles de structure et invariants
 - [`docs/SYNC_STRATEGY.md`](docs/SYNC_STRATEGY.md) — protocole hors ligne
+- [`docs/OFFLINE_SYNC.md`](docs/OFFLINE_SYNC.md) — poste desktop offline-first (SQLite, journal des changements, conflits)
 - [`docs/MODULES.md`](docs/MODULES.md) — modules activables et niveaux
 - [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) — modèle de données
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — mise en production

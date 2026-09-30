@@ -37,7 +37,15 @@
     "lastSync": "آخر إرسال",
     "never": "أبدًا",
     "syncNow": "الإرسال الآن",
-    "viewQueue": "رؤية ما ينتظر"
+    "viewQueue": "رؤية ما ينتظر",
+    "conflicts_zero": "لا تغييرات للتحقق",
+    "conflicts_one": "تغيير واحد للتحقق",
+    "conflicts_two": "تغييران للتحقق",
+    "conflicts_few": "{{count}} تغييرات للتحقق",
+    "conflicts_many": "{{count}} تغييرًا للتحقق",
+    "conflicts_other": "{{count}} تغيير للتحقق",
+    "conflictsRow": "للتحقق",
+    "resolve": "عرض ما يحتاج إلى قرار"
   },
   "offlineBanner": "لا يوجد إنترنت — يمكنك متابعة العمل. سيُرسل كل شيء عندما يعود الإنترنت.",
   "offlineReady": {

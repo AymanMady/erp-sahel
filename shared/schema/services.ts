@@ -4,7 +4,7 @@ import { pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { baseColumns, moneyCents } from "./_base";
+import { baseColumns, moneyCents, syncVersion } from "./_base";
 import { companies } from "./tenancy";
 
 export const BILLING_TYPES = ["HOURLY", "DAILY", "FLAT"] as const;
@@ -14,6 +14,7 @@ export const services = pgTable(
   "services",
   {
     ...baseColumns,
+    version: syncVersion(),
     companyId: uuid("company_id")
       .notNull()
       .references(() => companies.id, { onDelete: "cascade" }),

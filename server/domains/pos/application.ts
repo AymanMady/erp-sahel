@@ -10,6 +10,7 @@
 import { toDateInput, todayInput } from "@shared/format";
 import type { Company, PaymentMethod, PosSession } from "@shared/schema";
 import { runInTransaction, type Database } from "../../db";
+import { offlineId } from "../../shared/db/offline-id";
 import type { RawDocumentLine } from "../../shared/documents/line-builder";
 import { BusinessRuleError, NotFoundError } from "../../shared/errors/app-error";
 import { tr } from "../../shared/i18n";
@@ -94,6 +95,7 @@ class PosApplication {
         status: "OPEN",
         notes: input.notes ?? "",
         clientUuid: input.clientUuid ?? null,
+        ...offlineId(input.clientUuid),
       });
     };
     return tx ? run(tx) : runInTransaction(run);

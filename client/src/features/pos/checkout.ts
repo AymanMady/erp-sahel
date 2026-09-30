@@ -9,7 +9,7 @@
  */
 
 import type { PaymentMethod } from "@shared/schema";
-import { formatProvisionalNumber } from "@shared/numbering-helpers";
+import { formatProvisionalNumber, isProvisionalNumber } from "@shared/numbering-helpers";
 import { computeDocumentTotals } from "@shared/pricing";
 import { todayInput } from "@shared/format";
 import { i18n } from "@/shared/i18n";
@@ -19,6 +19,15 @@ import { offlineDb } from "@/shared/offline/db";
 import { enqueue, newUuid } from "@/shared/offline/outbox";
 import { readSnapshot, writeSnapshot } from "@/shared/offline/snapshot";
 import { refreshCounters, runSync } from "@/shared/offline/sync-engine";
+import { localDb } from "@/shared/offline/local/local-db";
+import {
+  checkoutLocal,
+  closeSessionLocal,
+  isLocalTillReady,
+  openSessionLocal,
+} from "@/shared/offline/local/local-pos";
+
+export { isLocalTillReady };
 
 export interface CartLine {
   /** Set for a catalog product, `null` for a service line. */
@@ -176,10 +185,50 @@ async function checkoutOffline(input: CheckoutInput): Promise<CheckoutResult> {
   return { mode: "offline", number: provisionalNumber, totalCents: totals.totalCents };
 }
 
+/** How long a sale waits for its legal number before the provisional one is printed. */
+const LEGAL_NUMBER_WAIT_MS = 4000;
+
+/**
+ * Offline-first desktop: the sale is recorded locally first — never lost, never
+ * waiting on the network. With internet, the till then waits a moment for the server
+ * to give the legal number, so that the receipt carries it as it does online.
+ */
+async function checkoutOnDesktop(
+  input: CheckoutInput,
+  options: { online: boolean }
+): Promise<CheckoutResult> {
+  const sale = await checkoutLocal(input);
+  await refreshCounters();
+  if (options.online) {
+    await Promise.race([
+      runSync(),
+      new Promise((resolve) => setTimeout(resolve, LEGAL_NUMBER_WAIT_MS)),
+    ]);
+    const [invoice] = await localDb.get<{ number: string }>("sales_invoices", [sale.invoiceId]);
+    if (invoice && !isProvisionalNumber(invoice.data.number)) {
+      return {
+        mode: "online",
+        number: invoice.data.number,
+        totalCents: sale.totalCents,
+        invoiceId: sale.invoiceId,
+      };
+    }
+  } else {
+    void runSync();
+  }
+  return {
+    mode: "offline",
+    number: sale.number,
+    totalCents: sale.totalCents,
+    invoiceId: sale.invoiceId,
+  };
+}
+
 /**
  * Checks out the ticket.
  *
- * Online first; if the server is unreachable, automatically falls back to offline mode.
+ * Offline-first desktop: locally first (`checkoutOnDesktop`). Otherwise online first;
+ * if the server is unreachable, automatically falls back to offline mode.
  * A **business** error (insufficient stock, inconsistent amount) is never turned into
  * an offline write: it would be rejected the same way at ingestion, and the sale would
  * stay stuck in the queue without the cashier knowing.
@@ -188,6 +237,7 @@ export async function checkout(
   input: CheckoutInput,
   options: { online: boolean }
 ): Promise<CheckoutResult> {
+  if (isLocalTillReady()) return checkoutOnDesktop(input, options);
   if (!options.online) return checkoutOffline(input);
 
   try {
@@ -205,6 +255,13 @@ export async function openSession(
   input: { registerId: string; openingBalanceCents: number; notes?: string },
   options: { online: boolean }
 ): Promise<{ mode: "online" | "offline"; sessionId: string; clientUuid: string | null }> {
+  if (isLocalTillReady()) {
+    // The session keeps its id everywhere: no provisional id to carry.
+    const { sessionId } = await openSessionLocal(input);
+    await refreshCounters();
+    void runSync();
+    return { mode: options.online ? "online" : "offline", sessionId, clientUuid: null };
+  }
   if (options.online) {
     try {
       const session = await posApi.openSession({
@@ -248,6 +305,12 @@ export async function closeSession(
   },
   options: { online: boolean }
 ): Promise<{ mode: "online" | "offline"; differenceCents: number | null }> {
+  if (isLocalTillReady() && !input.sessionClientUuid) {
+    const { differenceCents } = await closeSessionLocal(input);
+    await refreshCounters();
+    void runSync();
+    return { mode: options.online ? "online" : "offline", differenceCents };
+  }
   if (options.online && !input.sessionClientUuid) {
     try {
       const session = await posApi.closeSession(input.sessionId, {
@@ -293,6 +356,9 @@ export async function pendingSessionTotals(session: {
   sessionId: string;
   clientUuid: string | null;
 }): Promise<{ cashCents: number; totalCents: number }> {
+  // Offline-first desktop: the session summary is read locally, sales made here
+  // included (`sessionSummaryLocal`): nothing to add.
+  if (isLocalTillReady() && !session.clientUuid) return { cashCents: 0, totalCents: 0 };
   const waiting = await offlineDb.outbox.filter((record) => record.status !== "synced").toArray();
   // A session opened without internet and sent since: its sales may still point to
   // its provisional identifier.
