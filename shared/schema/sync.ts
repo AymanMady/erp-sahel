@@ -28,7 +28,14 @@ import { companies } from "./tenancy";
  * `pending`: an HTTP write whose idempotency key is taken while the request runs, so that
  * a second copy arriving at the same moment waits instead of running twice.
  */
-export const SYNC_STATUSES = ["created", "duplicate", "error", "deferred", "pending"] as const;
+export const SYNC_STATUSES = [
+  "created",
+  "duplicate",
+  "error",
+  "deferred",
+  "pending",
+  "conflict",
+] as const;
 export type SyncStatus = (typeof SYNC_STATUSES)[number];
 
 export const syncOperations = pgTable(

@@ -22,6 +22,8 @@ import { paymentsApplication } from "../payments/application";
 import { posApplication } from "../pos/application";
 import { salesApplication } from "../sales/application";
 import { syncDispatcher, type SyncHandlerContext } from "./dispatcher";
+// Updates and deletions of reference data, and the creation of categories and services.
+import "./master-data";
 
 /** Validates the payload against the entity's shared schema. */
 function parsePayload<E extends SyncEntity>(entity: E, payload: Record<string, unknown>) {

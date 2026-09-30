@@ -26,12 +26,24 @@ export const SYNC_ENTITIES = [
   "pos.session_open",
   "pos.session_close",
   "inventory.stock_movement",
+  "catalog.category",
+  "services.service",
 ] as const;
 export type SyncEntity = (typeof SYNC_ENTITIES)[number];
 
 export const syncEntitySchema = z.enum(SYNC_ENTITIES);
 
-export const SYNC_OPERATION_STATUSES = ["created", "duplicate", "error", "deferred"] as const;
+/**
+ * `conflict` (offline-first workstations only): an update found a sensitive field
+ * changed on the server since the version it started from. Nothing was written.
+ */
+export const SYNC_OPERATION_STATUSES = [
+  "created",
+  "duplicate",
+  "error",
+  "deferred",
+  "conflict",
+] as const;
 export type SyncOperationStatus = (typeof SYNC_OPERATION_STATUSES)[number];
 
 /** Document line carried by an offline operation. */
@@ -152,6 +164,32 @@ export const syncStockMovementPayloadSchema = z.object({
   lotNumber: z.string().default(""),
 });
 
+export const syncCategoryPayloadSchema = z.object({
+  name: z.string().min(1),
+  parentId: z.string().uuid().nullish(),
+  description: z.string().default(""),
+});
+
+export const syncServicePayloadSchema = z.object({
+  code: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().default(""),
+  billingType: z.enum(["HOURLY", "DAILY", "FLAT"]).default("HOURLY"),
+  priceCents: z.number().int().min(0).default(0),
+});
+
+/**
+ * Payload of an `update` or `delete` of reference data (offline-first workstations).
+ * `changes`: the fields entered, validated like the online `PATCH`. `base`: the value
+ * each of those fields had when the change started — the server compares it with its
+ * own to tell a concurrent change from an unchanged field.
+ */
+export const syncChangePayloadSchema = z.object({
+  changes: z.record(z.unknown()).default({}),
+  base: z.record(z.unknown()).default({}),
+});
+export type SyncChangePayload = z.infer<typeof syncChangePayloadSchema>;
+
 /** Single outbox operation. */
 export const syncOperationSchema = z.object({
   /** Idempotency key generated on the device (UUIDv4). */
@@ -159,7 +197,11 @@ export const syncOperationSchema = z.object({
   /** Monotonic local counter: guarantees the causal replay order (`SYNC_STRATEGY.md` §4). */
   localSeq: z.number().int().nonnegative(),
   entity: syncEntitySchema,
-  action: z.enum(["create", "update"]).default("create"),
+  action: z.enum(["create", "update", "delete"]).default("create"),
+  /** Row changed by an `update` or `delete`. */
+  entityId: z.string().uuid().optional(),
+  /** Server version the change started from; absent: no conflict check. */
+  baseVersion: z.number().int().nonnegative().nullish(),
   /** `clientUuid`s of the operations this one depends on; otherwise `deferred`. */
   dependsOn: z.array(z.string().uuid()).default([]),
   createdAt: z.string(),
@@ -184,6 +226,23 @@ export interface SyncOperationResult {
   assignedNumber?: string;
   /** Human-readable error message (in the request language), present when `status` is `error` or `deferred`. */
   detail?: string;
+  /**
+   * Outcome in the terms of offline-first workstations: `created` and `duplicate` are
+   * both a `success` (the server holds the data), `error` is `failed`.
+   */
+  outcome: SyncOutcome;
+  /** Fields changed on both sides (`conflict`). */
+  conflictFields?: string[];
+  /** Current server row of the entity, when it has one: stored as is by the workstation. */
+  record?: { entity: SyncTable } & SyncRecord;
+}
+
+export type SyncOutcome = "success" | "conflict" | "failed" | "deferred";
+
+export function outcomeOf(status: SyncOperationStatus): SyncOutcome {
+  if (status === "created" || status === "duplicate") return "success";
+  if (status === "error") return "failed";
+  return status;
 }
 
 export interface SyncPushResponse {
@@ -203,12 +262,30 @@ export const SYNC_PAYLOAD_SCHEMAS = {
   "pos.session_open": syncSessionOpenPayloadSchema,
   "pos.session_close": syncSessionClosePayloadSchema,
   "inventory.stock_movement": syncStockMovementPayloadSchema,
+  "catalog.category": syncCategoryPayloadSchema,
+  "services.service": syncServicePayloadSchema,
 } as const satisfies Record<SyncEntity, z.ZodTypeAny>;
+
+/** Local table holding the rows of each entity (none for stock movements). */
+export const SYNC_ENTITY_TABLES: Record<SyncEntity, SyncTable | null> = {
+  "core.party": "parties",
+  "catalog.product": "products",
+  "sales.quote": "quotes",
+  "invoicing.sales_invoice": "sales_invoices",
+  "payments.payment": "payments",
+  "pos.session_open": "pos_sessions",
+  "pos.session_close": "pos_sessions",
+  "inventory.stock_movement": null,
+  "catalog.category": "categories",
+  "services.service": "services",
+};
 
 /** Recommended replay order when two operations share the same `localSeq`. */
 export const SYNC_ENTITY_PRIORITY: Record<SyncEntity, number> = {
+  "catalog.category": 5,
   "core.party": 10,
   "catalog.product": 10,
+  "services.service": 10,
   "pos.session_open": 20,
   "sales.quote": 30,
   "invoicing.sales_invoice": 40,

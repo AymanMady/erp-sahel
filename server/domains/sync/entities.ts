@@ -461,3 +461,21 @@ export async function loadRecords(
 function camelCase(column: string): string {
   return column.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
 }
+
+/**
+ * Locks a row until the end of the transaction: its version cannot change between the
+ * conflict check and the write. `false` when the row does not exist.
+ */
+export async function lockRow(
+  tx: Database,
+  definition: SyncEntityDefinition,
+  companyId: string,
+  id: string
+): Promise<boolean> {
+  const rows = await tx
+    .select({ id: definition.id })
+    .from(definition.table)
+    .where(and(companyScope(definition, companyId), eq(definition.id, id)))
+    .for("update");
+  return rows.length > 0;
+}

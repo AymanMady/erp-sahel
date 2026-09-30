@@ -8,6 +8,7 @@
 
 import type { Product } from "@shared/schema";
 import { runInTransaction, type Database } from "../../db";
+import { offlineId } from "../../shared/db/offline-id";
 import { NotFoundError, ValidationError } from "../../shared/errors/app-error";
 import { tr } from "../../shared/i18n";
 import { matchByName, type ImportResult } from "../../shared/spreadsheet/workbook";
@@ -169,6 +170,7 @@ class CatalogApplication {
 
       const product = await repository.insert({
         clientUuid: options.clientUuid ?? null,
+        ...offlineId(options.clientUuid),
         companyId,
         sku: input.sku?.trim() || (await repository.nextSku(companyId, input.isService)),
         name: input.name.trim(),
@@ -211,8 +213,14 @@ class CatalogApplication {
     return options.tx ? run(options.tx) : runInTransaction(run);
   }
 
-  async update(companyId: string, productId: string, input: UpdateProductInput): Promise<Product> {
-    return runInTransaction(async (tx) => {
+  async update(
+    companyId: string,
+    productId: string,
+    input: UpdateProductInput,
+    /** Transaction of the caller (offline ingestion). */
+    options: { tx?: Database } = {}
+  ): Promise<Product> {
+    const run = async (tx: Database) => {
       const repository = catalogRepository.withTransaction(tx);
       const existing = await repository.findById(companyId, productId);
       if (!existing) throw new NotFoundError("Product not found.");
@@ -231,12 +239,45 @@ class CatalogApplication {
       }
 
       return product;
-    });
+    };
+    return options.tx ? run(options.tx) : runInTransaction(run);
   }
 
-  async archive(companyId: string, productId: string): Promise<void> {
-    const archived = await catalogRepository.archive(companyId, productId);
+  async archive(
+    companyId: string,
+    productId: string,
+    options: { tx?: Database } = {}
+  ): Promise<void> {
+    const repository = options.tx
+      ? catalogRepository.withTransaction(options.tx)
+      : catalogRepository;
+    const archived = await repository.archive(companyId, productId);
     if (!archived) throw new NotFoundError("Product not found.");
+  }
+
+  /** Category writes replayed from an offline workstation, in its transaction. */
+  async createCategory(
+    companyId: string,
+    values: Record<string, unknown>,
+    database: Database
+  ): Promise<void> {
+    await categoriesRepository.withTransaction(database).create(companyId, values);
+  }
+
+  async updateCategory(
+    companyId: string,
+    categoryId: string,
+    patch: Record<string, unknown>,
+    database: Database
+  ): Promise<void> {
+    const category = await categoriesRepository
+      .withTransaction(database)
+      .update(companyId, categoryId, patch);
+    if (!category) throw new NotFoundError("Category not found.");
+  }
+
+  async archiveCategory(companyId: string, categoryId: string, database: Database) {
+    return categoriesRepository.withTransaction(database).archive(companyId, categoryId);
   }
 
   async findByBarcode(companyId: string, barcode: string): Promise<Product | null> {

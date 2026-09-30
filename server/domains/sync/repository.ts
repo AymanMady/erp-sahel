@@ -56,15 +56,16 @@ export class SyncRepository {
       // Two simultaneous submissions of the same batch: the second creates no duplicate
       // and does not overwrite the result of the first. A previous **failure**, on the
       // other hand, is replaced by the new outcome: an operation that succeeds on a
-      // later attempt must no longer be reported (nor block what depends on it).
+      // later attempt must no longer be reported (nor block what depends on it). Same
+      // for a conflict: it is evaluated again on the next attempt.
       .onConflictDoUpdate({
         target: syncOperations.clientUuid,
         set: {
-          status: sql`case when ${syncOperations.status} = 'error' then excluded.status else ${syncOperations.status} end`,
-          serverId: sql`case when ${syncOperations.status} = 'error' then excluded.server_id else ${syncOperations.serverId} end`,
-          assignedNumber: sql`case when ${syncOperations.status} = 'error' then excluded.assigned_number else ${syncOperations.assignedNumber} end`,
-          detail: sql`case when ${syncOperations.status} = 'error' then excluded.detail else ${syncOperations.detail} end`,
-          payload: sql`case when ${syncOperations.status} = 'error' then excluded.payload else ${syncOperations.payload} end`,
+          status: sql`case when ${syncOperations.status} in ('error', 'conflict') then excluded.status else ${syncOperations.status} end`,
+          serverId: sql`case when ${syncOperations.status} in ('error', 'conflict') then excluded.server_id else ${syncOperations.serverId} end`,
+          assignedNumber: sql`case when ${syncOperations.status} in ('error', 'conflict') then excluded.assigned_number else ${syncOperations.assignedNumber} end`,
+          detail: sql`case when ${syncOperations.status} in ('error', 'conflict') then excluded.detail else ${syncOperations.detail} end`,
+          payload: sql`case when ${syncOperations.status} in ('error', 'conflict') then excluded.payload else ${syncOperations.payload} end`,
           updatedAt: new Date(),
         },
         // Never across companies.

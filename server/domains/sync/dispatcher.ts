@@ -36,7 +36,14 @@ export interface SyncHandlerContext {
   operationCreatedAt: Date;
   /** Whether the person may sell at another price than the catalog one. */
   canSetPrices: boolean;
+  action: SyncAction;
+  /** Row changed by an `update` or `delete`. */
+  entityId?: string;
+  /** Server version the change started from (`update`, `delete`). */
+  baseVersion?: number | null;
 }
+
+export type SyncAction = "create" | "update" | "delete";
 
 export interface SyncHandlerResult {
   serverId: string;
@@ -48,6 +55,18 @@ export type SyncHandler = (
   context: SyncHandlerContext,
   payload: Record<string, unknown>
 ) => Promise<SyncHandlerResult>;
+
+/**
+ * A sensitive field changed on the server since the version the change started from:
+ * the operation is refused as a whole and reported as a conflict, never applied over
+ * the other change (`docs/OFFLINE_SYNC.md` §Conflicts).
+ */
+export class SyncConflictError extends Error {
+  constructor(readonly fields: string[]) {
+    super(tr("Changed meanwhile on the server: {fields}.", { fields: fields.join(", ") }));
+    this.name = "SyncConflictError";
+  }
+}
 
 /** Dependency not resolved yet: the operation is postponed, not rejected. */
 export class DeferredDependencyError extends Error {
@@ -76,26 +95,32 @@ interface RegisteredHandler {
 class SyncDispatcher {
   private readonly handlers = new Map<string, RegisteredHandler>();
 
+  /** One handler per entity and action; `create` unless said otherwise. */
   register(
     entity: SyncEntity | string,
     permissions: PermissionCode[] | SyncPermissionRule,
-    handler: SyncHandler
+    handler: SyncHandler,
+    action: SyncAction = "create"
   ): void {
-    if (this.handlers.has(entity)) {
-      throw new Error(`Sync handler already registered for "${entity}".`);
+    const key = `${entity}:${action}`;
+    if (this.handlers.has(key)) {
+      throw new Error(`Sync handler already registered for "${entity}" (${action}).`);
     }
-    this.handlers.set(entity, {
+    this.handlers.set(key, {
       handler,
       permissions: typeof permissions === "function" ? permissions : () => permissions,
     });
   }
 
-  get(entity: string): RegisteredHandler | undefined {
-    return this.handlers.get(entity);
+  get(entity: string, action: SyncAction = "create"): RegisteredHandler | undefined {
+    return this.handlers.get(`${entity}:${action}`);
   }
 
+  /** Entities with a creation handler — what older workstations may send. */
   entities(): string[] {
-    return [...this.handlers.keys()];
+    return [...this.handlers.keys()]
+      .filter((key) => key.endsWith(":create"))
+      .map((key) => key.slice(0, -":create".length));
   }
 }
 

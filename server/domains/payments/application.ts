@@ -12,6 +12,7 @@ import { CURRENCY } from "@shared/money";
 import { buildPaymentPosting } from "@shared/accounting-rules";
 import type { Company, Payment, PaymentDirection, PaymentMethod } from "@shared/schema";
 import { runInTransaction, type Database } from "../../db";
+import { offlineId } from "../../shared/db/offline-id";
 import { BusinessRuleError, NotFoundError } from "../../shared/errors/app-error";
 import { tr } from "../../shared/i18n";
 import { accountingApplication } from "../accounting/application";
@@ -130,6 +131,7 @@ class PaymentsApplication {
       posSessionId: input.posSessionId ?? null,
       userId: userId ?? null,
       clientUuid: input.clientUuid ?? null,
+      ...offlineId(input.clientUuid),
     });
 
     const label = tr("Payment {number}", { number });

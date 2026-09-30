@@ -16,20 +16,24 @@
  */
 
 import {
+  outcomeOf,
+  SYNC_ENTITY_TABLES,
   sortOperations,
   type SyncOperationInput,
   type SyncOperationResult,
+  type SyncTable,
 } from "@shared/sync-protocol";
 import { ZodError } from "zod";
 
 import { hasAnyPermission } from "@shared/rbac";
 import type { Company, SyncOperation } from "@shared/schema";
-import { runInTransaction } from "../../db";
+import { db, runInTransaction } from "../../db";
 import { AppError } from "../../shared/errors/app-error";
 import { tr } from "../../shared/i18n";
 import { logger } from "../../shared/logging/logger";
 import { canSetPrices } from "../auth/guards";
-import { DeferredDependencyError, syncDispatcher } from "./dispatcher";
+import { DeferredDependencyError, SyncConflictError, syncDispatcher } from "./dispatcher";
+import { loadRecords, syncEntity } from "./entities";
 import { syncRepository } from "./repository";
 
 export interface PushContext {
@@ -40,6 +44,9 @@ export interface PushContext {
   isSuperuser: boolean;
   permissions: readonly string[];
 }
+
+/** Result of one operation before it is completed with its outcome and server row. */
+type Ingested = Omit<SyncOperationResult, "outcome" | "record"> & { detail?: string };
 
 /** Date of the operation on the device; a missing or unreadable one means "now". */
 function operationDate(value: string | undefined): Date {
@@ -56,13 +63,17 @@ class SyncApplication {
     context: PushContext,
     operations: SyncOperationInput[]
   ): Promise<SyncOperationResult[]> {
-    const results: SyncOperationResult[] = [];
+    const ingested: { operation: SyncOperationInput; result: Ingested }[] = [];
     /** References resolved during this batch, to avoid one query per dependency. */
     const resolvedInBatch = new Map<string, string>();
 
     for (const operation of sortOperations(operations)) {
-      results.push(await this.ingestOne(context, operation, resolvedInBatch));
+      ingested.push({
+        operation,
+        result: await this.ingestOne(context, operation, resolvedInBatch),
+      });
     }
+    const results = await this.complete(context.company.id, ingested);
 
     await syncRepository.touchDevice({
       companyId: context.company.id,
@@ -78,7 +89,7 @@ class SyncApplication {
     context: PushContext,
     operation: SyncOperationInput,
     resolvedInBatch: Map<string, string>
-  ): Promise<SyncOperationResult> {
+  ): Promise<Ingested> {
     // 1. Idempotency: an already-ingested operation writes nothing.
     const existing = await syncRepository.findByClientUuid(
       context.company.id,
@@ -88,7 +99,7 @@ class SyncApplication {
       return this.duplicateOf(operation, existing, resolvedInBatch);
     }
 
-    const registered = syncDispatcher.get(operation.entity);
+    const registered = syncDispatcher.get(operation.entity, operation.action);
     if (!registered) {
       return this.record(context, operation, {
         clientUuid: operation.clientUuid,
@@ -150,6 +161,9 @@ class SyncApplication {
             clientUuid: operation.clientUuid,
             operationCreatedAt: operationDate(operation.createdAt),
             canSetPrices: canSetPrices(context),
+            action: operation.action,
+            entityId: operation.entityId,
+            baseVersion: operation.baseVersion,
             resolveRef: async (clientUuid: string) => {
               const cached = resolvedInBatch.get(clientUuid);
               if (cached) return cached;
@@ -187,6 +201,21 @@ class SyncApplication {
         assignedNumber: result.assignedNumber,
       };
     } catch (error) {
+      if (error instanceof SyncConflictError) {
+        logger.info("Sync conflict", {
+          clientUuid: operation.clientUuid,
+          entity: operation.entity,
+          deviceId: context.deviceId,
+          fields: error.fields,
+        });
+        return this.record(context, operation, {
+          clientUuid: operation.clientUuid,
+          entity: operation.entity,
+          status: "conflict",
+          detail: error.message,
+          conflictFields: error.fields,
+        });
+      }
       if (error instanceof DeferredDependencyError) {
         return this.record(context, operation, {
           clientUuid: operation.clientUuid,
@@ -225,7 +254,7 @@ class SyncApplication {
     operation: SyncOperationInput,
     existing: SyncOperation,
     resolvedInBatch: Map<string, string>
-  ): SyncOperationResult {
+  ): Ingested {
     if (existing.serverId) resolvedInBatch.set(operation.clientUuid, existing.serverId);
     return {
       clientUuid: operation.clientUuid,
@@ -249,11 +278,7 @@ class SyncApplication {
     return stillMissing ?? null;
   }
 
-  private journalRow(
-    context: PushContext,
-    operation: SyncOperationInput,
-    result: SyncOperationResult & { detail?: string }
-  ) {
+  private journalRow(context: PushContext, operation: SyncOperationInput, result: Ingested) {
     return {
       clientUuid: operation.clientUuid,
       companyId: context.company.id,
@@ -268,7 +293,7 @@ class SyncApplication {
       detail: result.detail ?? "",
       // The payload of a rejected operation is kept for diagnostics; that of a
       // successful one is not (the data is already in the database).
-      payload: result.status === "error" ? operation.payload : null,
+      payload: result.status === "error" || result.status === "conflict" ? operation.payload : null,
     };
   }
 
@@ -280,12 +305,47 @@ class SyncApplication {
   private async record(
     context: PushContext,
     operation: SyncOperationInput,
-    result: SyncOperationResult & { detail?: string }
-  ): Promise<SyncOperationResult> {
+    result: Ingested
+  ): Promise<Ingested> {
     if (result.status !== "deferred") {
       await syncRepository.record(this.journalRow(context, operation, result));
     }
     return result;
+  }
+
+  /**
+   * Adds what offline-first workstations read: the outcome, and the current server row
+   * of the entity — the one just written, or the one that caused a conflict — so that
+   * the workstation stores it at once instead of waiting for the next pull.
+   */
+  private async complete(
+    companyId: string,
+    ingested: { operation: SyncOperationInput; result: Ingested }[]
+  ): Promise<SyncOperationResult[]> {
+    const wanted = new Map<SyncTable, Set<string>>();
+    const targets = ingested.map(({ operation, result }) => {
+      const table = SYNC_ENTITY_TABLES[operation.entity];
+      const id = operation.action === "create" ? result.serverId : operation.entityId;
+      const withRow = result.status !== "error" && result.status !== "deferred";
+      if (!table || !id || !withRow) return null;
+      wanted.set(table, (wanted.get(table) ?? new Set()).add(id));
+      return { table, id };
+    });
+
+    const loaded = new Map<SyncTable, Awaited<ReturnType<typeof loadRecords>>>();
+    for (const [table, ids] of wanted) {
+      loaded.set(table, await loadRecords(db, syncEntity(table), companyId, [...ids]));
+    }
+
+    return ingested.map(({ result }, index) => {
+      const target = targets[index];
+      const record = target ? loaded.get(target.table)?.get(target.id) : undefined;
+      return {
+        ...result,
+        outcome: outcomeOf(result.status),
+        ...(record && target ? { record: { entity: target.table, ...record } } : {}),
+      };
+    });
   }
 
   async stats(companyId: string) {

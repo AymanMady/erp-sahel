@@ -22,7 +22,7 @@ export const servicesRepository = new TenantRepository(services, [
   services.description,
 ]);
 
-const createServiceSchema = z.object({
+export const createServiceSchema = z.object({
   code: z.string().min(1, "Code is required").max(64),
   name: z.string().min(1, "Label is required").max(255),
   description: z.string().max(4000).default(""),
@@ -30,7 +30,7 @@ const createServiceSchema = z.object({
   priceCents: z.number().int().min(0).default(0),
 });
 
-const updateServiceSchema = createServiceSchema.partial();
+export const updateServiceSchema = createServiceSchema.partial();
 
 const listQuerySchema = z.object({
   search: z.string().trim().max(200).optional(),

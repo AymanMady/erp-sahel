@@ -17,6 +17,7 @@ import { deriveSettlementStatus, invoiceAmountDueCents } from "@shared/pricing";
 import { buildCreditNotePosting, buildSalesInvoicePosting } from "@shared/accounting-rules";
 import type { Company, SalesInvoice, SalesInvoiceLine } from "@shared/schema";
 import { db, runInTransaction, type Database } from "../../db";
+import { offlineId } from "../../shared/db/offline-id";
 import { BusinessRuleError, NotFoundError, ValidationError } from "../../shared/errors/app-error";
 import { buildDocumentLines, type RawDocumentLine } from "../../shared/documents/line-builder";
 import { tr } from "../../shared/i18n";
@@ -179,6 +180,7 @@ class InvoicingApplication {
       userId: userId ?? null,
       provisionalNumber: input.provisionalNumber ?? "",
       clientUuid: input.clientUuid ?? null,
+      ...offlineId(input.clientUuid),
     });
 
     await repository.insertLines(
