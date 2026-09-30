@@ -3,12 +3,18 @@
 import { and, eq, gt, sql } from "drizzle-orm";
 import { z } from "zod";
 
-import { syncPushRequestSchema } from "@shared/sync-protocol";
+import {
+  bootstrapPageQuerySchema,
+  isSyncTable,
+  pullQuerySchema as cursorPullQuerySchema,
+  syncPushRequestSchema,
+} from "@shared/sync-protocol";
 import { parties, products, services, stockItems } from "@shared/schema";
 import { db } from "../../db";
 import { NotFoundError } from "../../shared/errors/app-error";
 import { tenancyApplication } from "../tenancy/application";
 import { syncApplication } from "./application";
+import { replicationApplication, type ReplicationContext } from "./replication";
 import { syncRepository } from "./repository";
 import { buildSyncSnapshot, syncCursor } from "./snapshot";
 
@@ -62,6 +68,34 @@ export class SyncService {
       snapshot: true,
     });
     return snapshot;
+  }
+
+  /** First synchronization of an offline-first workstation: cursor and what to download. */
+  async bootstrapStart(context: ReplicationContext & { deviceId: string; platform: unknown }) {
+    const result = await replicationApplication.bootstrapStart(context);
+    await syncRepository.touchDevice({
+      companyId: context.companyId,
+      deviceId: context.deviceId,
+      userId: context.userId,
+      platform: normalizePlatform(context.platform),
+      snapshot: true,
+    });
+    return result;
+  }
+
+  async bootstrapPage(context: ReplicationContext, entity: unknown, query: unknown) {
+    const name = String(entity ?? "");
+    if (!isSyncTable(name)) throw new NotFoundError("Resource not found");
+    return replicationApplication.bootstrapPage(
+      context,
+      name,
+      bootstrapPageQuerySchema.parse(query ?? {})
+    );
+  }
+
+  /** Changes after an integer cursor, from the change log (offline-first workstations). */
+  async pullChanges(context: ReplicationContext, query: unknown) {
+    return replicationApplication.pull(context, cursorPullQuerySchema.parse(query ?? {}));
   }
 
   /**

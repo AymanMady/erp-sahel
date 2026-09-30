@@ -1,6 +1,6 @@
 /** Online/Offline synchronization routes. */
 
-import type { Express } from "express";
+import type { Express, RequestHandler } from "express";
 
 import { syncRateLimit } from "../../middleware/rate-limit";
 import { asyncHandler } from "../../shared/http/handler";
@@ -26,14 +26,25 @@ export function registerSyncRoutes(app: Express): void {
     syncRateLimit,
     asyncHandler(controller.snapshot)
   );
-  app.get(
-    "/api/sync/pull",
-    requireAuth,
-    canReadReference,
-    syncRateLimit,
-    asyncHandler(controller.pull)
-  );
+  // The cursor pull filters per entity itself; the former delta keeps its guard.
+  const canPull: RequestHandler = (req, res, next) =>
+    req.query.cursor !== undefined ? next() : canReadReference(req, res, next);
+  app.get("/api/sync/pull", requireAuth, canPull, syncRateLimit, asyncHandler(controller.pull));
   app.post("/api/sync/push", requireAuth, syncRateLimit, asyncHandler(controller.push));
+  // Offline-first workstation: rights are checked per entity (`entities.ts`), a person
+  // only receives what the screens would show them.
+  app.post(
+    "/api/sync/bootstrap",
+    requireAuth,
+    syncRateLimit,
+    asyncHandler(controller.bootstrapStart)
+  );
+  app.get(
+    "/api/sync/bootstrap/:entity",
+    requireAuth,
+    syncRateLimit,
+    asyncHandler(controller.bootstrapPage)
+  );
   // Monitoring (devices, journal): the technical screen of the super-administrator.
   app.patch(
     "/api/sync/devices/:id",

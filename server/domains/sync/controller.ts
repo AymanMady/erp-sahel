@@ -10,6 +10,16 @@ function deviceId(req: Request): string {
   return String(req.headers["x-device-id"] ?? "").slice(0, 128) || "unknown";
 }
 
+function replicationContext(req: Request) {
+  const auth = authOf(req);
+  return {
+    companyId: auth.companyId,
+    userId: auth.userId,
+    isSuperuser: auth.isSuperuser,
+    permissions: auth.permissions,
+  };
+}
+
 export class SyncController {
   constructor(private readonly service = syncService) {}
 
@@ -27,8 +37,32 @@ export class SyncController {
     );
   };
 
+  /**
+   * `?cursor=` (integer): offline-first workstations, change log. `?since=` (date): the
+   * former snapshot delta, still served to the web application and older desktops.
+   */
   pull = async (req: Request, res: Response): Promise<void> => {
+    if (req.query.cursor !== undefined) {
+      res.json(await this.service.pullChanges(replicationContext(req), req.query));
+      return;
+    }
     res.json(await this.service.pull(authOf(req).companyId, req.query));
+  };
+
+  bootstrapStart = async (req: Request, res: Response): Promise<void> => {
+    res.json(
+      await this.service.bootstrapStart({
+        ...replicationContext(req),
+        deviceId: deviceId(req),
+        platform: req.body?.platform ?? req.headers["x-device-platform"],
+      })
+    );
+  };
+
+  bootstrapPage = async (req: Request, res: Response): Promise<void> => {
+    res.json(
+      await this.service.bootstrapPage(replicationContext(req), req.params.entity, req.query)
+    );
   };
 
   push = async (req: Request, res: Response): Promise<void> => {

@@ -226,3 +226,115 @@ export function sortOperations<T extends { localSeq: number; entity: SyncEntity 
       a.localSeq - b.localSeq || SYNC_ENTITY_PRIORITY[a.entity] - SYNC_ENTITY_PRIORITY[b.entity]
   );
 }
+
+// ---------------------------------------------------------------------------------------
+// Offline-first workstation (`docs/OFFLINE_SYNC.md`)
+//
+//  - `POST /api/sync/bootstrap`             → starting cursor and what to download;
+//  - `GET  /api/sync/bootstrap/:entity`     → one page of an entity, by increasing id;
+//  - `GET  /api/sync/pull?cursor=&limit=`   → changes after the cursor, from the change log.
+// ---------------------------------------------------------------------------------------
+
+/**
+ * Tables mirrored on the workstation, **in dependency order**: the bootstrap downloads
+ * them in this order and a workstation applies them in it. Same names as the server
+ * tables and the local SQLite tables (`src-tauri/src/local_db/migrations.rs`).
+ */
+export const SYNC_TABLES = [
+  "companies",
+  "company_settings",
+  "company_plugins",
+  "categories",
+  "warehouses",
+  "bank_accounts",
+  "pos_registers",
+  "parties",
+  "products",
+  "services",
+  "stock_items",
+  "pos_sessions",
+  "quotes",
+  "sales_orders",
+  "sales_invoices",
+  "credit_notes",
+  "purchase_orders",
+  "goods_receipts",
+  "supplier_invoices",
+  "payments",
+] as const;
+export type SyncTable = (typeof SYNC_TABLES)[number];
+
+export function isSyncTable(value: string): value is SyncTable {
+  return (SYNC_TABLES as readonly string[]).includes(value);
+}
+
+/** Months of document history downloaded at the first synchronization. */
+export const BOOTSTRAP_HISTORY_MONTHS = 12;
+/** Rows per bootstrap page. */
+export const BOOTSTRAP_PAGE_SIZE = 500;
+/** Changes per pull page (a single larger transaction is served whole). */
+export const PULL_PAGE_SIZE = 500;
+
+/** A server row as stored on the workstation: the table row plus its child rows. */
+export interface SyncRecord {
+  id: string;
+  version: number;
+  data: Record<string, unknown>;
+}
+
+export interface BootstrapStartResponse {
+  /**
+   * Pull cursor to use once every page is stored. Taken **before** the first page is
+   * read: whatever changes while the pages download is served again by the pull.
+   */
+  cursor: number;
+  /** Start of the document history window (`YYYY-MM-DD`), to pass to every page. */
+  since: string;
+  /** Entities this person may receive, in dependency order, with their row counts. */
+  entities: { entity: SyncTable; total: number }[];
+}
+
+export interface BootstrapPageResponse {
+  entity: SyncTable;
+  rows: SyncRecord[];
+  /** Id to pass as `after` for the next page; `null` when done. */
+  nextAfter: string | null;
+  done: boolean;
+}
+
+export interface PullChange {
+  entity: SyncTable;
+  entityId: string;
+  /** `UPSERT`: `data` is the current row. `DELETE`: the row no longer exists. */
+  operation: "UPSERT" | "DELETE";
+  version?: number;
+  data?: Record<string, unknown>;
+}
+
+export interface PullResponse {
+  cursor: number;
+  hasMore: boolean;
+  /** The server log no longer covers the cursor: bootstrap again. */
+  resync: boolean;
+  /**
+   * Entities this person may receive. Changes of the others are **not** in `changes`:
+   * a workstation holding one of them must consider it stale and download it again
+   * when someone allowed to see it synchronizes.
+   */
+  scope: SyncTable[];
+  changes: PullChange[];
+}
+
+export const bootstrapPageQuerySchema = z.object({
+  after: z.string().uuid().optional(),
+  limit: z.coerce.number().int().min(1).max(2000).default(BOOTSTRAP_PAGE_SIZE),
+  since: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+});
+
+export const pullQuerySchema = z.object({
+  cursor: z.coerce.number().int().min(0),
+  limit: z.coerce.number().int().min(1).max(5000).default(PULL_PAGE_SIZE),
+});
