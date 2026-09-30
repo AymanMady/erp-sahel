@@ -28,6 +28,8 @@ import { StatusBadge } from "@/shared/components/status-badge";
 import { useOnline } from "@/shared/hooks/use-online";
 import type { OutboxRecord } from "@/shared/offline/db";
 import { discard, listAll, retryFailed } from "@/shared/offline/outbox";
+import { localDb, type LogRow, type QueueRow } from "@/shared/offline/local/local-db";
+import { isLocalMode } from "@/shared/offline/local/local-sync";
 import {
   getSyncStatus,
   onSyncStatusChange,
@@ -54,6 +56,32 @@ const ENTITY_LABEL_KEYS: Record<string, string> = {
   "http.request": "offlineEntry",
 };
 
+/** A row of the local queue, shown like one of the former outbox. */
+function asOutboxRecord(row: QueueRow): OutboxRecord {
+  const payload = (row.payload ?? {}) as Record<string, unknown>;
+  const status: OutboxRecord["status"] =
+    row.status === "failed" || row.status === "conflict" ? "error" : row.status;
+  return {
+    clientUuid: row.id,
+    localSeq: row.seq,
+    entity: row.entity as OutboxRecord["entity"],
+    action: row.operation === "CREATE" ? "create" : "update",
+    payload,
+    dependsOn: row.dependsOn,
+    status,
+    attempts: row.retryCount,
+    lastError: row.lastError,
+    provisionalNumber:
+      typeof payload.provisionalNumber === "string" ? payload.provisionalNumber : null,
+    assignedNumber: row.assignedNumber,
+    serverId: row.serverId,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    label: row.label,
+    amountCents: typeof payload.amountCents === "number" ? payload.amountCents : null,
+  };
+}
+
 export default function SyncPage() {
   const { t } = useTranslation("sync");
   const online = useOnline();
@@ -69,11 +97,20 @@ export default function SyncPage() {
     ENTITY_LABEL_KEYS[entity] ? t(`entities.${ENTITY_LABEL_KEYS[entity]}`) : entity;
   const [status, setStatus] = useState<SyncStatus>(getSyncStatus);
   const [outbox, setOutbox] = useState<OutboxRecord[]>([]);
+  const [deviceLog, setDeviceLog] = useState<LogRow[] | null>(null);
   const [loadingOutbox, setLoadingOutbox] = useState(true);
 
   const loadOutbox = useCallback(async () => {
     setLoadingOutbox(true);
-    setOutbox(await listAll(200));
+    if (isLocalMode()) {
+      // Offline-first desktop: the local queue is the one sent, and it has a log.
+      const [rows, log] = await Promise.all([localDb.queueList([], 200), localDb.logList(200)]);
+      setOutbox(rows.map(asOutboxRecord));
+      setDeviceLog(log);
+    } else {
+      setOutbox(await listAll(200));
+      setDeviceLog(null);
+    }
     setLoadingOutbox(false);
   }, []);
 
@@ -201,6 +238,25 @@ export default function SyncPage() {
     },
   ];
 
+  const logColumns: Column<LogRow>[] = [
+    { id: "at", header: t("deviceLog.at"), cell: (row) => formatDateTime(row.at) },
+    {
+      id: "event",
+      header: t("deviceLog.event"),
+      cell: (row) => (
+        <span className={row.level === "info" ? undefined : "text-status-danger"}>
+          {t(`deviceLog.events.${row.event}`, { defaultValue: row.event })}
+        </span>
+      ),
+    },
+    {
+      id: "detail",
+      header: t("deviceLog.detail"),
+      hideOnMobile: true,
+      cell: (row) => <span className="text-xs text-muted-foreground">{row.detail || "—"}</span>,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader title={t("title")} description={t("description")}>
@@ -260,6 +316,7 @@ export default function SyncPage() {
           <TabsTrigger value="outbox">{t("tabs.outbox")}</TabsTrigger>
           <TabsTrigger value="journal">{t("tabs.journal")}</TabsTrigger>
           <TabsTrigger value="devices">{t("tabs.devices")}</TabsTrigger>
+          {deviceLog ? <TabsTrigger value="device-log">{t("deviceLog.tab")}</TabsTrigger> : null}
         </TabsList>
 
         <TabsContent value="outbox">
@@ -285,6 +342,18 @@ export default function SyncPage() {
             minWidthClassName="md:min-w-[900px]"
           />
         </TabsContent>
+
+        {deviceLog ? (
+          <TabsContent value="device-log">
+            <ResourceTable
+              columns={logColumns}
+              rows={deviceLog}
+              rowKey={(row) => String(row.id)}
+              emptyTitle={t("deviceLog.empty")}
+              minWidthClassName="md:min-w-[720px]"
+            />
+          </TabsContent>
+        ) : null}
 
         <TabsContent value="devices">
           <Card>

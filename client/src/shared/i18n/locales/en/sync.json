@@ -61,5 +61,32 @@
     "posSessionClose": "Closing of the cash register",
     "stockMovement": "Stock change",
     "offlineEntry": "Done without internet"
+  },
+  "deviceLog": {
+    "tab": "Device log",
+    "empty": "Nothing in this device's log.",
+    "at": "When",
+    "event": "What happened",
+    "detail": "Detail",
+    "events": {
+      "sync.started": "Sending started",
+      "sync.completed": "Sending finished",
+      "sync.offline": "No internet",
+      "sync.failed": "Sending failed",
+      "push.completed": "Changes sent",
+      "push.retry": "New attempt planned",
+      "pull.completed": "Changes received",
+      "pull.resync": "Everything downloaded again",
+      "bootstrap.started": "First download started",
+      "bootstrap.resumed": "First download resumed",
+      "bootstrap.completed": "First download finished",
+      "entity.stale": "Data no longer updated for this person",
+      "entity.downloaded": "Data downloaded",
+      "queue.recovered": "Interrupted sendings queued again",
+      "legacy.imported": "Older waiting sendings taken over",
+      "legacy.other_company": "Waiting sendings of another company",
+      "conflict.resolved": "Change checked",
+      "operation.discarded": "Change given up"
+    }
   }
 }

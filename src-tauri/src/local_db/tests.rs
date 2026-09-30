@@ -935,3 +935,64 @@ fn a_derived_row_follows_the_sale_but_gives_way_to_the_server() {
         Some("8 on the server")
     );
 }
+
+#[test]
+fn giving_up_a_refused_creation_removes_its_row_and_a_change_asks_for_a_reload() {
+    let mut connection = database();
+    store::write(
+        &mut connection,
+        COMPANY,
+        &LocalWrite {
+            rows: vec![row("new", product("new", "Never accepted"))],
+            queue: vec![queue("op1", "new", "CREATE")],
+        },
+    )
+    .unwrap();
+    store::queue_ack(&mut connection, COMPANY, &ack("op1", "failed")).unwrap();
+    assert_eq!(store::queue_discard(&mut connection, "op1").unwrap(), None);
+    assert_eq!(name_of(&connection, "new"), None);
+    assert_eq!(count(&connection, "SELECT COUNT(*) FROM sync_queue"), 0);
+
+    store::apply(
+        &mut connection,
+        COMPANY,
+        &ApplyBatch {
+            rows: vec![server("p1", 1, "Server")],
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    store::write(
+        &mut connection,
+        COMPANY,
+        &LocalWrite {
+            rows: vec![row("p1", product("p1", "Refused change"))],
+            queue: vec![queue("op2", "p1", "UPDATE")],
+        },
+    )
+    .unwrap();
+    store::queue_ack(&mut connection, COMPANY, &ack("op2", "failed")).unwrap();
+    assert_eq!(
+        store::queue_discard(&mut connection, "op2")
+            .unwrap()
+            .as_deref(),
+        Some("products")
+    );
+    assert_eq!(
+        count(&connection, "SELECT pending FROM products WHERE id = 'p1'"),
+        0
+    );
+
+    // An accepted operation is not given up.
+    store::write(
+        &mut connection,
+        COMPANY,
+        &LocalWrite {
+            rows: vec![],
+            queue: vec![queue("op3", "p1", "UPDATE")],
+        },
+    )
+    .unwrap();
+    store::queue_ack(&mut connection, COMPANY, &ack("op3", "synced")).unwrap();
+    assert!(store::queue_discard(&mut connection, "op3").is_err());
+}

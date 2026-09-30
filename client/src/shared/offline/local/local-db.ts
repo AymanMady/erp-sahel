@@ -239,6 +239,8 @@ export const localDb = {
   queueCounts: () =>
     call<{ pending: number; failed: number; conflicts: number }>("local_queue_counts"),
   queueRetry: (id: string) => call<boolean>("local_queue_retry", { id }),
+  /** Gives up a refused operation; returns the table to download again, if any. */
+  queueDiscard: (id: string) => call<SyncTable | null>("local_queue_discard", { id }),
   queuePurge: (olderThanDays: number) => call<number>("local_queue_purge", { olderThanDays }),
 
   conflictsOpen: () => call<ConflictRow[]>("local_conflicts_open"),

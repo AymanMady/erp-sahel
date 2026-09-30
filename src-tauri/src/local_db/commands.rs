@@ -256,3 +256,13 @@ pub fn local_query(
 ) -> Result<store::QueryResult, String> {
     state.with(&company_id, |db| store::query(db, &spec))
 }
+
+/// Gives up an operation the server refused. Returns the entity to download again.
+#[tauri::command(async)]
+pub fn local_queue_discard(
+    state: State<'_, LocalDbState>,
+    company_id: String,
+    id: String,
+) -> Result<Option<String>, String> {
+    state.with(&company_id, |db| store::queue_discard(db, &id))
+}

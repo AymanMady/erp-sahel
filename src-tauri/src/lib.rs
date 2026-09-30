@@ -47,6 +47,7 @@ pub fn run() {
             local_db::local_queue_ack,
             local_db::local_queue_counts,
             local_db::local_queue_retry,
+            local_db::local_queue_discard,
             local_db::local_queue_purge,
             local_db::local_conflicts_open,
             local_db::local_conflict_resolve,

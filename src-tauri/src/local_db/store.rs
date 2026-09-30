@@ -868,6 +868,63 @@ pub fn queue_retry(connection: &Connection, id: &str) -> Result<bool, String> {
         .map_err(err)
 }
 
+/// Drops an operation the server refused, on an explicit decision of the person (the
+/// sale or change is given up). A creation takes its local row with it; for a change,
+/// the row is released — its local data may differ from the server's, so the caller
+/// downloads the entity again. Returns the local table to download again, if any.
+pub fn queue_discard(connection: &mut Connection, id: &str) -> Result<Option<String>, String> {
+    let transaction = connection.transaction().map_err(err)?;
+    let entry: Option<(Option<String>, Option<String>, String, String)> = transaction
+        .query_row(
+            "SELECT local_table, entity_id, operation, status FROM sync_queue WHERE id = ?1",
+            params![id],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
+        )
+        .optional()
+        .map_err(err)?;
+    let Some((local_table, entity_id, operation, status)) = entry else {
+        return Err(format!("Unknown queue operation {id}"));
+    };
+    // Only what the server did not take, and not while it is being sent.
+    if status == "synced" || status == "sending" {
+        return Err(format!("Operation {id} cannot be given up ({status})"));
+    }
+    transaction
+        .execute("DELETE FROM sync_queue WHERE id = ?1", params![id])
+        .map_err(err)?;
+    transaction
+        .execute(
+            "DELETE FROM sync_conflicts WHERE queue_id = ?1",
+            params![id],
+        )
+        .map_err(err)?;
+    let mut reload = None;
+    if let (Some(local_table), Some(entity_id)) = (&local_table, &entity_id) {
+        let table = table(local_table)?;
+        if pending_operations(&transaction, entity_id)? == 0 {
+            if operation == "CREATE" {
+                transaction
+                    .execute(
+                        &format!("DELETE FROM {table} WHERE id = ?1 AND version = 0"),
+                        params![entity_id],
+                    )
+                    .map_err(err)?;
+            }
+            transaction
+                .execute(
+                    &format!("UPDATE {table} SET pending = 0, deleted_at = NULL WHERE id = ?1"),
+                    params![entity_id],
+                )
+                .map_err(err)?;
+            if operation != "CREATE" {
+                reload = Some(table.to_string());
+            }
+        }
+    }
+    transaction.commit().map_err(err)?;
+    Ok(reload)
+}
+
 /// Removes accepted operations older than `older_than_days`: they are no longer needed
 /// to resolve references.
 pub fn queue_purge(connection: &Connection, older_than_days: i64) -> Result<usize, String> {

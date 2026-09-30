@@ -434,3 +434,63 @@ describe("writes to the local database", () => {
     expect(fake.table("products").get("p1")).toMatchObject({ pending: false, version: 2 });
   });
 });
+
+describe("decisions on what could not be sent", () => {
+  async function conflictOnPrice() {
+    await catalogApi.updateProduct("p1", { salePriceCents: 2500 });
+    const [operation] = [...fake.queue.values()];
+    await fake.invoke("local_queue_ack", {
+      companyId: COMPANY,
+      ack: {
+        id: operation.id,
+        status: "conflict",
+        conflict: { fields: ["salePriceCents"] },
+        serverRow: {
+          entity: "products",
+          id: "p1",
+          version: 3,
+          data: { ...fake.table("products").get("p1")!.data, salePriceCents: 3000 },
+        },
+      },
+    });
+    const { listSyncIssues } = await import("../local/sync-issues");
+    const { conflicts } = await listSyncIssues();
+    return conflicts[0];
+  }
+
+  it("keeping my version sends it again on the server version", async () => {
+    const { resolveConflict } = await import("../local/sync-issues");
+    const conflict = await conflictOnPrice();
+    await resolveConflict(conflict, "keep_local");
+    const again = [...fake.queue.values()].find((row) => row.status === "pending")!;
+    expect(again).toMatchObject({ operation: "UPDATE", entityId: "p1", baseVersion: 3 });
+    expect(again.payload).toEqual({
+      changes: { salePriceCents: 2500 },
+      base: { salePriceCents: 3000 },
+    });
+    expect(fake.table("products").get("p1")!.data.salePriceCents).toBe(2500);
+  });
+
+  it("keeping the other version shows it and drops mine", async () => {
+    const { resolveConflict } = await import("../local/sync-issues");
+    const conflict = await conflictOnPrice();
+    await resolveConflict(conflict, "keep_server");
+    expect(fake.table("products").get("p1")).toMatchObject({ version: 3, pending: false });
+    expect(fake.table("products").get("p1")!.data.salePriceCents).toBe(3000);
+    expect([...fake.queue.values()].every((row) => row.status === "synced")).toBe(true);
+  });
+
+  it("giving up a refused change downloads the entity again", async () => {
+    const { discardOperation } = await import("../local/sync-issues");
+    fake.invoke = (
+      (original) =>
+      async (command: string, args: Record<string, unknown> = {}) =>
+        command === "local_queue_discard" ? "products" : original(command, args)
+    )(fake.invoke);
+    await discardOperation("any");
+    expect(fake.progress.get("products")?.done).toBe(false);
+    // Until downloaded again, its screens use the server.
+    await catalogApi.listProducts({});
+    expect(serverCalls().some((call) => call.url.startsWith("/api/catalog/products"))).toBe(true);
+  });
+});
