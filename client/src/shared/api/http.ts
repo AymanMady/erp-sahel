@@ -4,7 +4,8 @@
  * Responsibilities: access token, **automatic refresh** on 401 (only once, with
  * de-duplication of concurrent calls), error normalization, reporting the network
  * state to the connectivity detector, and **offline mode**:
- *  - a read without network is served from the local cache (`http-cache.ts`);
+ *  - a read without network is served from the device's copy (`offline-copy.ts`): the
+ *    desktop's local database for documents, the local cache (`http-cache.ts`) otherwise;
  *  - a write without network is queued and replayed at synchronization
  *    (`offline-http.ts`), with an idempotency key that rules out any duplicate.
  */
@@ -19,11 +20,8 @@ import {
 } from "@/shared/auth/token-store";
 import { APP_VERSION_HEADER, UPGRADE_REQUIRED_CODE } from "@shared/app-version";
 import { APP_VERSION, apiUrl, devicePlatform } from "@/shared/desktop/desktop";
-import {
-  isSnapshotBacked,
-  readCachedResponse,
-  storeCachedResponse,
-} from "@/shared/offline/http-cache";
+import { isSnapshotBacked, storeCachedResponse } from "@/shared/offline/http-cache";
+import { readOfflineCopy } from "@/shared/offline/offline-copy";
 import { isQueueableWrite, queueHttpWrite } from "@/shared/offline/offline-http";
 import { currentLanguage, i18n } from "@/shared/i18n";
 import { newUuid } from "@/shared/offline/outbox";
@@ -237,7 +235,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
   if (!lastKnownOnline()) {
     if (offlineReadable) {
-      const cached = await readCachedResponse(url);
+      const cached = await readOfflineCopy(url);
       // The periodic check brings the device back online; this one only speeds it up.
       void probeServer();
       if (cached !== undefined) return cached as T;
@@ -274,7 +272,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     if ("error" in early) throw early.error;
     return early.value;
   }
-  const cached = await readCachedResponse(url);
+  const cached = await readOfflineCopy(url);
   const snapshotBacked = isSnapshotBacked(url);
   if (cached === undefined && !snapshotBacked) return network;
   // The request goes on in the background: its answer refreshes the local copy.
@@ -344,7 +342,7 @@ async function networkRequest<T>(path: string, options: RequestOptions): Promise
 
   const offlineFallback = async (): Promise<{ value: T } | null> => {
     if (offlineReadable) {
-      const cached = await readCachedResponse(url);
+      const cached = await readOfflineCopy(url);
       if (cached !== undefined) return { value: cached as T };
     }
     if (offlineQueueable && idempotencyKey) {
@@ -407,7 +405,7 @@ async function networkRequest<T>(path: string, options: RequestOptions): Promise
 
   // Too many requests: a read already kept on this device beats an error screen.
   if (response.status === 429 && offlineReadable) {
-    const cached = await readCachedResponse(url);
+    const cached = await readOfflineCopy(url);
     if (cached !== undefined) return cached as T;
   }
 

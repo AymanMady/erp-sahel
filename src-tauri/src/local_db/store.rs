@@ -1189,6 +1189,18 @@ pub struct Search {
     /// Columns equal to the term (a barcode is matched whole).
     #[serde(default)]
     pub exact_columns: Vec<String>,
+    /// Rows whose column holds one of these values match too: a document whose
+    /// customer's name contains the term, the customers being found beforehand.
+    #[serde(default)]
+    pub any_of: Vec<AnyOf>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct AnyOf {
+    pub column: String,
+    #[serde(default)]
+    pub values: Vec<Value>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -1361,6 +1373,18 @@ pub fn query(connection: &Connection, spec: &QuerySpec) -> Result<QueryResult, S
             for column in &search.exact_columns {
                 alternatives.push(format!("{} = ?{exact}", column_sql(&columns, column)?));
             }
+        }
+        for any in &search.any_of {
+            let column = column_sql(&columns, &any.column)?;
+            if any.values.is_empty() {
+                continue;
+            }
+            let mut marks = Vec::with_capacity(any.values.len());
+            for item in &any.values {
+                values.push(sql_value(item)?);
+                marks.push(format!("?{}", values.len()));
+            }
+            alternatives.push(format!("{column} IN ({})", marks.join(", ")));
         }
         if !alternatives.is_empty() {
             conditions.push(format!("({})", alternatives.join(" OR ")));

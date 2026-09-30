@@ -48,11 +48,30 @@ interface ServerRow {
 interface QuerySpec {
   entity: string;
   filters?: { column: string; op: string; value?: unknown }[];
-  search?: { term: string; columns: string[]; exactColumns?: string[] } | null;
+  search?: {
+    term: string;
+    columns: string[];
+    exactColumns?: string[];
+    anyOf?: { column: string; values: unknown[] }[];
+  } | null;
   orderBy?: { column: string; desc?: boolean }[];
   limit?: number;
   offset?: number;
   includeDeleted?: boolean;
+}
+
+/**
+ * Order of two values as SQLite compares them: numbers by value, texts letter by letter
+ * (a date `2026-09-30` too), and any number before any text — `"0.000" > 0` is true.
+ */
+function compareSql(left: unknown, right: unknown): number {
+  const leftIsNumber = typeof left === "number";
+  const rightIsNumber = typeof right === "number";
+  if (leftIsNumber && rightIsNumber) return (left as number) - (right as number);
+  if (leftIsNumber !== rightIsNumber) return leftIsNumber ? -1 : 1;
+  const a = String(left);
+  const b = String(right);
+  return a === b ? 0 : a < b ? -1 : 1;
 }
 
 /** Computed columns whose JSON key is not the camelCase of their name. */
@@ -183,13 +202,13 @@ export class FakeLocalDb {
           case "ne":
             return value !== wanted;
           case "gt":
-            return Number(value) > Number(wanted);
+            return value != null && compareSql(value, wanted) > 0;
           case "gte":
-            return Number(value) >= Number(wanted);
+            return value != null && compareSql(value, wanted) >= 0;
           case "lt":
-            return Number(value) < Number(wanted);
+            return value != null && compareSql(value, wanted) < 0;
           case "lte":
-            return Number(value) <= Number(wanted);
+            return value != null && compareSql(value, wanted) <= 0;
           case "in":
             return (filter.value as unknown[]).includes(value);
           case "isNull":
@@ -212,6 +231,9 @@ export class FakeLocalDb {
           ) ||
           (spec.search!.exactColumns ?? []).some(
             (column) => this.column(spec.entity, row, column) === spec.search!.term.trim()
+          ) ||
+          (spec.search!.anyOf ?? []).some((any) =>
+            any.values.includes(this.column(spec.entity, row, any.column))
           )
       );
     }

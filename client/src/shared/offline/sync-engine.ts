@@ -359,7 +359,23 @@ export async function runSync(options: { force?: boolean } = {}): Promise<SyncSt
     try {
       if (local) await localDb.log("info", "sync.started");
       // Offline-first desktop: the local queue and database; otherwise the former outbox.
-      const { synced, replayedHttp } = local ? await localCycle() : await flushOutbox();
+      let outcome: { synced: number; replayedHttp: string[] } = { synced: 0, replayedHttp: [] };
+      let localFailure: unknown = null;
+      if (local) {
+        try {
+          outcome = await localCycle();
+        } catch (error) {
+          // Without network nothing more can be done now. Any other failure (a page
+          // refused, a local write that failed) still lets the former read copy below
+          // be refreshed: the screens fall back on it while the local database is not
+          // complete. The failure is reported once it is done.
+          if (error instanceof ApiError && error.isNetworkError) throw error;
+          localFailure = error;
+        }
+      } else {
+        outcome = await flushOutbox();
+      }
+      const { synced, replayedHttp } = outcome;
 
       if (replayedHttp.length > 0) {
         // Generic writes also touch what the delta does not cover (categories,
@@ -372,6 +388,7 @@ export async function runSync(options: { force?: boolean } = {}): Promise<SyncSt
       } else {
         await pullDelta();
       }
+      if (localFailure) throw localFailure;
       await purgeSynced();
       await refreshCounters();
       // Screens still show the local reflection of the entries: reload them.

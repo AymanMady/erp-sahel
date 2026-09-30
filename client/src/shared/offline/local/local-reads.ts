@@ -459,14 +459,13 @@ export async function lowStockLocal(): Promise<
 > {
   const { items } = await rows<Row>({
     entity: "products",
-    filters: [
-      active,
-      { column: "json:isService", op: "eq", value: false },
-      { column: "json:minStock", op: "gt", value: 0 },
-    ],
+    filters: [active, { column: "json:isService", op: "eq", value: false }],
   });
-  const stock = await stockByProduct(items.map((item) => String(item.id)));
-  return items
+  // The threshold is a numeric text (`"0.000"`): SQLite would find any text greater
+  // than 0, so it is compared here, as a number.
+  const withThreshold = items.filter((item) => Number(item.minStock) > 0);
+  const stock = await stockByProduct(withThreshold.map((item) => String(item.id)));
+  return withThreshold
     .filter((item) => (stock.get(String(item.id)) ?? 0) <= Number(item.minStock))
     .slice(0, 50)
     .map((item) => ({

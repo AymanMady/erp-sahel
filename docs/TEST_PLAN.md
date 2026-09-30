@@ -104,6 +104,22 @@ Reproduit le scénario du cahier des charges :
 Un second scénario vérifie que l'application s'ouvre sans réseau une fois la coquille mise
 en cache par le Service Worker.
 
+### Toutes les pages sans internet dès la première connexion (desktop)
+
+- `server/__tests__/offline-documents.test.ts` — vrai serveur, vrai code du poste, base
+  locale simulée : après la première synchronisation, chaque liste et chaque document
+  (factures, avoirs, devis, commandes, règlements, achats), avec les filtres des écrans,
+  est donné par la base locale **exactement** comme par le serveur ; sans internet, les
+  écrans l'affichent, et les saisies faites entre-temps apparaissent jusqu'à l'envoi.
+- `client/src/shared/offline/__tests__/offline-prefetch.test.ts` — la préparation de
+  l'appareil : une page que le serveur fait échouer ne bloque pas les autres et est
+  retentée ; une page interdite est passée ; une coupure réseau arrête le passage, qui
+  reprend au retour ; sur le desktop, rien de ce que la base locale contient n'est
+  téléchargé.
+- `e2e/offline-desktop.spec.ts` — la coquille desktop jouée dans le navigateur
+  (`e2e/support/desktop-shell.ts`) : première connexion, coupure, puis **chaque page**
+  ouverte à froid sans erreur réseau, y compris des documents jamais ouverts.
+
 ---
 
 ## 3. Exécution

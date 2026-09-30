@@ -760,6 +760,46 @@ fn a_query_filters_searches_sorts_and_pages() {
 }
 
 #[test]
+fn a_search_also_matches_the_rows_whose_column_holds_a_value_found_beforehand() {
+    let mut connection = database();
+    seed_products(&mut connection);
+
+    // "b" by its name, "c" by its category, found by name beforehand.
+    let found = store::query(
+        &connection,
+        &spec(json!({ "entity": "", "search": { "term": "sucre", "columns": ["name"],
+                      "anyOf": [{ "column": "category_id", "values": ["cat2"] }] } })),
+    )
+    .unwrap();
+    assert_eq!(ids(&found), vec!["b", "c"]);
+    assert_eq!(found.total, 2);
+
+    // No value found beforehand: the term alone decides.
+    let alone = store::query(
+        &connection,
+        &spec(json!({ "entity": "", "search": { "term": "sucre", "columns": ["name"],
+                      "anyOf": [{ "column": "category_id", "values": [] }] } })),
+    )
+    .unwrap();
+    assert_eq!(ids(&alone), vec!["b"]);
+
+    // Filters still apply to the rows found either way.
+    let active = store::query(
+        &connection,
+        &spec(json!({ "entity": "", "filters": [{ "column": "is_active", "op": "eq", "value": true }],
+                      "search": { "term": "sucre", "columns": ["name"],
+                                  "anyOf": [{ "column": "category_id", "values": ["cat2"] }] } })),
+    )
+    .unwrap();
+    assert_eq!(ids(&active), vec!["b"]);
+
+    // The column is checked like any other: never raw text in the SQL.
+    let injected = spec(json!({ "entity": "", "search": { "term": "x", "columns": ["name"],
+                                "anyOf": [{ "column": "id) OR 1=1 --", "values": ["a"] }] } }));
+    assert!(store::query(&connection, &injected).is_err());
+}
+
+#[test]
 fn a_query_hides_rows_deleted_here_unless_asked() {
     let mut connection = database();
     seed_products(&mut connection);

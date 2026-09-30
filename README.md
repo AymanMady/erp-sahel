@@ -57,6 +57,10 @@ Poste de vente                                    Serveur
    numéro légal définitif, décrémente le stock et passe l'écriture comptable.
 4. Rejouer le même lot ne crée **aucun doublon** : l'unicité de `client_uuid` en base le
    garantit, et la réponse renvoie l'identifiant déjà créé.
+5. Dès la **première connexion**, l'appareil télécharge ce dont chaque page a besoin, pages
+   jamais ouvertes comprises. Sur le desktop, les documents viennent de la base SQLite
+   locale ; le reste (tableau de bord, comptabilité, administration…) est préparé en
+   arrière-plan, et une page en échec ne bloque pas les autres.
 
 Détail complet : [`docs/SYNC_STRATEGY.md`](docs/SYNC_STRATEGY.md).
 

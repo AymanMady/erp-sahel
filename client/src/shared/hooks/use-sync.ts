@@ -33,11 +33,14 @@ export function useSyncEngine(enabled: boolean): SyncStatus {
   useEffect(() => {
     if (!enabled) return;
     const unsubscribe = onSyncStatusChange(setStatus);
-    // After a successful synchronization, download what every page needs for offline
-    // use: right away until the device is ready, then every 15 minutes at most.
+    // After each synchronization attempt, download what every page needs for offline
+    // use: right away until the device is ready, then every 15 minutes at most. Even
+    // when the synchronization failed: its failure (a page the server refused, a change
+    // it rejected) must not leave every other page without its data. Without network,
+    // the preparation simply waits for it.
     const syncThenPrefetch = async () => {
-      const result = await runSync();
-      if (result.state === "idle") void prefetchForOffline();
+      await runSync();
+      void prefetchForOffline();
     };
     void initialiseOfflineReadiness();
     void (async () => {

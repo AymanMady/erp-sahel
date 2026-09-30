@@ -118,8 +118,16 @@ export interface QuerySpec {
     op: "eq" | "ne" | "lt" | "lte" | "gt" | "gte" | "in" | "isNull" | "notNull" | "arrayHas";
     value?: unknown;
   }[];
-  /** `columns` contain the term; `exactColumns` equal it. */
-  search?: { term: string; columns: string[]; exactColumns?: string[] } | null;
+  /**
+   * `columns` contain the term; `exactColumns` equal it; a row whose `anyOf` column holds
+   * one of the values matches too (a document whose customer's name contains the term).
+   */
+  search?: {
+    term: string;
+    columns: string[];
+    exactColumns?: string[];
+    anyOf?: { column: string; values: unknown[] }[];
+  } | null;
   orderBy?: { column: string; desc?: boolean }[];
   limit?: number;
   offset?: number;

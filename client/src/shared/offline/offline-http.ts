@@ -34,9 +34,16 @@ import {
   storeCachedResponse,
   updateCachedResponses,
 } from "./http-cache";
+import { readOfflineCopy } from "./offline-copy";
 import { enqueue } from "./outbox";
 import { readSnapshot, writeSnapshot, type OfflineSnapshot } from "./snapshot";
 import { refreshCounters } from "./sync-engine";
+import {
+  CREATING_ACTIONS,
+  isRow,
+  parseWritePath as parsePath,
+  reflectedPatch,
+} from "./write-paths";
 
 export type HttpWriteMethod = "POST" | "PATCH" | "PUT" | "DELETE";
 
@@ -47,7 +54,6 @@ export interface HttpWritePayload {
   body?: unknown;
 }
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const UUID_GLOBAL = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 
 /**
@@ -145,24 +151,6 @@ function describeWrite(method: HttpWriteMethod, path: string, body: unknown): st
 
 type Row = Record<string, unknown>;
 
-function parsePath(path: string): { collection: string; itemId: string | null; action: string } {
-  const segments = path.split("/");
-  let index = -1;
-  segments.forEach((segment, position) => {
-    if (UUID_PATTERN.test(segment)) index = position;
-  });
-  if (index === -1) return { collection: path, itemId: null, action: "" };
-  return {
-    collection: segments.slice(0, index).join("/"),
-    itemId: segments[index],
-    action: segments.slice(index + 1).join("/"),
-  };
-}
-
-function isRow(value: unknown): value is Row {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
 function mapRows(body: unknown, map: (rows: unknown[]) => unknown[]): unknown {
   if (Array.isArray(body)) return map(body);
   if (isRow(body) && Array.isArray(body.items)) {
@@ -208,9 +196,12 @@ async function reflectInSnapshot(collection: string, apply: (rows: Row[]) => Row
   await writeSnapshot(snapshot);
 }
 
-/** Item currently displayed for this identifier (detail, list or snapshot). */
+/**
+ * Item currently displayed for this identifier (detail — from the desktop's local
+ * database too —, list or snapshot).
+ */
 async function currentItem(collection: string, itemId: string): Promise<Row | null> {
-  const detail = await readCachedResponse(`${collection}/${itemId}`);
+  const detail = await readOfflineCopy(`${collection}/${itemId}`);
   if (isRow(detail)) return detail;
   const fromList = (await cachedRowsOf(collection)).find((row) => isRow(row) && row.id === itemId);
   if (isRow(fromList)) return fromList;
@@ -223,15 +214,6 @@ async function currentItem(collection: string, itemId: string): Promise<Row | nu
 function pendingNumber(): string {
   return i18n.t("offline:write.pendingNumber");
 }
-
-/**
- * Actions that **create** a document in another collection: a provisional document is
- * reflected there, so that the destination screen opens offline.
- */
-const CREATING_ACTIONS: Record<string, string> = {
-  "/api/quotes:convert": "/api/sales-orders",
-  "/api/sales-orders:invoice": "/api/invoices",
-};
 
 /**
  * Provisional item as the list and the detail page would display it. For a document
@@ -359,11 +341,7 @@ async function reflectLocally(payload: HttpWritePayload, clientUuid: string): Pr
   // Update of an item, or action on it (`/status`, `/close`…): only the simple fields
   // of the body are carried over — an action does not always have a body.
   if (itemId) {
-    const patch: Row = { updatedAt: now, pendingSync: true };
-    for (const [key, value] of Object.entries(body)) {
-      if (action && typeof value === "object" && value !== null) continue;
-      patch[key] = value;
-    }
+    const patch = reflectedPatch(body, action, now);
     const merge = (row: unknown) => (isRow(row) && row.id === itemId ? { ...row, ...patch } : row);
     const base = await currentItem(collection, itemId);
     await updateCachedResponses(collection, (cached) => mapRows(cached, (rows) => rows.map(merge)));

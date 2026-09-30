@@ -50,14 +50,14 @@ instantané IndexedDB).
 
 ### Ce qui passe par SQLite aujourd'hui
 
-| Domaine                                                  | Lecture                                                         | Écriture                                  |
-| -------------------------------------------------------- | --------------------------------------------------------------- | ----------------------------------------- |
-| Produits (variantes, fournisseurs), catégories, services | SQLite                                                          | SQLite + `sync_queue`                     |
-| Tiers (contacts, adresses, solde, historique)            | SQLite                                                          | SQLite + `sync_queue`                     |
-| Magasins, stock, stock bas, caisses, comptes de paiement | SQLite                                                          | — (administration en ligne)               |
-| Caisse : session, ticket, règlements, résumé, clôture    | SQLite                                                          | SQLite + `sync_queue`                     |
-| Devis, commandes, factures, avoirs, règlements, achats   | **synchronisés** dans SQLite, écrans encore sur l'ancien chemin | ancien chemin (en ligne, file en secours) |
-| Comptabilité, rapports, administration                   | serveur / cache HTTP                                            | serveur / file HTTP générique             |
+| Domaine                                                  | Lecture                                                                   | Écriture                                  |
+| -------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------------- |
+| Produits (variantes, fournisseurs), catégories, services | SQLite                                                                    | SQLite + `sync_queue`                     |
+| Tiers (contacts, adresses, solde, historique)            | SQLite                                                                    | SQLite + `sync_queue`                     |
+| Magasins, stock, stock bas, caisses, comptes de paiement | SQLite                                                                    | — (administration en ligne)               |
+| Caisse : session, ticket, règlements, résumé, clôture    | SQLite                                                                    | SQLite + `sync_queue`                     |
+| Devis, commandes, factures, avoirs, règlements, achats   | serveur ; **SQLite quand le serveur ne répond pas** (§2 bis)              | ancien chemin (en ligne, file en secours) |
+| Comptabilité, rapports, administration                   | serveur ; cache HTTP rempli à la première connexion (préparation, §2 bis) | serveur / file HTTP générique             |
 
 ---
 
@@ -89,6 +89,63 @@ règlements. Les documents plus anciens restent lisibles depuis le cache s'ils y
 
 **Progression.** Elle s'affiche dans le bandeau de préparation existant et dans le menu de
 l'indicateur de synchronisation.
+
+---
+
+## 2 bis. Toutes les pages sans internet dès la première connexion
+
+Objectif : après la première connexion, **chaque page** s'ouvre sans internet, y compris
+celles qui n'ont jamais été ouvertes. Deux sources, remplies sans que personne ait à
+visiter les pages.
+
+### Documents : la base locale répond quand le serveur ne répond pas
+
+Devis, commandes, factures, avoirs, règlements, commandes fournisseur, marchandises
+reçues et factures fournisseur sont dans SQLite dès la première synchronisation (§2).
+Leurs écrans demandent toujours le serveur d'abord : les documents s'écrivent sur le
+serveur, qui est donc seul à jour juste après une modification. Quand le serveur ne répond
+pas — pas d'internet, ou trop lent (`CACHED_READ_DEADLINE_MS`) —, `offline-copy.ts`
+interroge :
+
+1. la base locale (`offline/local/local-documents.ts`), qui répond **exactement comme la
+   route du serveur** : même forme, mêmes filtres, même recherche (numéro ou nom du client
+   ou du fournisseur), même ordre, même page. `server/__tests__/offline-documents.test.ts`
+   compare les deux réponses sur les mêmes données, route par route ;
+2. sinon, le cache HTTP (documents plus anciens que la fenêtre, déjà ouverts).
+
+Les saisies faites sans internet et pas encore envoyées (file HTTP générique :
+brouillons, changements de statut, annulations, commandes fournisseur…) sont
+superposées à la réponse locale, comme le cache HTTP les montre : changement appliqué,
+document annulé retiré, document créé en tête de la première page.
+
+La base locale ne répond que si **toutes** les entités nécessaires sont prêtes (par
+exemple, une facture a besoin des tiers pour le nom du client) ; sinon le cache HTTP
+prend le relais.
+
+### Le reste : la préparation de l'appareil (`offline-prefetch.ts`)
+
+Tableau de bord, rapports, comptabilité, caisse et banque, mouvements de stock,
+administration : ce que SQLite ne contient pas est téléchargé dans le cache HTTP par la
+**préparation**, en appelant les mêmes fonctions que les pages.
+
+- **Quand.** Après **chaque tentative** de synchronisation, réussie ou non : une
+  synchronisation en échec (une page refusée, une modification rejetée) ne doit pas
+  laisser toutes les autres pages sans données. Sans internet, la préparation attend son
+  retour. Ensuite, toutes les 15 minutes au plus.
+- **Ce qui n'est pas téléchargé sur le desktop.** Les documents que la base locale sait
+  donner, et le détail des tiers une fois factures et règlements présents : pas une
+  requête par document. Tant que la base locale n'est pas complète, la préparation les
+  télécharge comme sur le web.
+- **Une page en échec n'arrête pas les autres.**
+  - Une requête refusée pour cette personne (droits, module désactivé) est passée : la
+    page est vide en ligne aussi.
+  - Une requête que le serveur fait échouer (occupé, erreur, trop lente) est retentée
+    plus tard, après les autres, trois fois au plus ; les autres continuent.
+  - Seule une coupure réseau, ou un serveur qui échoue six fois de suite, arrête le
+    passage. Il reprend dès le retour du réseau, ou 2 minutes plus tard (puis 4, 8… jusqu'à
+    15).
+- **« Prêt ».** L'appareil se dit prêt à travailler sans internet seulement quand un
+  passage a obtenu toutes les pages. Le bandeau de préparation montre l'avancement.
 
 ---
 
@@ -299,7 +356,11 @@ Une opération refusée peut être réessayée ou abandonnée :
   `GET /api/health`. Les déclencheurs sont le retour du réseau, le retour au premier plan,
   une minuterie de 60 s et le bouton « Envoyer maintenant ».
 - **Un seul cycle à la fois.** Un cycle envoie la file, puis fait le `pull`, puis purge
-  les opérations acceptées depuis plus de 7 jours.
+  les opérations acceptées depuis plus de 7 jours. Si l'envoi ou la base locale échoue
+  pour une autre raison que le réseau, l'instantané de lecture (`offline.sqlite`) est
+  quand même rafraîchi avant que l'échec soit signalé : les écrans s'appuient dessus tant
+  que la base locale n'est pas complète. La préparation (§2 bis) suit chaque cycle, réussi
+  ou non.
 - **Reprise après plantage :**
   - **Opérations `sending`.** Celles d'un lancement précédent repartent en file à
     l'ouverture de la base (`local_open`), ce qui est journalisé.
@@ -373,16 +434,28 @@ Les tests d'intégration refusent toute base qui n'est pas locale
    - une entrée dans `local-writes.ts`.
 6. **Lectures.** Écrire une fonction dans `local-reads.ts` qui reproduit exactement la
    réponse de la route serveur, et l'appeler via `readLocalFirst` dans `entities/*/api.ts`.
+   Pour un document écrit sur le serveur (lu d'abord en ligne), déclarer plutôt sa route
+   dans `ROUTES` de `local-documents.ts` : la base locale répond alors quand le serveur ne
+   répond pas, et la préparation ne le télécharge plus.
 7. **Tests.** Ajouter des tests serveur (`sync-replication.test.ts`) et client
-   (`local-reads-writes.test.ts`).
+   (`local-reads-writes.test.ts`) ; pour un document, ses chemins dans
+   `offline-documents.test.ts`, qui compare la réponse locale à celle du serveur.
 
 ---
 
 ## 11. Limites connues
 
 - **Documents.** Les écrans des devis, commandes, factures, avoirs, règlements et achats
-  ne lisent pas encore SQLite, bien que leurs données y soient synchronisées. Leurs
-  créations passent encore par l'ancien chemin : en ligne d'abord, puis file en secours.
+  lisent SQLite quand le serveur ne répond pas (§2 bis), mais leurs créations passent
+  encore par l'ancien chemin : en ligne d'abord, puis file en secours. Une facture ou un
+  devis validés sans internet depuis leur formulaire (opération dédiée, pas la file HTTP)
+  n'apparaissent dans les listes qu'après l'envoi ; les tickets de caisse, eux, y sont
+  tout de suite.
+- **Documents hors de la fenêtre.** Sans internet, les documents de plus de 12 mois déjà
+  terminés ne sont pas dans SQLite : seuls ceux déjà ouverts sont lisibles (cache). Un
+  règlement ou un avoir récent d'une telle facture s'affiche sans son numéro.
+- **Annulation d'un brouillon sans internet.** Le brouillon disparaît de la liste jusqu'à
+  l'envoi (comme dans le cache HTTP) ; le serveur le garde ensuite avec le statut annulé.
 - **Stock initial d'un produit créé hors ligne.** Il apparaît après la synchronisation.
 - **Stock dérivé d'une vente.** Il n'est mis à jour que pour une ligne de stock déjà
   présente dans le magasin de la caisse.
