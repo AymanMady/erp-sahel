@@ -15,6 +15,23 @@ import {
 const PERIODIC_SYNC_MS = 60_000;
 
 /**
+ * One round: the company's local database on the desktop — opened again if it failed
+ * before —, a synchronization, then the download of what every page needs for offline
+ * use: right away until the device is ready, then every 15 minutes at most. Even when
+ * the synchronization failed: its failure (a page the server refused, a change it
+ * rejected) must not leave every other page without its data. Without network, the
+ * preparation simply waits for it.
+ */
+export async function synchronize(
+  companyId: string | null,
+  options: { force?: boolean } = {}
+): Promise<void> {
+  if (companyId) await startLocalSession(companyId);
+  await runSync(options);
+  void prefetchForOffline(options);
+}
+
+/**
  * Drives background synchronization.
  *
  * Combined triggers, because none is enough on its own:
@@ -33,23 +50,14 @@ export function useSyncEngine(enabled: boolean): SyncStatus {
   useEffect(() => {
     if (!enabled) return;
     const unsubscribe = onSyncStatusChange(setStatus);
-    // After each synchronization attempt, download what every page needs for offline
-    // use: right away until the device is ready, then every 15 minutes at most. Even
-    // when the synchronization failed: its failure (a page the server refused, a change
-    // it rejected) must not leave every other page without its data. Without network,
-    // the preparation simply waits for it.
-    const syncThenPrefetch = async () => {
-      await runSync();
-      void prefetchForOffline();
-    };
     void initialiseOfflineReadiness();
     void (async () => {
       if (companyId) await startLocalSession(companyId);
       await initialiseSyncStatus();
-      await syncThenPrefetch();
+      await synchronize(companyId);
     })();
 
-    const trigger = () => void syncThenPrefetch();
+    const trigger = () => void synchronize(companyId);
     const onVisible = () => {
       if (document.visibilityState === "visible") trigger();
     };

@@ -39,7 +39,11 @@ instantané IndexedDB).
   est refusée si ce n'est pas celle ouverte ; une ligne d'une autre société est refusée.
   Le changement de société (nouvelle connexion) ferme l'ancienne base avant d'ouvrir la
   nouvelle ; la déconnexion la ferme (son contenu, envois en attente compris, reste sur
-  le disque).
+  le disque). Ouvertures et fermetures passent **l'une après l'autre**
+  (`local-sync.ts`) : deux ouvertures simultanées (un effet React joué deux fois, un
+  passage caisse ↔ autres écrans) se fermaient l'une l'autre, et le poste restait sur
+  l'ancien chemin toute la session. Une ouverture en échec est retentée à chaque
+  synchronisation.
 - **Le moteur de synchronisation reste en TypeScript** (`sync-engine.ts`) : il réutilise
   le client HTTP, l'authentification, la détection réseau, les reprises et les
   traductions. Sur le desktop, il bascule en **mode local** dès que la base de la
@@ -87,8 +91,9 @@ page enregistrée, avec le même curseur. Une page n'est jamais écrite à moiti
 quel que soit son âge : brouillons, factures non soldées, session de caisse ouverte et ses
 règlements. Les documents plus anciens restent lisibles depuis le cache s'ils y sont.
 
-**Progression.** Elle s'affiche dans le bandeau de préparation existant et dans le menu de
-l'indicateur de synchronisation.
+**Progression.** À la première ouverture, elle s'affiche sur l'écran de préparation
+(§2 bis) ; ensuite (nouveau téléchargement d'une entité, resync), dans le bandeau de
+préparation et dans le menu de l'indicateur de synchronisation.
 
 ---
 
@@ -146,8 +151,28 @@ administration : ce que SQLite ne contient pas est téléchargé dans le cache H
   - Seule une coupure réseau, ou un serveur qui échoue six fois de suite, arrête le
     passage. Il reprend dès le retour du réseau, ou 2 minutes plus tard (puis 4, 8… jusqu'à
     15).
+- **Tout, pour chaque magasin.** Les pages filtrées par magasin (valeur du stock,
+  rapport de stock) sont téléchargées pour tous les magasins et pour chacun.
 - **« Prêt ».** L'appareil se dit prêt à travailler sans internet seulement quand un
   passage a obtenu toutes les pages. Le bandeau de préparation montre l'avancement.
+
+### L'écran de préparation (desktop, `widgets/layout/device-preparation.tsx`)
+
+Sur le desktop, **aucun écran ne s'ouvre** avant la fin de la première préparation : un
+écran plein avec une barre de progression le remplace. La barre suit la base locale
+(étape 1 : produits, clients, ventes, achats — la moitié de la barre), puis la
+préparation (étape 2 : caisse, rapports, comptes, réglages). Elle ne montre 100 % qu'à
+la fin.
+
+- **Sans internet**, ou quand le serveur n'a pas donné toutes les pages (le passage
+  reprend tout seul 2 minutes plus tard), l'écran le dit et propose « Réessayer
+  maintenant » et « Continuer sans attendre ». Continuer vaut jusqu'à la fermeture de
+  l'application ; le téléchargement se poursuit derrière, avec le bandeau.
+- La déconnexion vide le cache HTTP et la trace de la préparation : la connexion
+  suivante repasse par l'écran. La base locale, elle, reste : l'étape 1 est alors
+  immédiate.
+- L'application web garde le bandeau seul : un navigateur ouvert une fois ne doit pas
+  attendre.
 
 ---
 

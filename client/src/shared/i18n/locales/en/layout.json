@@ -45,6 +45,20 @@
     "done": "This device can now work without internet.",
     "offlineNotReady": "No internet — you can keep working. This device had not finished loading everything: some pages may be empty."
   },
+  "preparation": {
+    "title": "Getting this device ready",
+    "description": "The application is loading everything it needs to work even without internet: products, customers, sales, purchases, till and reports. This happens only once.",
+    "stepLocal": "Step 1 of 2: products, customers, sales and purchases",
+    "stepPages": "Step 2 of 2: till, reports, accounts and settings",
+    "percent": "{{percent}}%",
+    "keepOnline": "Keep internet on until it finishes.",
+    "offlineTitle": "No internet",
+    "offline": "The first time, internet is needed to load everything. Connect to internet: loading will start again by itself.",
+    "incomplete": "Part of it could not be loaded. The application will try again by itself.",
+    "retry": "Try again now",
+    "skip": "Continue without waiting",
+    "skipHint": "Without internet, some pages will stay empty until loading is finished."
+  },
   "boot": {
     "loading": "Loading the application…"
   },

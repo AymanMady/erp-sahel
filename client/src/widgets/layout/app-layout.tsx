@@ -3,7 +3,8 @@
  * fixed header, fixed sidebar, page and footer.
  *
  * This is where the sync engine is mounted: it runs as long as the user is signed
- * in, whatever screen is displayed.
+ * in, whatever screen is displayed. On the desktop, the screens wait for the first
+ * preparation of the device (`device-preparation.tsx`).
  */
 
 import type { ReactNode } from "react";
@@ -14,6 +15,7 @@ import { TooltipProvider } from "@/shared/ui/tooltip";
 import { AppFooter } from "./app-footer";
 import { AppHeader } from "./app-header";
 import { AppSidebar } from "./app-sidebar";
+import { DevicePreparationGate } from "./device-preparation";
 import { LayoutStateProvider, useLayoutState } from "./layout-state";
 import { OfflineBanner, OfflinePreparationBanner } from "./sync-indicator";
 import { UpdateBanner } from "./update-banner";
@@ -22,24 +24,26 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const syncStatus = useSyncEngine(true);
 
   return (
-    <TooltipProvider delayDuration={0}>
-      <LayoutStateProvider>
-        <AppContainer>
-          <AppHeader syncStatus={syncStatus} />
-          <div className="app-main">
-            <AppSidebar />
-            <SidebarOverlay />
-            <div className="app-main__outer min-w-0">
-              <UpdateBanner />
-              <OfflineBanner />
-              <OfflinePreparationBanner />
-              <main className="app-main__inner min-w-0">{children}</main>
-              <AppFooter syncStatus={syncStatus} />
+    <DevicePreparationGate>
+      <TooltipProvider delayDuration={0}>
+        <LayoutStateProvider>
+          <AppContainer>
+            <AppHeader syncStatus={syncStatus} />
+            <div className="app-main">
+              <AppSidebar />
+              <SidebarOverlay />
+              <div className="app-main__outer min-w-0">
+                <UpdateBanner />
+                <OfflineBanner />
+                <OfflinePreparationBanner />
+                <main className="app-main__inner min-w-0">{children}</main>
+                <AppFooter syncStatus={syncStatus} />
+              </div>
             </div>
-          </div>
-        </AppContainer>
-      </LayoutStateProvider>
-    </TooltipProvider>
+          </AppContainer>
+        </LayoutStateProvider>
+      </TooltipProvider>
+    </DevicePreparationGate>
   );
 }
 
@@ -75,13 +79,15 @@ function SidebarOverlay() {
 export function FullscreenLayout({ children }: { children: ReactNode }) {
   useSyncEngine(true);
   return (
-    <TooltipProvider delayDuration={0}>
-      <div className="pos-shell flex flex-col bg-background">
-        <UpdateBanner />
-        <OfflineBanner />
-        <OfflinePreparationBanner />
-        {children}
-      </div>
-    </TooltipProvider>
+    <DevicePreparationGate>
+      <TooltipProvider delayDuration={0}>
+        <div className="pos-shell flex flex-col bg-background">
+          <UpdateBanner />
+          <OfflineBanner />
+          <OfflinePreparationBanner />
+          {children}
+        </div>
+      </TooltipProvider>
+    </DevicePreparationGate>
   );
 }

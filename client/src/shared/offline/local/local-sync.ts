@@ -106,16 +106,37 @@ async function importLegacyOutbox(companyId: string): Promise<number> {
 }
 
 /**
- * Opens the local database of the session's company (desktop only). Returns false when
- * the offline-first mode is not available, the former path then stays in use.
+ * Opening and closing run one after the other. Two at once — an effect run twice, a
+ * switch between the till and the other screens while the first one opens — would let
+ * one of them read the database while the other reopens it; both then fail, and the
+ * workstation stays on the former path for the whole session.
  */
-export async function startLocalSession(companyId: string): Promise<boolean> {
-  if (!hasLocalDatabase()) return false;
+let lifecycle: Promise<unknown> = Promise.resolve();
+
+function serially<T>(task: () => Promise<T>): Promise<T> {
+  const run = lifecycle.then(task, task);
+  lifecycle = run.catch(() => undefined);
+  return run;
+}
+
+/**
+ * Opens the local database of the session's company (desktop only). Returns false when
+ * the offline-first mode is not available, the former path then stays in use. Already
+ * open for this company: nothing to do — called again at every synchronization, it
+ * tries again after a failure.
+ */
+export function startLocalSession(companyId: string): Promise<boolean> {
+  if (!hasLocalDatabase()) return Promise.resolve(false);
+  return serially(() => openSession(companyId.toLowerCase()));
+}
+
+async function openSession(companyId: string): Promise<boolean> {
+  if (localCompanyId() === companyId) return true;
   try {
     const info = await openLocalDatabase(companyId);
     if (info?.recovered)
       await localDb.log("warn", "queue.recovered", `${info.recovered} operations`);
-    await importLegacyOutbox(companyId.toLowerCase());
+    await importLegacyOutbox(companyId);
     await refreshReadiness();
     return true;
   } catch (error) {
@@ -126,9 +147,11 @@ export async function startLocalSession(companyId: string): Promise<boolean> {
   }
 }
 
-export async function stopLocalSession(): Promise<void> {
-  await closeLocalDatabase();
-  await refreshReadiness();
+export function stopLocalSession(): Promise<void> {
+  return serially(async () => {
+    await closeLocalDatabase();
+    await refreshReadiness();
+  });
 }
 
 /** True when the offline-first mode is on for the current session. */

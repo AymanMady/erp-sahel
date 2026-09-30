@@ -65,6 +65,8 @@ export function onBootstrapProgress(listener: (state: BootstrapState) => void): 
 
 let ready = new Set<SyncTable>();
 let readyCompany: string | null = null;
+/** The first synchronization of `readyCompany` is complete. */
+let complete = false;
 const readyListeners = new Set<() => void>();
 
 /**
@@ -76,6 +78,12 @@ export function isLocalReady(entity: SyncTable): boolean {
   return !!companyId && readyCompany === companyId && ready.has(entity);
 }
 
+/** True once the first synchronization of the open company database is complete. */
+export function isLocalComplete(): boolean {
+  const companyId = localCompanyId();
+  return !!companyId && readyCompany === companyId && complete;
+}
+
 export function onLocalReadinessChange(listener: () => void): () => void {
   readyListeners.add(listener);
   return () => readyListeners.delete(listener);
@@ -85,17 +93,20 @@ export function onLocalReadinessChange(listener: () => void): () => void {
 export async function refreshReadiness(): Promise<Set<SyncTable>> {
   const companyId = localCompanyId();
   const next = new Set<SyncTable>();
-  if (companyId && (await localDb.metaGet(META.completedAt))) {
+  const completed = !!companyId && !!(await localDb.metaGet(META.completedAt));
+  if (completed) {
     for (const progress of await localDb.bootstrapProgress()) {
       if (progress.done) next.add(progress.entity);
     }
   }
   const changed =
     readyCompany !== companyId ||
+    complete !== completed ||
     next.size !== ready.size ||
     [...next].some((entity) => !ready.has(entity));
   ready = next;
   readyCompany = companyId;
+  complete = completed;
   if (changed) {
     for (const listener of readyListeners) listener();
     // Screens switch source (local database or server): read them again.

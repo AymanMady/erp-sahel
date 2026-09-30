@@ -50,6 +50,7 @@ function serve(path: string): Response {
       cursor: "1",
       modules: MODULES.map((code) => ({ code, name: code })),
       parties: [{ id: "c1", name: "Aïcha", updatedAt: "2026-09-30T08:00:00.000Z" }],
+      warehouses: [{ id: "w1", name: "Boutique" }],
       session: null,
     });
   }
@@ -126,8 +127,16 @@ describe("preparation of the device", () => {
     expect(await readCachedResponse("/api/roles")).toEqual([]);
     expect(await readCachedResponse("/api/invoices/i1")).toMatchObject({ id: "i1" });
     expect(await readCachedResponse("/api/parties/c1")).toMatchObject({ id: "c1" });
+    // The pages filtered by store, for each store.
+    for (const path of ["/api/inventory/valuation", "/api/reports/stock"]) {
+      expect(await offlineDb.cache.get(`http:${path}?warehouseId=w1`), path).toBeDefined();
+    }
     expect(await getMeta("prefetch.completedAt")).not.toBeNull();
-    expect(getOfflineReadiness()).toMatchObject({ state: "ready", running: false });
+    expect(getOfflineReadiness()).toMatchObject({
+      state: "ready",
+      running: false,
+      incomplete: false,
+    });
   });
 
   it("skips a page the person may not see, and is still ready", async () => {
@@ -141,12 +150,12 @@ describe("preparation of the device", () => {
 
   it("keeps downloading the other pages when the server fails one, and tries it again soon", async () => {
     answer = (path) =>
-      path === "/api/reports/stock" ? json({ error: "Boom", code: "INTERNAL" }, 500) : undefined;
+      path === "/api/banking/totals" ? json({ error: "Boom", code: "INTERNAL" }, 500) : undefined;
     const before = Date.now();
     await prefetchForOffline({ force: true });
 
     // Tried again after the others, a few times.
-    expect(times("/api/reports/stock")).toBe(3);
+    expect(times("/api/banking/totals")).toBe(3);
     // Every other page is there, the documents' details included.
     expect(await readCachedResponse("/api/roles")).toEqual([]);
     expect(await readCachedResponse("/api/invoices/i1")).toMatchObject({ id: "i1" });
@@ -155,7 +164,8 @@ describe("preparation of the device", () => {
     const nextRun = Number(await getMeta("prefetch.nextRunAt"));
     expect(nextRun - before).toBeGreaterThanOrEqual(2 * 60_000);
     expect(nextRun - Date.now()).toBeLessThanOrEqual(2 * 60_000);
-    expect(getOfflineReadiness().state).toBe("preparing");
+    // The first preparation screen offers to try again or to go on.
+    expect(getOfflineReadiness()).toMatchObject({ state: "preparing", incomplete: true });
   }, 30_000);
 
   it("stops when the network drops, and starts again as soon as it is back", async () => {

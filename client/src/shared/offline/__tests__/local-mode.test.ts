@@ -226,6 +226,29 @@ describe("first synchronization", () => {
     expect(calls.some((call) => call.url.includes("cursor=100"))).toBe(true);
   });
 
+  it("opens the database once when asked twice at the same time (an effect run twice)", async () => {
+    const invoke = fake.invoke;
+    const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+    let opens = 0;
+    // Like the shell: a second opening closes the first one, and the database stays
+    // closed while it opens.
+    fake.invoke = async (command, args) => {
+      if (command === "local_open" && opens++ > 0) {
+        await wait(2);
+        fake.company = null;
+        await wait(20);
+      }
+      return invoke(command, args);
+    };
+
+    const opened = await Promise.all([startLocalSession(COMPANY), startLocalSession(COMPANY)]);
+
+    expect(opened).toEqual([true, true]);
+    expect(fake.calls.filter((command) => command === "local_open")).toHaveLength(1);
+    await runSync({ force: true });
+    expect(isLocalReady("products")).toBe(true);
+  });
+
   it("2. works offline at the next launch, from the local database", async () => {
     await startLocalSession(COMPANY);
     await runSync({ force: true });

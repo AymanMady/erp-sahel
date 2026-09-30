@@ -45,6 +45,20 @@
     "done": "Cet appareil peut maintenant travailler sans internet.",
     "offlineNotReady": "Pas d'internet — vous pouvez continuer à travailler. Cet appareil n'avait pas fini de tout charger : certaines pages peuvent être vides."
   },
+  "preparation": {
+    "title": "Préparation de cet appareil",
+    "description": "L'application charge tout ce qu'il faut pour travailler même sans internet : produits, clients, ventes, achats, caisse et rapports. Cela se fait une seule fois.",
+    "stepLocal": "Étape 1 sur 2 : produits, clients, ventes et achats",
+    "stepPages": "Étape 2 sur 2 : caisse, rapports, comptes et réglages",
+    "percent": "{{percent}} %",
+    "keepOnline": "Gardez internet jusqu'à la fin.",
+    "offlineTitle": "Pas d'internet",
+    "offline": "La première fois, il faut internet pour tout charger. Branchez internet : le chargement reprendra tout seul.",
+    "incomplete": "Une partie n'a pas pu être chargée. L'application va réessayer toute seule.",
+    "retry": "Réessayer maintenant",
+    "skip": "Continuer sans attendre",
+    "skipHint": "Sans internet, certaines pages resteront vides tant que le chargement n'est pas fini."
+  },
   "boot": {
     "loading": "Chargement de l'application…"
   },

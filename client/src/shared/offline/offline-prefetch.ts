@@ -48,6 +48,7 @@ import { reportsApi } from "@/entities/reports/api";
 import { salesApi } from "@/entities/sales/api";
 import { settingsApi } from "@/entities/settings/api";
 import { syncApi } from "@/entities/sync/api";
+import { systemApi } from "@/entities/system/api";
 import { ApiError } from "@/shared/api/api-error";
 import { api } from "@/shared/api/http";
 import { getCachedSession } from "@/shared/auth/token-store";
@@ -105,6 +106,8 @@ export interface OfflineReadiness {
   done: number;
   total: number;
   completedAt: string | null;
+  /** The last pass could not get every page from the server: it is tried again later. */
+  incomplete: boolean;
 }
 
 let readiness: OfflineReadiness = {
@@ -113,6 +116,7 @@ let readiness: OfflineReadiness = {
   done: 0,
   total: 0,
   completedAt: null,
+  incomplete: false,
 };
 const listeners = new Set<(value: OfflineReadiness) => void>();
 
@@ -131,11 +135,20 @@ export function onOfflineReadinessChange(listener: (value: OfflineReadiness) => 
   return () => listeners.delete(listener);
 }
 
+/** Sign-out: the device's copy is gone, the next session is prepared again. */
+export function forgetOfflineReadiness(): void {
+  publish({ state: "unknown", done: 0, total: 0, completedAt: null, incomplete: false });
+}
+
 /** Reads whether this device already finished a complete download. */
 export async function initialiseOfflineReadiness(): Promise<void> {
-  const completedAt = await getMeta(COMPLETED_KEY);
+  const [completedAt, retries] = await Promise.all([getMeta(COMPLETED_KEY), getMeta(RETRIES_KEY)]);
   if (readiness.running) return;
-  publish({ state: completedAt ? "ready" : "preparing", completedAt });
+  publish({
+    state: completedAt ? "ready" : "preparing",
+    completedAt,
+    incomplete: (Number(retries) || 0) > 0,
+  });
 }
 
 // ─── Running the requests ────────────────────────────────────────────────────
@@ -292,6 +305,7 @@ async function prefetch(pass: Pass): Promise<void> {
   const unlessLocal = (path: string, tasks: Task[]): Task[] => (answeredLocally(path) ? [] : tasks);
   const today = todayInput();
   const last30Days = { fromDate: addDays(today, -29), toDate: today };
+  const warehouses = snapshot?.warehouses ?? [];
 
   // Details are discovered while lists download; they run in a second phase.
   const details: Task[] = [];
@@ -323,6 +337,8 @@ async function prefetch(pass: Pass): Promise<void> {
       () => reportsApi.sales(last30Days),
       () => reportsApi.purchases(last30Days),
       () => reportsApi.stock(null),
+      // Each store, as the store filter of the page asks for it.
+      ...warehouses.map((warehouse) => () => reportsApi.stock(warehouse.id)),
     ]),
 
     // Master data (products, parties, stock, warehouses…) comes from the snapshot or the
@@ -330,6 +346,7 @@ async function prefetch(pass: Pass): Promise<void> {
     ...when("inventory", [
       list("/api/inventory/movements", (page) => inventoryApi.listMovements(page)),
       () => inventoryApi.valuation(null),
+      ...warehouses.map((warehouse) => () => inventoryApi.valuation(warehouse.id)),
     ]),
 
     // Party details (contacts, addresses, history): missing from the snapshot. The
@@ -459,9 +476,9 @@ async function prefetch(pass: Pass): Promise<void> {
     // Page of the desktop application: its installers, read as the page reads them.
     () => api.get("/api/desktop/downloads"),
 
-    // Synchronization monitoring: a screen of the super-administrator only.
+    // Technical screens (synchronization, database): the super-administrator's only.
     ...(getCachedSession()?.user.isSuperuser
-      ? [() => syncApi.status(), () => syncApi.journal()]
+      ? [() => syncApi.status(), () => syncApi.journal(), () => systemApi.overview()]
       : []),
   ];
 
@@ -503,6 +520,7 @@ export async function prefetchForOffline(options: { force?: boolean } = {}): Pro
         const delay = Math.min(MIN_INTERVAL_MS, RETRY_INTERVAL_MS * 2 ** retries);
         await setMeta(RETRIES_KEY, String(retries + 1));
         await setMeta(NEXT_RUN_KEY, String(Date.now() + delay));
+        publish({ incomplete: true });
         return;
       }
       // Recorded only once the pass is complete: an interrupted pass resumes on the next
@@ -511,7 +529,7 @@ export async function prefetchForOffline(options: { force?: boolean } = {}): Pro
       await setMeta(RETRIES_KEY, "0");
       await setMeta(NEXT_RUN_KEY, String(Date.now() + MIN_INTERVAL_MS));
       await setMeta(COMPLETED_KEY, now);
-      publish({ state: "ready", completedAt: now });
+      publish({ state: "ready", completedAt: now, incomplete: false });
     } catch {
       // A failed pass catches up on the next cycle.
     } finally {

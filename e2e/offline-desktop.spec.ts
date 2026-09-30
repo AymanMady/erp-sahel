@@ -5,7 +5,7 @@
  * application, with its local database stand-in kept across reloads.
  *
  *   1. sign in for the first time: the local database downloads the documents, the
- *      preparation of the device downloads the rest — no page is opened meanwhile;
+ *      preparation of the device downloads the rest — no screen shows meanwhile;
  *   2. cut the connection;
  *   3. open every page, cold: none may show a network error;
  *   4. documents never opened (an invoice, a purchase order) show their content, read
@@ -109,13 +109,15 @@ async function enterPurchaseOrder(
   ).json();
 }
 
+/** First sign-in: no screen shows before the preparation of the device is over. */
 async function login(page: Page): Promise<void> {
   await page.goto("/login");
   await page.getByLabel("Username").fill(ADMIN.username);
   await page.getByLabel("Password").fill(ADMIN.password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByText("Total sales").first()).toBeVisible();
+  await expect(page.getByText("Total sales").first()).toBeVisible({ timeout: 120_000 });
+  expect(await readMeta(page, "prefetch.completedAt")).not.toBeNull();
 }
 
 /** Keys of the device's copy of the server answers (IndexedDB `cache`). */
@@ -228,14 +230,10 @@ test("the desktop works without internet on every page after its first connectio
   test.setTimeout(240_000);
   const order = await enterPurchaseOrder(request);
 
+  // First connection: the local database, then the rest — before any screen opens.
   await login(page);
+  expect(await localDatabaseComplete(page)).toBe(true);
   await cacheShell(page);
-
-  // First connection: the local database, then the rest — nothing else is opened.
-  await expect.poll(() => localDatabaseComplete(page), { timeout: 120_000 }).toBe(true);
-  await expect
-    .poll(async () => Boolean(await readMeta(page, "prefetch.completedAt")), { timeout: 120_000 })
-    .toBe(true);
   // The documents were not downloaded one by one: the local database holds them.
   const keys = await cachedKeys(page);
   for (const path of ["/api/invoices", "/api/quotes", "/api/purchase-orders", "/api/payments"]) {
@@ -275,11 +273,8 @@ test("the desktop works without internet even when the server cannot fill its lo
   );
 
   await login(page);
-  await cacheShell(page);
-  await expect
-    .poll(async () => Boolean(await readMeta(page, "prefetch.completedAt")), { timeout: 120_000 })
-    .toBe(true);
   expect(await localDatabaseComplete(page)).toBe(false);
+  await cacheShell(page);
 
   await context.setOffline(true);
   await expectEverythingOffline(page, order);

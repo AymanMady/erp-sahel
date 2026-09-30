@@ -12,6 +12,19 @@ const appVersion = (
   JSON.parse(fs.readFileSync(path.resolve(rootDir, "package.json"), "utf8")) as { version: string }
 ).version;
 
+/**
+ * `DESKTOP_` keys of `.env` / `.env.desktop`. `loadEnv` also passes the `NODE_ENV` of
+ * these files on to Vite (`VITE_USER_NODE_ENV`): the server's `NODE_ENV=development` in
+ * `.env` would turn the desktop shell into a development build — React's development
+ * checks, and every effect run twice, the local database opened twice at once.
+ */
+function desktopEnv(mode: string): Record<string, string> {
+  const before = process.env.VITE_USER_NODE_ENV;
+  const env = loadEnv(mode, rootDir, "DESKTOP_");
+  if (before === undefined) delete process.env.VITE_USER_NODE_ENV;
+  return env;
+}
+
 export default defineConfig(({ mode }) => {
   /**
    * "Desktop" build: static shell embedded by Tauri (`src-tauri`).
@@ -26,7 +39,7 @@ export default defineConfig(({ mode }) => {
    * empty on the web build: the API is then same-origin.
    */
   const desktopApiUrl = isDesktop
-    ? (process.env.DESKTOP_API_URL ?? loadEnv(mode, rootDir, "DESKTOP_").DESKTOP_API_URL ?? "")
+    ? (process.env.DESKTOP_API_URL ?? desktopEnv(mode).DESKTOP_API_URL ?? "")
     : "";
 
   return {
