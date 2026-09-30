@@ -66,6 +66,11 @@ export interface RowWrite {
   data?: Record<string, unknown>;
   /** Deleted here: kept, marked, until the server confirms. */
   deleted?: boolean;
+  /**
+   * Reflection of what the server will compute (stock after a sale, session totals):
+   * not pending, version kept — the server's figure replaces it at the next pull.
+   */
+  derived?: boolean;
 }
 
 export interface ServerRow {

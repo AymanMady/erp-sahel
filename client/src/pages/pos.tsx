@@ -64,6 +64,7 @@ import {
   cartTotals,
   checkout,
   closeSession,
+  isLocalTillReady,
   openSession,
   pendingSessionTotals,
   type CartLine,
@@ -1155,7 +1156,8 @@ function CloseSessionDialog({
   const { data: summary } = useQuery({
     queryKey: ["pos-session-summary", session.sessionId],
     queryFn: () => posApi.sessionSummary(session.sessionId),
-    enabled: open && online && !session.clientUuid,
+    // Offline-first desktop: the summary is read locally, internet or not.
+    enabled: open && (online || isLocalTillReady()) && !session.clientUuid,
     retry: false,
   });
 

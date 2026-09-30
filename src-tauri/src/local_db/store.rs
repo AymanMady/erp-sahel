@@ -154,6 +154,12 @@ pub struct RowWrite {
     /// Deleted here: the row is kept, marked, until the server confirms.
     #[serde(default)]
     pub deleted: bool,
+    /// A reflection of what the server will compute from a queued operation (the stock
+    /// after an offline sale, the totals of a till session) — not a change of ours:
+    /// the row keeps its version and is **not** marked pending, so the server's figure
+    /// replaces it at the next pull. Only applied to a row that exists.
+    #[serde(default)]
+    pub derived: bool,
 }
 
 #[derive(Deserialize, Clone, Debug, Default)]
@@ -214,6 +220,15 @@ fn write_row(transaction: &Transaction, company_id: &str, row: &RowWrite) -> Res
         .ok_or_else(|| format!("A {table} row needs its data"))?;
     check_company(company_id, table, data)?;
     let updated_at = data.get("updatedAt").and_then(Value::as_str);
+    if row.derived {
+        return transaction
+            .execute(
+                &format!("UPDATE {table} SET data = ?2, updated_at = ?3 WHERE id = ?1"),
+                params![row.id, data.to_string(), updated_at],
+            )
+            .map(|_| ())
+            .map_err(err);
+    }
     transaction
         .execute(
             &format!(

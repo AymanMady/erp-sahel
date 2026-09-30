@@ -3,6 +3,7 @@
 import { api } from "@/shared/api/http";
 import { withOfflineFallback } from "@/shared/offline/offline-reads";
 import { listRegistersLocal, readLocalFirst } from "@/shared/offline/local/local-reads";
+import { currentSessionLocal, sessionSummaryLocal } from "@/shared/offline/local/local-pos";
 import type { InvoiceDetail, PosRegister, PosSession } from "@/entities/types";
 
 export interface SessionSummary extends PosSession {
@@ -37,8 +38,17 @@ export const posApi = {
    * Server answer only: this path is never kept in the device's cache
    * (`http-cache.ts`), so it fails when the network is down.
    */
-  currentSessionFromServer: () => api.get<PosSession | null>("/api/pos/sessions/current"),
-  sessionSummary: (id: string) => api.get<SessionSummary>(`/api/pos/sessions/${id}`),
+  currentSessionFromServer: () =>
+    // Offline-first desktop: the local database is this till's reference.
+    readLocalFirst(["pos_sessions"], currentSessionLocal, () =>
+      api.get<PosSession | null>("/api/pos/sessions/current")
+    ),
+  sessionSummary: (id: string) =>
+    readLocalFirst(
+      ["pos_sessions", "payments"],
+      () => sessionSummaryLocal(id) as Promise<SessionSummary>,
+      () => api.get<SessionSummary>(`/api/pos/sessions/${id}`)
+    ),
   openSession: (body: unknown) => api.post<PosSession>("/api/pos/sessions", body),
   closeSession: (id: string, body: unknown) =>
     api.post<PosSession & { differenceCents: number }>(`/api/pos/sessions/${id}/close`, body),

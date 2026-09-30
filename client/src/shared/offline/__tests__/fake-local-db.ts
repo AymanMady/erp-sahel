@@ -287,6 +287,11 @@ export class FakeLocalDb {
           const data = row.data as Record<string, unknown>;
           if (data.companyId !== this.company && row.entity !== "companies")
             throw "Refused: another company";
+          if (row.derived) {
+            // Reflection of a server computation: data only, version and pending kept.
+            if (local) local.data = data;
+            continue;
+          }
           table.set(String(row.id), {
             id: String(row.id),
             version: (row.version as number) ?? local?.version ?? 0,

@@ -102,5 +102,6 @@
     "discount": "Remise",
     "total": "Total",
     "thanks": "Merci de votre visite"
-  }
+  },
+  "sessionNotFound": "Session de caisse introuvable."
 }

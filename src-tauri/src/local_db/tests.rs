@@ -47,6 +47,7 @@ fn row(id: &str, data: Value) -> RowWrite {
         version: None,
         data: Some(data),
         deleted: false,
+        derived: false,
     }
 }
 
@@ -205,6 +206,7 @@ fn an_offline_delete_keeps_a_marked_row_until_the_server_accepts_it() {
                 version: None,
                 data: None,
                 deleted: true,
+                derived: false,
             }],
             queue: vec![queue("op1", "p1", "DELETE")],
         },
@@ -771,6 +773,7 @@ fn a_query_hides_rows_deleted_here_unless_asked() {
                 version: None,
                 data: None,
                 deleted: true,
+                derived: false,
             }],
             queue: vec![queue("op1", "a", "DELETE")],
         },
@@ -879,4 +882,56 @@ fn a_query_matches_a_barcode_whole_and_finds_a_row_by_an_element_of_a_list() {
         json!({ "entity": "", "filters": [{ "column": "json:variants", "op": "arrayHas", "value": { "key": "x') OR 1=1 --", "equals": 1 } }] }),
     );
     assert!(store::query(&connection, &injected).is_err());
+}
+
+#[test]
+fn a_derived_row_follows_the_sale_but_gives_way_to_the_server() {
+    let mut connection = database();
+    store::apply(
+        &mut connection,
+        COMPANY,
+        &ApplyBatch {
+            rows: vec![server("p1", 5, "10 in stock")],
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    let mut after_sale = row("p1", product("p1", "8 in stock"));
+    after_sale.derived = true;
+    let mut missing = row("ghost", product("ghost", "never on the server"));
+    missing.derived = true;
+    store::write(
+        &mut connection,
+        COMPANY,
+        &LocalWrite {
+            rows: vec![after_sale, missing],
+            queue: vec![],
+        },
+    )
+    .unwrap();
+
+    assert_eq!(name_of(&connection, "p1").as_deref(), Some("8 in stock"));
+    assert_eq!(
+        count(&connection, "SELECT pending FROM products WHERE id = 'p1'"),
+        0
+    );
+    assert_eq!(
+        count(&connection, "SELECT version FROM products WHERE id = 'p1'"),
+        5
+    );
+    assert_eq!(name_of(&connection, "ghost"), None);
+
+    store::apply(
+        &mut connection,
+        COMPANY,
+        &ApplyBatch {
+            rows: vec![server("p1", 6, "8 on the server")],
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        name_of(&connection, "p1").as_deref(),
+        Some("8 on the server")
+    );
 }
