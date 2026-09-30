@@ -348,6 +348,11 @@ pub struct ApplyBatch {
     pub progress: Option<ProgressUpdate>,
     #[serde(default)]
     pub meta: Vec<(String, String)>,
+    /// First page of a new download of this entity: its rows not changed here are
+    /// dropped first, in the same transaction — a row deleted on the server meanwhile
+    /// cannot survive the download.
+    #[serde(default)]
+    pub replace_entity: Option<String>,
 }
 
 #[derive(Serialize, Debug, PartialEq, Default)]
@@ -369,6 +374,12 @@ pub fn apply(
     batch: &ApplyBatch,
 ) -> Result<ApplyResult, String> {
     let transaction = connection.transaction().map_err(err)?;
+    if let Some(entity) = &batch.replace_entity {
+        let table = table(entity)?;
+        transaction
+            .execute(&format!("DELETE FROM {table} WHERE pending = 0"), [])
+            .map_err(err)?;
+    }
     let mut result = ApplyResult::default();
     for row in &batch.rows {
         if apply_row(&transaction, company_id, row, false)? {

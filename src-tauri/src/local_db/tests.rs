@@ -421,7 +421,7 @@ fn a_page_its_cursor_and_its_progress_are_stored_together_or_not_at_all() {
             rows: vec![server("a", 1, "A")],
             cursor: Some(100),
             progress: Some(progress("a")),
-            meta: vec![],
+            ..Default::default()
         },
     )
     .unwrap();
@@ -439,7 +439,7 @@ fn a_page_its_cursor_and_its_progress_are_stored_together_or_not_at_all() {
         ],
         cursor: Some(200),
         progress: Some(progress("b")),
-        meta: vec![],
+        ..Default::default()
     };
     assert!(store::apply(&mut connection, COMPANY, &broken).is_err());
 
@@ -811,4 +811,28 @@ fn a_query_never_puts_the_caller_text_into_sql() {
     .unwrap();
     assert_eq!(odd.total, 0);
     assert_eq!(count(&connection, "SELECT COUNT(*) FROM products"), 3);
+}
+
+#[test]
+fn a_new_download_of_an_entity_drops_its_old_rows_but_not_local_changes() {
+    let mut connection = database();
+    seed_products(&mut connection);
+    store::write(
+        &mut connection,
+        COMPANY,
+        &LocalWrite {
+            rows: vec![row("mine", product("mine", "M"))],
+            queue: vec![queue("op1", "mine", "CREATE")],
+        },
+    )
+    .unwrap();
+    let first_page = ApplyBatch {
+        rows: vec![server("a", 2, "Riz")],
+        replace_entity: Some("products".into()),
+        ..Default::default()
+    };
+    store::apply(&mut connection, COMPANY, &first_page).unwrap();
+    let left: Vec<String> =
+        ids(&store::query(&connection, &spec(json!({ "entity": "" }))).unwrap());
+    assert_eq!(left, vec!["a", "mine"]);
 }

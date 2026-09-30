@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+import { useSession } from "@/shared/auth/session";
+import { startLocalSession } from "@/shared/offline/local/local-sync";
 import { initialiseOfflineReadiness, prefetchForOffline } from "@/shared/offline/offline-prefetch";
 import {
   getSyncStatus,
@@ -20,9 +22,13 @@ const PERIODIC_SYNC_MS = 60_000;
  *  - focus regained / tab visible again — after sleep;
  *  - timer — safety net if no event is emitted;
  *  - Service Worker message — resume triggered outside the tab.
+ *
+ * On the desktop, the local database of the session's company is opened first
+ * (offline-first mode, `offline/local/`): the first cycle already sends its queue.
  */
 export function useSyncEngine(enabled: boolean): SyncStatus {
   const [status, setStatus] = useState<SyncStatus>(getSyncStatus);
+  const companyId = useSession().company?.id ?? null;
 
   useEffect(() => {
     if (!enabled) return;
@@ -34,7 +40,11 @@ export function useSyncEngine(enabled: boolean): SyncStatus {
       if (result.state === "idle") void prefetchForOffline();
     };
     void initialiseOfflineReadiness();
-    void initialiseSyncStatus().then(syncThenPrefetch);
+    void (async () => {
+      if (companyId) await startLocalSession(companyId);
+      await initialiseSyncStatus();
+      await syncThenPrefetch();
+    })();
 
     const trigger = () => void syncThenPrefetch();
     const onVisible = () => {
@@ -60,7 +70,7 @@ export function useSyncEngine(enabled: boolean): SyncStatus {
       navigator.serviceWorker?.removeEventListener("message", onServiceWorkerMessage);
       window.clearInterval(timer);
     };
-  }, [enabled]);
+  }, [enabled, companyId]);
 
   return status;
 }

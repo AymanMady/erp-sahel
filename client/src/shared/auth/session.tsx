@@ -25,6 +25,7 @@ import { api } from "@/shared/api/http";
 import { ApiError } from "@/shared/api/api-error";
 import { i18n } from "@/shared/i18n";
 import { clearOfflineStorage } from "@/shared/offline/db";
+import { stopLocalSession } from "@/shared/offline/local/local-sync";
 import { readSnapshot } from "@/shared/offline/snapshot";
 import {
   clearSession,
@@ -260,6 +261,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
     clearSession();
     await clearOfflineStorage();
+    // The local database stays on disk — unsent changes included — but closed.
+    await stopLocalSession().catch(() => undefined);
     setState({
       status: "anonymous",
       user: null,
