@@ -247,3 +247,12 @@ pub fn local_log_list(
 ) -> Result<Vec<store::LogRow>, String> {
     state.with(&company_id, |db| store::log_list(db, limit))
 }
+
+#[tauri::command(async)]
+pub fn local_query(
+    state: State<'_, LocalDbState>,
+    company_id: String,
+    spec: store::QuerySpec,
+) -> Result<store::QueryResult, String> {
+    state.with(&company_id, |db| store::query(db, &spec))
+}

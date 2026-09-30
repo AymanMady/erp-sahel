@@ -1078,3 +1078,210 @@ pub fn log_list(connection: &Connection, limit: i64) -> Result<Vec<LogRow>, Stri
         .map_err(err)?;
     rows.collect::<Result<Vec<_>, _>>().map_err(err)
 }
+
+// ---------------------------------------------------------------------------------------
+// Queries of the screens
+// ---------------------------------------------------------------------------------------
+
+#[derive(Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Filter {
+    /// A column of the table (computed ones included) or `json:<key>` for any field of
+    /// the server row.
+    pub column: String,
+    /// `eq`, `ne`, `lt`, `lte`, `gt`, `gte`, `in`, `isNull`, `notNull`.
+    pub op: String,
+    #[serde(default)]
+    pub value: Value,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Search {
+    pub term: String,
+    pub columns: Vec<String>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Order {
+    pub column: String,
+    #[serde(default)]
+    pub desc: bool,
+}
+
+#[derive(Deserialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct QuerySpec {
+    pub entity: String,
+    #[serde(default)]
+    pub filters: Vec<Filter>,
+    #[serde(default)]
+    pub search: Option<Search>,
+    #[serde(default)]
+    pub order_by: Vec<Order>,
+    #[serde(default)]
+    pub limit: Option<i64>,
+    #[serde(default)]
+    pub offset: Option<i64>,
+    /// Also return rows deleted here and not yet confirmed by the server.
+    #[serde(default)]
+    pub include_deleted: bool,
+}
+
+#[derive(Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct QueryResult {
+    pub rows: Vec<LocalRow>,
+    /// Matching rows, all pages together.
+    pub total: i64,
+}
+
+/// SQL expression of a column name coming from the web application: a real column of
+/// the table, or `json:<key>` read from `data`. Nothing else reaches the SQL text.
+fn column_sql(columns: &[String], column: &str) -> Result<String, String> {
+    if let Some(key) = column.strip_prefix("json:") {
+        if !key.is_empty() && key.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+            return Ok(format!("json_extract(data, '$.{key}')"));
+        }
+    } else if columns.iter().any(|known| known == column) {
+        return Ok(format!("\"{column}\""));
+    }
+    Err(format!("Unknown column \"{column}\""))
+}
+
+fn table_columns(connection: &Connection, table: &str) -> Result<Vec<String>, String> {
+    let mut statement = connection
+        .prepare(&format!("SELECT name FROM pragma_table_xinfo('{table}')"))
+        .map_err(err)?;
+    let names = statement.query_map([], |row| row.get(0)).map_err(err)?;
+    names.collect::<Result<Vec<String>, _>>().map_err(err)
+}
+
+fn sql_value(value: &Value) -> Result<rusqlite::types::Value, String> {
+    use rusqlite::types::Value as Sql;
+    Ok(match value {
+        Value::Null => Sql::Null,
+        Value::Bool(flag) => Sql::Integer(*flag as i64),
+        Value::Number(number) => match number.as_i64() {
+            Some(integer) => Sql::Integer(integer),
+            None => Sql::Real(number.as_f64().unwrap_or(0.0)),
+        },
+        Value::String(text) => Sql::Text(text.clone()),
+        _ => return Err("A filter value must be a text, a number or a boolean".to_string()),
+    })
+}
+
+/// Rows of an entity for a screen: filters, a search over several columns, an order and
+/// a page, plus the number of matching rows.
+pub fn query(connection: &Connection, spec: &QuerySpec) -> Result<QueryResult, String> {
+    let table = table(&spec.entity)?;
+    let columns = table_columns(connection, table)?;
+    let mut conditions: Vec<String> = Vec::new();
+    let mut values: Vec<rusqlite::types::Value> = Vec::new();
+
+    if !spec.include_deleted {
+        conditions.push("deleted_at IS NULL".to_string());
+    }
+    for filter in &spec.filters {
+        let column = column_sql(&columns, &filter.column)?;
+        let comparison = match filter.op.as_str() {
+            "eq" => "=",
+            "ne" => "IS NOT",
+            "lt" => "<",
+            "lte" => "<=",
+            "gt" => ">",
+            "gte" => ">=",
+            "isNull" => {
+                conditions.push(format!("{column} IS NULL"));
+                continue;
+            }
+            "notNull" => {
+                conditions.push(format!("{column} IS NOT NULL"));
+                continue;
+            }
+            "in" => {
+                let items = filter.value.as_array().ok_or("`in` needs a list")?;
+                if items.is_empty() {
+                    conditions.push("0".to_string());
+                    continue;
+                }
+                let mut marks = Vec::with_capacity(items.len());
+                for item in items {
+                    values.push(sql_value(item)?);
+                    marks.push(format!("?{}", values.len()));
+                }
+                conditions.push(format!("{column} IN ({})", marks.join(", ")));
+                continue;
+            }
+            other => return Err(format!("Unknown filter \"{other}\"")),
+        };
+        values.push(sql_value(&filter.value)?);
+        conditions.push(format!("{column} {comparison} ?{}", values.len()));
+    }
+    if let Some(search) = spec
+        .search
+        .as_ref()
+        .filter(|search| !search.term.trim().is_empty())
+    {
+        let escaped = search
+            .term
+            .trim()
+            .to_lowercase()
+            .replace('\\', "\\\\")
+            .replace('%', "\\%")
+            .replace('_', "\\_");
+        values.push(rusqlite::types::Value::Text(format!("%{escaped}%")));
+        let mark = values.len();
+        let mut alternatives = Vec::new();
+        for column in &search.columns {
+            alternatives.push(format!(
+                "lower(COALESCE({}, '')) LIKE ?{mark} ESCAPE '\\'",
+                column_sql(&columns, column)?
+            ));
+        }
+        if !alternatives.is_empty() {
+            conditions.push(format!("({})", alternatives.join(" OR ")));
+        }
+    }
+
+    let filter_sql = if conditions.is_empty() {
+        String::new()
+    } else {
+        format!("WHERE {}", conditions.join(" AND "))
+    };
+    let mut order = Vec::new();
+    for item in &spec.order_by {
+        order.push(format!(
+            "{} {}",
+            column_sql(&columns, &item.column)?,
+            if item.desc { "DESC" } else { "ASC" }
+        ));
+    }
+    // A stable order: the same page twice returns the same rows.
+    order.push("id ASC".to_string());
+
+    let total: i64 = connection
+        .query_row(
+            &format!("SELECT COUNT(*) FROM {table} {filter_sql}"),
+            rusqlite::params_from_iter(values.iter()),
+            |row| row.get(0),
+        )
+        .map_err(err)?;
+
+    let limit = spec.limit.unwrap_or(-1);
+    let offset = spec.offset.unwrap_or(0).max(0);
+    let mut statement = connection
+        .prepare(&format!(
+            "SELECT id, version, pending, deleted_at, data FROM {table} {filter_sql}
+             ORDER BY {} LIMIT {limit} OFFSET {offset}",
+            order.join(", ")
+        ))
+        .map_err(err)?;
+    let rows = statement
+        .query_map(rusqlite::params_from_iter(values.iter()), local_row)
+        .map_err(err)?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(err)?;
+    Ok(QueryResult { rows, total })
+}

@@ -699,3 +699,116 @@ fn the_log_keeps_the_latest_events_only() {
     assert_eq!(store::log_list(&connection, 1).unwrap()[0].detail, "2099");
     assert!(store::log_append(&connection, "debug", "x", "").is_err());
 }
+
+// --- queries -------------------------------------------------------------------------
+
+fn seed_products(connection: &mut Connection) {
+    let rows = [("a", "Riz 25 kg", "RIZ-1", "cat1", 2000), ("b", "Sucre", "SUC-1", "cat1", 500), ("c", "Huile 5 L", "HUI-1", "cat2", 1500)]
+        .iter()
+        .map(|(id, name, sku, category, price)| ServerRow {
+            entity: "products".into(),
+            id: id.to_string(),
+            version: 1,
+            data: Some(json!({ "id": id, "companyId": COMPANY, "name": name, "sku": sku, "categoryId": category,
+                               "salePriceCents": price, "isActive": *id != "c", "barcode": "" })),
+        })
+        .collect();
+    store::apply(
+        connection,
+        COMPANY,
+        &ApplyBatch {
+            rows,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+}
+
+fn spec(value: Value) -> QuerySpec {
+    let mut spec: QuerySpec = serde_json::from_value(value).unwrap();
+    spec.entity = "products".into();
+    spec
+}
+
+fn ids(result: &QueryResult) -> Vec<String> {
+    result.rows.iter().map(|row| row.id.clone()).collect()
+}
+
+#[test]
+fn a_query_filters_searches_sorts_and_pages() {
+    let mut connection = database();
+    seed_products(&mut connection);
+
+    let active = store::query(&connection, &spec(json!({ "entity": "", "filters": [{ "column": "is_active", "op": "eq", "value": true }], "orderBy": [{ "column": "name" }] }))).unwrap();
+    assert_eq!(ids(&active), vec!["a", "b"]);
+
+    let search = store::query(
+        &connection,
+        &spec(json!({ "entity": "", "search": { "term": "riz", "columns": ["name", "sku"] } })),
+    )
+    .unwrap();
+    assert_eq!(ids(&search), vec!["a"]);
+
+    let by_price = store::query(&connection, &spec(json!({ "entity": "", "orderBy": [{ "column": "json:salePriceCents", "desc": true }], "limit": 2, "offset": 1 }))).unwrap();
+    assert_eq!(ids(&by_price), vec!["c", "b"]);
+    assert_eq!(by_price.total, 3);
+
+    let in_category = store::query(&connection, &spec(json!({ "entity": "", "filters": [{ "column": "category_id", "op": "in", "value": ["cat2"] }] }))).unwrap();
+    assert_eq!(ids(&in_category), vec!["c"]);
+}
+
+#[test]
+fn a_query_hides_rows_deleted_here_unless_asked() {
+    let mut connection = database();
+    seed_products(&mut connection);
+    store::write(
+        &mut connection,
+        COMPANY,
+        &LocalWrite {
+            rows: vec![RowWrite {
+                entity: "products".into(),
+                id: "a".into(),
+                version: None,
+                data: None,
+                deleted: true,
+            }],
+            queue: vec![queue("op1", "a", "DELETE")],
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        store::query(&connection, &spec(json!({ "entity": "" })))
+            .unwrap()
+            .total,
+        2
+    );
+    assert_eq!(
+        store::query(
+            &connection,
+            &spec(json!({ "entity": "", "includeDeleted": true }))
+        )
+        .unwrap()
+        .total,
+        3
+    );
+}
+
+#[test]
+fn a_query_never_puts_the_caller_text_into_sql() {
+    let mut connection = database();
+    seed_products(&mut connection);
+    for column in ["name; DROP TABLE products", "json:a') OR 1=1 --", "unknown"] {
+        let attempt = spec(
+            json!({ "entity": "", "filters": [{ "column": column, "op": "eq", "value": 1 }] }),
+        );
+        assert!(store::query(&connection, &attempt).is_err());
+    }
+    // A search term is data, whatever it contains.
+    let odd = store::query(
+        &connection,
+        &spec(json!({ "entity": "", "search": { "term": "%' OR 1=1 --", "columns": ["name"] } })),
+    )
+    .unwrap();
+    assert_eq!(odd.total, 0);
+    assert_eq!(count(&connection, "SELECT COUNT(*) FROM products"), 3);
+}

@@ -39,6 +39,7 @@ pub fn run() {
             local_db::local_write,
             local_db::local_apply,
             local_db::local_get,
+            local_db::local_query,
             local_db::local_queue_ready,
             local_db::local_queue_list,
             local_db::local_queue_mark_sending,
