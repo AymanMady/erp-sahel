@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
   "notes": "",
-  "pub_date": "2026-09-28T00:19:26.459Z",
+  "pub_date": "2026-09-30T11:12:13.182Z",
   "platforms": {
     "linux-x86_64": {
       "url": "https://erp-sahel.vercel.app/downloads/ERP-Sahel_1.0.0_amd64.deb",
@@ -10,6 +10,14 @@
     "linux-x86_64-deb": {
       "url": "https://erp-sahel.vercel.app/downloads/ERP-Sahel_1.0.0_amd64.deb",
       "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRN3p3LzlidEVTVzI4MFRaOW9kYWJTTW42bXdEV0x5MFdsSWVwQmJDZitxb1paQk1tOGZuUzJTTjgwSWo2R2xXTU03K0hvYThJcVhqQnhxQzQ3UXhRZHlPODhKN09PcVFBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkwNTUyMzI3CWZpbGU6RVJQIFNhaGVsXzEuMC4wX2FtZDY0LmRlYgl2ZXJzaW9uOjEuMC4wCkVUU3h3RzRQanN0VGF2ZG1MWEJtUXlyN2dEaGFwMmlOZ3VJV0JZV2laaGFVa3ZTSHVYeWJzZFY1RkhhYW5VVkZUbUx5d3Q0KzFLMnB6Rnd1Rjl5RUNRPT0K"
+    },
+    "windows-x86_64": {
+      "url": "https://erp-sahel.vercel.app/downloads/ERP-Sahel_1.0.0_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRN3p3LzlidEVTV3hvMFRCSUhyMWN6SlVzcDhGS3JuMGdKa1VlTjFEYVVETE1xQTNBRlRKMThjblk3Vmo3N3BTaXNGUlNJNUloMmpaeURtd1JvOWtlbjNqcHBkd1hnY3c0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkwNzY2NjY5CWZpbGU6RVJQIFNhaGVsXzEuMC4wX3g2NC1zZXR1cC5leGUJdmVyc2lvbjoxLjAuMApOUUJqckc3VVBFRTBXYkFzRDZpTXdoeGNRS0pFRUorQlR1RDFsV0NtNnQ1UXdwMlBEc2wva2pDZzBQc0ppZEMyMUgzUkZ2d0hpKzR4U2l5cy9BdGtEUT09Cg=="
+    },
+    "windows-x86_64-nsis": {
+      "url": "https://erp-sahel.vercel.app/downloads/ERP-Sahel_1.0.0_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRN3p3LzlidEVTV3hvMFRCSUhyMWN6SlVzcDhGS3JuMGdKa1VlTjFEYVVETE1xQTNBRlRKMThjblk3Vmo3N3BTaXNGUlNJNUloMmpaeURtd1JvOWtlbjNqcHBkd1hnY3c0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkwNzY2NjY5CWZpbGU6RVJQIFNhaGVsXzEuMC4wX3g2NC1zZXR1cC5leGUJdmVyc2lvbjoxLjAuMApOUUJqckc3VVBFRTBXYkFzRDZpTXdoeGNRS0pFRUorQlR1RDFsV0NtNnQ1UXdwMlBEc2wva2pDZzBQc0ppZEMyMUgzUkZ2d0hpKzR4U2l5cy9BdGtEUT09Cg=="
     }
   }
 }
