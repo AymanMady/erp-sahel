@@ -27,6 +27,7 @@
     "db:reset": "tsx scripts/reset-db.ts",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:db": "tsx scripts/test-db-migrate.ts",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install --with-deps chromium",
     "build:desktop": "vite build --mode desktop",
