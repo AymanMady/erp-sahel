@@ -58,7 +58,12 @@ import { answeredLocally } from "./local/local-documents";
 import { isLocalReady } from "./local/replication";
 import { pullSnapshot, readSnapshot } from "./snapshot";
 
-const LAST_RUN_KEY = "prefetch.lastRunAt";
+/**
+ * When the next pass may start (milliseconds): 15 minutes after a complete pass, sooner
+ * after an incomplete one, now when set to 0. Earlier releases kept `prefetch.lastRunAt`
+ * instead: it is not read, so that a device updated from one prepares right away.
+ */
+const NEXT_RUN_KEY = "prefetch.nextRunAt";
 /** Date of the first complete pass: from then on the device works without network. */
 const COMPLETED_KEY = "prefetch.completedAt";
 /** Incomplete passes in a row: the next one waits longer each time. */
@@ -474,11 +479,11 @@ export async function prefetchForOffline(options: { force?: boolean } = {}): Pro
   running = (async () => {
     try {
       if (!lastKnownOnline()) return;
-      const [lastRun, completedAt] = await Promise.all([
-        getMeta(LAST_RUN_KEY),
+      const [nextRun, completedAt] = await Promise.all([
+        getMeta(NEXT_RUN_KEY),
         getMeta(COMPLETED_KEY),
       ]);
-      if (!options.force && Date.now() - Number(lastRun ?? 0) < MIN_INTERVAL_MS) return;
+      if (!options.force && Date.now() < (Number(nextRun) || 0)) return;
       await wait(completedAt ? REFRESH_DELAY_MS : FIRST_RUN_DELAY_MS);
       if (!lastKnownOnline()) return;
       publish({
@@ -497,14 +502,14 @@ export async function prefetchForOffline(options: { force?: boolean } = {}): Pro
         const retries = Number((await getMeta(RETRIES_KEY)) ?? 0) || 0;
         const delay = Math.min(MIN_INTERVAL_MS, RETRY_INTERVAL_MS * 2 ** retries);
         await setMeta(RETRIES_KEY, String(retries + 1));
-        await setMeta(LAST_RUN_KEY, String(Date.now() - MIN_INTERVAL_MS + delay));
+        await setMeta(NEXT_RUN_KEY, String(Date.now() + delay));
         return;
       }
       // Recorded only once the pass is complete: an interrupted pass resumes on the next
       // cycle, not 15 minutes later.
       const now = new Date().toISOString();
       await setMeta(RETRIES_KEY, "0");
-      await setMeta(LAST_RUN_KEY, String(Date.now()));
+      await setMeta(NEXT_RUN_KEY, String(Date.now() + MIN_INTERVAL_MS));
       await setMeta(COMPLETED_KEY, now);
       publish({ state: "ready", completedAt: now });
     } catch {

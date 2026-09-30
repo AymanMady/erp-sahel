@@ -1,6 +1,6 @@
 {
   "name": "erp-sahel",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "description": "ERP Sahel — a generic, simple, offline-capable ERP for any kind of business (optional modules: point of sale, purchasing, inventory…).",

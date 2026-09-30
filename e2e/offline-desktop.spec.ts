@@ -160,6 +160,66 @@ function localDatabaseComplete(page: Page) {
   });
 }
 
+/** The shell controlled by the Service Worker (browser only: the real shell embeds its files). */
+async function cacheShell(page: Page): Promise<void> {
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.reload();
+  await expect
+    .poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller)))
+    .toBe(true);
+}
+
+async function expectNoNetworkError(page: Page): Promise<void> {
+  // Give requests time to fail and the local copy time to answer.
+  await page.waitForTimeout(400);
+  await expect(page.locator("body")).not.toContainText(NETWORK_ERRORS);
+}
+
+/** Without internet: every page, cold, and documents and customers never opened. */
+async function expectEverythingOffline(page: Page, order: { id: string; number: string }) {
+  for (const route of ROUTES) {
+    await test.step(`opens ${route} offline`, async () => {
+      await page.goto(route);
+      const ready =
+        route === "/" ? page.getByText("Total sales").first() : page.getByRole("heading").first();
+      await expect(ready).toBeVisible();
+      await expectNoNetworkError(page);
+    });
+  }
+
+  await test.step("invoices, never opened, are listed and open", async () => {
+    await page.goto("/invoices");
+    const row = page.locator("tbody tr").filter({ visible: true }).first();
+    await expect(row).toBeVisible();
+    await row.click();
+    await expect(page).toHaveURL(/\/invoices\/[0-9a-f-]{36}$/);
+    await expect(page.getByRole("heading").first()).toBeVisible();
+    await expectNoNetworkError(page);
+  });
+
+  await test.step("a purchase order entered elsewhere, never opened", async () => {
+    await page.goto(`/purchase-orders/${order.id}`);
+    await expect(page.getByText(order.number).first()).toBeVisible();
+    await expectNoNetworkError(page);
+  });
+
+  await test.step("payments are listed", async () => {
+    await page.goto("/payments");
+    await expect(page.locator("tbody tr").filter({ visible: true }).first()).toBeVisible();
+    await expectNoNetworkError(page);
+  });
+
+  await test.step("customers are listed, and one never opened shows its page", async () => {
+    await page.goto("/parties");
+    const row = page.locator("tbody tr").filter({ visible: true }).first();
+    await expect(row).toBeVisible();
+    await row.click();
+    await expect(page).toHaveURL(/\/parties\/[0-9a-f-]{36}$/);
+    await expect(page.getByRole("heading").first()).toBeVisible();
+    await expectNoNetworkError(page);
+  });
+}
+
 test("the desktop works without internet on every page after its first connection", async ({
   page,
   context,
@@ -169,13 +229,7 @@ test("the desktop works without internet on every page after its first connectio
   const order = await enterPurchaseOrder(request);
 
   await login(page);
-  // The shell must be controlled by the Service Worker before the outage (browser only:
-  // the real shell embeds its files).
-  await page.evaluate(() => navigator.serviceWorker.ready);
-  await page.reload();
-  await expect
-    .poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller)))
-    .toBe(true);
+  await cacheShell(page);
 
   // First connection: the local database, then the rest — nothing else is opened.
   await expect.poll(() => localDatabaseComplete(page), { timeout: 120_000 }).toBe(true);
@@ -198,44 +252,36 @@ test("the desktop works without internet on every page after its first connectio
     ).toBe(true);
   }
 
-  // --- Outage ---------------------------------------------------------------
   await context.setOffline(true);
+  await expectEverythingOffline(page, order);
+  await context.setOffline(false);
+});
 
-  for (const route of ROUTES) {
-    await test.step(`opens ${route} offline`, async () => {
-      await page.goto(route);
-      const ready =
-        route === "/" ? page.getByText("Total sales").first() : page.getByRole("heading").first();
-      await expect(ready).toBeVisible();
-      // Give requests time to fail and the local copy time to answer.
-      await page.waitForTimeout(400);
-      await expect(page.locator("body")).not.toContainText(NETWORK_ERRORS);
-    });
-  }
+test("the desktop works without internet even when the server cannot fill its local database", async ({
+  page,
+  context,
+  request,
+}) => {
+  test.setTimeout(240_000);
+  const order = await enterPurchaseOrder(request);
+  // A server that fails the first download of the local database (not updated yet, an
+  // error on its side…): the preparation must download every page anyway.
+  await context.route("**/api/sync/bootstrap**", (route) =>
+    route.fulfill({
+      status: 500,
+      contentType: "application/json",
+      body: JSON.stringify({ error: "Unavailable", code: "INTERNAL_ERROR" }),
+    })
+  );
 
-  await test.step("invoices, never opened, are listed and open", async () => {
-    await page.goto("/invoices");
-    const row = page.locator("tbody tr").filter({ visible: true }).first();
-    await expect(row).toBeVisible();
-    await row.click();
-    await expect(page).toHaveURL(/\/invoices\/[0-9a-f-]{36}$/);
-    await expect(page.getByRole("heading").first()).toBeVisible();
-    await page.waitForTimeout(400);
-    await expect(page.locator("body")).not.toContainText(NETWORK_ERRORS);
-  });
+  await login(page);
+  await cacheShell(page);
+  await expect
+    .poll(async () => Boolean(await readMeta(page, "prefetch.completedAt")), { timeout: 120_000 })
+    .toBe(true);
+  expect(await localDatabaseComplete(page)).toBe(false);
 
-  await test.step("a purchase order entered elsewhere, never opened", async () => {
-    await page.goto(`/purchase-orders/${order.id}`);
-    await expect(page.getByText(order.number).first()).toBeVisible();
-    await page.waitForTimeout(400);
-    await expect(page.locator("body")).not.toContainText(NETWORK_ERRORS);
-  });
-
-  await test.step("payments are listed", async () => {
-    await page.goto("/payments");
-    await expect(page.locator("tbody tr").filter({ visible: true }).first()).toBeVisible();
-    await expect(page.locator("body")).not.toContainText(NETWORK_ERRORS);
-  });
-
+  await context.setOffline(true);
+  await expectEverythingOffline(page, order);
   await context.setOffline(false);
 });

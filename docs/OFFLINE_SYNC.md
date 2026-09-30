@@ -131,7 +131,9 @@ administration : ce que SQLite ne contient pas est téléchargé dans le cache H
 - **Quand.** Après **chaque tentative** de synchronisation, réussie ou non : une
   synchronisation en échec (une page refusée, une modification rejetée) ne doit pas
   laisser toutes les autres pages sans données. Sans internet, la préparation attend son
-  retour. Ensuite, toutes les 15 minutes au plus.
+  retour. Ensuite, toutes les 15 minutes au plus (`prefetch.nextRunAt`). Un appareil mis
+  à jour depuis une version antérieure se prépare tout de suite : la trace laissée par
+  l'ancienne version (`prefetch.lastRunAt`) n'est pas lue.
 - **Ce qui n'est pas téléchargé sur le desktop.** Les documents que la base locale sait
   donner, et le détail des tiers une fois factures et règlements présents : pas une
   requête par document. Tant que la base locale n'est pas complète, la préparation les

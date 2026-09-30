@@ -384,7 +384,7 @@ export async function runSync(options: { force?: boolean } = {}): Promise<SyncSt
         const snapshot = await pullSnapshot();
         await writeMeta(CURSOR_KEY, snapshot.cursor);
         await forgetCachedResponsesMentioning(replayedHttp);
-        await writeMeta("prefetch.lastRunAt", "0");
+        await writeMeta("prefetch.nextRunAt", "0");
       } else {
         await pullDelta();
       }

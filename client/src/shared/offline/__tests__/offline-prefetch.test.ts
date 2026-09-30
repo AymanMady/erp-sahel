@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SYNC_TABLES } from "@shared/sync-protocol";
 import { probeServer } from "@/shared/api/network";
-import { getMeta, offlineDb } from "../db";
+import { getMeta, offlineDb, setMeta } from "../db";
 import { readCachedResponse } from "../http-cache";
 import { startLocalSession, stopLocalSession } from "../local/local-sync";
 import { refreshReadiness } from "../local/replication";
@@ -152,7 +152,7 @@ describe("preparation of the device", () => {
     expect(await readCachedResponse("/api/invoices/i1")).toMatchObject({ id: "i1" });
     // Not ready yet: the next pass comes in 2 minutes, not in 15.
     expect(await getMeta("prefetch.completedAt")).toBeNull();
-    const nextRun = Number(await getMeta("prefetch.lastRunAt")) + 15 * 60_000;
+    const nextRun = Number(await getMeta("prefetch.nextRunAt"));
     expect(nextRun - before).toBeGreaterThanOrEqual(2 * 60_000);
     expect(nextRun - Date.now()).toBeLessThanOrEqual(2 * 60_000);
     expect(getOfflineReadiness().state).toBe("preparing");
@@ -167,7 +167,7 @@ describe("preparation of the device", () => {
 
     expect(await getMeta("prefetch.completedAt")).toBeNull();
     // Nothing recorded: no waiting once the network is back.
-    expect(await getMeta("prefetch.lastRunAt")).toBeNull();
+    expect(await getMeta("prefetch.nextRunAt")).toBeNull();
     const asked = requests.length;
     expect(asked).toBeLessThan(20);
 
@@ -176,6 +176,23 @@ describe("preparation of the device", () => {
     await probeServer(true);
     await prefetchForOffline();
     expect(requests.length).toBeGreaterThan(asked);
+    expect(await getMeta("prefetch.completedAt")).not.toBeNull();
+  }, 20_000);
+
+  it("waits 15 minutes before refreshing a device that is ready", async () => {
+    await prefetchForOffline({ force: true });
+    const asked = requests.length;
+
+    await prefetchForOffline();
+    expect(requests.length).toBe(asked);
+  }, 20_000);
+
+  it("prepares right away a device updated from an earlier release", async () => {
+    // What an earlier release left: its last pass a minute ago, never complete.
+    await setMeta("prefetch.lastRunAt", String(Date.now() - 60_000));
+
+    await prefetchForOffline();
+    expect(times("/api/roles")).toBe(1);
     expect(await getMeta("prefetch.completedAt")).not.toBeNull();
   }, 20_000);
 });
