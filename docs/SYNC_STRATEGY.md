@@ -3,6 +3,10 @@
 Le produit doit rester **pleinement opérationnel hors ligne**, et les données doivent
 remonter **exactement une fois** au retour du réseau. Ce document décrit comment.
 
+Le poste desktop fonctionne en plus en **offline-first** sur une base SQLite par société
+(première synchronisation, journal des changements, conflits) : voir
+[`OFFLINE_SYNC.md`](OFFLINE_SYNC.md).
+
 ---
 
 ## 1. Principes
